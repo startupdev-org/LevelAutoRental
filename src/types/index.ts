@@ -1,7 +1,8 @@
 export interface Car {
-  id: string;
+  id: number;
+  year: number;
   name: string;
-  category: 'economy' | 'compact' | 'midsize' | 'fullsize' | 'suv' | 'luxury';
+  // category: 'economy' | 'compact' | 'midsize' | 'fullsize' | 'suv' | 'luxury';
   image: string;
   pricePerDay: number;
   seats: number;
