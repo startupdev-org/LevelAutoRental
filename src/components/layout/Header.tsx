@@ -1,21 +1,39 @@
 import { motion } from 'framer-motion';
 import { Car, Menu, X } from 'lucide-react';
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Cars', href: '/cars' },
-    { name: 'About', href: '/about' },
-    { name: 'Contact', href: '/contact' }
+    // { name: 'Become a renter', href: '/become-renter' },
+    // { name: 'Rental deals', href: '/deals' },
+    { name: 'Why choose us', href: 'why-choose-us' },
+    { name: 'Popular cars', href: 'popular-cars' }
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleNavigate = (href: string) => {
+    if (href.startsWith('/')) {
+      navigate(href);
+      return;
+    }
+    const el = document.getElementById(href);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      navigate('/');
+      setTimeout(() => {
+        const el2 = document.getElementById(href);
+        if (el2) el2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
+  };
 
   return (
     <motion.header
@@ -35,28 +53,27 @@ export const Header: React.FC = () => {
             >
               <Car className="w-5 h-5 text-white" />
             </motion.div>
-            <span className="text-xl font-bold text-gray-900">CarRental</span>
+            <span className="text-xl font-bold text-gray-900">Level Auto Rental</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => (
-              <Link
+              <button
                 key={item.name}
-                to={item.href}
-                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
-                  isActive(item.href) ? 'text-blue-600' : 'text-gray-700'
-                }`}
+                onClick={() => handleNavigate(item.href)}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${isActive(item.href) ? 'text-blue-600' : 'text-gray-700'}`}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
                 {item.name}
-              </Link>
+              </button>
             ))}
           </nav>
 
-          {/* CTA Button */}
+          {/* Login Button */}
           <div className="hidden md:block">
-            <Button variant="secondary" size="sm">
-              Book Now
+            <Button variant="ghost" size="sm">
+              Login
             </Button>
           </div>
 
@@ -81,19 +98,20 @@ export const Header: React.FC = () => {
         >
           <div className="py-4 space-y-4">
             {navigation.map((item) => (
-              <Link
+              <button
                 key={item.name}
-                to={item.href}
-                onClick={() => setIsMenuOpen(false)}
-                className={`block text-base font-medium transition-colors hover:text-blue-600 ${
-                  isActive(item.href) ? 'text-blue-600' : 'text-gray-700'
-                }`}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleNavigate(item.href);
+                }}
+                className={`block w-full text-left text-base font-medium transition-colors hover:text-blue-600 ${isActive(item.href) ? 'text-blue-600' : 'text-gray-700'}`}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
                 {item.name}
-              </Link>
+              </button>
             ))}
-            <Button variant="secondary" size="sm" className="w-full">
-              Book Now
+            <Button variant="ghost" size="sm" className="w-full">
+              Login
             </Button>
           </div>
         </motion.div>
