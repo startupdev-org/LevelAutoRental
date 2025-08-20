@@ -43,7 +43,7 @@ export const Features: React.FC = () => {
             className="relative"
           >
             <img
-              src="/bmw.png"
+              src="/audi.png"
               alt="Featured car"
               className="w-full max-w-xl md:max-w-2xl h-auto select-none pointer-events-none drop-shadow-[0_35px_45px_rgba(0,0,0,0.35)] lg:-mr-10 mt-20"
             />

@@ -1,21 +1,18 @@
 import { motion } from 'framer-motion';
 import { Fuel, Star, Users, Snowflake, Settings, ArrowRight, Calendar } from 'lucide-react';
 import React, { useState } from 'react';
-import { cars } from '../../data/cars';
-import { useCounter } from '../../hooks/useCounter';
 import { useInView } from '../../hooks/useInView';
-import { Car } from '../../types';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
 import { CarCard } from '../../pages/cars/CarCards';
+import { Car } from '../../types';
 
 
 export const CarGrid: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { ref, isInView } = useInView();
 
-  const cars = [
+  const cars: Car[] = [
     {
       id: 1,
       name: "Toyota Rav 4",
@@ -24,9 +21,11 @@ export const CarGrid: React.FC = () => {
       rating: 4.7,
       reviews: 134,
       seats: 5,
-      transmission: "automatic",
-      fuelType: "gas",
+      transmission: "Automatic",
+      fuelType: "gasoline",
       pricePerDay: 42,
+      category: 'suv',
+      features: ["Air Conditioning", "Bluetooth", "USB Ports"],
     },
     {
       id: 2,
@@ -36,9 +35,11 @@ export const CarGrid: React.FC = () => {
       rating: 4.6,
       reviews: 98,
       seats: 5,
-      transmission: "manual",
-      fuelType: "petrol",
+      transmission: "Manual",
+      fuelType: "gasoline",
       pricePerDay: 39,
+      category: 'compact',
+      features: ["Air Conditioning", "Backup Camera", "Bluetooth"],
     },
     {
       id: 3,
@@ -48,9 +49,11 @@ export const CarGrid: React.FC = () => {
       rating: 4.8,
       reviews: 145,
       seats: 5,
-      transmission: "automatic",
+      transmission: "Automatic",
       fuelType: "diesel",
+      category: 'compact',
       pricePerDay: 72,
+      features: []
     },
     {
       id: 4,
@@ -60,9 +63,11 @@ export const CarGrid: React.FC = () => {
       rating: 4.5,
       reviews: 76,
       seats: 5,
-      transmission: "manual",
+      transmission: "Manual",
       fuelType: "petrol",
+      category: 'compact',
       pricePerDay: 35,
+      features: []
     },
   ];
 
