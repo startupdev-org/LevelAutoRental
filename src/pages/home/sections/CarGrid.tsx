@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Fuel, Star, Users, Snowflake, Settings, ArrowRight, Calendar } from 'lucide-react';
 import React, { useState } from 'react';
-import { useInView } from '../../hooks/useInView';
-import { fadeInUp, staggerContainer } from '../../utils/animations';
-import { Button } from '../ui/Button';
-import { CarCard } from '../../pages/cars/CarCard';
-import { Car } from '../../types';
+import { useInView } from '../../../hooks/useInView';
+import { fadeInUp, staggerContainer } from '../../../utils/animations';
+import { Button } from '../../../components/ui/Button';
+import { CarCard } from '../../cars/CarCard';
+import { Car } from '../../../types';
 
 
 export const CarGrid: React.FC = () => {

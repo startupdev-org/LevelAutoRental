@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { Award, Car, Clock, Shield, Users } from 'lucide-react';
 import React from 'react';
-import { useInView } from '../hooks/useInView';
-import { fadeInUp, staggerContainer } from '../utils/animations';
-import { Card } from '../components/ui/Card';
+import { useInView } from '../../hooks/useInView';
+import { fadeInUp, staggerContainer } from '../../utils/animations';
+import { Card } from '../../components/ui/Card';
 
 export const About: React.FC = () => {
   const { ref, isInView } = useInView();
@@ -108,19 +108,19 @@ export const About: React.FC = () => {
                 Our Story
               </h2>
               <p className="text-lg text-gray-600">
-                Founded in 2009, CarRental began as a small family business with a simple mission: 
-                to provide reliable, affordable transportation solutions for everyone. What started 
+                Founded in 2009, CarRental began as a small family business with a simple mission:
+                to provide reliable, affordable transportation solutions for everyone. What started
                 with just five vehicles has grown into one of the region's most trusted car rental services.
               </p>
               <p className="text-lg text-gray-600">
-                Over the years, we've expanded our fleet to include over 500 vehicles ranging from 
-                economy cars to luxury sedans and SUVs. Our commitment to customer satisfaction and 
-                quality service has remained unchanged, earning us the loyalty of thousands of customers 
+                Over the years, we've expanded our fleet to include over 500 vehicles ranging from
+                economy cars to luxury sedans and SUVs. Our commitment to customer satisfaction and
+                quality service has remained unchanged, earning us the loyalty of thousands of customers
                 and numerous industry awards.
               </p>
               <p className="text-lg text-gray-600">
-                Today, we continue to innovate and improve our services, embracing new technologies 
-                and sustainable practices to better serve our customers and protect the environment 
+                Today, we continue to innovate and improve our services, embracing new technologies
+                and sustainable practices to better serve our customers and protect the environment
                 for future generations.
               </p>
             </motion.div>

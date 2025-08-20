@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Calendar, Car, CreditCard, MapPin, User } from 'lucide-react';
 import React, { useState } from 'react';
-import { useInView } from '../hooks/useInView';
-import { fadeInUp, staggerContainer } from '../utils/animations';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
+import { useInView } from '../../hooks/useInView';
+import { fadeInUp, staggerContainer } from '../../utils/animations';
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
 
 export const Booking: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -17,17 +17,17 @@ export const Booking: React.FC = () => {
     returnDate: '',
     pickupTime: '',
     returnTime: '',
-    
+
     // Step 2: Car Selection
     selectedCar: '',
-    
+
     // Step 3: Personal Info
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     licenseNumber: '',
-    
+
     // Step 4: Payment
     cardNumber: '',
     expiryDate: '',
@@ -108,29 +108,25 @@ export const Booking: React.FC = () => {
                 variants={fadeInUp}
                 className="flex items-center"
               >
-                <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
-                  currentStep >= step.number
+                <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${currentStep >= step.number
                     ? 'bg-blue-600 border-blue-600 text-white'
                     : 'bg-white border-gray-300 text-gray-400'
-                }`}>
+                  }`}>
                   <step.icon className="w-6 h-6" />
                 </div>
                 <div className="ml-3 hidden sm:block">
-                  <p className={`text-sm font-medium ${
-                    currentStep >= step.number ? 'text-blue-600' : 'text-gray-400'
-                  }`}>
+                  <p className={`text-sm font-medium ${currentStep >= step.number ? 'text-blue-600' : 'text-gray-400'
+                    }`}>
                     Step {step.number}
                   </p>
-                  <p className={`text-sm ${
-                    currentStep >= step.number ? 'text-gray-900' : 'text-gray-400'
-                  }`}>
+                  <p className={`text-sm ${currentStep >= step.number ? 'text-gray-900' : 'text-gray-400'
+                    }`}>
                     {step.title}
                   </p>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 ml-4 ${
-                    currentStep > step.number ? 'bg-blue-600' : 'bg-gray-300'
-                  }`} />
+                  <div className={`w-16 h-0.5 ml-4 ${currentStep > step.number ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
                 )}
               </motion.div>
             ))}
@@ -152,7 +148,7 @@ export const Booking: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   Rental Details
                 </h2>
-                
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="relative">
                     <MapPin className="absolute left-3 top-9 text-gray-400 w-5 h-5" />
@@ -164,7 +160,7 @@ export const Booking: React.FC = () => {
                       className="pl-10"
                     />
                   </div>
-                  
+
                   <div className="relative">
                     <MapPin className="absolute left-3 top-9 text-gray-400 w-5 h-5" />
                     <Input
@@ -184,7 +180,7 @@ export const Booking: React.FC = () => {
                     value={bookingData.pickupDate}
                     onChange={(e) => handleInputChange('pickupDate', e.target.value)}
                   />
-                  
+
                   <Input
                     label="Pickup Time"
                     type="time"
@@ -200,7 +196,7 @@ export const Booking: React.FC = () => {
                     value={bookingData.returnDate}
                     onChange={(e) => handleInputChange('returnDate', e.target.value)}
                   />
-                  
+
                   <Input
                     label="Return Time"
                     type="time"
@@ -220,18 +216,17 @@ export const Booking: React.FC = () => {
                 <p className="text-gray-600 mb-6">
                   Choose from our available vehicles for your selected dates.
                 </p>
-                
+
                 {/* Car selection would go here */}
                 <div className="grid md:grid-cols-2 gap-6">
                   {[1, 2, 3, 4].map((car) => (
                     <motion.div
                       key={car}
                       whileHover={{ scale: 1.02 }}
-                      className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-                        bookingData.selectedCar === `car-${car}`
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${bookingData.selectedCar === `car-${car}`
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                       onClick={() => handleInputChange('selectedCar', `car-${car}`)}
                     >
                       <img
@@ -254,7 +249,7 @@ export const Booking: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   Personal Information
                 </h2>
-                
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <Input
                     label="First Name"
@@ -262,7 +257,7 @@ export const Booking: React.FC = () => {
                     value={bookingData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                   />
-                  
+
                   <Input
                     label="Last Name"
                     placeholder="Enter your last name"
@@ -279,7 +274,7 @@ export const Booking: React.FC = () => {
                     value={bookingData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                   />
-                  
+
                   <Input
                     label="Phone"
                     type="tel"
@@ -304,7 +299,7 @@ export const Booking: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   Payment Information
                 </h2>
-                
+
                 <Input
                   label="Cardholder Name"
                   placeholder="Name on card"
@@ -326,7 +321,7 @@ export const Booking: React.FC = () => {
                     value={bookingData.expiryDate}
                     onChange={(e) => handleInputChange('expiryDate', e.target.value)}
                   />
-                  
+
                   <Input
                     label="CVV"
                     placeholder="123"
@@ -371,7 +366,7 @@ export const Booking: React.FC = () => {
               >
                 Previous
               </Button>
-              
+
               {currentStep < 4 ? (
                 <Button onClick={nextStep}>
                   Next

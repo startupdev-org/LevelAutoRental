@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, Search } from 'lucide-react';
 import React, { useState } from 'react';
-import { BookingForm } from '../../types';
-import { fadeInUp, staggerContainer } from '../../utils/animations';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { BookingForm } from '../../../types';
+import { fadeInUp, staggerContainer } from '../../../utils/animations';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
 
 export const Hero: React.FC = () => {
   const [bookingForm, setBookingForm] = useState<BookingForm>({

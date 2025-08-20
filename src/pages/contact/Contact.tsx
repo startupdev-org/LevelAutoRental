@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Clock, Mail, MapPin, Phone } from 'lucide-react';
 import React, { useState } from 'react';
-import { useInView } from '../hooks/useInView';
-import { fadeInUp, staggerContainer } from '../utils/animations';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
+import { useInView } from '../../hooks/useInView';
+import { fadeInUp, staggerContainer } from '../../utils/animations';
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
 
 export const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -147,7 +147,7 @@ export const Contact: React.FC = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <Input
                       label="Phone"
@@ -175,7 +175,7 @@ export const Contact: React.FC = () => {
                       rows={6}
                       placeholder="Tell us more about your inquiry..."
                       value={formData.message}
-                      onChange={(e) => handleInputChange('message', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('message', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       required
                     />
@@ -201,7 +201,7 @@ export const Contact: React.FC = () => {
                   Find Us
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Visit our main location or contact us to arrange pickup and drop-off 
+                  Visit our main location or contact us to arrange pickup and drop-off
                   at your preferred location.
                 </p>
               </div>

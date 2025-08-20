@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { testimonials } from '../../data/testimonials';
-import { useInView } from '../../hooks/useInView';
-import { fadeInUp, staggerContainer } from '../../utils/animations';
-import { Card } from '../ui/Card';
+import { testimonials } from '../../../data/testimonials';
+import { useInView } from '../../../hooks/useInView';
+import { fadeInUp, staggerContainer } from '../../../utils/animations';
+import { Card } from '../../../components/ui/Card';
 
 export const Testimonials: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);

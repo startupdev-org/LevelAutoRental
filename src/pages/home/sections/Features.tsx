@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { Award, Clock, DollarSign, Headphones } from 'lucide-react';
 import React from 'react';
-import { useInView } from '../../hooks/useInView';
-import { fadeInUp, staggerContainer } from '../../utils/animations';
-import { Card } from '../ui/Card';
+import { useInView } from '../../../hooks/useInView';
+import { fadeInUp, staggerContainer } from '../../../utils/animations';
+import { Card } from '../../../components/ui/Card';
 
 export const Features: React.FC = () => {
   const { ref, isInView } = useInView();

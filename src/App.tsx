@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
-import { About } from './pages/About';
-import { Booking } from './pages/Booking';
+import { About } from './pages/about/About';
+import { Booking } from './pages/booking/Booking';
 import { Cars } from './pages/cars/Cars';
-import { Contact } from './pages/Contact';
-import { Home } from './pages/Home';
+import { Contact } from './pages/contact/Contact';
+import { Home } from './pages/home/Home';
+import Loader from './components/layout/Loader';
 
 function App() {
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <Loader />; // only loader visible
+  }
   return (
     <Router>
       <Layout>
