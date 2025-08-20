@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Fuel, Star, Users } from 'lucide-react';
+import { Fuel, Star, Users, Snowflake, Settings, ArrowRight, Calendar } from 'lucide-react';
 import React, { useState } from 'react';
 import { cars } from '../../data/cars';
 import { useCounter } from '../../hooks/useCounter';
@@ -18,6 +18,8 @@ const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
   const { ref, isInView } = useInView();
   const animatedPrice = useCounter(car.pricePerDay, 1500, 0);
 
+  const formatPrice = (value: number) => new Intl.NumberFormat('en-US').format(value);
+
   return (
     <motion.div
       ref={ref}
@@ -26,53 +28,48 @@ const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
       animate={isInView ? "animate" : "initial"}
       transition={{ delay: index * 0.1 }}
     >
-      <Card className="overflow-hidden">
-        <div className="relative">
-          <motion.img
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.3 }}
-            src={car.image}
-            alt={car.name}
-            className="w-full h-48 object-cover"
-          />
-          <div className="absolute top-4 right-4">
-            <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium capitalize">
-              {car.category}
-            </span>
-          </div>
-        </div>
+      <Card className="overflow-hidden rounded-3xl border-2 border-gray-200 shadow-lg hover:shadow-2xl transition-shadow bg-white w-full md:w-[700px] lg:w-[900px] mx-auto">
 
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xl font-semibold text-gray-900">{car.name}</h3>
-            <div className="flex items-center space-x-1">
-              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-              <span className="text-sm text-gray-600">{car.rating}</span>
-            </div>
+
+        <div className="p-5">
+          <div className="bg-gray-50 rounded-xl h-44 flex items-center justify-center overflow-hidden">
+            <a href={car.image} target="_blank" rel="noopener noreferrer" className="block">
+              <motion.img
+                whileHover={{ scale: 1.03 }}
+                transition={{ duration: 0.25 }}
+                src={car.image}
+                alt={car.name}
+                className="h-64 w-full object-contain select-none pointer-events-auto drop-shadow rounded-xl"
+              />
+            </a>
           </div>
 
-          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-            <div className="flex items-center space-x-1">
-              <Users className="w-4 h-4" />
-              <span>{car.seats} seats</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Fuel className="w-4 h-4" />
-              <span className="capitalize">{car.fuelType}</span>
-            </div>
-            <span className="capitalize">{car.transmission}</span>
+
+          <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+            <span>{car.rating.toFixed(1)}</span>
+            <span className="text-gray-400">({car.reviews}+ reviews)</span>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-baseline space-x-1">
-              <span className="text-2xl font-bold text-gray-900">
-                ${isInView ? animatedPrice : car.pricePerDay}
-              </span>
-              <span className="text-gray-600">/day</span>
+          <h3 className="mt-1 text-lg font-semibold text-gray-900">{car.name}</h3>
+
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-600">
+            <div className="flex items-center gap-2"><Users className="w-4 h-4" /><span>{car.seats} Passengers</span></div>
+            <div className="flex items-center gap-2"><Settings className="w-4 h-4" /><span className="capitalize">{car.transmission}</span></div>
+            <div className="flex items-center gap-2"><Snowflake className="w-4 h-4" /><span>Air Conditioning</span></div>
+            <div className="flex items-center gap-2"><Fuel className="w-4 h-4" /><span className="capitalize">{car.fuelType}</span></div>
+          </div>
+
+
+          <div className="mt-5 flex items-center justify-between">
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-bold text-gray-900">${car.pricePerDay}</span>
+              <span className="text-gray-500 text-sm">/day</span>
             </div>
-            <Button variant="secondary" size="sm">
-              Book Now
-            </Button>
+            <button className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-2">
+              Rent Now
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </Card>
@@ -84,11 +81,57 @@ export const CarGrid: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { ref, isInView } = useInView();
 
-  const categories = ['all', 'economy', 'compact', 'midsize', 'suv', 'luxury'];
-  
-  const filteredCars = selectedCategory === 'all' 
-    ? cars.slice(0, 6) 
-    : cars.filter(car => car.category === selectedCategory).slice(0, 6);
+  const cars = [
+    {
+      id: 1,
+      name: "Toyota Rav 4",
+      year: 2025,
+      image: "https://hips.hearstapps.com/hmg-prod/images/2025-toyota-rav4-101-6707e09a230c3.jpg?crop=0.946xw:0.883xh;0,0.117xh&resize=2048:*",
+      rating: 4.7,
+      reviews: 134,
+      seats: 5,
+      transmission: "automatic",
+      fuelType: "gas",
+      pricePerDay: 42,
+    },
+    {
+      id: 2,
+      name: "Honda Civic",
+      year: 2025,
+      image: "https://hips.hearstapps.com/hmg-prod/images/2025-honda-civic-si-113-66e83d9bc4d8a.jpg?crop=1xw:1xh;center,top&resize=980:*",
+      rating: 4.6,
+      reviews: 98,
+      seats: 5,
+      transmission: "manual",
+      fuelType: "petrol",
+      pricePerDay: 39,
+    },
+    {
+      id: 3,
+      name: "BMW 3 Series",
+      year: 2021,
+      image: "https://hips.hearstapps.com/hmg-prod/images/2021-bmw-3-series-mmp-1-1593549868.jpg?crop=0.865xw:0.811xh;0.0304xw,0.0960xh&resize=2048:*",
+      rating: 4.8,
+      reviews: 145,
+      seats: 5,
+      transmission: "automatic",
+      fuelType: "diesel",
+      pricePerDay: 72,
+    },
+    {
+      id: 4,
+      name: "Ford Focus",
+      year: 2018,
+      image: "https://hips.hearstapps.com/hmg-prod/amv-prod-cad-assets/wp-content/uploads/2016/10/2016-Ford-Focus-RS-106.jpg?resize=980:*",
+      rating: 4.5,
+      reviews: 76,
+      seats: 5,
+      transmission: "manual",
+      fuelType: "petrol",
+      pricePerDay: 35,
+    },
+  ];
+
 
   return (
     <section className="py-16">
@@ -100,50 +143,29 @@ export const CarGrid: React.FC = () => {
           animate={isInView ? "animate" : "initial"}
           className="text-center mb-12"
         >
-          <motion.h2
+          <motion.span
             variants={fadeInUp}
-            className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+            className="text-sm font-semibold tracking-wider text-gray-400 uppercase"
+            id="popular-cars"
           >
             Popular Cars
+          </motion.span>
+          <motion.h2
+            variants={fadeInUp}
+            className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight"
+          >
+            Most popular cars rental deals
           </motion.h2>
-          <motion.p
-            variants={fadeInUp}
-            className="text-xl text-gray-600 max-w-3xl mx-auto mb-8"
-          >
-            Choose from our premium fleet of well-maintained vehicles
-          </motion.p>
-
-          {/* Category Filter */}
-          <motion.div
-            variants={fadeInUp}
-            className="flex flex-wrap justify-center gap-2 mb-8"
-          >
-            {categories.map((category) => (
-              <motion.button
-                key={category}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </motion.button>
-            ))}
-          </motion.div>
         </motion.div>
 
         <motion.div
           variants={staggerContainer}
           initial="initial"
           animate={isInView ? "animate" : "initial"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8"
         >
-          {filteredCars.map((car, index) => (
-            <CarCard key={car.id} car={car} index={index} />
+          {cars.map((car, index) => (
+            <CarCard key={car.name} car={car} index={index} />
           ))}
         </motion.div>
 
@@ -153,8 +175,9 @@ export const CarGrid: React.FC = () => {
           animate={isInView ? "animate" : "initial"}
           className="text-center mt-12"
         >
-          <Button variant="outline" size="lg">
-            View All Cars
+          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-3xl">
+            Show All Vehicles
+            <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.div>
       </div>
