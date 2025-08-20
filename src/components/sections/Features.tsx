@@ -32,55 +32,60 @@ export const Features: React.FC = () => {
   ];
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          ref={ref}
-          variants={staggerContainer}
-          initial="initial"
-          animate={isInView ? "animate" : "initial"}
-          className="text-center mb-12"
-        >
-          <motion.h2
-            variants={fadeInUp}
-            className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left: Featured car with subtle map-like backdrop and floating cards */}
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate={isInView ? "animate" : "initial"}
+            className="relative"
           >
-            Why Choose Us
-          </motion.h2>
-          <motion.p
-            variants={fadeInUp}
-            className="text-xl text-gray-600 max-w-3xl mx-auto"
-          >
-            Experience the difference with our premium car rental service
-          </motion.p>
-        </motion.div>
+            <img
+              src="/bmw.png"
+              alt="Featured car"
+              className="w-full max-w-xl md:max-w-2xl h-auto select-none pointer-events-none drop-shadow-[0_35px_45px_rgba(0,0,0,0.35)] lg:-mr-10 mt-20"
+            />
+          </motion.div>
 
-        <motion.div
-          variants={staggerContainer}
-          initial="initial"
-          animate={isInView ? "animate" : "initial"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-        >
-          {features.map((feature, index) => (
-            <motion.div key={feature.title} variants={fadeInUp}>
-              <Card className="p-6 text-center h-full">
-                <motion.div
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ duration: 0.2 }}
-                  className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
-                >
-                  <feature.icon className="w-8 h-8 text-blue-600" />
+          {/* Right: Headline and reasons */}
+          <motion.div
+            ref={ref}
+            variants={staggerContainer}
+            initial="initial"
+            animate={isInView ? "animate" : "initial"}
+            className="lg:pl-6"
+          >
+            <motion.span
+              variants={fadeInUp}
+              className="text-sm font-semibold tracking-wider text-gray-400 uppercase"
+              id="why-choose-us"
+            >
+              Why choose us
+            </motion.span>
+            <motion.h2
+              variants={fadeInUp}
+              className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight"
+            >
+              We offer the best experience with our rental deals
+            </motion.h2>
+
+            <div className="mt-8 space-y-6">
+              {features.map((feature) => (
+                <motion.div key={feature.title} variants={fadeInUp} className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <feature.icon className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-gray-900">{feature.title}</div>
+                    <div className="text-gray-600 text-sm max-w-md">{feature.description}</div>
+                  </div>
                 </motion.div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
