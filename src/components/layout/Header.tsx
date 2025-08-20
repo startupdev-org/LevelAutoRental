@@ -11,7 +11,7 @@ export const Header: React.FC = () => {
 
   const navigation = [
     // { name: 'Become a renter', href: '/become-renter' },
-    // { name: 'Rental deals', href: '/deals' },
+    { name: 'Testimonials', href: 'testimonials' },
     { name: 'Why choose us', href: 'why-choose-us' },
     { name: 'Popular cars', href: 'popular-cars' }
   ];
@@ -19,21 +19,29 @@ export const Header: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleNavigate = (href: string) => {
+    const scrollWithOffset = (el: HTMLElement) => {
+      const yOffset = -80; // adjust to your header height
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    };
+
     if (href.startsWith('/')) {
       navigate(href);
       return;
     }
+
     const el = document.getElementById(href);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollWithOffset(el);
     } else {
       navigate('/');
       setTimeout(() => {
         const el2 = document.getElementById(href);
-        if (el2) el2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (el2) scrollWithOffset(el2);
       }, 0);
     }
   };
+
 
   return (
     <motion.header
