@@ -8,74 +8,8 @@ import { Car } from '../../types';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { CarCard } from '../../pages/cars/CarCards';
 
-interface CarCardProps {
-  car: Car;
-  index: number;
-}
-
-const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
-  const { ref, isInView } = useInView();
-  const animatedPrice = useCounter(car.pricePerDay, 1500, 0);
-
-  const formatPrice = (value: number) => new Intl.NumberFormat('en-US').format(value);
-
-  return (
-    <motion.div
-      ref={ref}
-      variants={fadeInUp}
-      initial="initial"
-      animate={isInView ? "animate" : "initial"}
-      transition={{ delay: index * 0.1 }}
-    >
-      <Card className="overflow-hidden rounded-3xl border-2 border-gray-200 shadow-lg hover:shadow-2xl transition-shadow bg-white w-full md:w-[700px] lg:w-[900px] mx-auto">
-
-
-        <div className="p-5">
-          <div className="bg-gray-50 rounded-xl h-44 flex items-center justify-center overflow-hidden">
-            <a href={car.image} target="_blank" rel="noopener noreferrer" className="block">
-              <motion.img
-                whileHover={{ scale: 1.03 }}
-                transition={{ duration: 0.25 }}
-                src={car.image}
-                alt={car.name}
-                className="h-64 w-full object-contain select-none pointer-events-auto drop-shadow rounded-xl"
-              />
-            </a>
-          </div>
-
-
-          <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-            <span>{car.rating.toFixed(1)}</span>
-            <span className="text-gray-400">({car.reviews}+ reviews)</span>
-          </div>
-
-          <h3 className="mt-1 text-lg font-semibold text-gray-900">{car.name}</h3>
-
-          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-600">
-            <div className="flex items-center gap-2"><Users className="w-4 h-4" /><span>{car.seats} Passengers</span></div>
-            <div className="flex items-center gap-2"><Settings className="w-4 h-4" /><span className="capitalize">{car.transmission}</span></div>
-            <div className="flex items-center gap-2"><Snowflake className="w-4 h-4" /><span>Air Conditioning</span></div>
-            <div className="flex items-center gap-2"><Fuel className="w-4 h-4" /><span className="capitalize">{car.fuelType}</span></div>
-          </div>
-
-
-          <div className="mt-5 flex items-center justify-between">
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold text-gray-900">${car.pricePerDay}</span>
-              <span className="text-gray-500 text-sm">/day</span>
-            </div>
-            <button className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-2">
-              Rent Now
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </Card>
-    </motion.div>
-  );
-};
 
 export const CarGrid: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -134,7 +68,7 @@ export const CarGrid: React.FC = () => {
 
 
   return (
-    <section className="py-16">
+    <section className="py-16 mt-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           ref={ref}

@@ -36,9 +36,9 @@ export const Hero: React.FC = () => {
           >
             <motion.div variants={fadeInUp} className="space-y-8">
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
-                <span className="text-blue-600 relative inline-block">
+                <span className="text-blue-500 relative inline-block">
                   Level up
-                  <div className="absolute -bottom-1 left-0 w-full h-1 bg-blue-600 transform -skew-x-12"></div>
+                  <div className="absolute -bottom-1 left-0 w-full h-1 bg-blue-500 transform -skew-x-12"></div>
                 </span>
                 {' '}
                 your auto renting experience. {' '}
@@ -130,7 +130,7 @@ export const Hero: React.FC = () => {
               <div className="flex items-end">
                 <Button
                   onClick={handleSearch}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium h-12"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium h-12"
                 >
                   Search
                 </Button>

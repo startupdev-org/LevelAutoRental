@@ -10,10 +10,12 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
 
   const navigation = [
-    // { name: 'Become a renter', href: '/become-renter' },
-    { name: 'Testimonials', href: 'testimonials' },
-    { name: 'Why choose us', href: 'why-choose-us' },
-    { name: 'Popular cars', href: 'popular-cars' }
+    { name: 'Home', href: '/' },
+    { name: 'Cars', href: '/cars' },
+    { name: 'Contact', href: '/contact' },
+    // { name: 'Testimonials', href: 'testimonials' },
+    // { name: 'Why choose us', href: 'why-choose-us' },
+    // { name: 'Popular cars', href: 'popular-cars' }
   ];
 
   const isActive = (path: string) => location.pathname === path;

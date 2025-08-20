@@ -2,11 +2,11 @@ export interface Car {
   id: number;
   year: number;
   name: string;
-  // category: 'economy' | 'compact' | 'midsize' | 'fullsize' | 'suv' | 'luxury';
+  category: 'economy' | 'compact' | 'midsize' | 'fullsize' | 'suv' | 'luxury';
   image: string;
   pricePerDay: number;
   seats: number;
-  transmission: 'automatic' | 'manual';
+  transmission: 'Automatic' | 'Manual';
   fuelType: 'gasoline' | 'hybrid' | 'electric';
   features: string[];
   rating: number;
