@@ -10,8 +10,8 @@ export const Hero: React.FC = () => {
   const [bookingForm, setBookingForm] = useState<BookingForm>({
     pickupLocation: '',
     returnLocation: '',
-    pickupDate: '',
-    returnDate: '',
+    pickupDate: '2024-02-15',
+    returnDate: '2024-02-16',
     category: ''
   });
 
@@ -24,110 +24,121 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with Parallax */}
-      <motion.div
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.5, ease: 'easeOut' }}
-        className="absolute inset-0 z-0"
-      >
-        <div
-          className="w-full h-full bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=1920)'
-          }}
-        />
-      </motion.div>
+    <section className="relative min-h-screen bg-gray-100 py-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
+          {/* Left Side - Text Content */}
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="space-y-10"
+          >
+            <motion.div variants={fadeInUp} className="space-y-8">
+              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+                <span className="text-blue-600 relative inline-block">
+                  Level up
+                  <div className="absolute -bottom-1 left-0 w-full h-1 bg-blue-600 transform -skew-x-12"></div>
+                </span>
+                {' '}
+                your auto renting experience. {' '}
+              </h1>
+              <p className="text-xl text-gray-600 max-w-lg leading-relaxed">
+                Get a car wherever and whenever you need it.
+              </p>
+            </motion.div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <motion.div
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-          className="space-y-8"
-        >
-          {/* Hero Text */}
-          <motion.div variants={fadeInUp} className="space-y-4">
-            <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight">
-              Find Your Perfect
-              <span className="text-blue-400 block">Rental Car</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-200 max-w-3xl mx-auto">
-              Discover amazing deals on premium vehicles. Easy booking, great prices, and exceptional service.
-            </p>
           </motion.div>
 
-          {/* Search Form */}
+          {/* Right Side - Car Image */}
           <motion.div
-            variants={fadeInUp}
-            className="bg-white rounded-lg shadow-2xl p-6 md:p-8 max-w-4xl mx-auto"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="flex justify-center lg:justify-end"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="lg:col-span-1">
+            <div className="relative">
+              <img
+                src="/maserati.png"
+                alt="Sports Car"
+                className="w-full max-w-xl md:max-w-2xl h-auto select-none pointer-events-none drop-shadow-[0_35px_45px_rgba(0,0,0,0.35)] lg:-mr-10"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Search Bar Section */}
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1 }}
+        className="border-gray-200 py-12 -mt-10 md:-mt-28 relative z-20"
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* Location */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase mb-3 tracking-wide">
+                  LOCATION
+                </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
-                    placeholder="Pickup Location"
+                    placeholder="Search your location.."
                     value={bookingForm.pickupLocation}
                     onChange={(e) => handleInputChange('pickupLocation', e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-12"
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1">
+              {/* Pickup Date */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase mb-3 tracking-wide">
+                  PICKUP DATE
+                </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    placeholder="Return Location"
-                    value={bookingForm.returnLocation}
-                    onChange={(e) => handleInputChange('returnLocation', e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="lg:col-span-1">
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     type="date"
-                    placeholder="Pickup Date"
                     value={bookingForm.pickupDate}
                     onChange={(e) => handleInputChange('pickupDate', e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-12"
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1">
+              {/* Return Date */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase mb-3 tracking-wide">
+                  RETURN DATE
+                </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     type="date"
-                    placeholder="Return Date"
                     value={bookingForm.returnDate}
                     onChange={(e) => handleInputChange('returnDate', e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-12"
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1">
+              {/* Search Button */}
+              <div className="flex items-end">
                 <Button
                   onClick={handleSearch}
-                  className="w-full h-full flex items-center justify-center space-x-2"
-                  size="lg"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium h-12"
                 >
-                  <Search className="w-5 h-5" />
-                  <span>Search Cars</span>
+                  Search
                 </Button>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
-      </div>
+          </div>
+        </div>
+      </motion.div>
     </section>
   );
 };
