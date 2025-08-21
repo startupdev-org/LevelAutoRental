@@ -6,9 +6,11 @@ import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { Button } from '../../../components/ui/Button';
 import { CarCard } from '../../cars/CarCard';
 import { Car } from '../../../types';
+import { useNavigate } from 'react-router-dom';
 
 
 export const CarGrid: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { ref, isInView } = useInView();
 
@@ -114,7 +116,9 @@ export const CarGrid: React.FC = () => {
           animate={isInView ? "animate" : "initial"}
           className="text-center mt-12"
         >
-          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-3xl">
+          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-3xl"
+            onClick={() => navigate('/cars')}
+          >
             Show All Vehicles
             <ArrowRight className="w-4 h-4" />
           </Button>

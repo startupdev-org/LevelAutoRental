@@ -5,13 +5,17 @@ import { BookingForm } from '../../../types';
 import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import { useNavigate } from 'react-router-dom';
 
 export const Hero: React.FC = () => {
+  const navigate = useNavigate();
+  const todayDate = new Date();
   const [bookingForm, setBookingForm] = useState<BookingForm>({
     pickupLocation: '',
     returnLocation: '',
-    pickupDate: '2024-02-15',
-    returnDate: '2024-02-16',
+    pickupDate: todayDate.toDateString(),
+    returnDate: new Date((todayDate).setDate(todayDate.getDate() + 1)).toLocaleString(),
+
     category: ''
   });
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
@@ -28,8 +32,8 @@ export const Hero: React.FC = () => {
 
   return (
     <section className="relative h-[70vh] bg-gradient-to-t from-blue-50 via-gray-100 to-gray-100 pt-20 font-sans">
-              <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center h-full pt-16">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center h-full pt-16">
           {/* Left Side - Text Content */}
           <motion.div
             variants={staggerContainer}
@@ -37,25 +41,29 @@ export const Hero: React.FC = () => {
             animate="animate"
             className="space-y-10"
           >
-                        <motion.div variants={fadeInUp} className="space-y-8">
+            <motion.div variants={fadeInUp} className="space-y-8">
               <div className="space-y-6">
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight">
-                  <span className="text-blue-600 font-extrabold">Level Up</span> 
+                  <span className="text-blue-600 font-extrabold">Level Up</span>
                   <br />
                   <span className="text-gray-800">Your Journey</span>
                 </h1>
-                
-                                  <p className="text-lg md:text-xl text-gray-600 max-w-xl leading-relaxed">
-                    Premium car rental service available 24/7 across Moldova. 
-                    <span className="text-blue-600 font-medium"> Start your journey today.</span>
-                  </p>
+
+                <p className="text-lg md:text-xl text-gray-600 max-w-xl leading-relaxed">
+                  Premium car rental service available 24/7 across Moldova.
+                  <span className="text-blue-600 font-medium"> Start your journey today.</span>
+                </p>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                   Get Started
                 </button>
-                <button className="px-8 py-4 border-2 border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105">
+                <button
+                  className="px-8 py-4 border-2 border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105"
+                  onClick={() => navigate('/cars')}
+                >
+
                   Browse Cars
                 </button>
               </div>
@@ -98,7 +106,7 @@ export const Hero: React.FC = () => {
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <div 
+                  <div
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => setShowLocationDropdown(!showLocationDropdown)}
                   >
@@ -109,11 +117,11 @@ export const Hero: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
+
                   {/* Dropdown */}
                   <AnimatePresence>
                     {showLocationDropdown && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -121,7 +129,7 @@ export const Hero: React.FC = () => {
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
                       >
                         <div className="py-1">
-                          <div 
+                          <div
                             className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-200 transition-colors"
                             onClick={() => {
                               handleInputChange('pickupLocation', 'Chisinau Airport');
@@ -130,7 +138,7 @@ export const Hero: React.FC = () => {
                           >
                             Chisinau Airport
                           </div>
-                          <div 
+                          <div
                             className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-200 transition-colors"
                             onClick={() => {
                               handleInputChange('pickupLocation', 'Chisinau');
@@ -156,7 +164,7 @@ export const Hero: React.FC = () => {
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <div 
+                  <div
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => setShowPickupCalendar(!showPickupCalendar)}
                   >
@@ -167,11 +175,11 @@ export const Hero: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
+
                   {/* Pickup Calendar Dropdown */}
                   <AnimatePresence>
                     {showPickupCalendar && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -216,13 +224,11 @@ export const Hero: React.FC = () => {
                           {generateCalendarDays(new Date(bookingForm.pickupDate)).map((day, index) => (
                             <div
                               key={index}
-                              className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded hover:bg-gray-100 transition-colors ${
-                                day ? 'text-gray-700' : 'text-gray-300'
-                              } ${
-                                day && isSameDay(new Date(day), new Date(bookingForm.pickupDate)) 
-                                  ? 'bg-blue-500 text-white hover:bg-blue-600 font-medium' 
+                              className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded hover:bg-gray-100 transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
+                                } ${day && isSameDay(new Date(day), new Date(bookingForm.pickupDate))
+                                  ? 'bg-blue-500 text-white hover:bg-blue-600 font-medium'
                                   : ''
-                              }`}
+                                }`}
                               onClick={() => {
                                 if (day) {
                                   handleInputChange('pickupDate', day);
@@ -250,7 +256,7 @@ export const Hero: React.FC = () => {
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <div 
+                  <div
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => setShowReturnCalendar(!showReturnCalendar)}
                   >
@@ -261,11 +267,11 @@ export const Hero: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
+
                   {/* Return Calendar Dropdown */}
                   <AnimatePresence>
                     {showReturnCalendar && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -310,13 +316,11 @@ export const Hero: React.FC = () => {
                           {generateCalendarDays(new Date(bookingForm.returnDate)).map((day, index) => (
                             <div
                               key={index}
-                              className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded hover:bg-gray-100 transition-colors ${
-                                day ? 'text-gray-700' : 'text-gray-300'
-                              } ${
-                                day && isSameDay(new Date(day), new Date(bookingForm.returnDate)) 
-                                  ? 'bg-blue-500 text-white hover:bg-blue-600 font-medium' 
+                              className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded hover:bg-gray-100 transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
+                                } ${day && isSameDay(new Date(day), new Date(bookingForm.returnDate))
+                                  ? 'bg-blue-500 text-white hover:bg-blue-600 font-medium'
                                   : ''
-                              }`}
+                                }`}
                               onClick={() => {
                                 if (day) {
                                   handleInputChange('returnDate', day);
@@ -370,10 +374,10 @@ export const Hero: React.FC = () => {
     const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
+
     const days: (string | null)[] = [];
     const currentDate = new Date(startDate);
-    
+
     for (let i = 0; i < 42; i++) {
       if (currentDate.getMonth() === month) {
         days.push(currentDate.toISOString().split('T')[0]);
@@ -382,13 +386,13 @@ export const Hero: React.FC = () => {
       }
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return days;
   }
 
   function isSameDay(date1: Date, date2: Date): boolean {
     return date1.getFullYear() === date2.getFullYear() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getDate() === date2.getDate();
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate();
   }
 };
