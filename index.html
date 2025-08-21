@@ -8,11 +8,376 @@
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <link href="tailwind.css" rel="stylesheet" />
-  <link href="tailwind.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/node_modules/flag-icons/css/flag-icons.min.css">
+  
+  <!-- Google Translate -->
+  <script type="text/javascript">
+    var gtInitialized = false;
+    var gtWidget = null;
+    
+    function googleTranslateElementInit() {
+      gtWidget = new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,ru,ro',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element');
+      
+      // Mark as initialized after a delay
+      setTimeout(function() {
+        gtInitialized = true;
+        console.log('Google Translate initialized');
+      }, 2000);
+    }
+
+    // Global function to change language - improved version
+    function changeLanguage(targetLang) {
+      console.log('changeLanguage called with:', targetLang);
+      
+      if (!gtInitialized) {
+        console.log('Google Translate not initialized yet, retrying...');
+        setTimeout(function() {
+          changeLanguage(targetLang);
+        }, 1000);
+        return;
+      }
+
+      // Get current language from URL or default to 'en'
+      var currentLang = getCookieValue('googtrans') || '/en/en';
+      var newLang = '/en/' + targetLang;
+      
+      console.log('Current language:', currentLang);
+      console.log('Target language:', newLang);
+
+      // Set the cookie directly
+      setCookie('googtrans', newLang);
+      
+      // Reload the page to apply translation
+      window.location.reload();
+    }
+
+    // Helper function to get cookie value
+    function getCookieValue(name) {
+      var value = "; " + document.cookie;
+      var parts = value.split("; " + name + "=");
+      if (parts.length == 2) return parts.pop().split(";").shift();
+      return null;
+    }
+
+    // Helper function to set cookie
+    function setCookie(name, value) {
+      document.cookie = name + "=" + value + "; path=/; domain=" + window.location.hostname;
+    }
+
+    // Remove Google Translate overlay programmatically
+    function removeGoogleTranslateOverlay() {
+      // Remove all banner frames aggressively
+      var bannerFrames = document.querySelectorAll('.goog-te-banner-frame, .goog-te-banner-frame.skiptranslate');
+      bannerFrames.forEach(function(frame) {
+        frame.remove();
+      });
+      
+      // Remove any Google Translate iframes
+      var iframes = document.querySelectorAll('iframe[src*="translate.google"], iframe[src*="translate.goog"], iframe[name*="goog-te"]');
+      iframes.forEach(function(iframe) {
+        iframe.remove();
+      });
+      
+      // Remove floating tab
+      var ftabs = document.querySelectorAll('.goog-te-ftab');
+      ftabs.forEach(function(ftab) {
+        ftab.remove();
+      });
+      
+      // Reset body and html positioning
+      document.body.style.top = '0px';
+      document.body.style.marginTop = '0px';
+      document.body.style.paddingTop = '0px';
+      document.documentElement.style.marginTop = '0px';
+      document.documentElement.style.paddingTop = '0px';
+      
+      // Remove any divs with Google Translate IDs or classes
+      var gtElements = document.querySelectorAll('div[id*="goog-gt-"], div[class*="goog-te"], div[style*="translate.google"]');
+      gtElements.forEach(function(element) {
+        element.remove();
+      });
+      
+      // Remove any elements positioned at top that might be Google Translate
+      var topElements = document.querySelectorAll('div[style*="position: fixed"][style*="top: 0"]');
+      topElements.forEach(function(element) {
+        if (element.innerHTML && (element.innerHTML.indexOf('translate') !== -1 || element.innerHTML.indexOf('google') !== -1)) {
+          element.remove();
+        }
+      });
+    }
+
+    // Run overlay removal immediately and continuously
+    removeGoogleTranslateOverlay();
+    setInterval(removeGoogleTranslateOverlay, 10);
+    
+    // Also run on page load and DOM changes
+    document.addEventListener('DOMContentLoaded', removeGoogleTranslateOverlay);
+    window.addEventListener('load', removeGoogleTranslateOverlay);
+    
+    // Run immediately when script loads
+    (function() {
+      removeGoogleTranslateOverlay();
+      setTimeout(removeGoogleTranslateOverlay, 100);
+      setTimeout(removeGoogleTranslateOverlay, 500);
+      setTimeout(removeGoogleTranslateOverlay, 1000);
+    })();
+    
+    // Additional aggressive hiding - run before Google Translate loads
+    (function() {
+      // Hide any existing Google Translate elements
+      removeGoogleTranslateOverlay();
+      
+      // Override Google Translate's internal functions
+      if (typeof google !== 'undefined' && google.translate) {
+        // Override the banner creation
+        var originalCreateBanner = google.translate.TranslateElement.prototype.createBanner;
+        if (originalCreateBanner) {
+          google.translate.TranslateElement.prototype.createBanner = function() {
+            // Don't create banner at all
+            return null;
+          };
+        }
+      }
+      
+      // Monitor for Google Translate elements and hide them immediately
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.addedNodes) {
+            mutation.addedNodes.forEach(function(node) {
+              if (node.nodeType === 1) {
+                // Check if it's a Google Translate element
+                if (node.className && (
+                  node.className.indexOf('goog-te') !== -1 ||
+                  node.className.indexOf('goog-gt') !== -1
+                )) {
+                  // Hide it immediately
+                  node.style.display = 'none';
+                  node.style.visibility = 'hidden';
+                  node.style.height = '0';
+                  node.style.overflow = 'hidden';
+                  
+                  // Also remove it from DOM
+                  if (node.parentNode) {
+                    node.parentNode.removeChild(node);
+                  }
+                }
+                
+                // Check innerHTML for Google Translate content
+                if (node.innerHTML && (
+                  node.innerHTML.indexOf('translate.google') !== -1 ||
+                  node.innerHTML.indexOf('goog-te') !== -1 ||
+                  node.innerHTML.indexOf('Translated to:') !== -1
+                )) {
+                  node.style.display = 'none';
+                  node.style.visibility = 'hidden';
+                  if (node.parentNode) {
+                    node.parentNode.removeChild(node);
+                  }
+                }
+              }
+            });
+          }
+        });
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    })();
+    
+
+    
+    // Nuclear option - override Google Translate's banner creation
+    if (typeof google !== 'undefined' && google.translate) {
+      var originalTranslateElement = google.translate.TranslateElement;
+      google.translate.TranslateElement = function(options, element) {
+        // Prevent banner from showing
+        options.autoDisplay = false;
+        options.layout = google.translate.TranslateElement.InlineLayout.SIMPLE;
+        
+        // Call original but immediately hide banner
+        var result = originalTranslateElement.call(this, options, element);
+        
+        // Hide banner immediately after creation
+        setTimeout(function() {
+          removeGoogleTranslateOverlay();
+        }, 0);
+        
+        return result;
+      };
+    }
+
+    // Enhanced multi-language banner hiding
+    function hideAllLanguageBanners() {
+      // Target all possible Google Translate banner elements
+      var selectors = [
+        '.goog-te-banner-frame',
+        '.goog-te-banner-frame.skiptranslate',
+        '.goog-te-ftab',
+        '.goog-te-menu-frame',
+        '.goog-te-balloon-frame',
+        'iframe[name="goog-te-banner-frame"]',
+        'iframe[src*="translate.google"]',
+        'div[style*="position: fixed"][style*="top: 0"]',
+        'div[style*="z-index: 1000"]',
+        'div[style*="z-index: 9999"]',
+        'div[style*="background: white"]',
+        'div[style*="background-color: white"]'
+      ];
+      
+      selectors.forEach(function(selector) {
+        var elements = document.querySelectorAll(selector);
+        elements.forEach(function(element) {
+          if (element.innerHTML && (
+            element.innerHTML.indexOf('translate') !== -1 ||
+            element.innerHTML.indexOf('google') !== -1 ||
+            element.innerHTML.indexOf('goog-te') !== -1 ||
+            element.innerHTML.indexOf('goog-gt') !== -1 ||
+            // English
+            element.innerHTML.indexOf('Translated to:') !== -1 ||
+            element.innerHTML.indexOf('Show original') !== -1 ||
+            element.innerHTML.indexOf('Options') !== -1 ||
+            // Russian
+            element.innerHTML.indexOf('Переведено на:') !== -1 ||
+            element.innerHTML.indexOf('Показать оригинал') !== -1 ||
+            element.innerHTML.indexOf('Параметры') !== -1 ||
+            // Romanian
+            element.innerHTML.indexOf('Tradus în:') !== -1 ||
+            element.innerHTML.indexOf('Arată originalul') !== -1 ||
+            element.innerHTML.indexOf('Opțiuni') !== -1
+          )) {
+            element.style.display = 'none';
+            element.style.visibility = 'hidden';
+            element.style.height = '0';
+            element.style.overflow = 'hidden';
+            if (element.parentNode) {
+              element.parentNode.removeChild(element);
+            }
+          }
+        });
+      });
+    }
+
+    // Run enhanced hiding continuously
+    setInterval(hideAllLanguageBanners, 50);
+
+    // Additional aggressive hiding - run before Google Translate loads
+    (function() {
+      // Hide any existing Google Translate elements
+      removeGoogleTranslateOverlay();
+      
+      // Override Google Translate's internal functions
+      if (typeof google !== 'undefined' && google.translate) {
+        // Override the banner creation
+        var originalCreateBanner = google.translate.TranslateElement.prototype.createBanner;
+        if (originalCreateBanner) {
+          google.translate.TranslateElement.prototype.createBanner = function() {
+            // Don't create banner at all
+            return null;
+          };
+        }
+      }
+      
+      // Monitor for Google Translate elements and hide them immediately
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.addedNodes) {
+            mutation.addedNodes.forEach(function(node) {
+              if (node.nodeType === 1) {
+                // Check if it's a Google Translate element
+                if (node.className && (
+                  node.className.indexOf('goog-te') !== -1 ||
+                  node.className.indexOf('goog-gt') !== -1
+                )) {
+                  // Hide it immediately
+                  node.style.display = 'none';
+                  node.style.visibility = 'hidden';
+                  node.style.height = '0';
+                  node.style.overflow = 'hidden';
+                  
+                  // Also remove it from DOM
+                  if (node.parentNode) {
+                    node.parentNode.removeChild(node);
+                  }
+                }
+                
+                // Check innerHTML for Google Translate content
+                if (node.innerHTML && (
+                  node.innerHTML.indexOf('translate.google') !== -1 ||
+                  node.innerHTML.indexOf('goog-te') !== -1 ||
+                  node.innerHTML.indexOf('Translated to:') !== -1
+                )) {
+                  node.style.display = 'none';
+                  node.style.visibility = 'hidden';
+                  if (node.parentNode) {
+                    node.parentNode.removeChild(node);
+                  }
+                }
+              }
+            });
+          }
+        });
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    })();
+  </script>
+  
+  <!-- Simple Language Switcher -->
+  <script type="text/javascript">
+    // Simple function to handle language changes
+    function changeLanguage(targetLang) {
+      console.log('Language changed to:', targetLang);
+      
+      // Store language preference
+      localStorage.setItem('selectedLanguage', targetLang);
+      
+      // Update the current language display
+      if (window.updateLanguageDisplay) {
+        window.updateLanguageDisplay(targetLang);
+      }
+    }
+    
+    // Function to get current language
+    function getCurrentLanguage() {
+      return localStorage.getItem('selectedLanguage') || 'en';
+    }
+    
+    // Set English as default language on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!localStorage.getItem('selectedLanguage')) {
+        localStorage.setItem('selectedLanguage', 'en');
+      }
+    });
+  </script>
+
+  
+  <style>
+    * {
+      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    
+
+  </style>
 </head>
 
-<body>
+<body class="font-sans">
   <div id="app"></div>
+  
+
+  
   <script type="module" src="./src/index.tsx"></script>
 </body>
 
