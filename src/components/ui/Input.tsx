@@ -19,7 +19,7 @@ export const Input: React.FC<InputProps> = ({ label, error, className, ...props 
         whileFocus={{ scale: 1.02 }}
         transition={{ duration: 0.2 }}
         className={cn(
-          'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
+          'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-500 focus:border-theme-500 transition-colors',
           error && 'border-red-500 focus:ring-red-500 focus:border-red-500',
           className
         )}

@@ -53,7 +53,7 @@ export const Contact: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+      <section className="relative py-20 bg-gradient-to-r from-theme-500 to-theme-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={staggerContainer}
@@ -95,7 +95,7 @@ export const Contact: React.FC = () => {
                     transition={{ duration: 0.2 }}
                     className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
                   >
-                    <info.icon className="w-8 h-8 text-blue-600" />
+                    <info.icon className="w-8 h-8 text-theme-500" />
                   </motion.div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">
                     {info.title}
@@ -176,7 +176,7 @@ export const Contact: React.FC = () => {
                       placeholder="Tell us more about your inquiry..."
                       value={formData.message}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('message', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-500 focus:border-theme-500 transition-colors"
                       required
                     />
                   </div>

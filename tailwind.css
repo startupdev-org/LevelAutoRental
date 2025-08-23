@@ -194,5 +194,19 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Prevent white background on overscroll */
+    background-color: transparent !important;
+    overscroll-behavior: none;
+    /* Add gradient background */
+    background: 
+      linear-gradient(135deg, #f3f4f6 0%, #f9fafb 25%, #fef2f2 50%, #f9fafb 75%, #f3f4f6 100%) !important;
+    background-size: 100% 400vh !important;
+    background-repeat: repeat-y !important;
+  }
+
+  html {
+    /* Prevent white background on overscroll */
+    background-color: transparent !important;
+    overscroll-behavior: none;
   }
 }

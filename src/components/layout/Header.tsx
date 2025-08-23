@@ -53,7 +53,8 @@ export const Header: React.FC = () => {
   React.useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 100); // Change background after 100px scroll
+      const heroHeight = window.innerHeight; // Hero section height
+      setIsScrolled(scrollPosition > heroHeight); // Change background after passing hero
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -102,7 +103,7 @@ export const Header: React.FC = () => {
       transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${
         isScrolled 
-          ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-100' 
+          ? 'bg-white shadow-lg border-b border-gray-200' 
           : 'bg-transparent shadow-none border-transparent'
       }`}
     >
@@ -115,7 +116,9 @@ export const Header: React.FC = () => {
               alt="Level Auto Rental Logo" 
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.3 }}
-              className="w-[250px] h-auto"
+              className={`w-[250px] h-auto transition-all duration-300 ${
+                isScrolled ? '' : 'brightness-0 invert'
+              }`}
             />
           </Link>
 
@@ -125,7 +128,7 @@ export const Header: React.FC = () => {
               <button
                 key={item.name}
                 onClick={() => handleNavigate(item.href)}
-                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-blue-50 hover:text-blue-600 ${isActive(item.href) ? 'text-blue-600 bg-blue-50' : 'text-gray-700'}`}
+                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-theme-50 hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500 bg-theme-50' : isScrolled ? 'text-gray-700' : 'text-white'}`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 {item.name}
@@ -135,12 +138,12 @@ export const Header: React.FC = () => {
 
           {/* Right Side Actions */}
           <div className="hidden lg:flex items-center space-x-4">
-            <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+            <button className={`px-4 py-2 text-sm font-medium transition-colors ${isScrolled ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:text-theme-300'}`}>
               Become a renter
             </button>
             
             <Button 
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               Login
             </Button>
@@ -149,10 +152,10 @@ export const Header: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-50"
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${isScrolled ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:bg-white/20'}`}
               >
                 <span className={`fi ${currentLanguage === 'en' ? 'fi-gb' : currentLanguage === 'ru' ? 'fi-ru' : 'fi-ro'} text-base w-6 h-6 flex items-center justify-center overflow-hidden`}></span>
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-colors duration-300 ${isScrolled ? 'text-gray-400' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -169,21 +172,21 @@ export const Header: React.FC = () => {
                   >
                     <div className="py-1">
                       <button 
-                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2 transition-colors"
+                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
                         onClick={() => translatePage('en')}
                       >
                         <span className="fi fi-gb text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
                         <span>English</span>
                       </button>
                       <button 
-                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2 transition-colors"
+                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
                         onClick={() => translatePage('ru')}
                       >
                         <span className="fi fi-ru text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
                         <span>Русский</span>
                       </button>
                       <button 
-                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2 transition-colors"
+                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
                         onClick={() => translatePage('ro')}
                       >
                         <span className="fi fi-ro text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
@@ -201,7 +204,7 @@ export const Header: React.FC = () => {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+              className={`p-2 rounded-md transition-colors ${isScrolled ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' : 'text-white hover:text-theme-300 hover:bg-white/20'}`}
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </motion.button>
@@ -223,7 +226,7 @@ export const Header: React.FC = () => {
                   setIsMenuOpen(false);
                   handleNavigate(item.href);
                 }}
-                className={`block w-full text-left text-base font-medium transition-colors hover:text-blue-600 ${isActive(item.href) ? 'text-blue-600' : 'text-gray-700'}`}
+                className={`block w-full text-left text-base font-medium transition-colors hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500' : isScrolled ? 'text-gray-700' : 'text-white'}`}
                 style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
                 {item.name}

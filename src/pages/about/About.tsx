@@ -36,7 +36,7 @@ export const About: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+      <section className="relative py-20 bg-gradient-to-r from-theme-500 to-theme-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={staggerContainer}
@@ -81,7 +81,7 @@ export const About: React.FC = () => {
                   transition={{ duration: 0.2 }}
                   className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
                 >
-                  <stat.icon className="w-8 h-8 text-blue-600" />
+                  <stat.icon className="w-8 h-8 text-theme-500" />
                 </motion.div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {stat.value}
@@ -181,7 +181,7 @@ export const About: React.FC = () => {
                     transition={{ duration: 0.2 }}
                     className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6"
                   >
-                    <value.icon className="w-8 h-8 text-blue-600" />
+                    <value.icon className="w-8 h-8 text-theme-500" />
                   </motion.div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">
                     {value.title}

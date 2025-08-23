@@ -100,7 +100,7 @@ export const Cars: React.FC = () => {
                   setFuelType("any");
                   setSeatRange([2, 9]);
                 }}
-                className="text-blue-600 hover:text-blue-800"
+                className="text-theme-500 hover:text-theme-700"
               >
                 Reset All
               </Button>

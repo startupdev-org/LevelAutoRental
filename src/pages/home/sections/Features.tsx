@@ -32,59 +32,46 @@ export const Features: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 bg-white mt-20">
+    <section className="py-20 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left: Featured car with subtle map-like backdrop and floating cards */}
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            animate={isInView ? "animate" : "initial"}
-            className="relative"
+        {/* Header Section */}
+        <motion.div
+          ref={ref}
+          variants={staggerContainer}
+          initial="initial"
+          animate={isInView ? "animate" : "initial"}
+          className="text-center mb-16"
+        >
+          <motion.span
+            variants={fadeInUp}
+            className="text-sm font-semibold tracking-wider text-red-500 uppercase bg-gradient-to-r from-red-500 to-red-600 bg-clip-text"
+            id="why-choose-us"
           >
-            <img
-              src="/audi.png"
-              alt="Featured car"
-              className="w-full max-w-xl md:max-w-2xl h-auto select-none pointer-events-none drop-shadow-[0_35px_45px_rgba(0,0,0,0.35)] lg:-mr-10 mt-20"
-            />
-          </motion.div>
-
-          {/* Right: Headline and reasons */}
-          <motion.div
-            ref={ref}
-            variants={staggerContainer}
-            initial="initial"
-            animate={isInView ? "animate" : "initial"}
-            className="lg:pl-6"
+            Why choose us
+          </motion.span>
+          <motion.h2
+            variants={fadeInUp}
+            className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
           >
-            <motion.span
-              variants={fadeInUp}
-              className="text-sm font-semibold tracking-wider text-gray-400 uppercase"
-              id="why-choose-us"
-            >
-              Why choose us
-            </motion.span>
-            <motion.h2
-              variants={fadeInUp}
-              className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight"
-            >
-              We offer the best experience with our rental deals
-            </motion.h2>
+            We offer the best experience with our rental deals
+          </motion.h2>
+        </motion.div>
 
-            <div className="mt-8 space-y-6">
-              {features.map((feature) => (
-                <motion.div key={feature.title} variants={fadeInUp} className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
-                    <feature.icon className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-gray-900">{feature.title}</div>
-                    <div className="text-gray-600 text-sm max-w-md">{feature.description}</div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {features.map((feature) => (
+            <motion.div 
+              key={feature.title} 
+              variants={fadeInUp} 
+              className="text-center"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <feature.icon className="w-8 h-8 text-red-600" />
+              </div>
+              <div className="text-xl font-semibold text-gray-800 mb-3">{feature.title}</div>
+              <div className="text-gray-600 text-sm leading-relaxed">{feature.description}</div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

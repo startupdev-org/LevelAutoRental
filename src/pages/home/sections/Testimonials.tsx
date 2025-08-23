@@ -29,7 +29,7 @@ export const Testimonials: React.FC = () => {
   const currentTestimonial = testimonials[currentIndex];
 
   return (
-    <section className="py-20 bg-white mt-20">
+    <section className="py-20 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           ref={ref}
@@ -66,7 +66,7 @@ export const Testimonials: React.FC = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={prevTestimonial}
-              className="hidden md:flex w-10 h-10 bg-white rounded-full shadow-md items-center justify-center text-gray-600 hover:text-blue-500 hover:shadow-lg"
+                              className="hidden md:flex w-10 h-10 bg-white rounded-full shadow-md items-center justify-center text-gray-600 hover:text-theme-500 hover:shadow-lg"
               style={{ top: '60%', transform: 'translateY(-60%)' }}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -77,7 +77,7 @@ export const Testimonials: React.FC = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={nextTestimonial}
-              className="hidden md:flex w-10 h-10 bg-blue-500 text-white rounded-full shadow-md items-center justify-center hover:bg-blue-600"
+                              className="hidden md:flex w-10 h-10 bg-theme-500 text-white rounded-full shadow-md items-center justify-center hover:bg-theme-600"
               style={{ top: '60%', transform: 'translateY(-60%)' }}
             >
               <ChevronRight className="w-5 h-5" />
@@ -125,7 +125,7 @@ export const Testimonials: React.FC = () => {
                       <button
                         key={index}
                         onClick={() => setCurrentIndex(index)}
-                        className={`${index === currentIndex ? 'w-10 bg-blue-500' : 'w-6 bg-gray-300'} h-1 rounded-full transition-all`}
+                        className={`${index === currentIndex ? 'w-10 bg-theme-500' : 'w-6 bg-gray-300'} h-1 rounded-full transition-all`}
                         aria-label={`Go to testimonial ${index + 1}`}
                       />
                     ))}

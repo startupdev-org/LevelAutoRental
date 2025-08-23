@@ -8,13 +8,17 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 
 export const Booking: React.FC = () => {
+  const todayDate = new Date();
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(todayDate.getDate() + 1);
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState({
     // Step 1: Rental Details
     pickupLocation: '',
     returnLocation: '',
-    pickupDate: '',
-    returnDate: '',
+    pickupDate: todayDate.toISOString().split('T')[0],
+    returnDate: tomorrowDate.toISOString().split('T')[0],
     pickupTime: '',
     returnTime: '',
 
@@ -109,13 +113,13 @@ export const Booking: React.FC = () => {
                 className="flex items-center"
               >
                 <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${currentStep >= step.number
-                    ? 'bg-blue-600 border-blue-600 text-white'
+                    ? 'bg-theme-500 border-theme-500 text-white'
                     : 'bg-white border-gray-300 text-gray-400'
                   }`}>
                   <step.icon className="w-6 h-6" />
                 </div>
                 <div className="ml-3 hidden sm:block">
-                  <p className={`text-sm font-medium ${currentStep >= step.number ? 'text-blue-600' : 'text-gray-400'
+                  <p className={`text-sm font-medium ${currentStep >= step.number ? 'text-theme-500' : 'text-gray-400'
                     }`}>
                     Step {step.number}
                   </p>
@@ -125,7 +129,7 @@ export const Booking: React.FC = () => {
                   </p>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 ml-4 ${currentStep > step.number ? 'bg-blue-600' : 'bg-gray-300'
+                  <div className={`w-16 h-0.5 ml-4 ${currentStep > step.number ? 'bg-theme-500' : 'bg-gray-300'
                     }`} />
                 )}
               </motion.div>
@@ -224,7 +228,7 @@ export const Booking: React.FC = () => {
                       key={car}
                       whileHover={{ scale: 1.02 }}
                       className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${bookingData.selectedCar === `car-${car}`
-                          ? 'border-blue-600 bg-blue-50'
+                          ? 'border-theme-500 bg-theme-50'
                           : 'border-gray-200 hover:border-gray-300'
                         }`}
                       onClick={() => handleInputChange('selectedCar', `car-${car}`)}
@@ -236,7 +240,7 @@ export const Booking: React.FC = () => {
                       />
                       <h3 className="font-semibold text-gray-900">Toyota Corolla</h3>
                       <p className="text-gray-600 text-sm">Economy • 5 seats • Automatic</p>
-                      <p className="text-lg font-bold text-blue-600 mt-2">$35/day</p>
+                      <p className="text-lg font-bold text-theme-500 mt-2">$35/day</p>
                     </motion.div>
                   ))}
                 </div>

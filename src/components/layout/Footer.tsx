@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
             className="space-y-4"
           >
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                              <div className="w-8 h-8 bg-theme-500 rounded-lg flex items-center justify-center">
                 <Car className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold">Level Auto Rental</span>
@@ -123,7 +123,7 @@ export const Footer: React.FC = () => {
                 href={social.href}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-blue-600 transition-colors"
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-theme-500 transition-colors"
                 aria-label={social.label}
               >
                 <social.icon className="w-4 h-4" />
