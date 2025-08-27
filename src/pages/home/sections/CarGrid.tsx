@@ -17,93 +17,138 @@ export const CarGrid: React.FC = () => {
   const cars: Car[] = [
     {
       id: 1,
-      name: "Toyota Rav 4",
-      year: 2025,
-      image: "https://hips.hearstapps.com/hmg-prod/images/2025-toyota-rav4-101-6707e09a230c3.jpg?crop=0.946xw:0.883xh;0,0.117xh&resize=2048:*",
-      rating: 4.7,
-      reviews: 134,
+      name: "Mercedes-AMG C43",
+      year: 2018,
+      image: "/cars/c43/c43-1.jpg",
+      photoGallery: [
+        "/cars/c43/c43-1.jpg",
+        "/cars/c43/c43-2.jpg",
+        "/cars/c43/c43-3.jpg",
+        "/cars/c43/c43-4.jpg",
+        "/cars/c43/c43-5.jpg"
+      ],
+      rating: 4.9,
+      reviews: 156,
       seats: 5,
       transmission: "Automatic",
       fuelType: "gasoline",
-      pricePerDay: 42,
-      category: 'suv',
-      features: ["Air Conditioning", "Bluetooth", "USB Ports"],
+      pricePerDay: 280,
+      category: 'luxury',
+      features: ["V6 BiTurbo 3.0L", "4MATIC AWD", "Sport-Lux Interior"],
+      mileage: 45000,
+      fuelConsumption: 18,
+      drivetrain: "AWD",
+      availability: "Liber de 2 septembrie, 14:00"
     },
     {
       id: 2,
-      name: "Honda Civic",
-      year: 2025,
-      image: "https://hips.hearstapps.com/hmg-prod/images/2025-honda-civic-si-113-66e83d9bc4d8a.jpg?crop=1xw:1xh;center,top&resize=980:*",
-      rating: 4.6,
-      reviews: 98,
-      seats: 5,
-      transmission: "Manual",
+      name: "Mercedes GLE",
+      year: 2021,
+      image: "/cars/gle/gle-1.jpg",
+      photoGallery: [
+        "/cars/gle/gle-1.jpg",
+        "/cars/gle/gle-2.jpg",
+        "/cars/gle/gle-3.jpg",
+        "/cars/gle/gle-4.jpg",
+        "/cars/gle/gle-5.jpg"
+      ],
+      rating: 4.8,
+      reviews: 134,
+      seats: 7,
+      transmission: "Automatic",
       fuelType: "gasoline",
-      pricePerDay: 39,
-      category: 'compact',
-      features: ["Air Conditioning", "Backup Camera", "Bluetooth"],
+      pricePerDay: 420,
+      category: 'luxury',
+      features: ["Motor Benzină 2.0L", "Interior Premium", "Design Imponător"],
+      mileage: 68000,
+      fuelConsumption: 22,
+      drivetrain: "AWD",
+      availability: "Liber de 5 septembrie, 10:00"
     },
     {
       id: 3,
-      name: "BMW 3 Series",
-      year: 2021,
-      image: "https://hips.hearstapps.com/hmg-prod/images/2021-bmw-3-series-mmp-1-1593549868.jpg?crop=0.865xw:0.811xh;0.0304xw,0.0960xh&resize=2048:*",
-      rating: 4.8,
-      reviews: 145,
-      seats: 5,
+      name: "Mercedes CLS",
+      year: 2022,
+      image: "/cars/cls/cls-1.jpg",
+      photoGallery: [
+        "/cars/cls/cls-1.jpg",
+        "/cars/cls/cls-2.jpg",
+        "/cars/cls/cls-3.jpg",
+        "/cars/cls/cls-4.jpg",
+        "/cars/cls/cls-6.jpg"
+      ],
+      rating: 4.9,
+      reviews: 187,
+      seats: 4,
       transmission: "Automatic",
       fuelType: "diesel",
-      category: 'compact',
-      pricePerDay: 72,
-      features: []
+      pricePerDay: 380,
+      category: 'luxury',
+      features: ["Motor 3.0 Diesel", "Interior Luxos Premium", "Confort Exclusiv"],
+      mileage: 52000,
+      fuelConsumption: 16,
+      drivetrain: "RWD"
     },
     {
       id: 4,
-      name: "Ford Focus",
-      year: 2018,
-      image: "https://hips.hearstapps.com/hmg-prod/amv-prod-cad-assets/wp-content/uploads/2016/10/2016-Ford-Focus-RS-106.jpg?resize=980:*",
-      rating: 4.5,
-      reviews: 76,
+      name: "Maserati Ghibli",
+      year: 2017,
+      image: "/cars/maserati/maserati-1.jpg",
+      photoGallery: [
+        "/cars/maserati/maserati-1.jpg",
+        "/cars/maserati/maserati-2.jpg",
+        "/cars/maserati/maserati-3.jpg",
+        "/cars/maserati/maserati-4.jpg",
+        "/cars/maserati/maserati-5.jpg"
+      ],
+      rating: 4.9,
+      reviews: 203,
       seats: 5,
-      transmission: "Manual",
-      fuelType: "petrol",
-      category: 'compact',
-      pricePerDay: 35,
-      features: []
+      transmission: "Automatic",
+      fuelType: "gasoline",
+      pricePerDay: 520,
+      category: 'luxury',
+      features: ["Motor V6 3.0", "Interior Premium Piele", "Ocazii Speciale"],
+      mileage: 78000,
+      fuelConsumption: 25,
+      drivetrain: "RWD",
+      availability: "Liber de 8 septembrie, 16:00"
     },
   ];
 
 
   return (
-    <section className="py-16 mt-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 pb-32 ">
+      <div className="max-w-[1450px] mx-auto px-8 sm:px-12 lg:px-16">
+        {/* Header Section */}
         <motion.div
           ref={ref}
           variants={staggerContainer}
           initial="initial"
           animate={isInView ? "animate" : "initial"}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
           <motion.span
             variants={fadeInUp}
-            className="text-sm font-semibold tracking-wider text-gray-400 uppercase"
+            className="text-sm font-semibold tracking-wider text-transparent bg-gradient-to-r from-red-500 to-red-600 bg-clip-text uppercase"
             id="popular-cars"
           >
-            Popular Cars
+            Mașini Populare
           </motion.span>
           <motion.h2
             variants={fadeInUp}
-            className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight"
+            className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
           >
-            Most popular cars rental deals
+            Cele mai populare oferte de închirieri auto
           </motion.h2>
         </motion.div>
 
+        {/* Features Grid */}
         <motion.div
           variants={staggerContainer}
           initial="initial"
           animate={isInView ? "animate" : "initial"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
         >
           {cars.map((car, index) => (
             <CarCard key={car.name} car={car} index={index} />
@@ -114,12 +159,12 @@ export const CarGrid: React.FC = () => {
           variants={fadeInUp}
           initial="initial"
           animate={isInView ? "animate" : "initial"}
-          className="text-center mt-12"
+          className="text-center mt-16"
         >
-          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-3xl"
+          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-2xl border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300"
             onClick={() => navigate('/cars')}
           >
-            Show All Vehicles
+            Vezi Toate Vehiculele
             <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.div>

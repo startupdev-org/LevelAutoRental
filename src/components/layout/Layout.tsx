@@ -13,9 +13,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         <motion.main
           key={location.pathname}
           variants={pageTransition}

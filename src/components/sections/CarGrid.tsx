@@ -73,7 +73,7 @@ export const CarGrid: React.FC = () => {
 
 
   return (
-    <section className="py-16 mt-40">
+    <section className="py-16 mt-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           ref={ref}
@@ -84,14 +84,14 @@ export const CarGrid: React.FC = () => {
         >
           <motion.span
             variants={fadeInUp}
-            className="text-sm font-semibold tracking-wider text-gray-400 uppercase"
+            className="text-sm font-semibold tracking-wider text-transparent bg-gradient-to-r from-red-500 to-red-600 bg-clip-text uppercase"
             id="popular-cars"
           >
             Popular Cars
           </motion.span>
           <motion.h2
             variants={fadeInUp}
-            className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight"
+            className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
           >
             Most popular cars rental deals
           </motion.h2>
@@ -114,7 +114,7 @@ export const CarGrid: React.FC = () => {
           animate={isInView ? "animate" : "initial"}
           className="text-center mt-12"
         >
-          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-3xl">
+          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-3xl border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300">
             Show All Vehicles
             <ArrowRight className="w-4 h-4" />
           </Button>

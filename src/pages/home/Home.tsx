@@ -3,13 +3,15 @@ import { CarGrid } from "./sections/CarGrid";
 import { Features } from "./sections/Features";
 import { Hero } from "./sections/Hero";
 import { Testimonials } from "./sections/Testimonials";
+import { LogoMarquee } from "../../components/sections/LogoMarquee";
 
 export const Home: React.FC = () => {
   return (
     <div>
       <Hero />
-      <Features />
+      <LogoMarquee />
       <CarGrid />
+      <Features />
       <Testimonials />
     </div>
   );

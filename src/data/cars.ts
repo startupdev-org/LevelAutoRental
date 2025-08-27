@@ -3,17 +3,24 @@ import { Car } from '../types';
 export const cars: Car[] = [
   {
     id: 1,
-    name: 'Toyota Corolla',
-    category: 'economy',
-    image: 'https://images.pexels.com/photos/116675/pexels-photo-116675.jpeg?auto=compress&cs=tinysrgb&w=800',
-    pricePerDay: 35,
-    year: 2020,
+    name: 'Mercedes-AMG C43',
+    category: 'luxury',
+    image: '/public/cars/c43/c43-1.jpg',
+    photoGallery: [
+      '/public/cars/c43/c43-1.jpg',
+      '/public/cars/c43/c43-2.jpg',
+      '/public/cars/c43/c43-3.jpg',
+      '/public/cars/c43/c43-4.jpg',
+      '/public/cars/c43/c43-5.jpg'
+    ],
+    pricePerDay: 280,
+    year: 2023,
     seats: 5,
-    transmission: 'Manual',
+    transmission: 'Automatic',
     fuelType: 'gasoline',
-    features: ['Air Conditioning', 'Bluetooth', 'USB Ports'],
-    rating: 4.5,
-    reviews: 128
+    features: ['AMG Performance', 'Premium Audio', 'Sport Mode'],
+    rating: 4.9,
+    reviews: 156
   },
   {
     id: 2,
@@ -101,17 +108,24 @@ export const cars: Car[] = [
   },
   {
     id: 8,
-    name: 'Toyota RAV4',
-    category: 'suv',
-    image: 'https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=800',
-    pricePerDay: 72,
-    year: 2020,
+    name: 'Mercedes-AMG C43',
+    category: 'luxury',
+    image: '/cars/c43/c43-1.jpg',
+    photoGallery: [
+      '/cars/c43/c43-1.jpg',
+      '/cars/c43/c43-2.jpg',
+      '/cars/c43/c43-3.jpg',
+      '/cars/c43/c43-4.jpg',
+      '/cars/c43/c43-5.jpg'
+    ],
+    pricePerDay: 280,
+    year: 2018,
     seats: 5,
     transmission: 'Automatic',
-    fuelType: 'hybrid',
-    features: ['AWD', 'Trail Mode', 'Premium Interior'],
-    rating: 4.8,
-    reviews: 398
+    fuelType: 'gasoline',
+    features: ['V6 BiTurbo 3.0L', '4MATIC AWD', 'Sport-Lux Interior'],
+    rating: 4.9,
+    reviews: 156
   },
   {
     id: 9,

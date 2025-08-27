@@ -4,6 +4,7 @@ export interface Car {
   name: string;
   category: 'economy' | 'compact' | 'midsize' | 'fullsize' | 'suv' | 'luxury';
   image: string;
+  photoGallery?: string[]; // Optional array of photo URLs for gallery
   pricePerDay: number;
   seats: number;
   transmission: 'Automatic' | 'Manual';
@@ -11,6 +12,11 @@ export interface Car {
   features: string[];
   rating: number;
   reviews: number;
+  availability?: string; // Optional property to show when car is free for rent
+  mileage?: number; // Mileage in kilometers
+  fuelConsumption?: number; // Fuel consumption (L/100km)
+  drivetrain?: string; // Drivetrain type (FWD, RWD, 4WD, AWD)
+  time?: string; // Time specification
 }
 
 export interface BookingForm {

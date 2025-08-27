@@ -1,5 +1,8 @@
 import { motion } from 'framer-motion';
-import { Filter, Fuel, HelpCircle, Leaf, Search, Settings, Star, Users } from 'lucide-react';
+import { Filter, HelpCircle, Leaf, Search, Star, Users, Circle, Zap, Image } from 'lucide-react';
+import { FaGasPump } from "react-icons/fa6";
+import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
+import { PiTireFill, PiSpeedometerFill } from "react-icons/pi";
 import React, { useState } from 'react';
 import { cars } from '../../data/cars';
 import { useCounter } from '../../hooks/useCounter';
@@ -9,7 +12,7 @@ import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-
+    
 
 interface CarCardProps {
     car: Car;
@@ -19,29 +22,15 @@ interface CarCardProps {
 export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { ref, isInView } = useInView();
     const animatedPrice = useCounter(car.pricePerDay, 1500, 0);
+    const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+    const [isFavorite, setIsFavorite] = useState(false);
 
     const renderTransmissionIcon = (transmission: string) => {
         switch (transmission.toLowerCase()) {
             case 'automatic':
-                return (
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="car-card__main-item-icon"
-                    >
-                        <path
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                            d="M20 8.74196C20.883 8.35618 21.5 7.47514 21.5 6.44998C21.5 5.06927 20.3807 3.94998 19 3.94998C17.6193 3.94998 16.5 5.06927 16.5 6.44998C16.5 7.47514 17.117 8.35618 18 8.74196V10C18 10.5523 17.5523 11 17 11L13 11V8.84198C13.883 8.4562 14.5 7.57516 14.5 6.55C14.5 5.16929 13.3807 4.05 12 4.05C10.6193 4.05 9.5 5.16929 9.5 6.55C9.5 7.57516 10.117 8.4562 11 8.84198V11H6V8.79197C6.88295 8.40619 7.5 7.52515 7.5 6.49999C7.5 5.11928 6.38071 3.99999 5 3.99999C3.61929 3.99999 2.5 5.11928 2.5 6.49999C2.5 7.52515 3.11705 8.40619 4 8.79197L4 11L4 13L4 15.158C3.11705 15.5438 2.5 16.4248 2.5 17.45C2.5 18.8307 3.61929 19.95 5 19.95C6.38071 19.95 7.5 18.8307 7.5 17.45C7.5 16.4248 6.88295 15.5438 6 15.158V13H11V15.108C10.117 15.4938 9.5 16.3748 9.5 17.4C9.5 18.7807 10.6193 19.9 12 19.9C13.3807 19.9 14.5 18.7807 14.5 17.4C14.5 16.3748 13.883 15.4938 13 15.108V13H17C18.6569 13 20 11.6569 20 10V8.74196Z"
-                            fill="currentColor"
-                        />
-                    </svg>
-                );
+                return React.createElement(TbAutomaticGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
             case 'manual':
-                return <Settings className="w-5 h-5 text-gray-600" />;
+                return React.createElement(TbManualGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
             case 'hybrid':
                 return <Leaf className="w-5 h-5 text-green-500" />;
             default:
@@ -57,46 +46,180 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
             animate={isInView ? "animate" : "initial"}
             transition={{ delay: index * 0.1 }}
         >
-            <Card className="overflow-hidden flex flex-col">
-                {/* Image */}
-                <motion.img
-                    whileHover={{ scale: 1.03 }}
-                    transition={{ duration: 0.3 }}
-                    src={car.image}
-                    alt={car.name}
-                    className="w-full h-40 object-contain bg-white"
-                />
+            <Card className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-2xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}>
+                {/* Image Container */}
+                <div 
+                    className="relative overflow-hidden"
+                    onMouseMove={(e) => {
+                        if (car.photoGallery && car.photoGallery.length > 1) {
+                            const container = e.currentTarget;
+                            const rect = container.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const width = rect.width;
+                            const photoIndex = Math.floor((x / width) * car.photoGallery.length);
+                            const clampedIndex = Math.max(0, Math.min(photoIndex, car.photoGallery.length - 1));
+                            
+                            setActivePhotoIndex(clampedIndex);
+                            
+                            const imageContainer = container.querySelector('.photo-gallery') as HTMLElement;
+                            if (imageContainer) {
+                                const translateX = -(clampedIndex * 100);
+                                imageContainer.style.transform = `translateX(${translateX}%)`;
+                            }
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (car.photoGallery && car.photoGallery.length > 1) {
+                            setActivePhotoIndex(0);
+                            const imageContainer = e.currentTarget.querySelector('.photo-gallery') as HTMLElement;
+                            if (imageContainer) {
+                                imageContainer.style.transform = 'translateX(0%)';
+                            }
+                        }
+                    }}
+                >
+                    <div className="flex transition-transform duration-300 ease-out group-hover:scale-105 photo-gallery">
+                        {car.photoGallery && car.photoGallery.length > 1 ? (
+                            car.photoGallery.map((photo, index) => (
+                                <div
+                                    key={index}
+                                    className="relative w-full h-56 flex-shrink-0"
+                                    style={{ minWidth: '100%' }}
+                                >
+                                    <img
+                                        src={photo}
+                                        alt={`${car.name} - Photo ${index + 1}`}
+                                        className="w-full h-56 object-cover object-center bg-gray-100"
+                                    />
+                                    {index === (car.photoGallery?.length ?? 0) - 1 && (
+                                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                                            <Image className="w-8 h-8 mb-2" />
+                                            <span className="text-lg font-semibold">Inca {car.photoGallery?.length} fotografii</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <img
+                                src={car.image}
+                                alt={car.name}
+                                className="w-full h-56 object-cover object-center bg-gray-100"
+                            />
+                        )}
+                    </div>
+                    
+                    {/* Photo Navigation Lines */}
+                    {car.photoGallery && car.photoGallery.length > 1 && (
+                        <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1 px-4">
+                            {car.photoGallery.map((_, index) => (
+                                <div
+                                    key={index}
+                                    className={`flex-1 h-0.5 rounded-full transition-colors duration-200 ${
+                                        index === activePhotoIndex 
+                                            ? 'bg-white/90' 
+                                            : 'bg-white/30'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Free for Rent Badge */}
+                    {car.availability && (
+                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-800 rounded-full px-3 py-1 text-xs font-semibold shadow-sm flex items-center gap-2 transition-opacity duration-300 group-hover:opacity-0">
+                            <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {car.availability}
+                        </div>
+                    )}
+                </div>
 
                 {/* Content */}
-                <div className="p-4 flex flex-col justify-between flex-1">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            {car.name}
-                        </h3>
-                        {/* <p className="text-sm text-gray-500">{car.type}</p> */}
+                <div className="p-5 flex flex-col justify-between flex-1">
+                    {/* Car Name and Year */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-700 transition-colors duration-300">
+                                {car.name}
+                            </h3>
+                            <span className="text-lg font-bold text-gray-600">
+                                {car.year}
+                            </span>
+                        </div>
                     </div>
 
-                    {/* Specs row and Price & CTA in the same row */}
-                    <div className="flex items-center justify-between gap-4 text-sm text-gray-600 mt-4">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                                <Users className="w-4 h-4" />
-                                <span>{car.seats}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {renderTransmissionIcon(car.transmission)}
-                                <span>{car.transmission}</span>
-                            </div>
-
-
+                    {/* Specifications Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                          {React.createElement(PiSpeedometerFill as any, { className: "w-4 h-4 text-gray-600" })}
                         </div>
+                        <span className="text-sm font-medium">{car.mileage?.toLocaleString() || 'N/A'} km</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-end gap-2 text-gray-600">
+                        <span className="text-sm font-medium">{car.transmission === 'Automatic' ? 'Automată' : 'Manuală'}</span>
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                          {renderTransmissionIcon(car.transmission)}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                          {React.createElement(FaGasPump as any, { className: "w-4 h-4 text-gray-600" })}
+                        </div>
+                        <span className="text-sm font-medium">
+                          {car.fuelType === 'gasoline' ? 'Benzină' : 
+                           car.fuelType === 'diesel' ? 'Diesel' : 
+                           car.fuelType === 'petrol' ? 'Benzină' : 
+                           car.fuelType === 'hybrid' ? 'Hibrid' : 
+                           car.fuelType === 'electric' ? 'Electric' : car.fuelType} {car.fuelConsumption || 'N/A'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-end gap-2 text-gray-600">
+                        <span className="text-sm font-medium">{car.drivetrain || 'N/A'}</span>
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                          {React.createElement(TbCar4WdFilled as any, { className: "w-4 h-4 text-gray-600" })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price and CTA */}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-gray-900">${car.pricePerDay}</span>
-                            <span className="text-gray-600 text-sm">/day</span>
+                            <span className="text-xl font-bold text-gray-800">{car.pricePerDay} MDL</span>
+                            <span className="text-gray-500 text-sm">/zi</span>
+                        </div>
+                        
+                        {/* Rating and Favorite Section */}
+                        <div className="flex items-center gap-3">
+                            {/* Favorite Heart Icon */}
+                            <div 
+                                className="cursor-pointer transition-colors duration-200 hover:scale-110"
+                                onClick={() => setIsFavorite(!isFavorite)}
+                            >
+                                {isFavorite ? (
+                                    <svg className="w-5 h-5 text-red-500 fill-current" viewBox="0 0 24 24">
+                                        <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5 text-gray-500 hover:text-red-500 fill-none stroke-current" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                )}
+                            </div>
+                            
+                            {/* Star Rating */}
+                            <div className="flex items-center gap-1 text-gray-600">
+                                <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                                <span className="text-sm font-semibold">{car.rating}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </Card>
-        </motion.div >
+        </motion.div>
     );
 };

@@ -43,13 +43,13 @@ export const Testimonials: React.FC = () => {
             className="text-sm font-semibold tracking-wider text-gray-400 uppercase"
             id="testimonials"
           >
-            Testimonials
+            Recenzii
           </motion.span>
           <motion.h2
             variants={fadeInUp}
             className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight"
           >
-            What people say about us?
+            Ce spun oamenii despre noi?
           </motion.h2>
         </motion.div>
 

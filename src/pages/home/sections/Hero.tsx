@@ -69,7 +69,7 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative h-[755px] bg-fixed bg-cover bg-bottom bg-no-repeat pt-32 font-sans" style={{ backgroundImage: 'url(/bg.png)', backgroundPosition: 'center -300px' }}>
+    <section className="relative h-[755px] bg-fixed bg-cover bg-bottom bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/bg-hero.jpg)', backgroundPosition: 'center -380px' }}>
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60"></div>
       
@@ -83,29 +83,30 @@ export const Hero: React.FC = () => {
             className="text-center space-y-10 max-w-4xl"
           >
             <motion.div variants={fadeInUp} className="space-y-8">
-              <div className="space-y-6">
+              <div className="space-y-6 ">
+                <p className="text-lg md:text-xl text-theme-500 font-semibold drop-shadow-md uppercase tracking-wide">
+                  Chirie Auto
+                </p>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
-                  <span className="text-theme-500 font-extrabold">Level Up</span>
-                  <br />
-                  <span className="text-white">Your Journey</span>
+                  Level Auto Rental
                 </h1>
 
                 <p className="text-lg md:text-xl text-white max-w-2xl mx-auto leading-relaxed drop-shadow-md">
-                  Premium car rental service available 24/7 across Moldova.
-                  <span className="text-theme-500 font-medium"> Start your journey today.</span>
+                  Serviciu premium de închirieri auto disponibil 24/7 în Moldova.
+                  <span className="text-theme-500 font-medium"> Începe călătoria ta astăzi.</span>
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button className="px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                  Get Started
+                  Începe
                 </button>
                 <button
                   className="px-8 py-4 border-2 border-white hover:border-theme-500 text-white hover:text-theme-500 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 bg-white/10 backdrop-blur-sm"
                   onClick={() => navigate('/cars')}
                 >
 
-                  Browse Cars
+                  Vezi Mașinile
                 </button>
               </div>
             </motion.div>
@@ -122,12 +123,12 @@ export const Hero: React.FC = () => {
         className="py-[0px] top-[280px] -mt-10 md:-mt-28 relative z-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg border border-white/20 dropdown-container">
+          <div className="bg-white backdrop-blur-sm rounded-3xl shadow-lg border border-white/20 dropdown-container">
             <div className="flex">
               {/* Location */}
               <div className="flex-1 px-6 py-4">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  LOCATION
+                  LOCAȚIA
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -135,7 +136,7 @@ export const Hero: React.FC = () => {
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => openDropdown('location')}
                   >
-                    {bookingForm.pickupLocation || "Search your location.."}
+                    {bookingForm.pickupLocation || "Căutați locația.."}
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +186,7 @@ export const Hero: React.FC = () => {
               {/* Pickup Date */}
               <div className="flex-1 px-6 py-4">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  PICKUP DATE
+                  DATA DE PRELUARE
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -193,7 +194,7 @@ export const Hero: React.FC = () => {
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => openDropdown('pickup')}
                   >
-                    {formatDate(bookingForm.pickupDate) || "Select pickup date"}
+                    {formatDate(bookingForm.pickupDate) || "Selectați data de preluare"}
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,7 +278,7 @@ export const Hero: React.FC = () => {
               {/* Return Date */}
               <div className="flex-1 px-6 py-4">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  RETURN DATE
+                  DATA DE RETURNARE
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -285,7 +286,7 @@ export const Hero: React.FC = () => {
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => openDropdown('return')}
                   >
-                    {formatDate(bookingForm.returnDate) || "Select return date"}
+                    {formatDate(bookingForm.returnDate) || "Selectați data de returnare"}
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,7 +374,7 @@ export const Hero: React.FC = () => {
                   className="w-full h-full bg-theme-500 hover:bg-theme-600 text-white py-3 px-6 rounded-2xl font-medium flex items-center justify-center gap-2"
                 >
                   <Search className="w-4 h-4 stroke-2" />
-                  Search
+                  Căutare
                 </Button>
               </div>
             </div>

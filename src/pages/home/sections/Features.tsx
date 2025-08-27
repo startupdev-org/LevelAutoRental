@@ -11,23 +11,23 @@ export const Features: React.FC = () => {
   const features = [
     {
       icon: DollarSign,
-      title: 'Best Prices',
-      description: 'Competitive rates with no hidden fees. Get the best value for your money with our transparent pricing.'
+      title: 'Cele mai bune prețuri',
+      description: 'Tarife competitive fără costuri ascunse. Obțineți cea mai bună valoare pentru banii voștri cu prețurile noastre transparente.'
     },
     {
       icon: Headphones,
-      title: '24/7 Support',
-      description: 'Round-the-clock customer service to assist you whenever you need help during your rental period.'
+      title: 'Suport 24/7',
+      description: 'Serviciu clienți non-stop pentru a vă ajuta oricând aveți nevoie de asistență în perioada de închiriere.'
     },
     {
       icon: Clock,
-      title: 'Easy Booking',
-      description: 'Simple and fast booking process. Reserve your car in just a few clicks with instant confirmation.'
+      title: 'Rezervare ușoară',
+      description: 'Proces simplu și rapid de rezervare. Rezervați mașina în doar câteva clicuri cu confirmare instantanee.'
     },
     {
       icon: Award,
-      title: 'Wide Selection',
-      description: 'Choose from our extensive fleet of well-maintained vehicles to suit every need and budget.'
+      title: 'Selecție largă',
+      description: 'Alegeți din flota noastră extinsă de vehicule bine întreținute pentru a satisface fiecare nevoie și buget.'
     }
   ];
 
@@ -47,13 +47,13 @@ export const Features: React.FC = () => {
             className="text-sm font-semibold tracking-wider text-red-500 uppercase bg-gradient-to-r from-red-500 to-red-600 bg-clip-text"
             id="why-choose-us"
           >
-            Why choose us
+            De ce să ne alegeți
           </motion.span>
           <motion.h2
             variants={fadeInUp}
             className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
           >
-            We offer the best experience with our rental deals
+            Oferim cea mai bună experiență cu ofertele noastre de închirieri
           </motion.h2>
         </motion.div>
 

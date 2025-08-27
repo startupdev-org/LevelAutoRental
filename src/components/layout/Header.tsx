@@ -53,8 +53,8 @@ export const Header: React.FC = () => {
   React.useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
-      const heroHeight = window.innerHeight; // Hero section height
-      setIsScrolled(scrollPosition > heroHeight); // Change background after passing hero
+      const triggerHeight = 600; // Much higher on page - only 10px scroll
+      setIsScrolled(scrollPosition > triggerHeight);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -62,10 +62,10 @@ export const Header: React.FC = () => {
   }, []);
 
   const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Fleet', href: '/cars' },
-    { name: 'How it works', href: '/about' },
-    { name: 'Why choose us', href: '/about' },
+    { name: 'Acasă', href: '/' },
+    { name: 'Flotă', href: '/cars' },
+    { name: 'Cum funcționează', href: '/about' },
+    { name: 'De ce să ne alegeți', href: '/about' },
     { name: 'Contact', href: '/contact' }
   ];
 
@@ -138,14 +138,11 @@ export const Header: React.FC = () => {
 
           {/* Right Side Actions */}
           <div className="hidden lg:flex items-center space-x-4">
-            <button className={`px-4 py-2 text-sm font-medium transition-colors ${isScrolled ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:text-theme-300'}`}>
-              Become a renter
-            </button>
-            
+           
             <Button 
               className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
-              Login
+              Autentificare
             </Button>
             
             {/* Language Selector */}
@@ -176,14 +173,14 @@ export const Header: React.FC = () => {
                         onClick={() => translatePage('en')}
                       >
                         <span className="fi fi-gb text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
-                        <span>English</span>
+                        <span>Engleză</span>
                       </button>
                       <button 
                         className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
                         onClick={() => translatePage('ru')}
                       >
                         <span className="fi fi-ru text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
-                        <span>Русский</span>
+                        <span>Rusă</span>
                       </button>
                       <button 
                         className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
@@ -233,7 +230,7 @@ export const Header: React.FC = () => {
               </button>
             ))}
             <Button variant="ghost" size="sm" className="w-full">
-              Login
+              Autentificare
             </Button>
           </div>
         </motion.div>
