@@ -3,13 +3,9 @@ import { Car, Menu, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
-
-// Declare global function for Google Translate
-declare global {
-  interface Window {
-    changeLanguage: (lang: string) => void;
-  }
-}
+import { LANGUAGES } from "../../constants";
+import { useTranslation } from 'react-i18next';
+import { changeLanguage } from 'i18next';
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,35 +15,7 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Detect current language from localStorage
-  React.useEffect(() => {
-    const detectCurrentLanguage = () => {
-      const storedLang = localStorage.getItem('selectedLanguage');
-      if (storedLang && ['en', 'ru', 'ro'].includes(storedLang)) {
-        setCurrentLanguage(storedLang);
-      } else {
-        // Set English as default if no language is stored
-        setCurrentLanguage('en');
-        localStorage.setItem('selectedLanguage', 'en');
-      }
-    };
-
-    detectCurrentLanguage();
-  }, []);
-
-  // Simple language change function
-  const translatePage = (language: string) => {
-    // Close dropdown immediately
-    setShowLanguageDropdown(false);
-    
-    // Update local state immediately
-    setCurrentLanguage(language);
-    
-    // Use the global changeLanguage function
-    if (window.changeLanguage) {
-      window.changeLanguage(language);
-    }
-  };
+  const { i18n, t } = useTranslation();
 
   // Add scroll listener for navbar background
   React.useEffect(() => {
@@ -62,11 +30,11 @@ export const Header: React.FC = () => {
   }, []);
 
   const navigation = [
-    { name: 'Acasă', href: '/' },
-    { name: 'Flotă', href: '/cars' },
-    { name: 'Cum funcționează', href: '/about' },
-    { name: 'De ce să ne alegeți', href: '/about' },
-    { name: 'Contact', href: '/contact' }
+    { name: t('header.home'), href: '/' },
+    { name: t('header.cars'), href: '/cars' },
+    { name: t('header.about'), href: '/about' },
+    { name: t('header.whyUs'), href: '/about' },
+    { name: t('header.contact'), href: '/contact' }
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -95,30 +63,27 @@ export const Header: React.FC = () => {
     }
   };
 
-
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${
-        isScrolled 
-          ? 'bg-white shadow-lg border-b border-gray-200' 
-          : 'bg-transparent shadow-none border-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${isScrolled
+        ? 'bg-white shadow-lg border-b border-gray-200'
+        : 'bg-transparent shadow-none border-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center group">
-            <motion.img 
-              src="/logo.png" 
-              alt="Level Auto Rental Logo" 
+            <motion.img
+              src="/logo.png"
+              alt="Level Auto Rental Logo"
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.3 }}
-              className={`w-[250px] h-auto transition-all duration-300 ${
-                isScrolled ? '' : 'brightness-0 invert'
-              }`}
+              className={`w-[250px] h-auto transition-all duration-300 ${isScrolled ? '' : 'brightness-0 invert'
+                }`}
             />
           </Link>
 
@@ -138,17 +103,19 @@ export const Header: React.FC = () => {
 
           {/* Right Side Actions */}
           <div className="hidden lg:flex items-center space-x-4">
-           
-            <Button 
+
+            <Button
               className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
-              Autentificare
+              {t('auth')}
             </Button>
-            
+
             {/* Language Selector */}
             <div className="relative">
               <button
-                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                onClick={() => {
+                  setShowLanguageDropdown(!showLanguageDropdown)
+                }}
                 className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${isScrolled ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:bg-white/20'}`}
               >
                 <span className={`fi ${currentLanguage === 'en' ? 'fi-gb' : currentLanguage === 'ru' ? 'fi-ru' : 'fi-ro'} text-base w-6 h-6 flex items-center justify-center overflow-hidden`}></span>
@@ -156,43 +123,37 @@ export const Header: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
+
               {/* Language Dropdown */}
               <AnimatePresence>
                 {showLanguageDropdown && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]"
+                    className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]"
                   >
-                    <div className="py-1">
-                      <button 
-                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
-                        onClick={() => translatePage('en')}
+                    {LANGUAGES.map(({ code, label, iconClass }) => (
+                      <button
+                        key={code}
+                        onClick={() => {
+                          i18n.changeLanguage(code); // ← switch language
+                          setCurrentLanguage(code);  // ← update your local state
+                          setShowLanguageDropdown(false); // close dropdown
+                          localStorage.setItem("selectedLanguage", code); // persist selection
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
                       >
-                        <span className="fi fi-gb text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
-                        <span>Engleză</span>
+                        <span className={iconClass}></span>
+                        <span>{label}</span>
                       </button>
-                      <button 
-                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
-                        onClick={() => translatePage('ru')}
-                      >
-                        <span className="fi fi-ru text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
-                        <span>Rusă</span>
-                      </button>
-                      <button 
-                        className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 flex items-center space-x-2 transition-colors"
-                        onClick={() => translatePage('ro')}
-                      >
-                        <span className="fi fi-ro text-base w-6 h-6 flex items-center justify-center overflow-hidden"></span>
-                        <span>Română</span>
-                      </button>
-                    </div>
+                    ))}
+
                   </motion.div>
                 )}
               </AnimatePresence>
+
             </div>
           </div>
 
@@ -234,6 +195,15 @@ export const Header: React.FC = () => {
             </Button>
           </div>
         </motion.div>
+
+        {/* <select defaultValue={"ro"}>
+          {LANGUAGES.map(({ code, label }) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </select> */}
+
       </div>
     </motion.header>
   );

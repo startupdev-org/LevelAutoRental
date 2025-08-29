@@ -1,0 +1,15 @@
+{
+    "header": {
+        "home": "Acasă",
+        "cars": "Flotă",
+        "about": "Despre noi",
+        "whyUs": "De ce noi?",
+        "contact": "Contactează-ne"
+    },
+    "auth": "Autentificare",
+    "title": "Aplicație multi-limbă",
+    "label": "Selectează altă limbă!",
+    "smallLabel": "Începe călătoria ta astăzi.",
+    "start": "Începe",
+    "seeCars": "Vezi mașinile"
+}

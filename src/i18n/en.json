@@ -1,0 +1,15 @@
+{
+    "header": {
+        "home": "Home",
+        "cars": "Fleet",
+        "about": "About us",
+        "whyUs": "Why us?",
+        "contact": "Contact"
+    },
+    "auth": "Log in",
+    "title": "Multi-language app",
+    "label": "Select another language!",
+    "smallLabel": "Start your journey today.",
+    "start": "Start",
+    "seeCars": "See cars"
+}
