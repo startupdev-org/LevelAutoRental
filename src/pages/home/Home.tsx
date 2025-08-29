@@ -4,6 +4,7 @@ import { Features } from "./sections/Features";
 import { Hero } from "./sections/Hero";
 import { Testimonials } from "./sections/Testimonials";
 import { LogoMarquee } from "../../components/sections/LogoMarquee";
+import { HowToRent } from "./sections/HowToRent";
 
 export const Home: React.FC = () => {
   return (
@@ -12,6 +13,7 @@ export const Home: React.FC = () => {
       <LogoMarquee />
       <CarGrid />
       <Features />
+      <HowToRent />
       <Testimonials />
     </div>
   );
