@@ -1,0 +1,79 @@
+{
+    "header": {
+        "home": "Home",
+        "cars": "Fleet",
+        "about": "About Us",
+        "whyUs": "Why Us?",
+        "contact": "Contact",
+        "auth": "Login"
+    },
+    "hero": {
+        "companyType": "Car Rental",
+        "label": "Premium car rental service available 24/7 in Moldova.",
+        "smallLabel": "Start your journey today.",
+        "start": "Start",
+        "seeCars": "See Cars",
+        "location": "LOCATION",
+        "searchLocation": "Search location...",
+        "pickUpDate": "Pick-up Date",
+        "selectPickUpDate": "Select pick-up date",
+        "returnDate": "Return Date",
+        "selectReturnDate": "Select return date",
+        "search": "Search"
+    },
+    "popularCars": {
+        "sectionLabel": "Popular Cars",
+        "sectionTitle": "Most popular car rental offers",
+        "viewAll": "View all vehicles"
+    },
+    "features": {
+        "sectionLabel": "Why Choose Us",
+        "sectionTitle": "We provide the best rental experience",
+        "bestPrices": {
+            "title": "Best Prices",
+            "description": "Competitive rates with no hidden costs. Get the best value for your money with our transparent pricing."
+        },
+        "support": {
+            "title": "24/7 Support",
+            "description": "Round-the-clock customer service to assist you whenever you need help during your rental period."
+        },
+        "easyBooking": {
+            "title": "Easy Booking",
+            "description": "Simple and quick booking process. Reserve your car in just a few clicks with instant confirmation."
+        },
+        "wideSelection": {
+            "title": "Wide Selection",
+            "description": "Choose from our extensive fleet of well-maintained vehicles to fit every need and budget."
+        }
+    },
+    "howToRent": {
+        "sectionLabel": "How the Rental Process Works",
+        "sectionTitle": "In just 5 simple steps",
+        "steps": {
+            "contact": {
+                "title": "Contact Us",
+                "description": "Send us a direct message on social media or via our website."
+            },
+            "details": {
+                "title": "Provide Details",
+                "description": "Choose the rental period and your preferred car."
+            },
+            "price": {
+                "title": "Get a Price",
+                "description": "See all the information clearly and transparently."
+            },
+            "pickup": {
+                "title": "Pick Up the Car",
+                "description": "Enjoy your ride to the fullest."
+            },
+            "return": {
+                "title": "Return the Car",
+                "description": "Return the car according to the terms of the contract."
+            }
+        }
+    },
+    "testimonials": {
+        "sectionLabel": "Testimonials",
+        "sectionTitle": "What people say about us?"
+    }
+}

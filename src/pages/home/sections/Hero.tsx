@@ -6,13 +6,17 @@ import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export const Hero: React.FC = () => {
+
+  const { i18n, t } = useTranslation();
+
   const navigate = useNavigate();
   const todayDate = new Date();
   const tomorrowDate = new Date();
   tomorrowDate.setDate(todayDate.getDate() + 1);
-  
+
   const [bookingForm, setBookingForm] = useState<BookingForm>({
     pickupLocation: '',
     returnLocation: '',
@@ -72,7 +76,7 @@ export const Hero: React.FC = () => {
     <section className="relative h-[755px] bg-fixed bg-cover bg-bottom bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/bg-hero.jpg)', backgroundPosition: 'center -380px' }}>
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60"></div>
-      
+
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
         <div className="flex items-center justify-center h-full pt-24">
           {/* Centered Text Content */}
@@ -85,28 +89,27 @@ export const Hero: React.FC = () => {
             <motion.div variants={fadeInUp} className="space-y-8">
               <div className="space-y-6 ">
                 <p className="text-lg md:text-xl text-theme-500 font-semibold drop-shadow-md uppercase tracking-wide">
-                  Chirie Auto
+
                 </p>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
                   Level Auto Rental
                 </h1>
 
                 <p className="text-lg md:text-xl text-white max-w-2xl mx-auto leading-relaxed drop-shadow-md">
-                  Serviciu premium de închirieri auto disponibil 24/7 în Moldova.
-                  <span className="text-theme-500 font-medium"> Începe călătoria ta astăzi.</span>
+                  {t('hero.label')}
+                  <span className="text-theme-500 font-medium"> {t('hero.smallLabel')}</span>
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button className="px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                  Începe
+                  {t('hero.start')}
                 </button>
                 <button
                   className="px-8 py-4 border-2 border-white hover:border-theme-500 text-white hover:text-theme-500 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 bg-white/10 backdrop-blur-sm"
                   onClick={() => navigate('/cars')}
                 >
-
-                  Vezi Mașinile
+                  {t('hero.seeCars')}
                 </button>
               </div>
             </motion.div>
@@ -128,7 +131,7 @@ export const Hero: React.FC = () => {
               {/* Location */}
               <div className="flex-1 px-6 py-4">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  LOCAȚIA
+                  {t("hero.location")}
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -136,7 +139,7 @@ export const Hero: React.FC = () => {
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => openDropdown('location')}
                   >
-                    {bookingForm.pickupLocation || "Căutați locația.."}
+                    {bookingForm.pickupLocation || t("hero.searchLocation")}
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +189,7 @@ export const Hero: React.FC = () => {
               {/* Pickup Date */}
               <div className="flex-1 px-6 py-4">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  DATA DE PRELUARE
+                  {t("hero.pickUpDate")}
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -194,7 +197,7 @@ export const Hero: React.FC = () => {
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => openDropdown('pickup')}
                   >
-                    {formatDate(bookingForm.pickupDate) || "Selectați data de preluare"}
+                    {formatDate(bookingForm.pickupDate) || t("hero.selectPickUpDate")}
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,7 +281,7 @@ export const Hero: React.FC = () => {
               {/* Return Date */}
               <div className="flex-1 px-6 py-4">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  DATA DE RETURNARE
+                  {t("hero.returnDate")}
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -286,7 +289,7 @@ export const Hero: React.FC = () => {
                     className="pl-10 pr-8 py-2 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
                     onClick={() => openDropdown('return')}
                   >
-                    {formatDate(bookingForm.returnDate) || "Selectați data de returnare"}
+                    {formatDate(bookingForm.returnDate) || t("hero.selectReturnDate")}
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,7 +377,7 @@ export const Hero: React.FC = () => {
                   className="w-full h-full bg-theme-500 hover:bg-theme-600 text-white py-3 px-6 rounded-2xl font-medium flex items-center justify-center gap-2"
                 >
                   <Search className="w-4 h-4 stroke-2" />
-                  Căutare
+                  {t("hero.search")}
                 </Button>
               </div>
             </div>

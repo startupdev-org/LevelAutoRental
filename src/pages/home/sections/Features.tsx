@@ -4,30 +4,34 @@ import React from 'react';
 import { useInView } from '../../../hooks/useInView';
 import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { Card } from '../../../components/ui/Card';
+import { useTranslation } from 'react-i18next';
+
 
 export const Features: React.FC = () => {
+
+  const { t } = useTranslation();
   const { ref, isInView } = useInView();
 
   const features = [
     {
       icon: DollarSign,
-      title: 'Cele mai bune prețuri',
-      description: 'Tarife competitive fără costuri ascunse. Obțineți cea mai bună valoare pentru banii voștri cu prețurile noastre transparente.'
+      title: t("features.bestPrices.title"),
+      description: t("features.bestPrices.description")
     },
     {
       icon: Headphones,
-      title: 'Suport 24/7',
-      description: 'Serviciu clienți non-stop pentru a vă ajuta oricând aveți nevoie de asistență în perioada de închiriere.'
+      title: t("features.support.title"),
+      description: t("features.support.description")
     },
     {
       icon: Clock,
-      title: 'Rezervare ușoară',
-      description: 'Proces simplu și rapid de rezervare. Rezervați mașina în doar câteva clicuri cu confirmare instantanee.'
+      title: t("features.easyBooking.title"),
+      description: t("features.easyBooking.description")
     },
     {
       icon: Award,
-      title: 'Selecție largă',
-      description: 'Alegeți din flota noastră extinsă de vehicule bine întreținute pentru a satisface fiecare nevoie și buget.'
+      title: t("features.wideSelection.title"),
+      description: t("features.wideSelection.description")
     }
   ];
 
@@ -47,22 +51,22 @@ export const Features: React.FC = () => {
             className="text-sm font-semibold tracking-wider text-red-500 uppercase bg-gradient-to-r from-red-500 to-red-600 bg-clip-text"
             id="why-choose-us"
           >
-            De ce să ne alegeți
+            {t("features.sectionLabel")}
           </motion.span>
           <motion.h2
             variants={fadeInUp}
             className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
           >
-            Oferim cea mai bună experiență cu ofertele noastre de închirieri
+            {t("features.sectionTitle")}
           </motion.h2>
         </motion.div>
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature) => (
-            <motion.div 
-              key={feature.title} 
-              variants={fadeInUp} 
+            <motion.div
+              key={feature.title}
+              variants={fadeInUp}
               className="text-center"
             >
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center mx-auto mb-4 shadow-lg">

@@ -7,9 +7,13 @@ import { Button } from '../../../components/ui/Button';
 import { CarCard } from '../../cars/CarCard';
 import { Car } from '../../../types';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 
 export const CarGrid: React.FC = () => {
+
+  const { t } = useTranslation();
+
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { ref, isInView } = useInView();
@@ -118,7 +122,7 @@ export const CarGrid: React.FC = () => {
 
 
   return (
-    <section className="py-16 pb-32 ">
+    <section className="py-16 pb-32">
       <div className="max-w-[1450px] mx-auto px-8 sm:px-12 lg:px-16">
         {/* Header Section */}
         <motion.div
@@ -133,17 +137,17 @@ export const CarGrid: React.FC = () => {
             className="text-sm font-semibold tracking-wider text-transparent bg-gradient-to-r from-red-500 to-red-600 bg-clip-text uppercase"
             id="popular-cars"
           >
-            Mașini Populare
+            {t("popularCars.sectionLabel")}
           </motion.span>
           <motion.h2
             variants={fadeInUp}
             className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
           >
-            Cele mai populare oferte de închirieri auto
+            {t("popularCars.sectionTitle")}
           </motion.h2>
         </motion.div>
 
-        {/* Features Grid */}
+        {/* Cars Grid */}
         <motion.div
           variants={staggerContainer}
           initial="initial"
@@ -155,16 +159,20 @@ export const CarGrid: React.FC = () => {
           ))}
         </motion.div>
 
+        {/* View All Button */}
         <motion.div
           variants={fadeInUp}
           initial="initial"
           animate={isInView ? "animate" : "initial"}
           className="text-center mt-16"
         >
-          <Button variant="outline" size="lg" className="inline-flex items-center gap-2 rounded-2xl border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300"
-            onClick={() => navigate('/cars')}
+          <Button
+            variant="outline"
+            size="lg"
+            className="inline-flex items-center gap-2 rounded-2xl border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300"
+            onClick={() => navigate("/cars")}
           >
-            Vezi Toate Vehiculele
+            {t("popularCars.viewAll")}
             <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.div>
