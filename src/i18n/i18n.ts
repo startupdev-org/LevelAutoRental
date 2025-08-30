@@ -8,9 +8,9 @@ i18n
   .use(initReactI18next)
   .init({
     lng: "ro",
-    fallbackLng: "en",
+    fallbackLng: "ro",
     interpolation: { escapeValue: false },
-    resources: { en: { translation: en }, ro: { translation: ro }, ru: { translation: ru } },
+    resources: { ro: { translation: ro }, ru: { translation: ru }, en: { translation: en } },
   });
 
 export default i18n;

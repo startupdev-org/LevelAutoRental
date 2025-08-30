@@ -4,12 +4,76 @@
         "cars": "Flotă",
         "about": "Despre noi",
         "whyUs": "De ce noi?",
-        "contact": "Contactează-ne"
+        "contact": "Contactează-ne",
+        "auth": "Autentificare"
     },
-    "auth": "Autentificare",
-    "title": "Aplicație multi-limbă",
-    "label": "Selectează altă limbă!",
-    "smallLabel": "Începe călătoria ta astăzi.",
-    "start": "Începe",
-    "seeCars": "Vezi mașinile"
+    "hero": {
+        "companyType": "Chirie Auto",
+        "label": "Serviciu premium de închirieri auto disponibil 24/7 în Moldova.",
+        "smallLabel": "Începe călătoria ta astăzi.",
+        "start": "Începe",
+        "seeCars": "Vezi mașinile",
+        "location": "LOCATIA",
+        "searchLocation": "Căutați locația...",
+        "pickUpDate": "Data de preluare",
+        "selectPickUpDate": "Selectați data de preluare",
+        "returnDate": "Data de returnare",
+        "selectReturnDate": "Selectați data de returnare",
+        "search": "Căutare"
+    },
+    "popularCars": {
+        "sectionLabel": "Mașini Populare",
+        "sectionTitle": "Cele mai populare oferte de închirieri auto",
+        "viewAll": "Vezi toate vehiculele"
+    },
+    "features": {
+        "sectionLabel": "De ce să ne alegeți",
+        "sectionTitle": "Oferim cea mai bună experiență cu ofertele noastre de închirieri",
+        "bestPrices": {
+            "title": "Cele mai bune prețuri",
+            "description": "Tarife competitive fără costuri ascunse. Obțineți cea mai bună valoare pentru banii voștri cu prețurile noastre transparente."
+        },
+        "support": {
+            "title": "Suport 24/7",
+            "description": "Serviciu clienți non-stop pentru a vă ajuta oricând aveți nevoie de asistență în perioada de închiriere."
+        },
+        "easyBooking": {
+            "title": "Rezervare ușoară",
+            "description": "Proces simplu și rapid de rezervare. Rezervați mașina în doar câteva clicuri cu confirmare instantanee."
+        },
+        "wideSelection": {
+            "title": "Selecție largă",
+            "description": "Alegeți din flota noastră extinsă de vehicule bine întreținute pentru a satisface fiecare nevoie și buget."
+        }
+    },
+    "howToRent": {
+        "sectionLabel": "Cum funcționează procesul de închiriere",
+        "sectionTitle": "În doar 5 pași simpli",
+        "steps": {
+            "contact": {
+                "title": "Contactează-ne",
+                "description": "Scrie-ne un mesaj direct pe rețelele de socializare sau prin intermediul site-ului."
+            },
+            "details": {
+                "title": "Indică detaliile",
+                "description": "Alege perioada și mașina preferată."
+            },
+            "price": {
+                "title": "Primești prețul",
+                "description": "Vezi toată informația transparent."
+            },
+            "pickup": {
+                "title": "Preiei mașina",
+                "description": "Te bucuri din plin de mașină."
+            },
+            "return": {
+                "title": "Returnezi mașina",
+                "description": "Returnezi mașina conform termenilor din contract."
+            }
+        }
+    },
+    "testimonials": {
+        "sectionLabel": "Recenzii",
+        "sectionTitle": "Ce spun oamenii despre noi?"
+    }
 }

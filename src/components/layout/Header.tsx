@@ -8,14 +8,15 @@ import { useTranslation } from 'react-i18next';
 import { changeLanguage } from 'i18next';
 
 export const Header: React.FC = () => {
+
+  const { i18n, t } = useTranslation();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
   const location = useLocation();
   const navigate = useNavigate();
-
-  const { i18n, t } = useTranslation();
 
   // Add scroll listener for navbar background
   React.useEffect(() => {
@@ -107,7 +108,7 @@ export const Header: React.FC = () => {
             <Button
               className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
-              {t('auth')}
+              {t('header.auth')}
             </Button>
 
             {/* Language Selector */}
@@ -115,7 +116,10 @@ export const Header: React.FC = () => {
               <button
                 onClick={() => {
                   setShowLanguageDropdown(!showLanguageDropdown)
+                  // console.log('Current language after the variable: ', currentLanguage)
+                  // console.log('Current language after the frameword: ', i18n.language)
                 }}
+
                 className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${isScrolled ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:bg-white/20'}`}
               >
                 <span className={`fi ${currentLanguage === 'en' ? 'fi-gb' : currentLanguage === 'ru' ? 'fi-ru' : 'fi-ro'} text-base w-6 h-6 flex items-center justify-center overflow-hidden`}></span>
@@ -138,8 +142,8 @@ export const Header: React.FC = () => {
                       <button
                         key={code}
                         onClick={() => {
-                          i18n.changeLanguage(code); // ← switch language
-                          setCurrentLanguage(code);  // ← update your local state
+                          i18n.changeLanguage(code); // switch language
+                          setCurrentLanguage(code);  // update your local state
                           setShowLanguageDropdown(false); // close dropdown
                           localStorage.setItem("selectedLanguage", code); // persist selection
                         }}
@@ -191,18 +195,11 @@ export const Header: React.FC = () => {
               </button>
             ))}
             <Button variant="ghost" size="sm" className="w-full">
-              Autentificare
+              {t('header.auth')}
+              {/* ff */}
             </Button>
           </div>
         </motion.div>
-
-        {/* <select defaultValue={"ro"}>
-          {LANGUAGES.map(({ code, label }) => (
-            <option key={code} value={code}>
-              {label}
-            </option>
-          ))}
-        </select> */}
 
       </div>
     </motion.header>

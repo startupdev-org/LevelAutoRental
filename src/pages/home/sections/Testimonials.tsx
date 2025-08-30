@@ -5,8 +5,12 @@ import { testimonials } from '../../../data/testimonials';
 import { useInView } from '../../../hooks/useInView';
 import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { Card } from '../../../components/ui/Card';
+import { useTranslation } from 'react-i18next';
 
 export const Testimonials: React.FC = () => {
+
+  const { t } = useTranslation();
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const { ref, isInView } = useInView();
@@ -43,13 +47,13 @@ export const Testimonials: React.FC = () => {
             className="text-sm font-semibold tracking-wider text-gray-400 uppercase"
             id="testimonials"
           >
-            Recenzii
+            {t("testimonials.sectionLabel")}
           </motion.span>
           <motion.h2
             variants={fadeInUp}
             className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight"
           >
-            Ce spun oamenii despre noi?
+            {t("testimonials.sectionTitle")}
           </motion.h2>
         </motion.div>
 
@@ -61,29 +65,33 @@ export const Testimonials: React.FC = () => {
           onMouseLeave={() => setIsAutoPlaying(true)}
           className="relative"
         >
+          {/* Prev Button */}
           <div className="absolute inset-y-0 left-0 flex items-center z-10">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={prevTestimonial}
-                              className="hidden md:flex w-10 h-10 bg-white rounded-full shadow-md items-center justify-center text-gray-600 hover:text-theme-500 hover:shadow-lg"
+              className="hidden md:flex w-10 h-10 bg-white rounded-full shadow-md items-center justify-center text-gray-600 hover:text-theme-500 hover:shadow-lg"
               style={{ top: '60%', transform: 'translateY(-60%)' }}
             >
               <ChevronLeft className="w-5 h-5" />
             </motion.button>
           </div>
+
+          {/* Next Button */}
           <div className="absolute inset-y-0 right-0 flex items-center z-10">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={nextTestimonial}
-                              className="hidden md:flex w-10 h-10 bg-theme-500 text-white rounded-full shadow-md items-center justify-center hover:bg-theme-600"
+              className="hidden md:flex w-10 h-10 bg-theme-500 text-white rounded-full shadow-md items-center justify-center hover:bg-theme-600"
               style={{ top: '60%', transform: 'translateY(-60%)' }}
             >
               <ChevronRight className="w-5 h-5" />
             </motion.button>
           </div>
 
+          {/* Testimonial Card */}
           <Card className="p-6 md:p-10 mt-10 max-w-3xl md:max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               {/* Left photo */}
@@ -116,7 +124,9 @@ export const Testimonials: React.FC = () => {
                         className={`w-5 h-5 ${i < currentTestimonial.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
                       />
                     ))}
-                    <span className="ml-2 text-gray-600 text-sm">{currentTestimonial.rating.toFixed(1)}</span>
+                    <span className="ml-2 text-gray-600 text-sm">
+                      {currentTestimonial.rating.toFixed(1)}
+                    </span>
                   </div>
 
                   {/* Progress bars */}
