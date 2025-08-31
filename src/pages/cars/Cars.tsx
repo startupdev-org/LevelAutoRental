@@ -10,16 +10,17 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { CarCard } from './CarCard';
-import RangeSlider from './RangeSlider';
+import RangeSlider from './Slider';
 
 
 
 export const Cars: React.FC = () => {
 
   const CURRENT_YEAR = new Date().getFullYear();
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [rentalType, setRentalType] = useState("any");
-  const [priceRange, setPriceRange] = useState<[number, number]>([100, 6000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([100, 60000]);
   const [seatRange, setSeatRange] = useState<[number, number]>([2, 9]);
 
   const [yearRange, setYearRange] = useState<[number, number]>([2010, CURRENT_YEAR]);
@@ -45,6 +46,15 @@ export const Cars: React.FC = () => {
       fuelType === "any" || car.fuelType.toLowerCase() === fuelType.toLowerCase();
     // const matchesSeats =
     // seats === "any" || car.seats.toString() === seats.replace(" Seater", "");
+
+    // console.log("searh query: ", {
+    //   searchTerm: searchTerm,
+    //   minPrice: priceRange[0],
+    //   maxPrice: priceRange[1],
+    //   transmission: transmission,
+    //   fuelType: fuelType,
+    // })
+
     const matchesCondition = true
     // vehicleCondition === "all" ||
     // (vehicleCondition === "brand new" ? car. === "new" : car.condition === "used");
@@ -92,6 +102,7 @@ export const Cars: React.FC = () => {
                 size="sm"
                 variant="ghost"
                 onClick={() => {
+                  setSearchInput("");
                   setSearchTerm("");
                   setRentalType("any");
                   setPriceRange([100, 60000]);
@@ -111,15 +122,22 @@ export const Cars: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search
               </label>
-              <div className="relative">
+              <div className="relative mb-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   placeholder="Search cars..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-10"
                 />
               </div>
+              <Button
+                onClick={() => setSearchTerm(searchInput)}
+                className="w-full bg-theme-500 hover:bg-theme-600 text-white"
+                size="sm"
+              >
+                Search Cars
+              </Button>
             </div>
 
             {/* Rental Type */}
@@ -141,36 +159,36 @@ export const Cars: React.FC = () => {
               </div>
             </div>
 
-            {/* Price Range */}
-            <div className='p-6 max-w-xl mx-auto'>
-              <RangeSlider
-                min={100}
-                max={60000}
-                step={100}
-                value={priceRange}
-                onChange={setPriceRange}
-                label="Price Range ($)" />
+            <RangeSlider
+              min={100}
+              max={60000}
+              step={100}
+              value={priceRange}
+              onChange={(val: number[]) => setPriceRange(val as [number, number])}
+              label="Price Range ($)"
+              currency='$'
+            />
 
-              <RangeSlider
-                min={2010}
-                max={CURRENT_YEAR}
-                step={1}
-                value={yearRange}
-                onChange={setYearRange}
-                label="Year"
-              />
+            <hr className="my-6 border-gray-300" />
 
-              <RangeSlider
-                min={2}
-                max={9}
-                step={1}
-                value={seatRange}
-                onChange={setSeatRange}
-                label="Seats"
-              />
+            <RangeSlider
+              min={2010}
+              max={CURRENT_YEAR}
+              value={yearRange}
+              onChange={(val) => setYearRange(val as [number, number])}
+              label="Year"
+            />
+            <hr className="my-6 border-gray-300" />
 
-            </div>
+            <RangeSlider
+              min={2}
+              max={9}
+              value={seatRange}
+              onChange={(val) => setSeatRange(val as [number, number])}
+              label="Seats"
+            />
 
+            <hr className="my-6 border-gray-300" />
 
             {/* Transmission */}
             <div className="mb-6">
@@ -209,25 +227,6 @@ export const Cars: React.FC = () => {
                 ))}
               </div>
             </div>
-
-            {/* Seats */}
-            {/* <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Seats
-              </label>
-              <div className="flex gap-2">
-                {["any", "2 Seater", "4 Seater"].map((s) => (
-                  <Button
-                    key={s}
-                    variant={seats === s ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setSeats(s)}
-                  >
-                    {s}
-                  </Button>
-                ))}
-              </div>
-            </div> */}
 
           </Card>
         </motion.div>
