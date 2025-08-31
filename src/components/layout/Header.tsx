@@ -18,6 +18,23 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Auto-close language dropdown after 3 seconds
+  React.useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    if (showLanguageDropdown) {
+      timeoutId = setTimeout(() => {
+        setShowLanguageDropdown(false);
+      }, 3000);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [showLanguageDropdown]);
+
   // Add scroll listener for navbar background
   React.useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +47,24 @@ export const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close language dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.language-dropdown-container')) {
+        setShowLanguageDropdown(false);
+      }
+    };
+
+    if (showLanguageDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLanguageDropdown]);
 
   const navigation = [
     { name: t('header.home'), href: '/' },
@@ -123,7 +158,7 @@ export const Header: React.FC = () => {
             </Button>
 
             {/* Language Selector */}
-            <div className="relative">
+            <div className="relative language-dropdown-container">
               <button
                 onClick={() => {
                   setShowLanguageDropdown(!showLanguageDropdown)
