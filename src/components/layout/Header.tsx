@@ -18,17 +18,53 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Auto-close language dropdown after 3 seconds
+  React.useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    if (showLanguageDropdown) {
+      timeoutId = setTimeout(() => {
+        setShowLanguageDropdown(false);
+      }, 3000);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [showLanguageDropdown]);
+
   // Add scroll listener for navbar background
   React.useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
-      const triggerHeight = 600; // Much higher on page - only 10px scroll
+      // Lower trigger height for help page to activate header styling earlier
+      const triggerHeight = location.pathname === '/help' ? 70 : 600;
       setIsScrolled(scrollPosition > triggerHeight);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close language dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.language-dropdown-container')) {
+        setShowLanguageDropdown(false);
+      }
+    };
+
+    if (showLanguageDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLanguageDropdown]);
 
   const navigation = [
     { name: t('header.home'), href: '/' },
@@ -73,6 +109,16 @@ export const Header: React.FC = () => {
         ? 'bg-white shadow-lg border-b border-gray-200'
         : 'bg-transparent shadow-none border-transparent'
         }`}
+      onHoverStart={() => {
+        if (!isScrolled)
+          setIsScrolled(true)
+        // console.log('hovering')
+      }}
+      onHoverEnd={() => {
+        if (window.scrollY < (location.pathname === '/help' ? 70 : 600) && isScrolled)
+          setIsScrolled(false)
+        // console.log('hovering stopped')
+      }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
@@ -112,7 +158,7 @@ export const Header: React.FC = () => {
             </Button>
 
             {/* Language Selector */}
-            <div className="relative">
+            <div className="relative language-dropdown-container">
               <button
                 onClick={() => {
                   setShowLanguageDropdown(!showLanguageDropdown)
