@@ -2,46 +2,49 @@ import { motion } from 'framer-motion';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export const Footer: React.FC = () => {
+  const { t } = useTranslation();
   const footerSections = [
     {
-      title: 'Reservations',
+      title: t("footer.sections.reservations.title"),
       links: [
-        { name: 'Start a reservation', href: '/booking' },
-        { name: 'Get a receipt', href: '#' },
-        { name: 'How to book', href: '#' },
-        { name: 'Help & FAQs', href: '#' }
+        { name: t("footer.sections.reservations.links.start"), href: '/booking' },
+        { name: t("footer.sections.reservations.links.receipt"), href: '#' },
+        { name: t("footer.sections.reservations.links.howTo"), href: '#' },
+        { name: t("footer.sections.reservations.links.faq"), href: '/help' }
       ]
     },
     {
-      title: 'Vehicles',
+      title: t("footer.sections.vehicles.title"),
       links: [
-        { name: 'Cars', href: '/cars' },
-        { name: 'SUVs', href: '/cars' },
-        { name: 'Minivans & Vans', href: '/cars' },
-        { name: 'Exotic Cars', href: '/cars' }
+        { name: t("footer.sections.vehicles.links.cars"), href: '/cars' },
+        { name: t("footer.sections.vehicles.links.suv"), href: '/cars' },
+        { name: t("footer.sections.vehicles.links.vans"), href: '/cars' },
+        { name: t("footer.sections.vehicles.links.exotic"), href: '/cars' }
       ]
     },
     {
-      title: 'Cars',
+      title: t("footer.sections.cars.title"),
       links: [
-        { name: 'Audi', href: '/cars' },
-        { name: 'BMW', href: '/cars' },
-        { name: 'Porsche', href: '/cars' },
-        { name: 'All cars', href: '/cars' }
+        { name: t("footer.sections.cars.links.audi"), href: '/cars' },
+        { name: t("footer.sections.cars.links.bmw"), href: '/cars' },
+        { name: t("footer.sections.cars.links.porsche"), href: '/cars' },
+        { name: t("footer.sections.cars.links.all"), href: '/cars' }
       ]
     },
     {
-      title: 'Company',
+      title: t("footer.sections.company.title"),
       links: [
-        { name: 'About us', href: '/about' },
-        { name: 'Career', href: '#' },
-        { name: 'Meet our people', href: '#' },
-        { name: 'Affiliate Programs', href: '#' }
+        { name: t("footer.sections.company.links.about"), href: '/about' },
+        { name: t("footer.sections.company.links.career"), href: '#' },
+        { name: t("footer.sections.company.links.team"), href: '#' },
+        { name: t("footer.sections.company.links.affiliate"), href: '#' }
       ]
     }
   ];
+
 
   const socialLinks = [
     { icon: Twitter, href: '#', label: 'Twitter' },
@@ -95,7 +98,7 @@ export const Footer: React.FC = () => {
 
           {/* Copyright */}
           <p className="text-white text-sm">
-            © 2023 LevelAutoRental. All Rights Reserved
+            {t("footer.bottom.copyright")}
           </p>
 
           {/* Social Media Icons */}

@@ -75,5 +75,54 @@
     "testimonials": {
         "sectionLabel": "Recenzii",
         "sectionTitle": "Ce spun oamenii despre noi?"
+    },
+    "footer": {
+        "sections": {
+            "reservations": {
+                "title": "Rezervări",
+                "links": {
+                    "start": "Începe o rezervare",
+                    "receipt": "Obține o chitanță",
+                    "howTo": "Cum să rezervi",
+                    "faq": "Ajutor & Întrebări frecvente"
+                }
+            },
+            "vehicles": {
+                "title": "Vehicule",
+                "links": {
+                    "cars": "Mașini",
+                    "suv": "SUV-uri",
+                    "vans": "Minivanuri & Vanuri",
+                    "exotic": "Mașini exotice"
+                }
+            },
+            "cars": {
+                "title": "Mașini",
+                "links": {
+                    "audi": "Audi",
+                    "bmw": "BMW",
+                    "porsche": "Porsche",
+                    "all": "Toate mașinile"
+                }
+            },
+            "company": {
+                "title": "Companie",
+                "links": {
+                    "about": "Despre noi",
+                    "career": "Carieră",
+                    "team": "Echipa noastră",
+                    "affiliate": "Programe de afiliere"
+                }
+            }
+        },
+        "social": {
+            "twitter": "Twitter",
+            "facebook": "Facebook",
+            "instagram": "Instagram"
+        },
+        "bottom": {
+            "logo": "LevelAutoRental",
+            "copyright": "© 2023 LevelAutoRental. Toate drepturile rezervate"
+        }
     }
 }
