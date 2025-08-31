@@ -7,6 +7,7 @@ import { Cars } from './pages/cars/Cars';
 import { Contact } from './pages/contact/Contact';
 import { Home } from './pages/home/Home';
 import Loader from './components/layout/Loader';
+import { FAQ as FAQComponent } from './pages/faq/FAQ';
 
 function App() {
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/booking" element={<Booking />} />
+          <Route path="/help" element={<FAQComponent />} />
         </Routes>
       </Layout>
     </Router>
