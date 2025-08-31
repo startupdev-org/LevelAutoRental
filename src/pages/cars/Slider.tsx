@@ -53,15 +53,17 @@ interface Props {
     max: number;
     step?: number;
     value: number[];
+    currency?: string;
     onChange: (value: number[]) => void;
 }
 
-export default function AirbnbRangeSlider({
+export default function RangeSlider({
     label,
     min,
     max,
     step = 1,
     value,
+    currency = "",
     onChange,
 }: Props) {
     const handleChange = (_: Event, newValue: number | number[]) => {
@@ -79,9 +81,10 @@ export default function AirbnbRangeSlider({
                 onChange={handleChange}
                 valueLabelDisplay="auto"
                 slots={{ thumb: AirbnbThumbComponent }}
+
             />
             <Typography variant="body2" color="text.secondary">
-                {value[0]} – {value[1]}
+                {value[0]} {currency} – {value[1]} {currency}
             </Typography>
         </Box>
     );

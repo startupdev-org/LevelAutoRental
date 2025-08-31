@@ -11,7 +11,6 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { CarCard } from './CarCard';
 import RangeSlider from './Slider';
-import AirbnbRangeSlider from './Slider';
 
 
 
@@ -160,25 +159,28 @@ export const Cars: React.FC = () => {
               </div>
             </div>
 
-            <AirbnbRangeSlider
+            <RangeSlider
               min={100}
               max={60000}
               step={100}
               value={priceRange}
               onChange={(val: number[]) => setPriceRange(val as [number, number])}
               label="Price Range ($)"
+              currency='$'
             />
 
+            <hr className="my-6 border-gray-300" />
 
-            <AirbnbRangeSlider
+            <RangeSlider
               min={2010}
               max={CURRENT_YEAR}
               value={yearRange}
               onChange={(val) => setYearRange(val as [number, number])}
               label="Year"
             />
+            <hr className="my-6 border-gray-300" />
 
-            <AirbnbRangeSlider
+            <RangeSlider
               min={2}
               max={9}
               value={seatRange}
@@ -186,7 +188,7 @@ export const Cars: React.FC = () => {
               label="Seats"
             />
 
-
+            <hr className="my-6 border-gray-300" />
 
             {/* Transmission */}
             <div className="mb-6">
@@ -225,25 +227,6 @@ export const Cars: React.FC = () => {
                 ))}
               </div>
             </div>
-
-            {/* Seats */}
-            {/* <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Seats
-              </label>
-              <div className="flex gap-2">
-                {["any", "2 Seater", "4 Seater"].map((s) => (
-                  <Button
-                    key={s}
-                    variant={seats === s ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setSeats(s)}
-                  >
-                    {s}
-                  </Button>
-                ))}
-              </div>
-            </div> */}
 
           </Card>
         </motion.div>
