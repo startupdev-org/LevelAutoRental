@@ -11,7 +11,7 @@ export const Booking: React.FC = () => {
   const todayDate = new Date();
   const tomorrowDate = new Date();
   tomorrowDate.setDate(todayDate.getDate() + 1);
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState({
     // Step 1: Rental Details
@@ -70,30 +70,27 @@ export const Booking: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-            className="text-center"
+    <div className="min-h-screen bg-gray-50 mt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="text-center"
+        >
+          <motion.h1
+            variants={fadeInUp}
+            className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
           >
-            <motion.h1
-              variants={fadeInUp}
-              className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
-            >
-              Book Your Car
-            </motion.h1>
-            <motion.p
-              variants={fadeInUp}
-              className="text-xl text-gray-600"
-            >
-              Complete your reservation in just a few simple steps
-            </motion.p>
-          </motion.div>
-        </div>
+            Book Your Car
+          </motion.h1>
+          <motion.p
+            variants={fadeInUp}
+            className="text-xl text-gray-600"
+          >
+            Complete your reservation in just a few simple steps
+          </motion.p>
+        </motion.div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -113,8 +110,8 @@ export const Booking: React.FC = () => {
                 className="flex items-center"
               >
                 <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${currentStep >= step.number
-                    ? 'bg-theme-500 border-theme-500 text-white'
-                    : 'bg-white border-gray-300 text-gray-400'
+                  ? 'bg-theme-500 border-theme-500 text-white'
+                  : 'bg-white border-gray-300 text-gray-400'
                   }`}>
                   <step.icon className="w-6 h-6" />
                 </div>
@@ -228,8 +225,8 @@ export const Booking: React.FC = () => {
                       key={car}
                       whileHover={{ scale: 1.02 }}
                       className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${bookingData.selectedCar === `car-${car}`
-                          ? 'border-theme-500 bg-theme-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-theme-500 bg-theme-50'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                       onClick={() => handleInputChange('selectedCar', `car-${car}`)}
                     >

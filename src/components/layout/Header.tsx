@@ -10,13 +10,23 @@ import { changeLanguage } from 'i18next';
 export const Header: React.FC = () => {
 
   const { i18n, t } = useTranslation();
-
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
   const location = useLocation();
   const navigate = useNavigate();
+
+
+  // page where the sidebar will always be on scroll
+  const shouldHeaderBeActive = () => {
+    if (location.pathname === '/booking') {
+      console.log('The header should be scrolled')
+      return true;
+    }
+    return false;
+  }
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
   // Auto-close language dropdown after 3 seconds
   React.useEffect(() => {
@@ -38,6 +48,7 @@ export const Header: React.FC = () => {
   // Add scroll listener for navbar background
   React.useEffect(() => {
     const handleScroll = () => {
+
       const scrollPosition = window.scrollY;
       // Lower trigger height for help page to activate header styling earlier
       const triggerHeight = location.pathname === '/help' ? 70 : 600;
