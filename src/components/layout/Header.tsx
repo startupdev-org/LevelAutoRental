@@ -112,34 +112,19 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
+    <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${isScrolled
         ? 'bg-white shadow-lg border-b border-gray-200'
         : 'bg-transparent shadow-none border-transparent'
         }`}
-      onHoverStart={() => {
-        if (!isScrolled)
-          setIsScrolled(true)
-        // console.log('hovering')
-      }}
-      onHoverEnd={() => {
-        if (window.scrollY < (location.pathname === '/help' ? 70 : 600) && isScrolled)
-          setIsScrolled(false)
-        // console.log('hovering stopped')
-      }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center group">
-            <motion.img
+            <img
               src="/logo.png"
               alt="Level Auto Rental Logo"
-              whileHover={{ scale: 1.1 }}
-              transition={{ duration: 0.3 }}
               className={`w-[250px] h-auto transition-all duration-300 ${isScrolled ? '' : 'brightness-0 invert'
                 }`}
             />
@@ -220,13 +205,12 @@ export const Header: React.FC = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-2 rounded-md transition-colors ${isScrolled ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' : 'text-white hover:text-theme-300 hover:bg-white/20'}`}
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </motion.button>
+            </button>
           </div>
         </div>
 
@@ -259,6 +243,6 @@ export const Header: React.FC = () => {
         </motion.div>
 
       </div>
-    </motion.header>
+    </header>
   );
 };

@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Search } from 'lucide-react';
 import React, { useState } from 'react';
 import { BookingForm } from '../../../types';
-import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +36,15 @@ export const Hero: React.FC = () => {
 
   // Handle opening a specific dropdown and closing others
   const openDropdown = (dropdownType: 'location' | 'pickup' | 'return') => {
+    // If clicking on the same dropdown that's already open, close it
+    if ((dropdownType === 'location' && showLocationDropdown) ||
+        (dropdownType === 'pickup' && showPickupCalendar) ||
+        (dropdownType === 'return' && showReturnCalendar)) {
+      closeAllDropdowns();
+      return;
+    }
+    
+    // Close all dropdowns first, then open the selected one
     closeAllDropdowns();
     switch (dropdownType) {
       case 'location':
@@ -55,14 +63,20 @@ export const Hero: React.FC = () => {
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      
+      // Check if click is outside the entire search bar container
       if (!target.closest('.dropdown-container')) {
         closeAllDropdowns();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Only add listener if any dropdown is open
+    if (showLocationDropdown || showPickupCalendar || showReturnCalendar) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showLocationDropdown, showPickupCalendar, showReturnCalendar]);
 
   const handleInputChange = (field: keyof BookingForm, value: string) => {
     setBookingForm(prev => ({ ...prev, [field]: value }));
@@ -73,20 +87,15 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative h-[755px] bg-fixed bg-cover bg-bottom bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/bg-hero.jpg)', backgroundPosition: 'center -380px' }}>
+    <section className="relative h-[725px] bg-fixed bg-cover bg-bottom bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/bg-hero.jpg)', backgroundPosition: 'center -420px' }}>
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60"></div>
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
         <div className="flex items-center justify-center h-full pt-24">
           {/* Centered Text Content */}
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-            className="text-center space-y-10 max-w-4xl"
-          >
-            <motion.div variants={fadeInUp} className="space-y-8">
+          <div className="text-center space-y-10 max-w-4xl">
+            <div className="space-y-8">
               <div className="space-y-6 ">
                 <p className="text-lg md:text-xl text-theme-500 font-semibold drop-shadow-md uppercase tracking-wide">
 
@@ -112,19 +121,14 @@ export const Hero: React.FC = () => {
                   {t('hero.seeCars')}
                 </button>
               </div>
-            </motion.div>
+            </div>
 
-          </motion.div>
+          </div>
         </div>
       </div>
 
       {/* Search Bar Section */}
-      <motion.div
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1 }}
-        className="py-[0px] top-[280px] -mt-10 md:-mt-28 relative z-20"
-      >
+      <div className="py-[0px] top-[280px] -mt-10 md:-mt-28 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white backdrop-blur-sm rounded-3xl shadow-lg border border-white/20 dropdown-container">
             <div className="flex">
@@ -156,6 +160,7 @@ export const Hero: React.FC = () => {
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <div className="py-1">
                           <div
@@ -214,6 +219,7 @@ export const Hero: React.FC = () => {
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <button
@@ -306,6 +312,7 @@ export const Hero: React.FC = () => {
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <button
@@ -383,7 +390,7 @@ export const Hero: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 

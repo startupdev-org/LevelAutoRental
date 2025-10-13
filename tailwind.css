@@ -99,14 +99,46 @@ body {
   }
 }
 
-@keyframes marquee {
-  0% {
-    transform: translate(0);
-  }
+/* Modern Marquee Styles */
+.marquee {
+  --gap: 0rem;
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  gap: var(--gap);
+}
 
+.marquee__content {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  min-width: 100%;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.marquee__content li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: calc(100vw / 7);
+}
+
+/* CSS Keyframe Animation */
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
   to {
     transform: translateX(calc(-100% - var(--gap)));
   }
+}
+
+.marquee__content {
+  animation: scroll 20s linear infinite;
 }
 
 @keyframes marquee-vertical {
