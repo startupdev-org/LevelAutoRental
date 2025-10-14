@@ -1,37 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
-import { About } from './pages/about/About';
-import { Booking } from './pages/booking/Booking';
-import { Cars } from './pages/cars/Cars';
-import { Contact } from './pages/contact/Contact';
-import { Home } from './pages/home/Home';
 import Loader from './components/layout/Loader';
-import { FAQ } from './pages/faq/FAQ';
+import RouterWrapper from './components/RouterWrapper';
 
 function App() {
-
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 3000);
-    return () => clearTimeout(timer);
+    // Suppress external MutationObserver errors from browser extensions
+    const originalError = window.console.error;
+    window.console.error = (...args) => {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('MutationObserver')) {
+        return; // Suppress MutationObserver errors from extensions
+      }
+      originalError.apply(console, args);
+    };
+
+    const timer = setTimeout(() => setInitialLoading(false), 2000);
+    
+    return () => {
+      clearTimeout(timer);
+      window.console.error = originalError; // Restore original console.error
+    };
   }, []);
 
-  if (loading) {
-    return <Loader />; // only loader visible
+  // Show initial loader on first load
+  if (initialLoading) {
+    return <Loader />;
   }
+
   return (
     <Router>
       <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/cars" element={<Cars />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/booking" element={<Booking />} />
-          <Route path="/help" element={<FAQ />} />
-        </Routes>
+        <RouterWrapper />
       </Layout>
     </Router>
   );

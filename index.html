@@ -93,11 +93,15 @@
       });
       
       // Reset body and html positioning
-      document.body.style.top = '0px';
-      document.body.style.marginTop = '0px';
-      document.body.style.paddingTop = '0px';
-      document.documentElement.style.marginTop = '0px';
-      document.documentElement.style.paddingTop = '0px';
+      if (document.body) {
+        document.body.style.top = '0px';
+        document.body.style.marginTop = '0px';
+        document.body.style.paddingTop = '0px';
+      }
+      if (document.documentElement) {
+        document.documentElement.style.marginTop = '0px';
+        document.documentElement.style.paddingTop = '0px';
+      }
       
       // Remove any divs with Google Translate IDs or classes
       var gtElements = document.querySelectorAll('div[id*="goog-gt-"], div[class*="goog-te"], div[style*="translate.google"]');

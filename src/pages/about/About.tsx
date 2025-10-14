@@ -1,130 +1,150 @@
 import { motion } from 'framer-motion';
-import { Award, Car, Clock, Shield, Users } from 'lucide-react';
+import { Award, Car, Clock, Shield, Users, CheckCircle } from 'lucide-react';
 import React from 'react';
-import { useInView } from '../../hooks/useInView';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Card } from '../../components/ui/Card';
+import { useTranslation } from 'react-i18next';
 
 export const About: React.FC = () => {
-  const { ref, isInView } = useInView();
+  const { t } = useTranslation();
 
   const stats = [
-    { icon: Car, label: 'Vehicles', value: '500+' },
-    { icon: Users, label: 'Happy Customers', value: '10,000+' },
-    { icon: Clock, label: 'Years Experience', value: '15+' },
-    { icon: Award, label: 'Awards Won', value: '25+' }
+    { icon: Car, label: t('about.stats.vehicles'), value: '500+' },
+    { icon: Users, label: t('about.stats.customers'), value: '10,000+' },
+    { icon: Clock, label: t('about.stats.experience'), value: '15+' },
+    { icon: Award, label: t('about.stats.awards'), value: '25+' }
   ];
 
   const values = [
     {
       icon: Shield,
-      title: 'Safety First',
-      description: 'All our vehicles undergo rigorous safety inspections and maintenance to ensure your peace of mind on the road.'
+      title: t('about.values.safety.title'),
+      description: t('about.values.safety.description')
     },
     {
       icon: Users,
-      title: 'Customer Focus',
-      description: 'We prioritize customer satisfaction with 24/7 support and personalized service tailored to your needs.'
+      title: t('about.values.customer.title'),
+      description: t('about.values.customer.description')
     },
     {
       icon: Award,
-      title: 'Quality Service',
-      description: 'Our commitment to excellence has earned us industry recognition and the trust of thousands of customers.'
+      title: t('about.values.quality.title'),
+      description: t('about.values.quality.description')
     }
   ];
 
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-r from-theme-500 to-theme-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-            className="text-center"
-          >
-            <motion.h1
-              variants={fadeInUp}
-              className="text-4xl md:text-5xl font-bold mb-6"
-            >
-              About CarRental
-            </motion.h1>
-            <motion.p
-              variants={fadeInUp}
-              className="text-xl md:text-2xl max-w-3xl mx-auto"
-            >
-              Your trusted partner for reliable, affordable, and premium car rental services since 2009
-            </motion.p>
-          </motion.div>
-        </div>
-      </section>
+      <section className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/bg-hero.jpg)', backgroundPosition: 'center -420px' }}>
+        {/* Dark Overlay */}
+        <div className="absolute inset-0 bg-black/60"></div>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            ref={ref}
-            variants={staggerContainer}
-            initial="initial"
-            animate={isInView ? "animate" : "initial"}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                variants={fadeInUp}
-                className="text-center"
-              >
-                <motion.div
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ duration: 0.2 }}
-                  className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
-                >
-                  <stat.icon className="w-8 h-8 text-theme-500" />
-                </motion.div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {stat.value}
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
+          <div className="flex items-center justify-center h-full pt-16">
+            {/* Centered Text Content */}
+            <div className="text-center space-y-10 max-w-4xl">
+              <div className="space-y-8">
+                <div className="space-y-6">
+            <p className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+              {t('about.hero.label')}
+            </p>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
+                    {t('about.hero.title')}
+                  </h1>
+            {/* Description removed for minimal hero */}
                 </div>
-                <div className="text-gray-600">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Story Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-20 mt-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <motion.span
+              variants={fadeInUp}
+              className="text-sm font-semibold tracking-wider text-red-500 uppercase"
+            >
+              {t('about.story.label')}
+            </motion.span>
+            <motion.h2
+              variants={fadeInUp}
+              className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
+            >
+              Evoluția noastră în Moldova
+            </motion.h2>
+          </motion.div>
+
           <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Timeline */}
             <motion.div
               variants={fadeInUp}
               initial="initial"
               whileInView="animate"
               viewport={{ once: true }}
-              className="space-y-6"
+              className="relative"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-                Our Story
-              </h2>
-              <p className="text-lg text-gray-600">
-                Founded in 2009, CarRental began as a small family business with a simple mission:
-                to provide reliable, affordable transportation solutions for everyone. What started
-                with just five vehicles has grown into one of the region's most trusted car rental services.
-              </p>
-              <p className="text-lg text-gray-600">
-                Over the years, we've expanded our fleet to include over 500 vehicles ranging from
-                economy cars to luxury sedans and SUVs. Our commitment to customer satisfaction and
-                quality service has remained unchanged, earning us the loyalty of thousands of customers
-                and numerous industry awards.
-              </p>
-              <p className="text-lg text-gray-600">
-                Today, we continue to innovate and improve our services, embracing new technologies
-                and sustainable practices to better serve our customers and protect the environment
-                for future generations.
-              </p>
+              {/* vertical line */}
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-red-500 via-red-400 to-red-500 hidden lg:block" />
+
+              <div className="space-y-10">
+                {/* 2009 */}
+                <div className="relative flex items-start">
+                  <div className="hidden lg:flex absolute left-4 w-4 h-4 bg-red-500 rounded-full border-4 border-white shadow-lg z-10" />
+                  <div className="lg:ml-16">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">2023</div>
+                      <Shield className="w-4 h-4 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Lansarea</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Am început cu 3 mașini și o viziune: să facem închirierile auto accesibile în Moldova.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2015—2020 */}
+                <div className="relative flex items-start">
+                  <div className="hidden lg:flex absolute left-4 w-4 h-4 bg-red-500 rounded-full border-4 border-white shadow-lg z-10" />
+                  <div className="lg:ml-16">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">2023—2024</div>
+                      <Award className="w-4 h-4 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Primul an</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Am ajuns la 15 mașini și 200+ clienți fideli. Procese mai simple, prețuri transparente.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Astăzi */}
+                <div className="relative flex items-start">
+                  <div className="hidden lg:flex absolute left-4 w-4 h-4 bg-red-500 rounded-full border-4 border-white shadow-lg z-10" />
+                  <div className="lg:ml-16">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">Astăzi</div>
+                      <CheckCircle className="w-4 h-4 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Acum</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      25+ mașini, rezervări online, livrare la domiciliu. Continuăm să creștem pas cu pas.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
+            {/* Visual */}
             <motion.div
               variants={fadeInUp}
               initial="initial"
@@ -133,9 +153,9 @@ export const About: React.FC = () => {
               className="relative"
             >
               <img
-                src="https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=800"
+                src="/lvl_bg.png"
                 alt="Our story"
-                className="rounded-lg shadow-lg"
+                className="rounded-2xl shadow-lg"
               />
             </motion.div>
           </div>
@@ -143,27 +163,27 @@ export const About: React.FC = () => {
       </section>
 
       {/* Values Section */}
-      <section className="py-16 bg-white">
+      <section className="py-10 mb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={staggerContainer}
             initial="initial"
             whileInView="animate"
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
+            <motion.span
+              variants={fadeInUp}
+              className="text-sm font-semibold tracking-wider text-red-500 uppercase"
+            >
+              {t('about.values.label')}
+            </motion.span>
             <motion.h2
               variants={fadeInUp}
-              className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+              className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
             >
-              Our Values
+              {t('about.values.title')}
             </motion.h2>
-            <motion.p
-              variants={fadeInUp}
-              className="text-xl text-gray-600 max-w-3xl mx-auto"
-            >
-              The principles that guide everything we do
-            </motion.p>
           </motion.div>
 
           <motion.div
@@ -175,93 +195,27 @@ export const About: React.FC = () => {
           >
             {values.map((value, index) => (
               <motion.div key={value.title} variants={fadeInUp}>
-                <Card className="p-8 text-center h-full">
+                <div className="text-center relative">
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ duration: 0.2 }}
-                    className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6"
+                    className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-lg flex items-center justify-center bg-gradient-to-b from-red-500 to-red-600"
                   >
-                    <value.icon className="w-8 h-8 text-theme-500" />
+                    <value.icon className="w-8 h-8 text-white" />
                   </motion.div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  <div className="text-xl font-bold text-gray-800 mb-3">
                     {value.title}
-                  </h3>
-                  <p className="text-gray-600">
+                  </div>
+                  <div className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
                     {value.description}
-                  </p>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
-            >
-              Meet Our Team
-            </motion.h2>
-            <motion.p
-              variants={fadeInUp}
-              className="text-xl text-gray-600 max-w-3xl mx-auto"
-            >
-              The dedicated professionals behind our success
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid md:grid-cols-3 gap-8"
-          >
-            {[
-              {
-                name: 'Sarah Johnson',
-                role: 'CEO & Founder',
-                image: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400'
-              },
-              {
-                name: 'Michael Chen',
-                role: 'Operations Manager',
-                image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=400'
-              },
-              {
-                name: 'Emily Rodriguez',
-                role: 'Customer Service Director',
-                image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400'
-              }
-            ].map((member, index) => (
-              <motion.div key={member.name} variants={fadeInUp}>
-                <Card className="p-6 text-center">
-                  <motion.img
-                    whileHover={{ scale: 1.05 }}
-                    src={member.image}
-                    alt={member.name}
-                    className="w-32 h-32 rounded-full object-cover mx-auto mb-4"
-                  />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {member.name}
-                  </h3>
-                  <p className="text-gray-600">{member.role}</p>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
     </div>
   );
 };

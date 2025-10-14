@@ -1,65 +1,53 @@
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Car, DollarSign } from 'lucide-react';
 import React from 'react';
-import { useInView } from '../../../hooks/useInView';
 import { fadeInUp, staggerContainer } from '../../../utils/animations';
-import { BanknotesIcon, KeyIcon } from '@heroicons/react/24/solid'
 import { useTranslation } from 'react-i18next';
 
-
 export const HowToRent: React.FC = () => {
-
     const { t } = useTranslation();
-
-    const { ref, isInView } = useInView();
 
     const steps = [
         {
-            icon: MapPin,
+            number: 1,
             title: t("howToRent.steps.contact.title"),
-            description: t("howToRent.steps.contact.description"),
-            isActive: false
+            description: t("howToRent.steps.contact.description")
         },
         {
-            icon: Calendar,
+            number: 2,
             title: t("howToRent.steps.details.title"),
-            description: t("howToRent.steps.details.description"),
-            isActive: true
+            description: t("howToRent.steps.details.description")
         },
         {
-            icon: BanknotesIcon,
+            number: 3,
             title: t("howToRent.steps.price.title"),
-            description: t("howToRent.steps.price.description"),
-            isActive: false
+            description: t("howToRent.steps.price.description")
         },
         {
-            icon: KeyIcon,
+            number: 4,
             title: t("howToRent.steps.pickup.title"),
-            description: t("howToRent.steps.pickup.description"),
-            isActive: true
+            description: t("howToRent.steps.pickup.description")
         },
         {
-            icon: Car,
+            number: 5,
             title: t("howToRent.steps.return.title"),
-            description: t("howToRent.steps.return.description"),
-            isActive: false
+            description: t("howToRent.steps.return.description")
         }
     ];
 
     return (
-        <section className="py-20 mt-20 bg-white">
+        <section className="bg-gray-50 py-20 mt-0">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header Section */}
                 <motion.div
-                    ref={ref}
                     variants={staggerContainer}
                     initial="initial"
-                    animate={isInView ? "animate" : "initial"}
+                    whileInView="animate"
+                    viewport={{ once: true }}
                     className="text-center mb-16"
                 >
                     <motion.span
                         variants={fadeInUp}
-                        className="text-sm font-semibold tracking-wider text-red-500 uppercase"
+                        className="text-sm font-semibold tracking-wider text-red-500 uppercase bg-gradient-to-r from-red-500 to-red-600 bg-clip-text"
                     >
                         {t("howToRent.sectionLabel")}
                     </motion.span>
@@ -69,44 +57,59 @@ export const HowToRent: React.FC = () => {
                     >
                         {t("howToRent.sectionTitle")}
                     </motion.h2>
+                    <motion.p
+                        variants={fadeInUp}
+                        className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto"
+                    >
+                        {t("howToRent.sectionDescription")}
+                    </motion.p>
                 </motion.div>
 
-                {/* Steps Grid */}
-                <div className="relative">
-                    {/* Connecting Lines */}
-                    <div className="hidden lg:block absolute top-8 left-1/5 right-1/5 h-0.5 border-t-2 border-dashed border-gray-300"></div>
-                    <div className="hidden lg:block absolute top-8 left-2/5 right-2/5 h-0.5 border-t-2 border-dashed border-gray-300"></div>
-                    <div className="hidden lg:block absolute top-8 left-3/5 right-3/5 h-0.5 border-t-2 border-dashed border-gray-300"></div>
-                    <div className="hidden lg:block absolute top-8 left-4/5 right-4/5 h-0.5 border-t-2 border-dashed border-gray-300"></div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative">
-                        {steps.map((step) => (
+                {/* Timeline Steps */}
+                <motion.div
+                    variants={staggerContainer}
+                    initial="initial"
+                    whileInView="animate"
+                    viewport={{ once: true }}
+                    className="mx-auto mt-12 grid max-w-md grid-cols-1 gap-10 sm:mt-16 lg:mt-20 lg:max-w-5xl lg:grid-cols-5"
+                >
+                    {steps.map((step, index) => (
+                        <motion.li
+                            key={step.title}
+                            variants={fadeInUp}
+                            className="flex-start group relative flex lg:flex-col lg:items-center"
+                        >
+                            {/* Connecting Line */}
+                            {index < steps.length - 1 && (
+                                <span 
+                                    className="absolute left-[24px] top-16 h-[calc(100%_-_40px)] w-px bg-gradient-to-b from-red-300 to-red-500 lg:right-0 lg:left-auto lg:top-[24px] lg:h-px lg:w-[calc(100%_-_180px)]" 
+                                    aria-hidden="true"
+                                />
+                            )}
+                            
+                            {/* Number Container */}
                             <motion.div
-                                key={step.title}
-                                variants={fadeInUp}
-                                className="text-center relative"
+                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                transition={{ duration: 0.2 }}
+                                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white bg-red-500 transition-all duration-200 group-hover:border-red-500 group-hover:bg-white shadow-lg lg:mx-auto"
                             >
-                                <div
-                                    className={`w-16 h-16 rounded-2xl mx-auto mb-4 shadow-lg flex items-center justify-center ${step.isActive
-                                        ? "bg-gradient-to-b from-red-500 to-red-600"
-                                        : "bg-white border-2 border-gray-200"
-                                        }`}
-                                >
-                                    <step.icon
-                                        className={`w-8 h-8 ${step.isActive ? "text-white" : "text-red-500"
-                                            }`}
-                                    />
-                                </div>
+                                <span className="text-lg font-bold text-white group-hover:text-red-500 transition-colors duration-200">
+                                    {step.number}
+                                </span>
+                            </motion.div>
+                            
+                            {/* Content */}
+                            <div className="ml-6 lg:ml-0 lg:mt-10 lg:text-center">
                                 <div className="text-xl font-bold text-gray-800 mb-3">
                                     {step.title}
                                 </div>
-                                <div className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
+                                <div className="text-gray-500 text-sm leading-relaxed max-w-xs lg:mx-auto">
                                     {step.description}
                                 </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
+                            </div>
+                        </motion.li>
+                    ))}
+                </motion.div>
             </div>
         </section>
     );

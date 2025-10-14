@@ -3,7 +3,7 @@
         "home": "Home",
         "cars": "Fleet",
         "about": "About Us",
-        "whyUs": "Why Us?",
+        "howToRent": "How to Rent",
         "contact": "Contact",
         "auth": "Login"
     },
@@ -49,6 +49,7 @@
     "howToRent": {
         "sectionLabel": "How the rental process works",
         "sectionTitle": "In just 5 simple steps",
+        "sectionDescription": "Choose your car, send the details and hit the road without worries.",
         "steps": {
             "contact": {
                 "title": "Contact Us",
@@ -75,6 +76,47 @@
     "testimonials": {
         "sectionLabel": "Reviews",
         "sectionTitle": "What people say about us?"
+    },
+    "about": {
+        "hero": {
+            "label": "About Level Auto Rental",
+            "title": "About Level Auto Rental",
+            "subtitle": "Premium car rentals. Simple. Fast.",
+            "location": "in Moldova"
+        },
+        "stats": {
+            "vehicles": "Vehicles",
+            "customers": "Happy Customers",
+            "experience": "Years Experience",
+            "awards": "Awards Won"
+        },
+        "story": {
+            "label": "Our Story",
+            "title": "From Humble Beginnings to Industry Leaders",
+            "paragraph1": "Founded in 2009, Level Auto Rental began as a small family business with a simple mission: to provide reliable, affordable transportation solutions for everyone. What started with just five vehicles has grown into one of Moldova's most trusted car rental services.",
+            "paragraph2": "Over the years, we've expanded our fleet to include over 500 vehicles ranging from economy cars to luxury sedans and SUVs. Our commitment to customer satisfaction and quality service has remained unchanged, earning us the loyalty of thousands of customers and numerous industry awards.",
+            "paragraph3": "Today, we continue to innovate and improve our services, embracing new technologies and sustainable practices to better serve our customers and protect the environment for future generations."
+        },
+        "values": {
+            "label": "Our Values",
+            "title": "The principles that guide everything we do",
+            "safety": {
+                "title": "Safety First",
+                "description": "All our vehicles undergo rigorous safety inspections and maintenance to ensure your peace of mind on the road."
+            },
+            "customer": {
+                "title": "Customer Focus",
+                "description": "We prioritize customer satisfaction with 24/7 support and personalized service tailored to your needs."
+            },
+            "quality": {
+                "title": "Quality Service",
+                "description": "Our commitment to excellence has earned us industry recognition and the trust of thousands of customers."
+            }
+        },
+        "team": {
+            "label": "Meet Our Team",
+            "title": "The dedicated professionals behind our success"
+        }
     },
     "footer": {
         "sections": {

@@ -1,11 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Car, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { LANGUAGES } from "../../constants";
 import { useTranslation } from 'react-i18next';
-import { changeLanguage } from 'i18next';
 
 export const Header: React.FC = () => {
 
@@ -81,7 +80,7 @@ export const Header: React.FC = () => {
     { name: t('header.home'), href: '/' },
     { name: t('header.cars'), href: '/cars' },
     { name: t('header.about'), href: '/about' },
-    { name: t('header.whyUs'), href: '/about' },
+    { name: t('header.howToRent'), href: '/how-to-rent' },
     { name: t('header.contact'), href: '/contact' }
   ];
 

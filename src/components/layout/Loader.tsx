@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 interface LoadingScreenProps {
   isLoading?: boolean;
@@ -7,26 +7,36 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen = ({ isLoading = true, isTransitioning = false, onLoadingComplete }: LoadingScreenProps) => {
+  const [showLoader, setShowLoader] = useState(true);
+
   useEffect(() => {
-    // Simple timer for testing
-    const timer = setTimeout(() => {
-      onLoadingComplete?.();
-    }, 2000);
+    if (isTransitioning) {
+      // Start fade out animation
+      const timer = setTimeout(() => {
+        setShowLoader(false);
+        onLoadingComplete?.();
+      }, 300);
 
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [onLoadingComplete]);
+      return () => clearTimeout(timer);
+    }
+  }, [isTransitioning, onLoadingComplete]);
 
-  if (!isLoading) {
+  useEffect(() => {
+    if (isLoading) {
+      setShowLoader(true);
+    }
+  }, [isLoading]);
+
+  if (!showLoader) {
     return null;
   }
 
   return (
     <div 
-      className={`fixed inset-0 z-[999999] bg-white transition-opacity duration-700 ease-in-out ${
+      className={`fixed inset-0 bg-white transition-opacity duration-300 ease-in-out ${
         isTransitioning ? 'opacity-0' : 'opacity-100'
       }`}
+      style={{ zIndex: 999999 }}
     >
       {/* Loading Content */}
       <div className="flex items-center justify-center min-h-screen">

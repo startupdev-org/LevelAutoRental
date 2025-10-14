@@ -3,7 +3,7 @@
         "home": "Acasă",
         "cars": "Flotă",
         "about": "Despre noi",
-        "whyUs": "De ce noi?",
+        "howToRent": "Cum închiriez",
         "contact": "Contactează-ne",
         "auth": "Autentificare"
     },
@@ -28,7 +28,7 @@
     },
     "features": {
         "sectionLabel": "De ce să ne alegeți",
-        "sectionTitle": "Oferim cea mai bună experiență cu ofertele noastre de închirieri",
+        "sectionTitle": "Oferim cea mai bună experiență pentru închirieri.",
         "bestPrices": {
             "title": "Cele mai bune prețuri",
             "description": "Tarife competitive fără costuri ascunse. Obțineți cea mai bună valoare pentru banii voștri cu prețurile noastre transparente."
@@ -49,6 +49,7 @@
     "howToRent": {
         "sectionLabel": "Cum funcționează procesul de închiriere",
         "sectionTitle": "În doar 5 pași simpli",
+        "sectionDescription": "Alege mașina, trimite detaliile și pornește la drum fără griji.",
         "steps": {
             "contact": {
                 "title": "Contactează-ne",
@@ -75,6 +76,47 @@
     "testimonials": {
         "sectionLabel": "Recenzii",
         "sectionTitle": "Ce spun oamenii despre noi?"
+    },
+    "about": {
+        "hero": {
+            "label": "Despre Companie",
+            "title": "Level Auto Rental",
+            "subtitle": "Închirieri auto premium, simplu și rapid.",
+            "location": "în Moldova"
+        },
+        "stats": {
+            "vehicles": "Vehicule",
+            "customers": "Clienți mulțumiți",
+            "experience": "Ani experiență",
+            "awards": "Premii câștigate"
+        },
+        "story": {
+            "label": "Povestea noastră",
+            "title": "De la începuturi modeste la lideri în industrie",
+            "paragraph1": "Fondată în 2009, Level Auto Rental a început ca o afacere de familie mică cu o misiune simplă: să ofere soluții de transport de încredere și accesibile pentru toată lumea. Ceea ce a început cu doar cinci vehicule s-a dezvoltat într-unul dintre cele mai de încredere servicii de închirieri auto din Moldova.",
+            "paragraph2": "De-a lungul anilor, ne-am extins flota pentru a include peste 500 de vehicule, de la mașini economice la sedanuri de lux și SUV-uri. Angajamentul nostru față de satisfacția clienților și serviciul de calitate a rămas neschimbat, câștigându-ne loialitatea a mii de clienți și numeroase premii din industrie.",
+            "paragraph3": "Astăzi, continuăm să inovăm și să îmbunătățim serviciile noastre, adoptând tehnologii noi și practici durabile pentru a servi mai bine clienții noștri și a proteja mediul pentru generațiile viitoare."
+        },
+        "values": {
+            "label": "Valorile noastre",
+            "title": "Principiile care ne ghidează în tot ceea ce facem",
+            "safety": {
+                "title": "Siguranța înainte de toate",
+                "description": "Toate vehiculele noastre trec prin inspecții de siguranță riguroase și întreținere pentru a vă asigura liniștea pe drum."
+            },
+            "customer": {
+                "title": "Orientare către client",
+                "description": "Prioritizăm satisfacția clienților cu suport 24/7 și servicii personalizate adaptate nevoilor voastre."
+            },
+            "quality": {
+                "title": "Serviciu de calitate",
+                "description": "Angajamentul nostru față de excelență ne-a adus recunoașterea industriei și încrederea a mii de clienți."
+            }
+        },
+        "team": {
+            "label": "Întâlnește echipa noastră",
+            "title": "Profesioniștii dedicați din spatele succesului nostru"
+        }
     },
     "footer": {
         "sections": {
