@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: "/lvl/", // GitHub Pages base path
+  base: "/LevelAutoRental/", // GitHub Pages base path
   css: {
     postcss: {
       plugins: [tailwind()],

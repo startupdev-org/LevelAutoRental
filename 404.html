@@ -10,8 +10,8 @@
       var l = window.location;
       var path = l.pathname.split('/').slice(1);
       
-      // Remove the base path 'lvl' from the beginning if present
-      if (path[0] === 'lvl') {
+      // Remove the base path 'LevelAutoRental' from the beginning if present
+      if (path[0] === 'LevelAutoRental') {
         path = path.slice(1);
       }
       
@@ -31,7 +31,7 @@
       if (isValidRoute) {
         // For valid routes, redirect to index.html with the path as a query parameter
         // This preserves the route information for the React Router to handle
-        var newUrl = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/lvl/?/' + path.join('/');
+        var newUrl = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/LevelAutoRental/?/' + path.join('/');
         
         // Preserve query parameters (search)
         if (l.search) {
@@ -46,7 +46,7 @@
         l.replace(newUrl);
       } else {
         // For invalid routes, redirect to the main app which will show the 404 page
-        var notFoundUrl = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/lvl/?/not-found';
+        var notFoundUrl = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/LevelAutoRental/?/not-found';
         l.replace(notFoundUrl);
       }
     </script>

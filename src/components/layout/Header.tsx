@@ -125,7 +125,7 @@ export const Header: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center group">
             <img
-              src="/lvl/logo.png"
+              src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
               className={`w-[250px] h-auto transition-all duration-300 ${isScrolled || isNotFoundPage ? '' : 'brightness-0 invert'
                 }`}

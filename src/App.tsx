@@ -31,7 +31,7 @@ function App() {
   }
 
   return (
-    <Router basename="/lvl/">
+    <Router basename="/LevelAutoRental/">
       <Layout>
         <RouterWrapper />
       </Layout>

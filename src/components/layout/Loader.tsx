@@ -41,7 +41,7 @@ const LoadingScreen = ({ isLoading = true, isTransitioning = false, onLoadingCom
       {/* Loading Content */}
       <div className="flex items-center justify-center min-h-screen">
         <img 
-          src="/lvl/logo.png" 
+          src="/LevelAutoRental/logo.png" 
           alt="Level Auto Rental" 
           className="w-64 h-auto"
           style={{ 

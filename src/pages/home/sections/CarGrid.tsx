@@ -19,13 +19,13 @@ export const CarGrid: React.FC = () => {
       id: 1,
       name: "Mercedes-AMG C43",
       year: 2018,
-      image: "/lvl/cars/c43/c43-1.jpg",
+      image: "/LevelAutoRental/cars/c43/c43-1.jpg",
       photoGallery: [
-        "/lvl/cars/c43/c43-1.jpg",
-        "/lvl/cars/c43/c43-2.jpg",
-        "/lvl/cars/c43/c43-3.jpg",
-        "/lvl/cars/c43/c43-4.jpg",
-        "/lvl/cars/c43/c43-5.jpg"
+        "/LevelAutoRental/cars/c43/c43-1.jpg",
+        "/LevelAutoRental/cars/c43/c43-2.jpg",
+        "/LevelAutoRental/cars/c43/c43-3.jpg",
+        "/LevelAutoRental/cars/c43/c43-4.jpg",
+        "/LevelAutoRental/cars/c43/c43-5.jpg"
       ],
       rating: 4.9,
       reviews: 156,
@@ -44,13 +44,13 @@ export const CarGrid: React.FC = () => {
       id: 2,
       name: "Mercedes GLE",
       year: 2021,
-      image: "/lvl/cars/gle/gle-1.jpg",
+      image: "/LevelAutoRental/cars/gle/gle-1.jpg",
       photoGallery: [
-        "/lvl/cars/gle/gle-1.jpg",
-        "/lvl/cars/gle/gle-2.jpg",
-        "/lvl/cars/gle/gle-3.jpg",
-        "/lvl/cars/gle/gle-4.jpg",
-        "/lvl/cars/gle/gle-5.jpg"
+        "/LevelAutoRental/cars/gle/gle-1.jpg",
+        "/LevelAutoRental/cars/gle/gle-2.jpg",
+        "/LevelAutoRental/cars/gle/gle-3.jpg",
+        "/LevelAutoRental/cars/gle/gle-4.jpg",
+        "/LevelAutoRental/cars/gle/gle-5.jpg"
       ],
       rating: 4.8,
       reviews: 134,
@@ -69,13 +69,13 @@ export const CarGrid: React.FC = () => {
       id: 3,
       name: "Mercedes CLS",
       year: 2022,
-      image: "/lvl/cars/cls/cls-1.jpg",
+      image: "/LevelAutoRental/cars/cls/cls-1.jpg",
       photoGallery: [
-        "/lvl/cars/cls/cls-1.jpg",
-        "/lvl/cars/cls/cls-2.jpg",
-        "/lvl/cars/cls/cls-3.jpg",
-        "/lvl/cars/cls/cls-4.jpg",
-        "/lvl/cars/cls/cls-6.jpg"
+        "/LevelAutoRental/cars/cls/cls-1.jpg",
+        "/LevelAutoRental/cars/cls/cls-2.jpg",
+        "/LevelAutoRental/cars/cls/cls-3.jpg",
+        "/LevelAutoRental/cars/cls/cls-4.jpg",
+        "/LevelAutoRental/cars/cls/cls-6.jpg"
       ],
       rating: 4.9,
       reviews: 187,
@@ -93,13 +93,13 @@ export const CarGrid: React.FC = () => {
       id: 4,
       name: "Maserati Ghibli",
       year: 2017,
-      image: "/lvl/cars/maserati/maserati-1.jpg",
+      image: "/LevelAutoRental/cars/maserati/maserati-1.jpg",
       photoGallery: [
-        "/lvl/cars/maserati/maserati-1.jpg",
-        "/lvl/cars/maserati/maserati-2.jpg",
-        "/lvl/cars/maserati/maserati-3.jpg",
-        "/lvl/cars/maserati/maserati-4.jpg",
-        "/lvl/cars/maserati/maserati-5.jpg"
+        "/LevelAutoRental/cars/maserati/maserati-1.jpg",
+        "/LevelAutoRental/cars/maserati/maserati-2.jpg",
+        "/LevelAutoRental/cars/maserati/maserati-3.jpg",
+        "/LevelAutoRental/cars/maserati/maserati-4.jpg",
+        "/LevelAutoRental/cars/maserati/maserati-5.jpg"
       ],
       rating: 4.9,
       reviews: 203,
