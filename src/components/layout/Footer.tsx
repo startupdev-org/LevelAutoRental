@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 
 export const Footer: React.FC = () => {
-  const { t } = useTranslation();
-  
+  const { t, i18n } = useTranslation();
+
   const footerSections = [
     {
       title: t("footer.sections.reservations.title"),
@@ -66,10 +66,11 @@ export const Footer: React.FC = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,44,45,0.3),transparent_50%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(245,44,45,0.2),transparent_50%)]"></div>
       </div>
-      
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         {/* Main Content */}
         <motion.div
+          key={i18n.language}
           variants={staggerContainer}
           initial="initial"
           whileInView="animate"
@@ -83,18 +84,18 @@ export const Footer: React.FC = () => {
           >
             {/* Logo */}
             <div className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="LevelAutoRental" 
+              <img
+                src="/logo.png"
+                alt="LevelAutoRental"
                 className="h-16 w-auto brightness-0 invert"
               />
             </div>
-            
+
             {/* Description */}
             <p className="text-gray-300 leading-relaxed text-base max-w-md">
               Premium car rental service providing exceptional vehicles and unmatched customer experience in Moldova. Your journey starts here.
             </p>
-            
+
             {/* Contact Info */}
             <div className="space-y-4">
               {contactInfo.map((contact, index) => (

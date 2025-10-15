@@ -66,26 +66,24 @@ export const Testimonials: React.FC = () => {
           className="relative"
         >
           {/* Prev Button */}
-          <div className="absolute inset-y-0 left-0 flex items-center z-10">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center z-10">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={prevTestimonial}
               className="hidden md:flex w-10 h-10 bg-white rounded-full shadow-md items-center justify-center text-gray-600 hover:text-theme-500 hover:shadow-lg"
-              style={{ top: '60%', transform: 'translateY(-60%)' }}
             >
               <ChevronLeft className="w-5 h-5" />
             </motion.button>
           </div>
 
           {/* Next Button */}
-          <div className="absolute inset-y-0 right-0 flex items-center z-10">
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center z-10">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={nextTestimonial}
               className="hidden md:flex w-10 h-10 bg-theme-500 text-white rounded-full shadow-md items-center justify-center hover:bg-theme-600"
-              style={{ top: '60%', transform: 'translateY(-60%)' }}
             >
               <ChevronRight className="w-5 h-5" />
             </motion.button>
@@ -135,7 +133,7 @@ export const Testimonials: React.FC = () => {
                       <button
                         key={index}
                         onClick={() => setCurrentIndex(index)}
-                        className={`${index === currentIndex ? 'w-10 bg-theme-500' : 'w-6 bg-gray-300'} h-1 rounded-full transition-all`}
+                        className={`${index === currentIndex ? 'w-10 bg-theme-500' : 'w-6 bg-gray-300'} h-1 rounded-full transition-all duration-300 ease-in-out hover:bg-theme-400`}
                         aria-label={`Go to testimonial ${index + 1}`}
                       />
                     ))}
