@@ -10,6 +10,7 @@ import Loader from '../components/layout/Loader';
 import { FAQ } from '../pages/faq/FAQ';
 import { usePageTransition } from '../hooks/usePageTransition';
 import { createPortal } from 'react-dom';
+import NotFound from '../pages/NotFound';
 
 const RouterWrapper = () => {
   const { isLoading, isTransitioning, onLoadingComplete } = usePageTransition();
@@ -34,6 +35,7 @@ const RouterWrapper = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/booking" element={<Booking />} />
         <Route path="/help" element={<FAQ />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

@@ -6,6 +6,7 @@ import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
+import { DevOnlyComponent } from '../../utils/devAccess';
 
 export const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -51,9 +52,31 @@ export const Contact: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-r from-theme-500 to-theme-700 text-white">
+    <DevOnlyComponent 
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="max-w-md w-full text-center">
+            <div className="mb-8">
+              <h1 className="text-6xl font-bold text-gray-300 mb-4">🚧</h1>
+              <h2 className="text-2xl font-semibold text-gray-700 mb-4">Under Development</h2>
+              <p className="text-gray-600 mb-8">
+                This page is currently under development and is only available to developers.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <a href="/" className="inline-block">
+                <Button className="w-full">
+                  Go Back Home
+                </Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div className="min-h-screen">
+        {/* Hero Section */}
+        <section className="relative py-20 bg-gradient-to-r from-theme-500 to-theme-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={staggerContainer}
@@ -87,7 +110,7 @@ export const Contact: React.FC = () => {
             animate={isInView ? "animate" : "initial"}
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
           >
-            {contactInfo.map((info, index) => (
+            {contactInfo.map((info) => (
               <motion.div key={info.title} variants={fadeInUp}>
                 <Card className="p-6 text-center h-full">
                   <motion.div
@@ -231,6 +254,7 @@ export const Contact: React.FC = () => {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </DevOnlyComponent>
   );
 };
