@@ -31,7 +31,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router basename="/lvl/">
       <Layout>
         <RouterWrapper />
       </Layout>

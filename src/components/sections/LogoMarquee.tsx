@@ -2,13 +2,13 @@ import React from "react";
 
 export const LogoMarquee: React.FC = () => {
   const logos = [
-    { src: "/logos/audi.png", alt: "Audi" },
-    { src: "/logos/bmw.webp", alt: "BMW" },
-    { src: "/logos/hyundai.png", alt: "Hyundai" },
-    { src: "/logos/maserati.png", alt: "Maserati" },
-    { src: "/logos/merc.svg", alt: "Mercedes-Benz" },
-    { src: "/logos/audi.png", alt: "Audi" },
-    { src: "/logos/bmw.webp", alt: "BMW" },
+    { src: "/lvl/logos/audi.png", alt: "Audi" },
+    { src: "/lvl/logos/bmw.webp", alt: "BMW" },
+    { src: "/lvl/logos/hyundai.png", alt: "Hyundai" },
+    { src: "/lvl/logos/maserati.png", alt: "Maserati" },
+    { src: "/lvl/logos/merc.svg", alt: "Mercedes-Benz" },
+    { src: "/lvl/logos/audi.png", alt: "Audi" },
+    { src: "/lvl/logos/bmw.webp", alt: "BMW" },
   ];
 
   return (

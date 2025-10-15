@@ -5,13 +5,13 @@ export const cars: Car[] = [
     id: 1,
     name: 'Mercedes-AMG C43',
     category: 'luxury',
-    image: '/public/cars/c43/c43-1.jpg',
+    image: '/lvl/cars/c43/c43-1.jpg',
     photoGallery: [
-      '/public/cars/c43/c43-1.jpg',
-      '/public/cars/c43/c43-2.jpg',
-      '/public/cars/c43/c43-3.jpg',
-      '/public/cars/c43/c43-4.jpg',
-      '/public/cars/c43/c43-5.jpg'
+      '/lvl/cars/c43/c43-1.jpg',
+      '/lvl/cars/c43/c43-2.jpg',
+      '/lvl/cars/c43/c43-3.jpg',
+      '/lvl/cars/c43/c43-4.jpg',
+      '/lvl/cars/c43/c43-5.jpg'
     ],
     pricePerDay: 280,
     year: 2023,
@@ -110,13 +110,13 @@ export const cars: Car[] = [
     id: 8,
     name: 'Mercedes-AMG C43',
     category: 'luxury',
-    image: '/cars/c43/c43-1.jpg',
+    image: '/lvl/cars/c43/c43-1.jpg',
     photoGallery: [
-      '/cars/c43/c43-1.jpg',
-      '/cars/c43/c43-2.jpg',
-      '/cars/c43/c43-3.jpg',
-      '/cars/c43/c43-4.jpg',
-      '/cars/c43/c43-5.jpg'
+      '/lvl/cars/c43/c43-1.jpg',
+      '/lvl/cars/c43/c43-2.jpg',
+      '/lvl/cars/c43/c43-3.jpg',
+      '/lvl/cars/c43/c43-4.jpg',
+      '/lvl/cars/c43/c43-5.jpg'
     ],
     pricePerDay: 280,
     year: 2018,

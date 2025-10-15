@@ -35,6 +35,7 @@ const RouterWrapper = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/booking" element={<Booking />} />
         <Route path="/help" element={<FAQ />} />
+        <Route path="/not-found" element={<NotFound />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

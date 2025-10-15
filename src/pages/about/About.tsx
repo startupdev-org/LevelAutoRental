@@ -36,7 +36,7 @@ export const About: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/bg-hero.jpg)', backgroundPosition: 'center -420px' }}>
+      <section className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/lvl/bg-hero.jpg)', backgroundPosition: 'center -420px' }}>
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/60"></div>
 
@@ -153,7 +153,7 @@ export const About: React.FC = () => {
               className="relative"
             >
               <img
-                src="/lvl_bg.png"
+                src="/lvl/lvl_bg.png"
                 alt="Our story"
                 className="rounded-2xl shadow-lg"
               />
