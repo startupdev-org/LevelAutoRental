@@ -6,6 +6,7 @@ import { Cars } from '../pages/cars/Cars';
 import { Contact } from '../pages/contact/Contact';
 import { Home } from '../pages/home/Home';
 import { HowToRent } from '../pages/howToRent/HowToRent';
+import { Terms } from '../pages/terms/Terms.tsx';
 import Loader from '../components/layout/Loader';
 import { FAQ } from '../pages/faq/FAQ';
 import { usePageTransition } from '../hooks/usePageTransition';
@@ -18,14 +19,14 @@ const RouterWrapper = () => {
     <>
       {/* Page transition loader - rendered as portal to ensure it's above everything */}
       {isLoading && createPortal(
-        <Loader 
-          isLoading={isLoading} 
-          isTransitioning={isTransitioning} 
-          onLoadingComplete={onLoadingComplete} 
+        <Loader
+          isLoading={isLoading}
+          isTransitioning={isTransitioning}
+          onLoadingComplete={onLoadingComplete}
         />,
         document.body
       )}
-      
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cars" element={<Cars />} />
@@ -33,6 +34,7 @@ const RouterWrapper = () => {
         <Route path="/how-to-rent" element={<HowToRent />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/booking" element={<Booking />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<FAQ />} />
       </Routes>
     </>
