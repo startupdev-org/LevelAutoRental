@@ -22,8 +22,10 @@ export const Header: React.FC = () => {
     return false;
   }
 
+
+  const isDifferentPage = (location.pathname === '/not-found') || (location.pathname === '/login' || '/sign-up');
   // Force dark styling on 404 page
-  const isNotFoundPage = location.pathname === '/not-found';
+
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
@@ -115,7 +117,7 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${isScrolled || isNotFoundPage
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${isScrolled || isDifferentPage
         ? 'bg-white shadow-lg border-b border-gray-200'
         : 'bg-transparent shadow-none border-transparent'
         }`}
@@ -127,7 +129,7 @@ export const Header: React.FC = () => {
             <img
               src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
-              className={`w-[250px] h-auto transition-all duration-300 ${isScrolled || isNotFoundPage ? '' : 'brightness-0 invert'
+              className={`w-[250px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
                 }`}
             />
           </Link>
@@ -138,7 +140,7 @@ export const Header: React.FC = () => {
               <button
                 key={item.name}
                 onClick={() => handleNavigate(item.href)}
-                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-theme-50 hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500 bg-theme-50' : isScrolled || isNotFoundPage ? 'text-gray-700' : 'text-white'}`}
+                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-theme-50 hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500 bg-theme-50' : isScrolled || isDifferentPage ? 'text-gray-700' : 'text-white'}`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 {item.name}
@@ -151,6 +153,7 @@ export const Header: React.FC = () => {
 
             <Button
               className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+              onClick={() => navigate('/login')}
             >
               {t('header.auth')}
             </Button>
@@ -164,10 +167,10 @@ export const Header: React.FC = () => {
                   // console.log('Current language after the frameword: ', i18n.language)
                 }}
 
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${isScrolled || isNotFoundPage ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:bg-white/20'}`}
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${isScrolled || isDifferentPage ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:bg-white/20'}`}
               >
                 <span className={`fi ${currentLanguage === 'en' ? 'fi-gb' : currentLanguage === 'ru' ? 'fi-ru' : 'fi-ro'} text-base w-6 h-6 flex items-center justify-center overflow-hidden`}></span>
-                <svg className={`w-4 h-4 transition-colors duration-300 ${isScrolled || isNotFoundPage ? 'text-gray-400' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-colors duration-300 ${isScrolled || isDifferentPage ? 'text-gray-400' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -209,7 +212,7 @@ export const Header: React.FC = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-2 rounded-md transition-colors ${isScrolled || isNotFoundPage ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' : 'text-white hover:text-theme-300 hover:bg-white/20'}`}
+              className={`p-2 rounded-md transition-colors ${isScrolled || isDifferentPage ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' : 'text-white hover:text-theme-300 hover:bg-white/20'}`}
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -231,7 +234,7 @@ export const Header: React.FC = () => {
                   setIsMenuOpen(false);
                   handleNavigate(item.href);
                 }}
-                className={`block w-full text-left text-base font-medium transition-colors hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500' : isScrolled || isNotFoundPage ? 'text-gray-700' : 'text-white'}`}
+                className={`block w-full text-left text-base font-medium transition-colors hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500' : isScrolled || isDifferentPage ? 'text-gray-700' : 'text-white'}`}
                 style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
                 {item.name}
