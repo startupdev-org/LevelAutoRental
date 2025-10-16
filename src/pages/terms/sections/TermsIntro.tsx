@@ -7,10 +7,9 @@ export const TermsIntro: React.FC = () => {
     // const { t } = useTranslation();
 
     return (
-        // ✅ No outer min-h-screen wrapper here
         <section
             className="relative min-h-[600px] bg-fixed bg-cover bg-center bg-no-repeat flex items-center justify-center font-sans"
-            style={{ backgroundImage: "url(/bg-hero.jpg)", backgroundPosition: "center -420px" }}
+            style={{ backgroundImage: 'url(/LevelAutoRental/bg-hero.jpg)', backgroundPosition: "center -420px" }}
         >
             {/* Dark Overlay */}
             <div className="absolute inset-0 bg-black/70" />
