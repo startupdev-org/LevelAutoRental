@@ -60,7 +60,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="relative bg-gray-900 mt-20">
+    <footer className="relative bg-gray-900">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,44,45,0.3),transparent_50%)]"></div>
