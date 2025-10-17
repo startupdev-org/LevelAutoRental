@@ -15,14 +15,14 @@ export const Login: React.FC = () => {
     };
 
     return (
-        <section className="min-h-screen flex items-center justify-center bg-gray-50">
+        <section className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-10 md:py-12">
             <motion.div
                 variants={fadeInUp}
                 initial="initial"
                 animate="animate"
                 className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2"
             >
-                {/* Left - Image / promo (image on left as requested) */}
+                {/* Left - Image */}
                 <div
                     className="relative hidden md:block bg-cover bg-center"
                     style={{
@@ -44,7 +44,7 @@ export const Login: React.FC = () => {
                         </p>
 
                         <div className="mt-8 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                            {/* <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                                 <div className="w-2 h-2 rounded-full bg-red-400" />
                             </div>
                             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -52,7 +52,7 @@ export const Login: React.FC = () => {
                             </div>
                             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                                 <div className="w-2 h-2 rounded-full bg-red-400" />
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>

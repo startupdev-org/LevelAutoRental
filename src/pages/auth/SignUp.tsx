@@ -25,7 +25,7 @@ export const SignUp: React.FC = () => {
     };
 
     return (
-        <section className="min-h-screen flex items-center justify-center bg-gray-50">
+        <section className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-10 md:py-12 mt-10 sm:mt-0">
             <motion.div
                 variants={fadeInUp}
                 initial="initial"
@@ -53,7 +53,7 @@ export const SignUp: React.FC = () => {
                         </p>
 
                         <div className="mt-8 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                            {/* <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                                 <div className="w-2 h-2 rounded-full bg-red-400" />
                             </div>
                             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -61,14 +61,14 @@ export const SignUp: React.FC = () => {
                             </div>
                             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                                 <div className="w-2 h-2 rounded-full bg-red-400" />
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
 
                 {/* Right - Form */}
-                <div className="p-8 md:p-12 flex items-center justify-center">
-                    <div className="w-full max-w-md">
+                <div className="flex items-center justify-center p-3 sm:p-6 md:p-10 lg:p-14 xl:p-20">
+                    <div className="w-[90%] max-w-[280px] sm:max-w-md md:max-w-lg mx-auto">
                         <div className="mb-6 text-center">
                             <h1 className="text-2xl font-bold text-red-600">Sign Up</h1>
                             <p className="text-sm text-gray-500 mt-2">
