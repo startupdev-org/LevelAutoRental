@@ -30,10 +30,15 @@ export interface BookingForm {
 export interface Testimonial {
   id: string;
   name: string;
+  userName: string;
   avatar: string;
   rating: number;
   comment: string;
   location: string;
+  product: {
+    name: string;
+    images: { url: string }[];
+  };
 }
 
 export interface Feature {

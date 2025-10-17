@@ -6,6 +6,7 @@ import RouterWrapper from './components/RouterWrapper';
 
 function App() {
   const [initialLoading, setInitialLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     // Suppress external MutationObserver errors from browser extensions
@@ -17,17 +18,29 @@ function App() {
       originalError.apply(console, args);
     };
 
-    const timer = setTimeout(() => setInitialLoading(false), 2000);
+    // Preload background image globally to prevent any flash
+    const img = new Image();
+    img.src = '/LevelAutoRental/lvl_bg.png';
+
+    // Start transition after 1.5 seconds, then hide loader after fade completes
+    const transitionTimer = setTimeout(() => {
+      setIsTransitioning(true);
+    }, 1500);
+
+    const hideTimer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 1800); // 1.5s + 0.3s fade duration
     
     return () => {
-      clearTimeout(timer);
+      clearTimeout(transitionTimer);
+      clearTimeout(hideTimer);
       window.console.error = originalError; // Restore original console.error
     };
   }, []);
 
   // Show initial loader on first load
   if (initialLoading) {
-    return <Loader />;
+    return <Loader isTransitioning={isTransitioning} />;
   }
 
   return (

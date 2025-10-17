@@ -3,7 +3,7 @@ import React from 'react';
 import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { useTranslation } from 'react-i18next';
 
-export const HowToRent: React.FC = () => {
+export const HowToRentHero: React.FC = () => {
     const { t } = useTranslation();
 
     const steps = [
@@ -35,7 +35,7 @@ export const HowToRent: React.FC = () => {
     ];
 
     return (
-        <section className="relative py-20 mb-40 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/LevelAutoRental/lvl_bg.png)', backgroundPosition: 'center -400px' }}>
+        <section className="relative py-60 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/LevelAutoRental/lvl_bg.png)', backgroundPosition: 'center -150px' }}>
             {/* Background Overlay */}
             <div className="absolute inset-0 bg-black/60"></div>
             
