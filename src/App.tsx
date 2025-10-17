@@ -4,6 +4,7 @@ import { Layout } from './components/layout/Layout';
 import Loader from './components/layout/Loader';
 import RouterWrapper from './components/RouterWrapper';
 
+
 function App() {
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -18,7 +19,7 @@ function App() {
     };
 
     const timer = setTimeout(() => setInitialLoading(false), 2000);
-    
+
     return () => {
       clearTimeout(timer);
       window.console.error = originalError; // Restore original console.error
