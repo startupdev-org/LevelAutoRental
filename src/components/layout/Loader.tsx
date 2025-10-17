@@ -7,12 +7,6 @@ interface LoadingScreenProps {
 
 const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingScreenProps) => {
   useEffect(() => {
-    // Check if another loader already exists
-    const existingLoader = document.getElementById('global-loader');
-    if (existingLoader) {
-      console.log('Loader already exists, skipping mount');
-      return;
-    }
     console.log('Loader mounted');
     return () => console.log('Loader unmounted');
   }, []);
@@ -28,13 +22,11 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
 
   return (
     <div 
-      id="global-loader"
-      className={`fixed inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-300 ease-in-out ${
+      className={`fixed inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-300 ease-in-out z-[9999999] ${
         isTransitioning ? 'opacity-0' : 'opacity-100'
       }`}
       style={{ 
-        zIndex: 999999,
-        backgroundColor: '#1f2937',
+        zIndex: 9999999,
         backgroundImage: 'url(/LevelAutoRental/lvl_bg.png)',
         animation: 'zoom-premium 3s ease-in-out infinite',
       }}

@@ -229,9 +229,9 @@ export const Testimonials: React.FC = () => {
           {/* Left Arrow */}
           <button
             onClick={() => sliderRef.current?.slickPrev()}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-20 z-10 p-3 rounded-full shadow-sm transition-colors duration-200 bg-red-500/10 backdrop-blur-sm border border-red-500/20 hover:border-red-500/30 text-red-500/70 hover:text-red-500 hover:bg-red-500/20"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-32 z-10 w-14 h-14 rounded-full shadow-lg transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mx-auto transition-transform duration-300 group-hover:-translate-x-0.5">
               <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
             </svg>
           </button>
@@ -239,9 +239,9 @@ export const Testimonials: React.FC = () => {
           {/* Right Arrow */}
           <button
             onClick={() => sliderRef.current?.slickNext()}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-20 z-10 p-3 rounded-full shadow-sm transition-colors duration-200 bg-red-500/10 backdrop-blur-sm border border-red-500/20 hover:border-red-500/30 text-red-500/70 hover:text-red-500 hover:bg-red-500/20"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-32 z-10 w-14 h-14 rounded-full shadow-lg transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mx-auto transition-transform duration-300 group-hover:translate-x-0.5">
               <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
             </svg>
           </button>

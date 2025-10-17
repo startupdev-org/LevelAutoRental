@@ -38,17 +38,18 @@ function App() {
     };
   }, []);
 
-  // Show initial loader on first load
-  if (initialLoading) {
-    return <Loader isTransitioning={isTransitioning} />;
-  }
-
   return (
-    <Router basename="/LevelAutoRental/">
-      <Layout>
-        <RouterWrapper />
-      </Layout>
-    </Router>
+    <>
+      {/* Show loader while initial loading */}
+      {initialLoading && <Loader isTransitioning={isTransitioning} />}
+      
+      {/* Show content immediately, even during fade-out */}
+      <Router basename="/LevelAutoRental/">
+        <Layout>
+          <RouterWrapper />
+        </Layout>
+      </Router>
+    </>
   );
 }
 

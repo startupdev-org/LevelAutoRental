@@ -231,8 +231,8 @@ body {
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    /* Prevent white background on overscroll */
-    background-color: transparent !important;
+    /* Dark background to match loader */
+    background-color: #1f2937 !important;
     overscroll-behavior: none;
   }
 

@@ -25,7 +25,9 @@ export const Header: React.FC = () => {
   // Force styling for different pages
   const isDifferentPage =
     (location.pathname === '/not-found') ||
-    (location.pathname === '/auth/login') || (location.pathname === '/auth/signup');
+    (location.pathname === '/auth/login') || 
+    (location.pathname === '/auth/signup') ||
+    (location.pathname === '/cars');
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
