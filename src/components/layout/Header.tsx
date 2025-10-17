@@ -168,10 +168,17 @@ export const Header: React.FC = () => {
                   // console.log('Current language after the variable: ', currentLanguage)
                   // console.log('Current language after the frameword: ', i18n.language)
                 }}
-
                 className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${isScrolled || isDifferentPage ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:bg-white/20'}`}
               >
-                <span className={`fi ${currentLanguage === 'en' ? 'fi-gb' : currentLanguage === 'ru' ? 'fi-ru' : 'fi-ro'} text-base w-6 h-6 flex items-center justify-center overflow-hidden`}></span>
+                <span
+                  className={`fi ${currentLanguage === 'en'
+                      ? 'fi-gb'
+                      : currentLanguage === 'ru'
+                        ? 'fi-ru'
+                        : 'fi-ro'
+                    } w-6 h-4 rounded-sm`}
+                ></span>
+
                 <svg className={`w-4 h-4 transition-colors duration-300 ${isScrolled || isDifferentPage ? 'text-gray-400' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>

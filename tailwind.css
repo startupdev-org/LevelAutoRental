@@ -1,9 +1,14 @@
+@import "flag-icons/css/flag-icons.min.css";
+
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+
 /* Global body background */
 body {
-  background-color: #f9fafb; /* This is the equivalent of bg-gray-50 */
+  background-color: #f9fafb;
+  /* This is the equivalent of bg-gray-50 */
 }
 
 @layer components {
@@ -39,6 +44,8 @@ body {
 .animate-spin {
   animation: var(--animate-spin);
 }
+
+
 
 @keyframes spin {
   to {
@@ -87,6 +94,7 @@ body {
 }
 
 @keyframes shimmer {
+
   0%,
   90%,
   to {
@@ -132,6 +140,7 @@ body {
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(calc(-100% - var(--gap)));
   }

@@ -4,6 +4,7 @@ import { Layout } from './components/layout/Layout';
 import Loader from './components/layout/Loader';
 import RouterWrapper from './components/RouterWrapper';
 
+
 function App() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -18,6 +19,10 @@ function App() {
       originalError.apply(console, args);
     };
 
+<<<<<<< HEAD
+    const timer = setTimeout(() => setInitialLoading(false), 2000);
+
+=======
     // Preload background image globally to prevent any flash
     const img = new Image();
     img.src = '/LevelAutoRental/lvl_bg.png';
@@ -31,6 +36,7 @@ function App() {
       setInitialLoading(false);
     }, 1800); // 1.5s + 0.3s fade duration
     
+>>>>>>> 2c0405b4dd91d42032e2faf7d47a9b0c020e94b8
     return () => {
       clearTimeout(transitionTimer);
       clearTimeout(hideTimer);
