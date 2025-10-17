@@ -22,11 +22,10 @@ export const Header: React.FC = () => {
     return false;
   }
 
-
-  const isDifferentPage = (location.pathname === '/not-found') || (location.pathname === '/auth/login' || '/auth/signup');
-  console.log(isDifferentPage)
-  // Force dark styling on 404 page
-
+  // Force styling for different pages
+  const isDifferentPage =
+    (location.pathname === '/not-found') ||
+    (location.pathname === '/auth/login') || (location.pathname === '/auth/signup');
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
