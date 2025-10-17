@@ -7,6 +7,8 @@ import { Home } from '../pages/home/Home';
 import { HowToRent } from '../pages/howToRent/HowToRent';
 import { Terms } from '../pages/terms/Terms.tsx';
 import { FAQ } from '../pages/faq/FAQ';
+import { Login } from '../pages/auth/Login.tsx';
+import { SignUp } from '../pages/auth/SignUp.tsx';
 import NotFound from '../pages/NotFound';
 
 const RouterWrapper = () => {
@@ -24,6 +26,8 @@ const RouterWrapper = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<FAQ />} />
         <Route path="/not-found" element={<NotFound />} />
+        <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/signup" element={<SignUp />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
