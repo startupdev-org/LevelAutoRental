@@ -7,6 +7,8 @@ import { Contact } from '../pages/contact/Contact';
 import { Home } from '../pages/home/Home';
 import { HowToRent } from '../pages/howToRent/HowToRent';
 import { Terms } from '../pages/terms/Terms.tsx';
+import { Login } from '../pages/auth/Login.tsx';
+import { SignUp } from '../pages/auth/SignUp.tsx';
 import Loader from '../components/layout/Loader';
 import { FAQ } from '../pages/faq/FAQ';
 import { usePageTransition } from '../hooks/usePageTransition';
@@ -38,6 +40,8 @@ const RouterWrapper = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<FAQ />} />
         <Route path="/not-found" element={<NotFound />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/sign-up" element={<Login />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
