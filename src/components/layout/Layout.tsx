@@ -44,11 +44,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Content is always rendered */}
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
-        <AnimatePresence mode="wait">
+        <AnimatePresence {...({ mode: "wait" } as any)} initial={false}>
           <motion.main
             key={location.pathname}
             variants={pageTransition}
             initial="initial"
+            
             animate="animate"
             exit="exit"
             className="flex-1"

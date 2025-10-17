@@ -19,10 +19,6 @@ function App() {
       originalError.apply(console, args);
     };
 
-<<<<<<< HEAD
-    const timer = setTimeout(() => setInitialLoading(false), 2000);
-
-=======
     // Preload background image globally to prevent any flash
     const img = new Image();
     img.src = '/LevelAutoRental/lvl_bg.png';
@@ -35,8 +31,6 @@ function App() {
     const hideTimer = setTimeout(() => {
       setInitialLoading(false);
     }, 1800); // 1.5s + 0.3s fade duration
-    
->>>>>>> 2c0405b4dd91d42032e2faf7d47a9b0c020e94b8
     return () => {
       clearTimeout(transitionTimer);
       clearTimeout(hideTimer);
