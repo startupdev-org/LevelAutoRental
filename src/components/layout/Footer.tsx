@@ -61,11 +61,8 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="relative bg-gray-900">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,44,45,0.3),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(245,44,45,0.2),transparent_50%)]"></div>
-      </div>
+      {/* Clean Background Overlay */}
+      <div className="absolute inset-0 bg-black/20"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         {/* Main Content */}
@@ -105,7 +102,7 @@ export const Footer: React.FC = () => {
                   variants={fadeInUp}
                   className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors duration-300 group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center group-hover:bg-red-500 group-hover:shadow-lg transition-all duration-300">
+                  <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center group-hover:bg-theme-500 group-hover:shadow-lg transition-all duration-300">
                     <contact.icon className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
                   </div>
                   <span className="text-sm font-medium">{contact.text}</span>
@@ -126,7 +123,7 @@ export const Footer: React.FC = () => {
                   variants={fadeInUp}
                   className="space-y-4"
                 >
-                  <h3 className="text-sm font-semibold tracking-wider text-red-500 uppercase bg-gradient-to-r from-red-500 to-red-600 bg-clip-text">
+                  <h3 className="text-sm font-semibold tracking-wider text-theme-500 uppercase">
                     {section.title}
                   </h3>
                   <ul className="space-y-3">
@@ -171,7 +168,7 @@ export const Footer: React.FC = () => {
                   href={social.href}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-500 hover:shadow-lg transition-all duration-300"
+                  className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-gray-400 hover:text-white hover:bg-theme-500 hover:shadow-lg transition-all duration-300"
                   aria-label={social.label}
                 >
                   <social.icon className="w-5 h-5" />

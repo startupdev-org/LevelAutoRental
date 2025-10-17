@@ -12,9 +12,9 @@ export const Home: React.FC = () => {
       <Hero />
       <LogoMarquee />
       <CarGrid />
-      <Features />
       <HowToRent />
       <Testimonials />
+      <Features />
     </div>
   );
 };

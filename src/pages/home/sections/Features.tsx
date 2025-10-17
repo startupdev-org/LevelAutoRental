@@ -37,7 +37,7 @@ export const Features: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 mt-0">
+    <section className="py-40 mt-0">
       <div className="max-w-7xl mx-auto ">
         {/* Header Section */}
         <motion.div

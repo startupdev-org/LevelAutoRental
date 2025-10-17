@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { Layout } from '../components/layout/Layout';
+import { Route, Routes } from 'react-router-dom';
 import { About } from '../pages/about/About';
 import { Booking } from '../pages/booking/Booking';
 import { Cars } from '../pages/cars/Cars';
@@ -7,28 +6,14 @@ import { Contact } from '../pages/contact/Contact';
 import { Home } from '../pages/home/Home';
 import { HowToRent } from '../pages/howToRent/HowToRent';
 import { Terms } from '../pages/terms/Terms.tsx';
-import { Login } from '../pages/auth/Login.tsx';
-import { SignUp } from '../pages/auth/SignUp.tsx';
 import Loader from '../components/layout/Loader';
 import { FAQ } from '../pages/faq/FAQ';
-import { usePageTransition } from '../hooks/usePageTransition';
-import { createPortal } from 'react-dom';
 import NotFound from '../pages/NotFound';
 
 const RouterWrapper = () => {
-  const { isLoading, isTransitioning, onLoadingComplete } = usePageTransition();
-
   return (
     <>
-      {/* Page transition loader - rendered as portal to ensure it's above everything */}
-      {isLoading && createPortal(
-        <Loader
-          isLoading={isLoading}
-          isTransitioning={isTransitioning}
-          onLoadingComplete={onLoadingComplete}
-        />,
-        document.body
-      )}
+      {/* Page transition loader - temporarily disabled to fix multiple instances */}
 
       <Routes>
         <Route path="/" element={<Home />} />

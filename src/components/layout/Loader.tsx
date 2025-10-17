@@ -1,49 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
 interface LoadingScreenProps {
-  isLoading?: boolean;
   isTransitioning?: boolean;
   onLoadingComplete?: () => void;
 }
 
-const LoadingScreen = ({ isLoading = true, isTransitioning = false, onLoadingComplete }: LoadingScreenProps) => {
-  const [showLoader, setShowLoader] = useState(true);
+const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingScreenProps) => {
+  useEffect(() => {
+    // Check if another loader already exists
+    const existingLoader = document.getElementById('global-loader');
+    if (existingLoader) {
+      console.log('Loader already exists, skipping mount');
+      return;
+    }
+    console.log('Loader mounted');
+    return () => console.log('Loader unmounted');
+  }, []);
 
   useEffect(() => {
     if (isTransitioning) {
-      // Start fade out animation
       const timer = setTimeout(() => {
-        setShowLoader(false);
         onLoadingComplete?.();
       }, 300);
-
       return () => clearTimeout(timer);
     }
   }, [isTransitioning, onLoadingComplete]);
 
-  useEffect(() => {
-    if (isLoading) {
-      setShowLoader(true);
-    }
-  }, [isLoading]);
-
-  if (!showLoader) {
-    return null;
-  }
-
   return (
     <div 
-      className={`fixed inset-0 bg-white transition-opacity duration-300 ease-in-out ${
+      id="global-loader"
+      className={`fixed inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-300 ease-in-out ${
         isTransitioning ? 'opacity-0' : 'opacity-100'
       }`}
-      style={{ zIndex: 999999 }}
+      style={{ 
+        zIndex: 999999,
+        backgroundColor: '#1f2937',
+        backgroundImage: 'url(/LevelAutoRental/lvl_bg.png)',
+        animation: 'zoom-premium 3s ease-in-out infinite',
+      }}
     >
+      {/* Dark Overlay for better logo visibility */}
+      <div className="absolute inset-0 bg-black/60"></div>
+      
       {/* Loading Content */}
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="relative flex items-center justify-center min-h-screen">
         <img 
           src="/LevelAutoRental/logo.png" 
           alt="Level Auto Rental" 
-          className="w-64 h-auto"
+          className="w-64 h-auto brightness-0 invert drop-shadow-lg"
           style={{ 
             animation: 'scale-premium 2s ease-in-out infinite',
           }}
@@ -69,6 +73,22 @@ const LoadingScreen = ({ isLoading = true, isTransitioning = false, onLoadingCom
             transform: scale(1);
             opacity: 1;
           }
+        }
+        
+        @keyframes zoom-premium {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        
+        .bg-image-transition {
+          transition: background-image 0.3s ease-in-out;
         }
       `}</style>
     </div>
