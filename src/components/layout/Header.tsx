@@ -23,7 +23,8 @@ export const Header: React.FC = () => {
   }
 
 
-  const isDifferentPage = (location.pathname === '/not-found') || (location.pathname === '/login' || '/sign-up');
+  const isDifferentPage = (location.pathname === '/not-found') || (location.pathname === '/auth/login' || '/auth/signup');
+  console.log(isDifferentPage)
   // Force dark styling on 404 page
 
 
@@ -153,7 +154,7 @@ export const Header: React.FC = () => {
 
             <Button
               className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/auth/login')}
             >
               {t('header.auth')}
             </Button>

@@ -40,8 +40,8 @@ const RouterWrapper = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<FAQ />} />
         <Route path="/not-found" element={<NotFound />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/sign-up" element={<Login />} />
+        <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/signup" element={<SignUp />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

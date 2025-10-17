@@ -125,7 +125,7 @@ export const Login: React.FC = () => {
                         <div className="mt-6 text-center">
                             <Link
                                 to="/auth/signup"
-                                className="inline-block px-6 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition"
+                                className="inline-block px-6 py-2 border-2 border-red-600 text-red-600 rounded-lg bg-white transition transform duration-200 ease-out hover:bg-red-600 hover:text-white hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-red-200"
                             >
                                 Create an account
                             </Link>
