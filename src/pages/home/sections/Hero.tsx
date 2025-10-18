@@ -88,7 +88,7 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative h-[725px] bg-fixed bg-cover bg-no-repeat pt-36 font-sans md:bg-hero-desktop bg-hero-desktop bg-mobile-hero bg-hero-mobile">
+    <section className="relative h-[725px] bg-fixed bg-cover bg-no-repeat pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-hero-desktop md:bg-hero-desktop">
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60"></div>
 
