@@ -88,7 +88,17 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative h-[725px] bg-fixed bg-cover bg-no-repeat pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-hero-desktop md:bg-hero-desktop">
+    <section 
+      className="relative h-[725px] bg-cover bg-no-repeat pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-fixed md:bg-hero-desktop md:bg-hero-desktop"
+      style={{
+        backgroundImage: window.innerWidth < 768 
+          ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')" 
+          : undefined,
+        backgroundPosition: window.innerWidth < 768 
+          ? 'center -100px' 
+          : undefined
+      }}
+    >
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60"></div>
 
