@@ -119,6 +119,7 @@
         }
     },
     "footer": {
+        "description": "Serviciu premium de închirieri auto care oferă vehicule excepționale și o experiență de neegalat pentru clienți în Moldova. Călătoria ta începe aici.",
         "sections": {
             "reservations": {
                 "title": "Rezervări",
@@ -151,13 +152,14 @@
                 "title": "Companie",
                 "links": {
                     "about": "Despre noi",
-                    "career": "Carieră",
                     "team": "Echipa noastră",
+                    "rental-conditions": "Termeni de inchiriere",
                     "affiliate": "Programe de afiliere"
                 }
             }
         },
         "social": {
+            "follow-us": "Urmărește-ne",
             "twitter": "Twitter",
             "facebook": "Facebook",
             "instagram": "Instagram"

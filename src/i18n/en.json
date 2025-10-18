@@ -119,6 +119,7 @@
         }
     },
     "footer": {
+        "description": "Premium car rental service providing exceptional vehicles and unmatched customer experience in Moldova. Your journey starts here.",
         "sections": {
             "reservations": {
                 "title": "Reservations",
@@ -151,13 +152,14 @@
                 "title": "Company",
                 "links": {
                     "about": "About Us",
-                    "career": "Career",
                     "team": "Our Team",
+                    "rental-conditions": "Rental Conditions",
                     "affiliate": "Affiliate Programs"
                 }
             }
         },
         "social": {
+            "follow-us": "Follow us",
             "twitter": "Twitter",
             "facebook": "Facebook",
             "instagram": "Instagram"
