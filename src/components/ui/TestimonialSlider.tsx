@@ -204,9 +204,6 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
 }) => {
   const sliderRef = useRef<Slider>(null);
 
-  // Debug autoplay settings
-  console.log('TestimonialSlider autoplay:', autoplay, 'speed:', autoplaySpeed);
-
   const sliderSettings = {
     dots: false,
     arrows: false,
