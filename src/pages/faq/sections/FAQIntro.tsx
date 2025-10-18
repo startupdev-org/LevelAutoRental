@@ -44,7 +44,12 @@ export const FAQIntro: React.FC = () => {
                 viewport={{ once: true }}
                 className="relative z-10 text-center space-y-6 sm:space-y-8 max-w-3xl px-4"
             >
-
+                {/* <motion.p
+                    variants={fadeInUp}
+                    className="text-xs sm:text-sm font-semibold tracking-wider text-red-500 uppercase"
+                >
+                    FAQs
+                </motion.p> */}
 
                 <motion.h1
                     variants={fadeInUp}
