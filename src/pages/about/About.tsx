@@ -1,12 +1,26 @@
 import { motion } from 'framer-motion';
 import { Award, Car, Clock, Shield, Users, CheckCircle } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Card } from '../../components/ui/Card';
 import { useTranslation } from 'react-i18next';
 
 export const About: React.FC = () => {
   const { t } = useTranslation();
+
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    // Check once on mount
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    handleResize();
+
+    // Update on resize
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const stats = [
     { icon: Car, label: t('about.stats.vehicles'), value: '500+' },
@@ -36,9 +50,17 @@ export const About: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/LevelAutoRental/bg-hero.jpg)', backgroundPosition: 'center -420px' }}>
+      <section
+        className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
+          pt-36 font-sans bg-gray-900 text-white
+          ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : ""}
+          `}
+        style={{
+          backgroundImage: isDesktop ? 'url(/LevelAutoRental/bg-hero.jpg)' : "none",
+          backgroundPosition: 'center -420px'
+        }}>
         {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-black/60"></div>
+        {isDesktop && <div className="absolute inset-0 bg-black/70" />}
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
           <div className="flex items-center justify-center h-full pt-16">
@@ -46,13 +68,13 @@ export const About: React.FC = () => {
             <div className="text-center space-y-10 max-w-4xl">
               <div className="space-y-8">
                 <div className="space-y-6">
-            <p className="text-sm font-semibold tracking-wider text-red-500 uppercase">
-              {t('about.hero.label')}
-            </p>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
+                  <p className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+                    {t('about.hero.label')}
+                  </p>
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
                     {t('about.hero.title')}
                   </h1>
-            {/* Description removed for minimal hero */}
+                  {/* Description removed for minimal hero */}
                 </div>
               </div>
             </div>
