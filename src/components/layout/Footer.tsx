@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
       links: [
         { name: t("footer.sections.reservations.links.start"), href: '/booking' },
         { name: t("footer.sections.reservations.links.receipt"), href: '#' },
-        { name: t("footer.sections.reservations.links.howTo"), href: '#' },
+        { name: t("footer.sections.reservations.links.howTo"), href: '/how-to-rent' },
         { name: t("footer.sections.reservations.links.faq"), href: '/help' }
       ]
     },
@@ -40,8 +40,8 @@ export const Footer: React.FC = () => {
       title: t("footer.sections.company.title"),
       links: [
         { name: t("footer.sections.company.links.about"), href: '/about' },
-        { name: t("footer.sections.company.links.career"), href: '#' },
         { name: t("footer.sections.company.links.team"), href: '#' },
+        { name: t("footer.sections.company.links.rental-conditions"), href: '/terms' },
         { name: t("footer.sections.company.links.affiliate"), href: '#' }
       ]
     }
@@ -90,7 +90,7 @@ export const Footer: React.FC = () => {
 
             {/* Description */}
             <p className="text-gray-300 leading-relaxed text-base max-w-md">
-              Premium car rental service providing exceptional vehicles and unmatched customer experience in Moldova. Your journey starts here.
+              {t("footer.description")}
             </p>
 
             {/* Contact Info */}
@@ -161,7 +161,7 @@ export const Footer: React.FC = () => {
 
             {/* Social Media Icons */}
             <div className="flex items-center space-x-4">
-              <span className="text-gray-400 text-sm font-medium mr-2">Follow us:</span>
+              <span className="text-gray-400 text-sm font-medium mr-2">{t("footer.social.follow-us")}:</span>
               {socialLinks.map((social) => (
                 <motion.a
                   key={social.label}
