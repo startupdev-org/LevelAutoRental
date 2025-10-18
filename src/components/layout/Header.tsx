@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Globe } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
@@ -95,7 +95,8 @@ export const Header: React.FC = () => {
 
   const handleNavigate = (href: string) => {
     const scrollWithOffset = (el: HTMLElement) => {
-      const yOffset = -80; // adjust to your header height
+      // Dynamic offset based on screen size: 80px for both mobile and desktop now
+      const yOffset = -80;
       const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: "smooth" });
     };
@@ -124,14 +125,14 @@ export const Header: React.FC = () => {
         : 'bg-transparent shadow-none border-transparent'
         }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+      <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center group">
             <img
               src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
-              className={`w-[250px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
+              className={`w-[180px] lg:w-[250px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
                 }`}
             />
           </Link>
@@ -218,45 +219,184 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="lg:hidden flex items-center space-x-3">
+            {/* Mobile Language Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage 
+                  ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' 
+                  : 'text-white hover:text-theme-300 hover:bg-white/20'
+                }`}
+              >
+                <Globe className="w-5 h-5" />
+              </button>
+              
+              {/* Mobile Language Dropdown */}
+              <AnimatePresence>
+                {showLanguageDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]"
+                  >
+                    {LANGUAGES.map(({ code, label, iconClass }) => (
+                      <button
+                        key={code}
+                        onClick={() => {
+                          i18n.changeLanguage(code);
+                          setCurrentLanguage(code);
+                          setShowLanguageDropdown(false);
+                          localStorage.setItem("selectedLanguage", code);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                      >
+                        <span className={iconClass}></span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-2 rounded-md transition-colors ${isScrolled || isDifferentPage ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' : 'text-white hover:text-theme-300 hover:bg-white/20'}`}
+              className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage 
+                ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' 
+                : 'text-white hover:text-theme-300 hover:bg-white/20'
+              }`}
             >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <motion.div
+                animate={{ rotate: isMenuOpen ? 90 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </motion.div>
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <motion.div
-          initial={false}
-          animate={isMenuOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="md:hidden overflow-hidden"
-        >
-          <div className="py-4 space-y-4">
-            {navigation.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handleNavigate(item.href);
-                }}
-                className={`block w-full text-left text-base font-medium transition-colors hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500' : isScrolled || isDifferentPage ? 'text-gray-700' : 'text-white'}`}
-                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        {/* Mobile Navigation Overlay */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                onClick={() => setIsMenuOpen(false)}
+              />
+              
+              {/* Mobile Menu Panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 lg:hidden"
               >
-                {item.name}
-              </button>
-            ))}
-            <Button variant="ghost" size="sm" className="w-full">
-              {t('header.auth')}
-              {/* ff */}
-            </Button>
-          </div>
-        </motion.div>
+                <div className="flex flex-col h-full">
+                  {/* Mobile Menu Header */}
+                  <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src="/LevelAutoRental/logo.png"
+                        alt="Level Auto Rental Logo"
+                        className="w-32 h-auto"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setIsMenuOpen(false)}
+                      className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  {/* Mobile Menu Content */}
+                  <div className="flex-1 overflow-y-auto">
+                    <nav className="p-6 space-y-2">
+                      {navigation.map((item, index) => (
+                        <motion.button
+                          key={item.name}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            handleNavigate(item.href);
+                          }}
+                          className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                            isActive(item.href)
+                              ? 'bg-theme-50 text-theme-600 border-l-4 border-theme-500'
+                              : 'text-gray-700 hover:bg-gray-50 hover:text-theme-600'
+                          }`}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                          {item.name}
+                        </motion.button>
+                      ))}
+                    </nav>
+
+                    {/* Mobile Menu Footer */}
+                    <div className="p-6 border-t border-gray-200 space-y-4">
+                      <Button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          navigate('/auth/login');
+                        }}
+                        className="w-full bg-theme-500 hover:bg-theme-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                      >
+                        {t('header.auth')}
+                      </Button>
+                      
+                      {/* Mobile Language Selector */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                          {t('header.language')}
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {LANGUAGES.map(({ code, label, iconClass }) => (
+                            <button
+                              key={code}
+                              onClick={() => {
+                                i18n.changeLanguage(code);
+                                setCurrentLanguage(code);
+                                localStorage.setItem("selectedLanguage", code);
+                                setIsMenuOpen(false);
+                              }}
+                              className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
+                                currentLanguage === code
+                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span className={`${iconClass} w-6 h-4 mb-1`}></span>
+                              <span className="text-xs font-medium">{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
       </div>
     </header>
   );
 };
+
+
+
+

@@ -205,7 +205,7 @@ export const Testimonials: React.FC = () => {
     <section className="relative py-0 mt-10 bg-gray-50">
       <SliderStyles />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <span className="text-sm font-semibold tracking-wider text-red-500 uppercase bg-gradient-to-r from-red-500 to-red-600 bg-clip-text">
             Testimoniale
           </span>
@@ -215,6 +215,7 @@ export const Testimonials: React.FC = () => {
           <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
             Ascultați ce spun clienții noștri despre serviciile noastre
           </p>
+          
         </div>
 
         <div className="relative">
@@ -226,20 +227,19 @@ export const Testimonials: React.FC = () => {
           ))}
           </Slider>
           
-          {/* Left Arrow */}
+          {/* Desktop Navigation Arrows - Side positioning */}
           <button
             onClick={() => sliderRef.current?.slickPrev()}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-32 z-10 w-14 h-14 rounded-full shadow-lg transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
+            className="hidden md:block absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-32 z-10 w-14 h-14 rounded-full shadow-sm transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mx-auto transition-transform duration-300 group-hover:-translate-x-0.5">
               <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
             </svg>
           </button>
           
-          {/* Right Arrow */}
           <button
             onClick={() => sliderRef.current?.slickNext()}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-32 z-10 w-14 h-14 rounded-full shadow-lg transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
+            className="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-32 z-10 w-14 h-14 rounded-full shadow-sm transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mx-auto transition-transform duration-300 group-hover:translate-x-0.5">
               <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>

@@ -131,7 +131,261 @@ export const Hero: React.FC = () => {
       <div className="py-[0px] top-[280px] -mt-10 md:-mt-28 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white backdrop-blur-sm rounded-3xl shadow-lg border border-white/20 dropdown-container">
-            <div className="flex">
+            {/* Mobile Layout - Stack vertically */}
+            <div className="flex flex-col md:hidden space-y-4 p-4">
+              {/* Location */}
+              <div className="w-full">
+                <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
+                  {t("hero.location")}
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <div
+                    className="pl-10 pr-8 py-3 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors border border-gray-200 rounded-xl"
+                    onClick={() => openDropdown('location')}
+                  >
+                    {bookingForm.pickupLocation || t("hero.searchLocation")}
+                  </div>
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+
+                  {/* Dropdown */}
+                  <AnimatePresence>
+                    {showLocationDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="py-1">
+                          <div
+                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-200 transition-colors"
+                            onClick={() => {
+                              handleInputChange('pickupLocation', 'Chisinau Airport');
+                              closeAllDropdowns();
+                            }}
+                          >
+                            Chisinau Airport
+                          </div>
+                          <div
+                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-200 transition-colors"
+                            onClick={() => {
+                              handleInputChange('pickupLocation', 'Chisinau');
+                              closeAllDropdowns();
+                            }}
+                          >
+                            Chisinau
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Date Row - Side by side on mobile */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Pickup Date */}
+                <div className="w-full">
+                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
+                    {t("hero.pickUpDate")}
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <div
+                      className="pl-10 pr-8 py-3 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors border border-gray-200 rounded-xl"
+                      onClick={() => openDropdown('pickup')}
+                    >
+                      {formatDate(bookingForm.pickupDate) || t("hero.selectPickUpDate")}
+                    </div>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+
+                    {/* Pickup Calendar Dropdown */}
+                    <AnimatePresence>
+                      {showPickupCalendar && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <button
+                              onClick={() => {
+                                const newDate = new Date(bookingForm.pickupDate);
+                                newDate.setMonth(newDate.getMonth() - 1);
+                                handleInputChange('pickupDate', newDate.toISOString().split('T')[0]);
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                            <div className="text-sm font-medium text-gray-700">
+                              {new Date(bookingForm.pickupDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </div>
+                            <button
+                              onClick={() => {
+                                const newDate = new Date(bookingForm.pickupDate);
+                                newDate.setMonth(newDate.getMonth() + 1);
+                                handleInputChange('pickupDate', newDate.toISOString().split('T')[0]);
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
+                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                              <div key={day} className="text-gray-500 font-medium">{day}</div>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-7 gap-1">
+                            {generateCalendarDays(new Date(bookingForm.pickupDate)).map((day, index) => (
+                              <div
+                                key={index}
+                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded hover:bg-gray-100 transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
+                                  } ${day && isSameDay(new Date(day), new Date(bookingForm.pickupDate))
+                                    ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                    : ''
+                                  }`}
+                                onClick={() => {
+                                  if (day) {
+                                    handleInputChange('pickupDate', day);
+                                    closeAllDropdowns();
+                                  }
+                                }}
+                              >
+                                {day ? new Date(day).getDate() : ''}
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                {/* Return Date */}
+                <div className="w-full">
+                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
+                    {t("hero.returnDate")}
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <div
+                      className="pl-10 pr-8 py-3 text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors border border-gray-200 rounded-xl"
+                      onClick={() => openDropdown('return')}
+                    >
+                      {formatDate(bookingForm.returnDate) || t("hero.selectReturnDate")}
+                    </div>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+
+                    {/* Return Calendar Dropdown */}
+                    <AnimatePresence>
+                      {showReturnCalendar && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <button
+                              onClick={() => {
+                                const newDate = new Date(bookingForm.returnDate);
+                                newDate.setMonth(newDate.getMonth() - 1);
+                                handleInputChange('returnDate', newDate.toISOString().split('T')[0]);
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                            <div className="text-sm font-medium text-gray-700">
+                              {new Date(bookingForm.returnDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </div>
+                            <button
+                              onClick={() => {
+                                const newDate = new Date(bookingForm.returnDate);
+                                newDate.setMonth(newDate.getMonth() + 1);
+                                handleInputChange('returnDate', newDate.toISOString().split('T')[0]);
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
+                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                              <div key={day} className="text-gray-500 font-medium">{day}</div>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-7 gap-1">
+                            {generateCalendarDays(new Date(bookingForm.returnDate)).map((day, index) => (
+                              <div
+                                key={index}
+                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded hover:bg-gray-100 transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
+                                  } ${day && isSameDay(new Date(day), new Date(bookingForm.returnDate))
+                                    ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                    : ''
+                                  }`}
+                                onClick={() => {
+                                  if (day) {
+                                    handleInputChange('returnDate', day);
+                                    closeAllDropdowns();
+                                  }
+                                }}
+                              >
+                                {day ? new Date(day).getDate() : ''}
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search Button - Full width on mobile */}
+              <div className="w-full">
+                <Button
+                  onClick={handleSearch}
+                  className="w-full bg-theme-500 hover:bg-theme-600 text-white py-4 px-6 rounded-xl font-medium flex items-center justify-center gap-2"
+                >
+                  <Search className="w-4 h-4 stroke-2" />
+                  {t("hero.search")}
+                </Button>
+              </div>
+            </div>
+
+            {/* Desktop Layout - Horizontal flex */}
+            <div className="hidden md:flex">
               {/* Location */}
               <div className="flex-1 px-6 py-4">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">

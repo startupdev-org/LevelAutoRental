@@ -5,6 +5,7 @@ import { pageTransition } from '../../utils/animations';
 import { Footer } from './Footer';
 import { Header } from './Header';
 import Loader from './Loader';
+import { FloatingContact } from '../ui/FloatingContact';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -49,7 +50,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             key={location.pathname}
             variants={pageTransition}
             initial="initial"
-            
             animate="animate"
             exit="exit"
             className="flex-1"
@@ -59,6 +59,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </AnimatePresence>
         <Footer />
       </div>
+      
+      {/* Floating Contact Component */}
+      <FloatingContact />
     </>
   );
 };

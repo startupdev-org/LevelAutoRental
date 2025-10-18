@@ -5,7 +5,8 @@
         "about": "Despre noi",
         "howToRent": "Cum închiriez",
         "contact": "Contactează-ne",
-        "auth": "Autentificare"
+        "auth": "Autentificare",
+        "language": "Limbă"
     },
     "hero": {
         "companyType": "Chirie Auto",

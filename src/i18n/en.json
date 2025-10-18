@@ -5,7 +5,8 @@
         "about": "About Us",
         "howToRent": "How to Rent",
         "contact": "Contact",
-        "auth": "Login"
+        "auth": "Login",
+        "language": "Language"
     },
     "hero": {
         "companyType": "Car Rental",
