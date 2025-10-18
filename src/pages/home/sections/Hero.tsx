@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Search } from 'lucide-react';
+import { BiSolidPhoneCall } from "react-icons/bi";
 import React, { useState } from 'react';
 import { BookingForm } from '../../../types';
 import { Button } from '../../../components/ui/Button';
@@ -87,12 +88,12 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative h-[725px] bg-fixed bg-cover bg-bottom bg-no-repeat pt-36 font-sans" style={{ backgroundImage: 'url(/LevelAutoRental/bg-hero.jpg)', backgroundPosition: 'center -420px' }}>
+    <section className="relative h-[725px] bg-fixed bg-cover bg-no-repeat pt-36 font-sans md:bg-hero-desktop bg-hero-desktop bg-mobile-hero bg-hero-mobile">
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60"></div>
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
-        <div className="flex items-center justify-center h-full pt-24">
+        <div className="flex items-center justify-center h-full lg:pt-24">
           {/* Centered Text Content */}
           <div className="text-center space-y-10 max-w-4xl">
             <div className="space-y-8">
@@ -100,22 +101,54 @@ export const Hero: React.FC = () => {
                 <p className="text-lg md:text-xl text-theme-500 font-semibold drop-shadow-md uppercase tracking-wide">
 
                 </p>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
+                <h1 className="text-4xl md:text-4xl lg:text-5xl font-bold text-white leading-tight drop-shadow-lg">
                   Level Auto Rental
                 </h1>
 
                 <p className="text-lg md:text-xl text-white max-w-2xl mx-auto leading-relaxed drop-shadow-md">
                   {t('hero.label')}
-                  <span className="text-theme-500 font-medium"> {t('hero.smallLabel')}</span>
+                  <span className="text-theme-500 font-medium block"> {t('hero.smallLabel')}</span>
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                  {t('hero.start')}
-                </button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <div className="relative">
+                  {/* Live Circle Effect */}
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl border-2 border-red-400"
+                    animate={{
+                      scale: [1, 1.05, 1],
+                      opacity: [0.8, 0, 0.8]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  
+                  <motion.button 
+                    className="relative px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <motion.div
+                      animate={{
+                        rotate: [0, 5, -5, 0]
+                      }}
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      {BiSolidPhoneCall({ className: "w-6 h-6" })}
+                    </motion.div>
+                    {t('hero.start')}
+                  </motion.button>
+                </div>
                 <button
-                  className="px-8 py-4 border-2 border-white hover:border-theme-500 text-white hover:text-theme-500 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 bg-white/10 backdrop-blur-sm"
+                  className="px-10 py-4 border-2 border-white hover:border-theme-500 text-white hover:text-theme-500 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 bg-white/10 backdrop-blur-sm"
                   onClick={() => navigate('/cars')}
                 >
                   {t('hero.seeCars')}
@@ -128,7 +161,7 @@ export const Hero: React.FC = () => {
       </div>
 
       {/* Search Bar Section */}
-      <div className="py-[0px] top-[280px] -mt-10 md:-mt-28 relative z-20">
+      <div className="py-[0px] top-[140px] lg:top-[305px] -mt-10 md:-mt-28 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white backdrop-blur-sm rounded-3xl shadow-lg border border-white/20 dropdown-container">
             {/* Mobile Layout - Stack vertically */}
@@ -218,7 +251,7 @@ export const Hero: React.FC = () => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: -10, scale: 0.95 }}
                           transition={{ duration: 0.2, ease: "easeOut" }}
-                          className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3"
+                          className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[280px]"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center justify-between mb-3">
@@ -308,7 +341,7 @@ export const Hero: React.FC = () => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: -10, scale: 0.95 }}
                           transition={{ duration: 0.2, ease: "easeOut" }}
-                          className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3"
+                          className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 w-[280px]"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center justify-between mb-3">

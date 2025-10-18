@@ -19,29 +19,31 @@ function App() {
       originalError.apply(console, args);
     };
 
-    // Preload background image globally to prevent any flash
-    const img = new Image();
-    img.src = '/LevelAutoRental/lvl_bg.png';
-
-    // Start transition after 1.5 seconds, then hide loader after fade completes
-    const transitionTimer = setTimeout(() => {
+    // Fallback timer in case images take too long (max 10 seconds)
+    const fallbackTimer = setTimeout(() => {
       setIsTransitioning(true);
-    }, 1500);
+    }, 10000);
 
-    const hideTimer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 1800); // 1.5s + 0.3s fade duration
     return () => {
-      clearTimeout(transitionTimer);
-      clearTimeout(hideTimer);
+      clearTimeout(fallbackTimer);
       window.console.error = originalError; // Restore original console.error
     };
   }, []);
 
+  // Handle loading completion from Loader component
+  const handleLoadingComplete = () => {
+    setIsTransitioning(true);
+    
+    // Hide loader after fade completes
+    setTimeout(() => {
+      setInitialLoading(false);
+    }, 300); // 0.3s fade duration
+  };
+
   return (
     <>
       {/* Show loader while initial loading */}
-      {initialLoading && <Loader isTransitioning={isTransitioning} />}
+      {initialLoading && <Loader isTransitioning={isTransitioning} onLoadingComplete={handleLoadingComplete} />}
       
       {/* Show content immediately, even during fade-out */}
       <Router basename="/LevelAutoRental/">
