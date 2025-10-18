@@ -22,12 +22,11 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
 
   return (
     <div 
-      className={`fixed inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-300 ease-in-out z-[9999999] ${
+      className={`fixed inset-0 bg-cover bg-no-repeat transition-opacity duration-300 ease-in-out z-[9999999] bg-mobile-loader bg-loader-mobile md:bg-desktop-loader md:bg-loader-desktop ${
         isTransitioning ? 'opacity-0' : 'opacity-100'
       }`}
       style={{ 
         zIndex: 9999999,
-        backgroundImage: 'url(/LevelAutoRental/lvl_bg.png)',
         animation: 'zoom-premium 3s ease-in-out infinite',
       }}
     >

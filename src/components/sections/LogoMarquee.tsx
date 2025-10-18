@@ -12,16 +12,16 @@ export const LogoMarquee: React.FC = () => {
   ];
 
   return (
-    <section className="py-16 mt-20 w-full">
+    <section className="py-16 mt-32 lg:mt-20 w-full">
       <div className="w-full">
         <div className="marquee">
           <ul className="marquee__content">
             {logos.map((logo, index) => (
-              <li key={index}>
+              <li key={index} className="mx-8 md:mx-12 lg:mx-4">
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
                 />
               </li>
             ))}
@@ -29,11 +29,11 @@ export const LogoMarquee: React.FC = () => {
           {/* Mirrors the content above */}
           <ul className="marquee__content" aria-hidden="true">
             {logos.map((logo, index) => (
-              <li key={`duplicate-${index}`}>
+              <li key={`duplicate-${index}`} className="mx-8 md:mx-12 lg:mx-4">
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
                 />
               </li>
             ))}

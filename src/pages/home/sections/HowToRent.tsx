@@ -35,7 +35,7 @@ export const HowToRent: React.FC = () => {
     ];
 
     return (
-        <section className="relative py-20 mb-40 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/LevelAutoRental/lvl_bg.png)', backgroundPosition: 'center -400px' }}>
+        <section className="relative py-20 mb-40 bg-cover bg-no-repeat bg-mobile-howto bg-howto-mobile md:bg-desktop-howto md:bg-howto-desktop">
             {/* Background Overlay */}
             <div className="absolute inset-0 bg-black/60"></div>
             
@@ -83,9 +83,9 @@ export const HowToRent: React.FC = () => {
                             className="relative group"
                         >
                             {/* Card Background */}
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full">
+                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full mx-4 md:mx-0">
                                 {/* Number Badge */}
-                                <div className="flex justify-center mb-6">
+                                <div className="flex justify-center mb-4 md:mb-6">
                                     <motion.div
                                         whileHover={{ scale: 1.1 }}
                                         transition={{ duration: 0.2 }}
@@ -99,7 +99,7 @@ export const HowToRent: React.FC = () => {
                                 
                                 {/* Content */}
                                 <div className="text-center">
-                                    <h3 className="text-xl font-bold text-white mb-4 leading-tight">
+                                    <h3 className="text-xl font-bold text-white mb-3 md:mb-4 leading-tight">
                                         {step.title}
                                     </h3>
                                     <p className="text-gray-200 text-sm leading-relaxed">

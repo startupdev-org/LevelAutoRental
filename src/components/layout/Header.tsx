@@ -57,7 +57,7 @@ export const Header: React.FC = () => {
 
       const scrollPosition = window.scrollY;
       // Lower trigger height for help page to activate header styling earlier
-      const triggerHeight = location.pathname === '/help' ? 70 : 600;
+      const triggerHeight = location.pathname === '/help' ? 70 : 150;
       setIsScrolled(scrollPosition > triggerHeight);
     };
 
@@ -132,7 +132,7 @@ export const Header: React.FC = () => {
             <img
               src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
-              className={`w-[180px] lg:w-[250px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
+              className={`w-[180px] lg:w-[200px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
                 }`}
             />
           </Link>
@@ -221,7 +221,7 @@ export const Header: React.FC = () => {
           {/* Mobile menu button */}
           <div className="lg:hidden flex items-center space-x-3">
             {/* Mobile Language Selector */}
-            <div className="relative">
+            <div className="relative language-dropdown-container">
               <button
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
                 className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage 
