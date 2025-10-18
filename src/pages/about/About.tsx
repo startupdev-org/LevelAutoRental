@@ -84,7 +84,7 @@ export const About: React.FC = () => {
 
       {/* Story Section */}
       <section className="py-20 mt-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6 sm:px-16 lg:px-10">
           <motion.div
             variants={staggerContainer}
             initial="initial"
@@ -106,7 +106,7 @@ export const About: React.FC = () => {
             </motion.h2>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-center px-6 sm:px-10 lg:px-20">
             {/* Timeline */}
             <motion.div
               variants={fadeInUp}
