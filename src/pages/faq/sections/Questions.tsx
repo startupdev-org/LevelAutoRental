@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { fadeInUp, staggerContainer } from '../../utils/animations';
-import { useInView } from '../../hooks/useInView';
+import { fadeInUp, staggerContainer } from '../../../utils/animations';
+import { useInView } from '../../../hooks/useInView';
 
 interface FAQItem {
     id: string;
