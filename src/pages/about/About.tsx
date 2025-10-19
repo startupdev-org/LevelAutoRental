@@ -23,27 +23,27 @@ export const About: React.FC = () => {
   }, []);
 
   const stats = [
-    { icon: Car, label: t('about.stats.vehicles'), value: '500+' },
-    { icon: Users, label: t('about.stats.customers'), value: '10,000+' },
-    { icon: Clock, label: t('about.stats.experience'), value: '15+' },
-    { icon: Award, label: t('about.stats.awards'), value: '25+' }
+    { icon: Car, label: t('pages.about.stats.vehicles'), value: '500+' },
+    { icon: Users, label: t('pages.about.stats.customers'), value: '10,000+' },
+    { icon: Clock, label: t('pages.about.stats.experience'), value: '15+' },
+    { icon: Award, label: t('pages.about.stats.awards'), value: '25+' }
   ];
 
   const values = [
     {
       icon: Shield,
-      title: t('about.values.safety.title'),
-      description: t('about.values.safety.description')
+      title: t('pages.about.values.safety.title'),
+      description: t('pages.about.values.safety.description')
     },
     {
       icon: Users,
-      title: t('about.values.customer.title'),
-      description: t('about.values.customer.description')
+      title: t('pages.about.values.customer.title'),
+      description: t('pages.about.values.customer.description')
     },
     {
       icon: Award,
-      title: t('about.values.quality.title'),
-      description: t('about.values.quality.description')
+      title: t('pages.about.values.quality.title'),
+      description: t('pages.about.values.quality.description')
     }
   ];
 
@@ -69,10 +69,10 @@ export const About: React.FC = () => {
               <div className="space-y-8">
                 <div className="space-y-6">
                   <p className="text-sm font-semibold tracking-wider text-red-500 uppercase">
-                    {t('about.hero.label')}
+                    {t('pages.about.hero.label')}
                   </p>
                   <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
-                    {t('about.hero.title')}
+                    {t('pages.about.hero.title')}
                   </h1>
                   {/* Description removed for minimal hero */}
                 </div>
@@ -96,7 +96,7 @@ export const About: React.FC = () => {
               variants={fadeInUp}
               className="text-sm font-semibold tracking-wider text-red-500 uppercase"
             >
-              {t('about.story.label')}
+              {t('pages.about.story.label')}
             </motion.span>
             <motion.h2
               variants={fadeInUp}
@@ -198,13 +198,13 @@ export const About: React.FC = () => {
               variants={fadeInUp}
               className="text-sm font-semibold tracking-wider text-red-500 uppercase"
             >
-              {t('about.values.label')}
+              {t('pages.about.values.label')}
             </motion.span>
             <motion.h2
               variants={fadeInUp}
               className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
             >
-              {t('about.values.title')}
+              {t('pages.about.values.title')}
             </motion.h2>
           </motion.div>
 

@@ -85,74 +85,76 @@
         "sectionDescription": "Ascultați ce spun clienții noștri despre serviciile noastre",
         "verifiedClient": "Client Verificat"
     },
-    "faq": {
-        "hero": {
-            "label": "Întrebări frecvente",
-            "title": "Întrebări frecvente",
-            "description": "Înainte de a închiria un vehicul de la LevelAutoRental, vă încurajăm să citiți cu atenție Termenii și Condițiile noastre. Siguranța, confidențialitatea și satisfacția dumneavoastră sunt prioritățile noastre cele mai înalte."
-        }
-    },
-    "terms": {
-        "hero": {
-            "label": "Termeni și condiții",
-            "title": "Termeni și condiții de închiriere auto",
-            "description": "Vă rugăm să citiți cu atenție acești termeni și condiții înainte de a închiria un vehicul de la LevelAutoRental. Siguranța, confidențialitatea și satisfacția dumneavoastră sunt prioritățile noastre principale."
-        }
-    },
-    "about": {
-        "hero": {
-            "label": "Despre Companie",
-            "title": "Level Auto Rental",
-            "subtitle": "Închirieri auto premium, simplu și rapid.",
-            "location": "în Moldova"
-        },
-        "stats": {
-            "vehicles": "Vehicule",
-            "customers": "Clienți mulțumiți",
-            "experience": "Ani experiență",
-            "awards": "Premii câștigate"
-        },
-        "story": {
-            "label": "Povestea noastră",
-            "title": "De la începuturi modeste la lideri în industrie",
-            "paragraph1": "Fondată în 2009, Level Auto Rental a început ca o afacere de familie mică cu o misiune simplă: să ofere soluții de transport de încredere și accesibile pentru toată lumea. Ceea ce a început cu doar cinci vehicule s-a dezvoltat într-unul dintre cele mai de încredere servicii de închirieri auto din Moldova.",
-            "paragraph2": "De-a lungul anilor, ne-am extins flota pentru a include peste 500 de vehicule, de la mașini economice la sedanuri de lux și SUV-uri. Angajamentul nostru față de satisfacția clienților și serviciul de calitate a rămas neschimbat, câștigându-ne loialitatea a mii de clienți și numeroase premii din industrie.",
-            "paragraph3": "Astăzi, continuăm să inovăm și să îmbunătățim serviciile noastre, adoptând tehnologii noi și practici durabile pentru a servi mai bine clienții noștri și a proteja mediul pentru generațiile viitoare."
-        },
-        "values": {
-            "label": "Valorile noastre",
-            "title": "Principiile care ne ghidează în tot ceea ce facem",
-            "safety": {
-                "title": "Siguranța înainte de toate",
-                "description": "Toate vehiculele noastre trec prin inspecții de siguranță riguroase și întreținere pentru a vă asigura liniștea pe drum."
-            },
-            "customer": {
-                "title": "Orientare către client",
-                "description": "Prioritizăm satisfacția clienților cu suport 24/7 și servicii personalizate adaptate nevoilor voastre."
-            },
-            "quality": {
-                "title": "Serviciu de calitate",
-                "description": "Angajamentul nostru față de excelență ne-a adus recunoașterea industriei și încrederea a mii de clienți."
+    "pages": {
+        "faq": {
+            "hero": {
+                "label": "Întrebări frecvente",
+                "title": "Întrebări frecvente",
+                "description": "Înainte de a închiria un vehicul de la LevelAutoRental, te încurajăm să citești cu atenție Termenii și Condițiile noastre. Siguranța, confidențialitatea și satisfacția ta sunt cele mai importante pentru noi."
             }
         },
-        "team": {
-            "label": "Întâlnește echipa noastră",
-            "title": "Profesioniștii dedicați din spatele succesului nostru"
-        }
-    },
-    "contact": {
-        "hero": "Hai să facem următoarea ta călătorie mai ușoară",
-        "smallLabel": "Ne poți contacta oricând prin",
-        "form": {
-            "first-name": "Prenume",
-            "last-name": "Nume",
-            "email": "Email",
-            "email-example": "tu@companie.com",
-            "phone-number": "Număr de telefon",
-            "message": "Mesaj",
-            "message-cta": "Lasă-ne un mesaj...",
-            "question": "De unde ai auzit despre noi",
-            "start": "Începe acum"
+        "terms": {
+            "hero": {
+                "label": "Termeni și condiții",
+                "title": "Termeni și condiții pentru închirierea auto",
+                "description": "Te rugăm să citești cu atenție acești termeni și condiții înainte de a închiria un vehicul de la LevelAutoRental. Siguranța, confidențialitatea și satisfacția ta sunt prioritățile noastre principale."
+            }
+        },
+        "about": {
+            "hero": {
+                "label": "Despre Level Auto Rental",
+                "title": "Despre Level Auto Rental",
+                "subtitle": "Închirieri auto premium. Simplu. Rapid.",
+                "location": "în Moldova"
+            },
+            "stats": {
+                "vehicles": "Vehicule",
+                "customers": "Clienți fericiți",
+                "experience": "Ani de experiență",
+                "awards": "Premii câștigate"
+            },
+            "story": {
+                "label": "Povestea noastră",
+                "title": "De la începuturi modeste la lideri în industrie",
+                "paragraph1": "Fondată în 2009, Level Auto Rental a început ca o mică afacere de familie cu o misiune simplă: să ofere soluții de transport fiabile și accesibile pentru toți. Ceea ce a început cu doar cinci vehicule a devenit astăzi una dintre cele mai de încredere companii de închirieri auto din Moldova.",
+                "paragraph2": "De-a lungul anilor, ne-am extins flota la peste 500 de vehicule, de la mașini economice până la sedanuri de lux și SUV-uri. Angajamentul nostru față de satisfacția clienților și calitatea serviciilor a rămas neschimbat, aducându-ne loialitatea a mii de clienți și numeroase premii în industrie.",
+                "paragraph3": "Astăzi continuăm să inovăm și să îmbunătățim serviciile noastre, adoptând tehnologii noi și practici sustenabile pentru a deservi mai bine clienții și pentru a proteja mediul pentru generațiile viitoare."
+            },
+            "values": {
+                "label": "Valorile noastre",
+                "title": "Principiile care ne ghidează în tot ceea ce facem",
+                "safety": {
+                    "title": "Siguranța pe primul loc",
+                    "description": "Toate vehiculele noastre trec prin inspecții și întrețineri riguroase pentru a-ți oferi liniște deplină la drum."
+                },
+                "customer": {
+                    "title": "Orientare către client",
+                    "description": "Punem satisfacția clientului pe primul loc, oferind suport 24/7 și servicii personalizate adaptate nevoilor tale."
+                },
+                "quality": {
+                    "title": "Servicii de calitate",
+                    "description": "Angajamentul nostru față de excelență ne-a adus recunoaștere în industrie și încrederea a mii de clienți."
+                }
+            },
+            "team": {
+                "label": "Echipa noastră",
+                "title": "Profesioniștii dedicați din spatele succesului nostru"
+            }
+        },
+        "contact": {
+            "hero": "Hai să facem următoarea ta călătorie mai ușoară",
+            "smallLabel": "Ne poți contacta oricând prin",
+            "form": {
+                "first-name": "Prenume",
+                "last-name": "Nume",
+                "email": "Email",
+                "email-example": "exemplu@companie.com",
+                "phone-number": "Număr de telefon",
+                "message": "Mesaj",
+                "message-cta": "Lasă-ne un mesaj...",
+                "question": "De unde ai auzit despre noi",
+                "start": "Începe acum"
+            }
         }
     },
     "footer": {
