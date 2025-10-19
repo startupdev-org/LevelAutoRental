@@ -141,6 +141,7 @@ export const Hero: React.FC = () => {
                     className="relative px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => window.open('tel:+37362000112', '_self')}
                   >
                     <motion.div
                       animate={{

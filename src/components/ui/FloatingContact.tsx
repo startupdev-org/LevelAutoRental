@@ -19,13 +19,13 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ className }) =
     {
       name: 'Telegram',
       icon: '/LevelAutoRental/social/telegram.png',
-      href: 'https://t.me/levelautorental', // Replace with actual Telegram
+      href: 'https://t.me/Level_Auto_Rental',
       delay: 0.2
     },
     {
       name: 'WhatsApp',
       icon: '/LevelAutoRental/social/whatsapp.png',
-      href: 'https://wa.me/37312345678', // Replace with actual WhatsApp
+      href: 'https://wa.me/37362000112',
       delay: 0.3
     }
   ];
@@ -36,9 +36,9 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ className }) =
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            initial={{ opacity: 0, y: 20, scale: 1 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            exit={{ opacity: 0, y: 20, scale: 1 }}
             transition={{ 
               duration: 0.3,
               ease: "easeOut"
@@ -52,9 +52,9 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ className }) =
                   href={method.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 1, x: 0 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  exit={{ opacity: 1, x: 0 }}
                   transition={{ 
                     delay: 0.1 + (index * 0.1),
                     duration: 0.2

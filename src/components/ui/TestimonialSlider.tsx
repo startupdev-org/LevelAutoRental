@@ -209,12 +209,12 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
     arrows: false,
     infinite: true,
     speed: 700,
-    slidesToShow: 3,
+    slidesToShow: 3, // Default to desktop
     slidesToScroll: 1,
     autoplay,
     autoplaySpeed,
     pauseOnHover: true,
-    centerMode: !autoplay, // Disable centerMode when autoplay is enabled
+    centerMode: !autoplay, // Default to desktop
     centerPadding: '0px',
     cssEase: 'ease-out',
     useCSS: true,
@@ -223,16 +223,7 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
     touchMove: true,
     responsive: [
       {
-        breakpoint: 1024,
-        settings: { 
-          slidesToShow: 3, 
-          centerMode: !autoplay,
-          autoplay,
-          autoplaySpeed
-        }
-      },
-      {
-        breakpoint: 768,
+        breakpoint: 1023,
         settings: { 
           slidesToShow: 1, 
           centerMode: false, 
