@@ -132,7 +132,7 @@ export const Header: React.FC = () => {
             <img
               src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
-              className={`w-[180px] lg:w-[200px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
+              className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
                 }`}
             />
           </Link>
@@ -309,7 +309,7 @@ export const Header: React.FC = () => {
                       <img
                         src="/LevelAutoRental/logo.png"
                         alt="Level Auto Rental Logo"
-                        className="w-32 h-auto"
+                        className="w-40 h-auto"
                       />
                     </div>
                     <button
@@ -333,7 +333,7 @@ export const Header: React.FC = () => {
                             setIsMenuOpen(false);
                             handleNavigate(item.href);
                           }}
-                          className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                          className={`w-full text-left px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                             isActive(item.href)
                               ? 'bg-theme-50 text-theme-600 border-l-4 border-theme-500'
                               : 'text-gray-700 hover:bg-gray-50 hover:text-theme-600'

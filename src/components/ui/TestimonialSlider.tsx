@@ -225,7 +225,7 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
     touchMove: true,
     responsive: [
       {
-        breakpoint: 1023,
+        breakpoint: 768,
         settings: { 
           slidesToShow: 1, 
           centerMode: false, 

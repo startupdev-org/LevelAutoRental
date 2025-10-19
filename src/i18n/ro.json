@@ -141,15 +141,14 @@
         }
     },
     "footer": {
-        "description": "Serviciu premium de închirieri auto care oferă vehicule excepționale și o experiență de neegalat pentru clienți în Moldova. Călătoria ta începe aici.",
+        "description": "Serviciu premium de închirieri auto în Moldova. Călătoria ta începe aici.",
         "sections": {
             "reservations": {
                 "title": "Rezervări",
                 "links": {
                     "start": "Începe o rezervare",
-                    "receipt": "Obține o chitanță",
                     "howTo": "Cum să rezervi",
-                    "faq": "Ajutor & Întrebări frecvente"
+                    "faq": "Întrebări frecvente"
                 }
             },
             "vehicles": {
@@ -165,21 +164,95 @@
                 "title": "Companie",
                 "links": {
                     "about": "Despre noi",
-                    "team": "Echipa noastră",
-                    "rental-conditions": "Termeni de inchiriere",
-                    "affiliate": "Programe de afiliere"
+                    "reviews": "Recenzii",
+                    "rental-conditions": "Termeni de inchiriere"
                 }
             }
         },
         "social": {
             "follow-us": "Urmărește-ne",
-            "twitter": "Twitter",
+            "tiktok": "TikTok",
             "facebook": "Facebook",
             "instagram": "Instagram"
         },
         "bottom": {
             "logo": "LevelAutoRental",
-            "copyright": "© 2023 LevelAutoRental. Toate drepturile rezervate"
+            "copyright": "© 2025 LevelAutoRental. Toate drepturile rezervate"
+        },
+        "faq": {
+            "hero": {
+                "label": "Centru de Ajutor",
+                "title": "Întrebări Frecvente",
+                "description": "Găsiți răspunsuri la întrebările comune despre serviciile noastre de închiriere auto. Dacă nu găsiți ce căutați, echipa noastră de suport este aici să vă ajute."
+            },
+            "sections": {
+                "booking": {
+                    "title": "Rezervări & Programări",
+                    "questions": {
+                        "how-to-book": "Cum rezerv o mașină?",
+                        "modify-cancel": "Pot modifica sau anula rezervarea?",
+                        "account-required": "Trebuie să creez un cont pentru a închiria o mașină?",
+                        "advance-booking": "Cu cât timp înainte ar trebui să rezerv o mașină?"
+                    },
+                    "answers": {
+                        "how-to-book": "Puteți rezerva o mașină direct prin site-ul nostru selectând datele de preluare și returnare, alegând un vehicul și completând formularul de rezervare.",
+                        "modify-cancel": "Da, puteți modifica sau anula rezervarea prin panoul de control al contului. Vă rugăm să rețineți că modificările pot fi supuse disponibilității și politicilor de anulare.",
+                        "account-required": "Puteți naviga fără cont, dar crearea unuia facilitează gestionarea rezervărilor, vizualizarea istoricului și accelerarea rezervărilor viitoare.",
+                        "advance-booking": "Recomandăm să rezervați cu cel puțin câteva zile înainte pentru a vă asigura mașina preferată. În sezoanele de vârf, rezervările mai devreme sunt puternic recomandate."
+                    }
+                },
+                "requirements": {
+                    "title": "Cerințe & Politici",
+                    "questions": {
+                        "documents": "Ce documente am nevoie pentru a închiria o mașină?",
+                        "age-requirement": "Există o cerință de vârstă?",
+                        "insurance": "Este inclusă asigurarea?",
+                        "additional-driver": "Pot adăuga un șofer suplimentar?"
+                    },
+                    "answers": {
+                        "documents": "Veți avea nevoie de un permis de conducere valabil, o carte de identitate emisă de stat (cum ar fi un pașaport) și o carte de credit sau debit pe numele șoferului.",
+                        "age-requirement": "Da, vârsta minimă este de obicei 21 de ani. Șoferii sub 25 de ani pot fi supuși unei suprataxe pentru șoferi tineri.",
+                        "insurance": "Asigurarea de bază este inclusă în toate închirierile. Puteți alege opțiuni de acoperire suplimentare pentru protecție extra în timpul procesului de rezervare.",
+                        "additional-driver": "Da, șoferii suplimentari pot fi adăugați la momentul rezervării sau în timpul preluării. Toți șoferii trebuie să prezinte un permis valabil și să îndeplinească cerințele de vârstă."
+                    }
+                },
+                "payment": {
+                    "title": "Plăți & Taxe",
+                    "questions": {
+                        "payment-methods": "Ce metode de plată acceptați?",
+                        "deposit": "Este necesar un depozit?",
+                        "additional-fees": "Există taxe suplimentare pe care ar trebui să le știu?",
+                        "discounts": "Oferiți reduceri?"
+                    },
+                    "answers": {
+                        "payment-methods": "Acceptăm carduri de credit majore (Visa, MasterCard, American Express), carduri de debit și, în unele locații, numerar. Plățile online sunt procesate în siguranță.",
+                        "deposit": "Da, este necesar un depozit de garanție rambursabil la preluare. Suma depinde de tipul de vehicul și durata închirierii.",
+                        "additional-fees": "Taxe suplimentare pot fi aplicate pentru returnări întârziate, kilometraj suplimentar, șoferi suplimentari, combustibil sau echipamente speciale precum GPS și scaune pentru copii.",
+                        "discounts": "Da, oferim promoții sezoniere, reduceri de loialitate și tarife corporative. Abonați-vă la newsletter-ul nostru pentru a fi la curent."
+                    }
+                },
+                "pickup": {
+                    "title": "Preluare & Returnare",
+                    "questions": {
+                        "pickup-location": "Unde pot prelua mașina închiriată?",
+                        "different-return": "Pot returna mașina într-o locație diferită?",
+                        "late-return": "Ce se întâmplă dacă returnez mașina cu întârziere?",
+                        "refuel": "Trebuie să alimentez mașina înainte să o returnez?"
+                    },
+                    "answers": {
+                        "pickup-location": "Puteți prelua mașina la biroul nostru principal, locațiile de la aeroport sau stațiile partenere selectate. Locația de preluare este aleasă în timpul rezervării.",
+                        "different-return": "Da, închirierile în sens unic sunt disponibile între anumite locații. Poate fi aplicată o taxă suplimentară în funcție de distanță.",
+                        "late-return": "Returnările întârziate pot rezulta în taxe suplimentare. Recomandăm să ne contactați dacă anticipați că veți întârzia pentru a explora opțiuni flexibile.",
+                        "refuel": "Mașinile ar trebui returnate cu același nivel de combustibil ca la închiriere. Altfel, se va aplica o taxă de alimentare."
+                    }
+                }
+            },
+            "contact": {
+                "title": "Mai aveți întrebări?",
+                "description": "Nu găsiți răspunsul pe care îl căutați? Echipa noastră de suport este aici să vă ajute cu orice întrebări specifice despre serviciile noastre.",
+                "contact-support": "Contactați Suportul",
+                "call-us": "Sună +373 62 000 112"
+            }
         }
     }
 }
