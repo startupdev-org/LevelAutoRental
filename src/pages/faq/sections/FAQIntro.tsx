@@ -50,21 +50,21 @@ export const FAQIntro: React.FC = () => {
                     variants={fadeInUp}
                     className="text-sm sm:text-base font-semibold tracking-wider text-red-500 uppercase"
                 >
-                    {t('faq.hero.label')}
+                    {t('pages.faq.hero.label')}
                 </motion.p>
 
                 <motion.h1
                     variants={fadeInUp}
                     className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight drop-shadow-lg"
                 >
-                    {t('faq.hero.title')}
+                    {t('pages.faq.hero.title')}
                 </motion.h1>
 
                 <motion.p
                     variants={fadeInUp}
                     className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
                 >
-                    {t('faq.hero.description')}
+                    {t('pages.faq.hero.description')}
                 </motion.p>
             </motion.div>
         </section>

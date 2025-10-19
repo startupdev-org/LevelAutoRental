@@ -85,74 +85,76 @@
         "sectionDescription": "Listen to what our customers say about our services",
         "verifiedClient": "Verified Client"
     },
-    "faq": {
-        "hero": {
-            "label": "FAQs",
-            "title": "Frequently Asked Questions",
-            "description": "Before renting a vehicle from LevelAutoRental, we encourage you to read our Terms and Conditions carefully. Your safety, privacy, and satisfaction are our highest priorities."
-        }
-    },
-    "terms": {
-        "hero": {
-            "label": "Terms & Conditions",
-            "title": "Car Rental Terms & Conditions",
-            "description": "Please read these terms and conditions carefully before renting a vehicle from LevelAutoRental. Your safety, privacy, and satisfaction are our top priorities."
-        }
-    },
-    "about": {
-        "hero": {
-            "label": "About Level Auto Rental",
-            "title": "About Level Auto Rental",
-            "subtitle": "Premium car rentals. Simple. Fast.",
-            "location": "in Moldova"
-        },
-        "stats": {
-            "vehicles": "Vehicles",
-            "customers": "Happy Customers",
-            "experience": "Years Experience",
-            "awards": "Awards Won"
-        },
-        "story": {
-            "label": "Our Story",
-            "title": "From Humble Beginnings to Industry Leaders",
-            "paragraph1": "Founded in 2009, Level Auto Rental began as a small family business with a simple mission: to provide reliable, affordable transportation solutions for everyone. What started with just five vehicles has grown into one of Moldova's most trusted car rental services.",
-            "paragraph2": "Over the years, we've expanded our fleet to include over 500 vehicles ranging from economy cars to luxury sedans and SUVs. Our commitment to customer satisfaction and quality service has remained unchanged, earning us the loyalty of thousands of customers and numerous industry awards.",
-            "paragraph3": "Today, we continue to innovate and improve our services, embracing new technologies and sustainable practices to better serve our customers and protect the environment for future generations."
-        },
-        "values": {
-            "label": "Our Values",
-            "title": "The principles that guide everything we do",
-            "safety": {
-                "title": "Safety First",
-                "description": "All our vehicles undergo rigorous safety inspections and maintenance to ensure your peace of mind on the road."
-            },
-            "customer": {
-                "title": "Customer Focus",
-                "description": "We prioritize customer satisfaction with 24/7 support and personalized service tailored to your needs."
-            },
-            "quality": {
-                "title": "Quality Service",
-                "description": "Our commitment to excellence has earned us industry recognition and the trust of thousands of customers."
+    "pages": {
+        "faq": {
+            "hero": {
+                "label": "FAQs",
+                "title": "Frequently Asked Questions",
+                "description": "Before renting a vehicle from LevelAutoRental, we encourage you to read our Terms and Conditions carefully. Your safety, privacy, and satisfaction are our highest priorities."
             }
         },
-        "team": {
-            "label": "Meet Our Team",
-            "title": "The dedicated professionals behind our success"
-        }
-    },
-    "contact": {
-        "hero": "Let's Make Your Next Journey Easy",
-        "smallLabel": "You can reach us anytime via",
-        "form": {
-            "first-name": "First Name",
-            "last-name": "Last Name",
-            "email": "Email",
-            "email-example": "you@company.com",
-            "phone-number": "Phone Number",
-            "message": "Message",
-            "message-cta": "Leave us a message...",
-            "question": "Where you heard about us",
-            "start": "Get started"
+        "terms": {
+            "hero": {
+                "label": "Terms & Conditions",
+                "title": "Car Rental Terms & Conditions",
+                "description": "Please read these terms and conditions carefully before renting a vehicle from LevelAutoRental. Your safety, privacy, and satisfaction are our top priorities."
+            }
+        },
+        "about": {
+            "hero": {
+                "label": "About Level Auto Rental",
+                "title": "About Level Auto Rental",
+                "subtitle": "Premium car rentals. Simple. Fast.",
+                "location": "in Moldova"
+            },
+            "stats": {
+                "vehicles": "Vehicles",
+                "customers": "Happy Customers",
+                "experience": "Years Experience",
+                "awards": "Awards Won"
+            },
+            "story": {
+                "label": "Our Story",
+                "title": "From Humble Beginnings to Industry Leaders",
+                "paragraph1": "Founded in 2009, Level Auto Rental began as a small family business with a simple mission: to provide reliable, affordable transportation solutions for everyone. What started with just five vehicles has grown into one of Moldova's most trusted car rental services.",
+                "paragraph2": "Over the years, we've expanded our fleet to include over 500 vehicles ranging from economy cars to luxury sedans and SUVs. Our commitment to customer satisfaction and quality service has remained unchanged, earning us the loyalty of thousands of customers and numerous industry awards.",
+                "paragraph3": "Today, we continue to innovate and improve our services, embracing new technologies and sustainable practices to better serve our customers and protect the environment for future generations."
+            },
+            "values": {
+                "label": "Our Values",
+                "title": "The principles that guide everything we do",
+                "safety": {
+                    "title": "Safety First",
+                    "description": "All our vehicles undergo rigorous safety inspections and maintenance to ensure your peace of mind on the road."
+                },
+                "customer": {
+                    "title": "Customer Focus",
+                    "description": "We prioritize customer satisfaction with 24/7 support and personalized service tailored to your needs."
+                },
+                "quality": {
+                    "title": "Quality Service",
+                    "description": "Our commitment to excellence has earned us industry recognition and the trust of thousands of customers."
+                }
+            },
+            "team": {
+                "label": "Meet Our Team",
+                "title": "The dedicated professionals behind our success"
+            }
+        },
+        "contact": {
+            "hero": "Let's Make Your Next Journey Easy",
+            "smallLabel": "You can reach us anytime via",
+            "form": {
+                "first-name": "First Name",
+                "last-name": "Last Name",
+                "email": "Email",
+                "email-example": "example@company.com",
+                "phone-number": "Phone Number",
+                "message": "Message",
+                "message-cta": "Leave us a message...",
+                "question": "Where you heard about us",
+                "start": "Get started"
+            }
         }
     },
     "footer": {

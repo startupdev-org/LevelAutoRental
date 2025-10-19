@@ -25,105 +25,105 @@ export const Questions: React.FC = () => {
     const faqData: FAQSection[] = [
         {
             id: 1,
-            title: t('faq.sections.booking.title'),
+            title: t('pages.faq.sections.booking.title'),
             items: [
                 {
                     id: "booking-1",
-                    question: t('faq.sections.booking.questions.how-to-book'),
-                    answer: t('faq.sections.booking.answers.how-to-book'),
+                    question: t('pages.faq.sections.booking.questions.how-to-book'),
+                    answer: t('pages.faq.sections.booking.answers.how-to-book'),
                 },
                 {
                     id: "booking-2",
-                    question: t('faq.sections.booking.questions.modify-cancel'),
-                    answer: t('faq.sections.booking.answers.modify-cancel'),
+                    question: t('pages.faq.sections.booking.questions.modify-cancel'),
+                    answer: t('pages.faq.sections.booking.answers.modify-cancel'),
                 },
                 {
                     id: "booking-3",
-                    question: t('faq.sections.booking.questions.account-required'),
-                    answer: t('faq.sections.booking.answers.account-required'),
+                    question: t('pages.faq.sections.booking.questions.account-required'),
+                    answer: t('pages.faq.sections.booking.answers.account-required'),
                 },
                 {
                     id: "booking-4",
-                    question: t('faq.sections.booking.questions.advance-booking'),
-                    answer: t('faq.sections.booking.answers.advance-booking'),
+                    question: t('pages.faq.sections.booking.questions.advance-booking'),
+                    answer: t('pages.faq.sections.booking.answers.advance-booking'),
                 },
             ],
         },
         {
             id: 2,
-            title: t('faq.sections.requirements.title'),
+            title: t('pages.faq.sections.requirements.title'),
             items: [
                 {
                     id: "policy-1",
-                    question: t('faq.sections.requirements.questions.documents'),
-                    answer: t('faq.sections.requirements.answers.documents'),
+                    question: t('pages.faq.sections.requirements.questions.documents'),
+                    answer: t('pages.faq.sections.requirements.answers.documents'),
                 },
                 {
                     id: "policy-2",
-                    question: t('faq.sections.requirements.questions.age-requirement'),
-                    answer: t('faq.sections.requirements.answers.age-requirement'),
+                    question: t('pages.faq.sections.requirements.questions.age-requirement'),
+                    answer: t('pages.faq.sections.requirements.answers.age-requirement'),
                 },
                 {
                     id: "policy-3",
-                    question: t('faq.sections.requirements.questions.insurance'),
-                    answer: t('faq.sections.requirements.answers.insurance'),
+                    question: t('pages.faq.sections.requirements.questions.insurance'),
+                    answer: t('pages.faq.sections.requirements.answers.insurance'),
                 },
                 {
                     id: "policy-4",
-                    question: t('faq.sections.requirements.questions.additional-driver'),
-                    answer: t('faq.sections.requirements.answers.additional-driver'),
+                    question: t('pages.faq.sections.requirements.questions.additional-driver'),
+                    answer: t('pages.faq.sections.requirements.answers.additional-driver'),
                 },
             ],
         },
         {
             id: 3,
-            title: t('faq.sections.payment.title'),
+            title: t('pages.faq.sections.payment.title'),
             items: [
                 {
                     id: "payment-1",
-                    question: t('faq.sections.payment.questions.payment-methods'),
-                    answer: t('faq.sections.payment.answers.payment-methods'),
+                    question: t('pages.faq.sections.payment.questions.payment-methods'),
+                    answer: t('pages.faq.sections.payment.answers.payment-methods'),
                 },
                 {
                     id: "payment-2",
-                    question: t('faq.sections.payment.questions.deposit'),
-                    answer: t('faq.sections.payment.answers.deposit'),
+                    question: t('pages.faq.sections.payment.questions.deposit'),
+                    answer: t('pages.faq.sections.payment.answers.deposit'),
                 },
                 {
                     id: "payment-3",
-                    question: t('faq.sections.payment.questions.additional-fees'),
-                    answer: t('faq.sections.payment.answers.additional-fees'),
+                    question: t('pages.faq.sections.payment.questions.additional-fees'),
+                    answer: t('pages.faq.sections.payment.answers.additional-fees'),
                 },
                 {
                     id: "payment-4",
-                    question: t('faq.sections.payment.questions.discounts'),
-                    answer: t('faq.sections.payment.answers.discounts'),
+                    question: t('pages.faq.sections.payment.questions.discounts'),
+                    answer: t('pages.faq.sections.payment.answers.discounts'),
                 },
             ],
         },
         {
             id: 4,
-            title: t('faq.sections.pickup.title'),
+            title: t('pages.faq.sections.pickup.title'),
             items: [
                 {
                     id: "pickup-1",
-                    question: t('faq.sections.pickup.questions.pickup-location'),
-                    answer: t('faq.sections.pickup.answers.pickup-location'),
+                    question: t('pages.faq.sections.pickup.questions.pickup-location'),
+                    answer: t('pages.faq.sections.pickup.answers.pickup-location'),
                 },
                 {
                     id: "pickup-2",
-                    question: t('faq.sections.pickup.questions.different-return'),
-                    answer: t('faq.sections.pickup.answers.different-return'),
+                    question: t('pages.faq.sections.pickup.questions.different-return'),
+                    answer: t('pages.faq.sections.pickup.answers.different-return'),
                 },
                 {
                     id: "pickup-3",
-                    question: t('faq.sections.pickup.questions.late-return'),
-                    answer: t('faq.sections.pickup.answers.late-return'),
+                    question: t('pages.faq.sections.pickup.questions.late-return'),
+                    answer: t('pages.faq.sections.pickup.answers.late-return'),
                 },
                 {
                     id: "pickup-4",
-                    question: t('faq.sections.pickup.questions.refuel'),
-                    answer: t('faq.sections.pickup.answers.refuel'),
+                    question: t('pages.faq.sections.pickup.questions.refuel'),
+                    answer: t('pages.faq.sections.pickup.answers.refuel'),
                 },
             ],
         },
@@ -144,8 +144,8 @@ export const Questions: React.FC = () => {
                     className="space-y-16"
                 >
                     {faqData.map((section) => (
-                        <motion.div 
-                            key={section.id} 
+                        <motion.div
+                            key={section.id}
                             variants={fadeInUp}
                             className="space-y-8"
                         >
@@ -175,7 +175,7 @@ export const Questions: React.FC = () => {
                                             </h3>
                                             <div className="flex-shrink-0">
                                                 <div className={`w-8 h-8 rounded-full bg-gray-100 group-hover:bg-red-100 flex items-center justify-center transition-all duration-300 ${activeItem === item.id ? 'bg-red-100' : ''}`}>
-                                                    <ChevronDown 
+                                                    <ChevronDown
                                                         className={`w-5 h-5 text-gray-600 group-hover:text-red-600 transition-all duration-300 ${activeItem === item.id ? 'rotate-180 text-red-600' : ''}`}
                                                     />
                                                 </div>
@@ -219,10 +219,10 @@ export const Questions: React.FC = () => {
                         transition={{ type: "spring", stiffness: 300 }}
                     >
                         <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
-                            {t('faq.contact.title')}
+                            {t('pages.faq.contact.title')}
                         </h3>
                         <p className="text-gray-300 mb-8 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto">
-                            {t('faq.contact.description')}
+                            {t('pages.faq.contact.description')}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <motion.button
@@ -230,14 +230,14 @@ export const Questions: React.FC = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                {t('faq.contact.contact-support')}
+                                {t('pages.faq.contact.contact-support')}
                             </motion.button>
                             <motion.button
                                 className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-xl font-semibold border border-white/20 transition-all duration-300"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                {t('faq.contact.call-us')}
+                                {t('pages.faq.contact.call-us')}
                             </motion.button>
                         </div>
                     </motion.div>

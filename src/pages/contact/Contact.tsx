@@ -95,10 +95,10 @@ export const Contact: React.FC = () => {
             {/* Heading */}
             <motion.div variants={fadeInUp} className="mb-10">
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-                {t("contact.hero")}
+                {t("pages.contact.hero")}
               </h2>
               <p className="text-gray-600 text-base">
-                {t("contact.smallLabel")}{" "}
+                {t("pages.contact.smallLabel")}{" "}
                 <a
                   href="mailto:hi@levelautorental.com"
                   className="text-theme-600 underline"
@@ -119,15 +119,15 @@ export const Contact: React.FC = () => {
             >
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
-                  label={`${t("contact.form.first-name")} *`}
-                  placeholder={t("contact.form.first-name")}
+                  label={`${t("pages.contact.form.first-name")} *`}
+                  placeholder={t("pages.contact.form.first-name")}
                   value={formData.firstName}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
                   required
                 />
                 <Input
-                  label={`${t("contact.form.last-name")} *`}
-                  placeholder={t("contact.form.last-name")}
+                  label={`${t("pages.contact.form.last-name")} *`}
+                  placeholder={t("pages.contact.form.last-name")}
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
                   required
@@ -136,15 +136,15 @@ export const Contact: React.FC = () => {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
-                  label={`${t("contact.form.email")} *`}
+                  label={`${t("pages.contact.form.email")} *`}
                   type="email"
-                  placeholder={t("contact.form.email-example")}
+                  placeholder={t("pages.contact.form.email-example")}
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   required
                 />
                 <Input
-                  label={`${t("contact.form.phone-number")} `}
+                  label={`${t("pages.contact.form.phone-number")} `}
                   type="tel"
                   placeholder="+373 (555) 000-000"
                   value={formData.phone}
@@ -157,14 +157,14 @@ export const Contact: React.FC = () => {
                   htmlFor="message"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  {`${t("contact.form.message")} *`}
+                  {`${t("pages.contact.form.message")} *`}
                 </label>
                 <motion.textarea
                   whileFocus={{ scale: 1.01 }}
                   transition={{ duration: 0.15 }}
                   rows={5}
                   id="message"
-                  placeholder={t("contact.form.message-cta")}
+                  placeholder={t("pages.contact.form.message-cta")}
                   value={formData.message}
                   onChange={(e) =>
                     handleInputChange("message", e.target.value)
@@ -176,7 +176,7 @@ export const Contact: React.FC = () => {
 
               {/* Where you heard about us */}
               <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-700">{t("contact.form.question")} ?</p>
+                <p className="text-sm font-medium text-gray-700">{t("pages.contact.form.question")} ?</p>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
                   {formData.discoveryChannels.map((opt, index) => (
                     <label
@@ -205,7 +205,7 @@ export const Contact: React.FC = () => {
                 size="lg"
                 className="w-full bg-theme-600 hover:bg-theme-700 text-white"
               >
-                {t("contact.form.start")}
+                {t("pages.contact.form.start")}
               </Button>
             </motion.form>
           </div>
