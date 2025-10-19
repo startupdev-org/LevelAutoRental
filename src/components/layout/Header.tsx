@@ -88,7 +88,7 @@ export const Header: React.FC = () => {
     { name: t('header.cars'), href: '/cars' },
     { name: t('header.about'), href: '/about' },
     { name: t('header.howToRent'), href: '/how-to-rent' },
-    { name: t('header.contact'), href: '/contact' }
+    { name: t('header.contact'), href: '/' }
   ];
 
   const isActive = (path: string) => location.pathname === path;

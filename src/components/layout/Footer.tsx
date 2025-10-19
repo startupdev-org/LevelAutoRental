@@ -29,9 +29,9 @@ export const Footer: React.FC = () => {
     {
       title: t("footer.sections.reservations.title"),
       links: [
-        { name: t("footer.sections.reservations.links.start"), href: '/booking' },
+        { name: t("footer.sections.reservations.links.start"), href: '#' },
         { name: t("footer.sections.reservations.links.howTo"), href: '/how-to-rent' },
-        { name: t("footer.sections.reservations.links.faq"), href: '/help' }
+        { name: t("footer.sections.reservations.links.faq"), href: '#' }
       ]
     },
     {
@@ -39,7 +39,7 @@ export const Footer: React.FC = () => {
       links: [
         { name: t("footer.sections.company.links.about"), href: '/about' },
         { name: t("footer.sections.company.links.reviews"), href: '#' },
-        { name: t("footer.sections.company.links.rental-conditions"), href: '/terms' }
+        { name: t("footer.sections.company.links.rental-conditions"), href: '#' }
       ]
     }
   ];

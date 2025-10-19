@@ -111,7 +111,7 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
               animation: 'scale-premium 2s ease-in-out infinite',
             }}
           >
-            LEVEL
+            LEVEL AUTO RENTAL
           </div>
           
           {/* Actual logo - loads on top */}
