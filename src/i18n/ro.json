@@ -140,6 +140,21 @@
             "title": "Profesioniștii dedicați din spatele succesului nostru"
         }
     },
+    "contact": {
+        "hero": "Hai să facem următoarea ta călătorie mai ușoară",
+        "smallLabel": "Ne poți contacta oricând prin",
+        "form": {
+            "first-name": "Prenume",
+            "last-name": "Nume",
+            "email": "Email",
+            "email-example": "tu@companie.com",
+            "phone-number": "Număr de telefon",
+            "message": "Mesaj",
+            "message-cta": "Lasă-ne un mesaj...",
+            "question": "De unde ai auzit despre noi",
+            "start": "Începe acum"
+        }
+    },
     "footer": {
         "description": "Serviciu premium de închirieri auto în Moldova. Călătoria ta începe aici.",
         "sections": {

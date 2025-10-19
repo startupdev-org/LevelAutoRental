@@ -335,8 +335,8 @@ export const Header: React.FC = () => {
                             handleNavigate(item.href);
                           }}
                           className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${isActive(item.href)
-                              ? 'bg-theme-50 text-theme-600 border-l-4 border-theme-500'
-                              : 'text-gray-700 hover:bg-gray-50 hover:text-theme-600'
+                            ? 'bg-theme-50 text-theme-600 border-l-4 border-theme-500'
+                            : 'text-gray-700 hover:bg-gray-50 hover:text-theme-600'
                             }`}
                           style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                         >
