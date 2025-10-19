@@ -52,15 +52,15 @@ export const About: React.FC = () => {
       {/* Hero Section */}
       <section
         className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
-          pt-36 font-sans bg-gray-900 text-white
-          ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : ""}
+          pt-36 font-sans text-white
+          ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : "bg-cover bg-center bg-no-repeat"}
           `}
         style={{
-          backgroundImage: isDesktop ? 'url(/LevelAutoRental/bg-hero.jpg)' : "none",
-          backgroundPosition: 'center -420px'
+          backgroundImage: isDesktop ? 'url(/LevelAutoRental/bg-hero.jpg)' : 'url(/LevelAutoRental/backgrounds/bg4-mobile.jpeg)',
+          backgroundPosition: isDesktop ? 'center -420px' : 'center -300px'
         }}>
         {/* Dark Overlay */}
-        {isDesktop && <div className="absolute inset-0 bg-black/70" />}
+        <div className="absolute inset-0 bg-black/70" />
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
           <div className="flex items-center justify-center h-full pt-16">

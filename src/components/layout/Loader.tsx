@@ -82,29 +82,54 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
 
   return (
     <div 
-      className={`fixed inset-0 bg-cover bg-no-repeat transition-opacity duration-300 ease-in-out z-[9999999] bg-mobile-loader bg-loader-mobile md:bg-desktop-loader md:bg-loader-desktop ${
+      className={`fixed inset-0 bg-black transition-opacity duration-300 ease-in-out z-[9999999] ${
         isTransitioning ? 'opacity-0' : 'opacity-100'
       }`}
       style={{ 
         zIndex: 9999999,
-        animation: 'background-scale 2s ease-in-out infinite',
       }}
     >
+      {/* Background Image Layer - loads in background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-no-repeat bg-mobile-loader bg-loader-mobile md:bg-desktop-loader md:bg-loader-desktop opacity-40"
+        style={{ 
+          animation: 'background-scale 2s ease-in-out infinite',
+        }}
+      ></div>
+      
       {/* Dark Overlay for better logo visibility */}
-      <div className="absolute inset-0 bg-black/60"></div>
+      <div className="absolute inset-0 bg-black/40"></div>
       
       {/* Loading Content */}
-      <div className="relative flex items-center justify-center min-h-screen">
-        <img 
-          src="/LevelAutoRental/logo.png" 
-          alt="Level Auto Rental" 
-          className="w-64 h-auto brightness-0 invert drop-shadow-lg"
-          style={{ 
-            animation: 'scale-premium 2s ease-in-out infinite',
-          }}
-          onLoad={() => {}}
-          onError={() => {}}
-        />
+      <div className="relative flex flex-col items-center justify-center min-h-screen">
+        {/* Logo with fallback */}
+        <div className="relative w-64 h-24 flex items-center justify-center">
+          {/* Fallback - White text that shows immediately */}
+          <div 
+            className="absolute inset-0 flex items-center justify-center text-white text-4xl font-bold tracking-wider"
+            style={{ 
+              animation: 'scale-premium 2s ease-in-out infinite',
+            }}
+          >
+            LEVEL AUTO RENTAL
+          </div>
+          
+          {/* Actual logo - loads on top */}
+          <img 
+            src="/LevelAutoRental/logo.png" 
+            alt="Level Auto Rental" 
+            className="relative w-64 h-auto brightness-0 invert drop-shadow-lg"
+            style={{ 
+              animation: 'scale-premium 2s ease-in-out infinite',
+            }}
+            onLoad={(e) => {
+              // Hide fallback text when logo loads
+              const fallback = e.currentTarget.previousElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'none';
+            }}
+            onError={() => {}}
+          />
+        </div>
       </div>
 
       {/* Custom CSS for loading animation */}

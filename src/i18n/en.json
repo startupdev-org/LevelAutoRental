@@ -8,11 +8,16 @@
         "auth": "Login",
         "language": "Language"
     },
+    "languages": {
+        "en": "English",
+        "ro": "Romanian",
+        "ru": "Russian"
+    },
     "hero": {
         "companyType": "Car Rental",
         "label": "Premium car rental service available 24/7 in Moldova.",
         "smallLabel": "Start your journey today.",
-        "start": "Start",
+        "start": "+373 62 000 112",
         "seeCars": "See Cars",
         "location": "LOCATION",
         "searchLocation": "Search location...",
@@ -76,7 +81,23 @@
     },
     "testimonials": {
         "sectionLabel": "Reviews",
-        "sectionTitle": "What people say about us?"
+        "sectionTitle": "What people say about us?",
+        "sectionDescription": "Listen to what our customers say about our services",
+        "verifiedClient": "Verified Client"
+    },
+    "faq": {
+        "hero": {
+            "label": "FAQs",
+            "title": "Frequently Asked Questions",
+            "description": "Before renting a vehicle from LevelAutoRental, we encourage you to read our Terms and Conditions carefully. Your safety, privacy, and satisfaction are our highest priorities."
+        }
+    },
+    "terms": {
+        "hero": {
+            "label": "Terms & Conditions",
+            "title": "Car Rental Terms & Conditions",
+            "description": "Please read these terms and conditions carefully before renting a vehicle from LevelAutoRental. Your safety, privacy, and satisfaction are our top priorities."
+        }
     },
     "about": {
         "hero": {
@@ -126,7 +147,6 @@
                 "title": "Reservations",
                 "links": {
                     "start": "Start a reservation",
-                    "receipt": "Get a receipt",
                     "howTo": "How to reserve",
                     "faq": "Help & FAQ"
                 }
@@ -134,18 +154,9 @@
             "vehicles": {
                 "title": "Vehicles",
                 "links": {
-                    "cars": "Cars",
                     "suv": "SUVs",
-                    "vans": "Minivans & Vans",
-                    "exotic": "Exotic Cars"
-                }
-            },
-            "cars": {
-                "title": "Cars",
-                "links": {
-                    "audi": "Audi",
-                    "bmw": "BMW",
-                    "porsche": "Porsche",
+                    "sports": "Sports Cars",
+                    "luxury": "Luxury Cars",
                     "all": "All Cars"
                 }
             },
@@ -153,21 +164,95 @@
                 "title": "Company",
                 "links": {
                     "about": "About Us",
-                    "team": "Our Team",
-                    "rental-conditions": "Rental Conditions",
-                    "affiliate": "Affiliate Programs"
+                    "reviews": "Reviews",
+                    "rental-conditions": "Rental Conditions"
                 }
             }
         },
         "social": {
             "follow-us": "Follow us",
-            "twitter": "Twitter",
+            "tiktok": "TikTok",
             "facebook": "Facebook",
             "instagram": "Instagram"
         },
         "bottom": {
             "logo": "LevelAutoRental",
-            "copyright": "© 2023 LevelAutoRental. All rights reserved"
+            "copyright": "© 2025 LevelAutoRental. All rights reserved"
+        },
+        "faq": {
+            "hero": {
+                "label": "Help Center",
+                "title": "Frequently Asked Questions",
+                "description": "Find answers to common questions about our car rental services. If you can't find what you're looking for, our support team is here to help."
+            },
+            "sections": {
+                "booking": {
+                    "title": "Booking & Reservations",
+                    "questions": {
+                        "how-to-book": "How do I book a car?",
+                        "modify-cancel": "Can I modify or cancel my reservation?",
+                        "account-required": "Do I need to create an account to rent a car?",
+                        "advance-booking": "How far in advance should I book a car?"
+                    },
+                    "answers": {
+                        "how-to-book": "You can book a car directly through our website by selecting your pickup and return dates, choosing a vehicle, and completing the booking form.",
+                        "modify-cancel": "Yes, you can modify or cancel your booking through your account dashboard. Please note that changes may be subject to availability and cancellation policies.",
+                        "account-required": "You can browse without an account, but creating one makes it easier to manage reservations, view history, and speed up future bookings.",
+                        "advance-booking": "We recommend booking at least a few days in advance to secure your preferred car. During peak seasons, earlier bookings are strongly advised."
+                    }
+                },
+                "requirements": {
+                    "title": "Requirements & Policies",
+                    "questions": {
+                        "documents": "What documents do I need to rent a car?",
+                        "age-requirement": "Is there an age requirement?",
+                        "insurance": "Is insurance included?",
+                        "additional-driver": "Can I add an additional driver?"
+                    },
+                    "answers": {
+                        "documents": "You'll need a valid driver's license, a government-issued ID (like a passport), and a credit or debit card in the driver's name.",
+                        "age-requirement": "Yes, the minimum age is typically 21 years. Drivers under 25 may be subject to a young driver surcharge.",
+                        "insurance": "Basic insurance is included in all rentals. You can choose additional coverage options for extra protection during the booking process.",
+                        "additional-driver": "Yes, additional drivers can be added at the time of booking or during pickup. All drivers must present a valid license and meet the age requirements."
+                    }
+                },
+                "payment": {
+                    "title": "Payment & Fees",
+                    "questions": {
+                        "payment-methods": "What payment methods do you accept?",
+                        "deposit": "Is a deposit required?",
+                        "additional-fees": "Are there additional fees I should know about?",
+                        "discounts": "Do you offer discounts?"
+                    },
+                    "answers": {
+                        "payment-methods": "We accept major credit cards (Visa, MasterCard, American Express), debit cards, and in some locations, cash. Online payments are processed securely.",
+                        "deposit": "Yes, a refundable security deposit is required at pickup. The amount depends on the vehicle type and rental duration.",
+                        "additional-fees": "Additional fees may apply for late returns, extra mileage, additional drivers, fuel, or special equipment like GPS and child seats.",
+                        "discounts": "Yes, we offer seasonal promotions, loyalty discounts, and corporate rates. Subscribe to our newsletter to stay updated."
+                    }
+                },
+                "pickup": {
+                    "title": "Pickup & Return",
+                    "questions": {
+                        "pickup-location": "Where can I pick up my rental car?",
+                        "different-return": "Can I return the car to a different location?",
+                        "late-return": "What happens if I return the car late?",
+                        "refuel": "Do I need to refuel the car before returning it?"
+                    },
+                    "answers": {
+                        "pickup-location": "You can pick up your car at our main office, airport locations, or selected partner stations. Pickup location is chosen during booking.",
+                        "different-return": "Yes, one-way rentals are available between certain locations. An additional fee may apply depending on the distance.",
+                        "late-return": "Late returns may result in additional charges. We recommend contacting us if you anticipate being late to explore flexible options.",
+                        "refuel": "Cars should be returned with the same fuel level as when rented. Otherwise, a refueling charge will apply."
+                    }
+                }
+            },
+            "contact": {
+                "title": "Still have questions?",
+                "description": "Can't find the answer you're looking for? Our support team is here to help you with any specific questions about our services.",
+                "contact-support": "Contact Support",
+                "call-us": "Call +373 62 000 112"
+            }
         }
     }
 }

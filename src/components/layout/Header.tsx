@@ -89,7 +89,7 @@ export const Header: React.FC = () => {
     { name: t('header.cars'), href: '/cars' },
     { name: t('header.about'), href: '/about' },
     { name: t('header.howToRent'), href: '/how-to-rent' },
-    { name: t('header.contact'), href: '/contact' }
+    { name: t('header.contact'), href: '/' }
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -133,7 +133,7 @@ export const Header: React.FC = () => {
             <img
               src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
-              className={`w-[180px] lg:w-[200px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
+              className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
                 }`}
             />
           </Link>
@@ -196,7 +196,7 @@ export const Header: React.FC = () => {
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]"
                   >
-                    {LANGUAGES.map(({ code, label, iconClass }) => (
+                    {LANGUAGES.map(({ code, iconClass }) => (
                       <button
                         key={code}
                         onClick={() => {
@@ -208,7 +208,7 @@ export const Header: React.FC = () => {
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
                       >
                         <span className={iconClass}></span>
-                        <span>{label}</span>
+                        <span>{t(`languages.${code}`)}</span>
                       </button>
                     ))}
 
@@ -243,7 +243,7 @@ export const Header: React.FC = () => {
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]"
                   >
-                    {LANGUAGES.map(({ code, label, iconClass }) => (
+                    {LANGUAGES.map(({ code, iconClass }) => (
                       <button
                         key={code}
                         onClick={() => {
@@ -255,7 +255,7 @@ export const Header: React.FC = () => {
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
                       >
                         <span className={iconClass}></span>
-                        <span>{label}</span>
+                        <span>{t(`languages.${code}`)}</span>
                       </button>
                     ))}
                   </motion.div>
@@ -310,7 +310,7 @@ export const Header: React.FC = () => {
                       <img
                         src="/LevelAutoRental/logo.png"
                         alt="Level Auto Rental Logo"
-                        className="w-32 h-auto"
+                        className="w-40 h-auto"
                       />
                     </div>
                     <button
@@ -363,7 +363,7 @@ export const Header: React.FC = () => {
                           {t('header.language')}
                         </p>
                         <div className="grid grid-cols-3 gap-2">
-                          {LANGUAGES.map(({ code, label, iconClass }) => (
+                          {LANGUAGES.map(({ code, iconClass }) => (
                             <button
                               key={code}
                               onClick={() => {
@@ -373,12 +373,12 @@ export const Header: React.FC = () => {
                                 setIsMenuOpen(false);
                               }}
                               className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${currentLanguage === code
-                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                                ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
                                 }`}
                             >
                               <span className={`${iconClass} w-6 h-4 mb-1`}></span>
-                              <span className="text-xs font-medium">{label}</span>
+                              <span className="text-xs font-medium">{t(`languages.${code}`)}</span>
                             </button>
                           ))}
                         </div>

@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { fadeInUp, staggerContainer } from "../../../utils/animations";
 import { useInView } from "../../../hooks/useInView";
-// @ts-ignore
-import './Accordion.css';
+import { useTranslation } from 'react-i18next';
 
 interface FAQItem {
     id: string;
@@ -21,125 +20,110 @@ interface FAQSection {
 export const Questions: React.FC = () => {
     const [activeItem, setActiveItem] = useState<string | null>(null);
     const { ref, isInView } = useInView();
+    const { t } = useTranslation();
 
     const faqData: FAQSection[] = [
         {
             id: 1,
-            title: "Booking & Reservations",
+            title: t('faq.sections.booking.title'),
             items: [
                 {
                     id: "booking-1",
-                    question: "How do I book a car?",
-                    answer:
-                        "You can book a car directly through our website by selecting your pickup and return dates, choosing a vehicle, and completing the booking form.",
+                    question: t('faq.sections.booking.questions.how-to-book'),
+                    answer: t('faq.sections.booking.answers.how-to-book'),
                 },
                 {
                     id: "booking-2",
-                    question: "Can I modify or cancel my reservation?",
-                    answer:
-                        "Yes, you can modify or cancel your booking through your account dashboard. Please note that changes may be subject to availability and cancellation policies.",
+                    question: t('faq.sections.booking.questions.modify-cancel'),
+                    answer: t('faq.sections.booking.answers.modify-cancel'),
                 },
                 {
                     id: "booking-3",
-                    question: "Do I need to create an account to rent a car?",
-                    answer:
-                        "You can browse without an account, but creating one makes it easier to manage reservations, view history, and speed up future bookings.",
+                    question: t('faq.sections.booking.questions.account-required'),
+                    answer: t('faq.sections.booking.answers.account-required'),
                 },
                 {
                     id: "booking-4",
-                    question: "How far in advance should I book a car?",
-                    answer:
-                        "We recommend booking at least a few days in advance to secure your preferred car. During peak seasons, earlier bookings are strongly advised.",
+                    question: t('faq.sections.booking.questions.advance-booking'),
+                    answer: t('faq.sections.booking.answers.advance-booking'),
                 },
             ],
         },
         {
             id: 2,
-            title: "Requirements & Policies",
+            title: t('faq.sections.requirements.title'),
             items: [
                 {
                     id: "policy-1",
-                    question: "What documents do I need to rent a car?",
-                    answer:
-                        "You'll need a valid driver's license, a government-issued ID (like a passport), and a credit or debit card in the driver's name.",
+                    question: t('faq.sections.requirements.questions.documents'),
+                    answer: t('faq.sections.requirements.answers.documents'),
                 },
                 {
                     id: "policy-2",
-                    question: "Is there an age requirement?",
-                    answer:
-                        "Yes, the minimum age is typically 21 years. Drivers under 25 may be subject to a young driver surcharge.",
+                    question: t('faq.sections.requirements.questions.age-requirement'),
+                    answer: t('faq.sections.requirements.answers.age-requirement'),
                 },
                 {
                     id: "policy-3",
-                    question: "Is insurance included?",
-                    answer:
-                        "Basic insurance is included in all rentals. You can choose additional coverage options for extra protection during the booking process.",
+                    question: t('faq.sections.requirements.questions.insurance'),
+                    answer: t('faq.sections.requirements.answers.insurance'),
                 },
                 {
                     id: "policy-4",
-                    question: "Can I add an additional driver?",
-                    answer:
-                        "Yes, additional drivers can be added at the time of booking or during pickup. All drivers must present a valid license and meet the age requirements.",
+                    question: t('faq.sections.requirements.questions.additional-driver'),
+                    answer: t('faq.sections.requirements.answers.additional-driver'),
                 },
             ],
         },
         {
             id: 3,
-            title: "Payment & Fees",
+            title: t('faq.sections.payment.title'),
             items: [
                 {
                     id: "payment-1",
-                    question: "What payment methods do you accept?",
-                    answer:
-                        "We accept major credit cards (Visa, MasterCard, American Express), debit cards, and in some locations, cash. Online payments are processed securely.",
+                    question: t('faq.sections.payment.questions.payment-methods'),
+                    answer: t('faq.sections.payment.answers.payment-methods'),
                 },
                 {
                     id: "payment-2",
-                    question: "Is a deposit required?",
-                    answer:
-                        "Yes, a refundable security deposit is required at pickup. The amount depends on the vehicle type and rental duration.",
+                    question: t('faq.sections.payment.questions.deposit'),
+                    answer: t('faq.sections.payment.answers.deposit'),
                 },
                 {
                     id: "payment-3",
-                    question: "Are there additional fees I should know about?",
-                    answer:
-                        "Additional fees may apply for late returns, extra mileage, additional drivers, fuel, or special equipment like GPS and child seats.",
+                    question: t('faq.sections.payment.questions.additional-fees'),
+                    answer: t('faq.sections.payment.answers.additional-fees'),
                 },
                 {
                     id: "payment-4",
-                    question: "Do you offer discounts?",
-                    answer:
-                        "Yes, we offer seasonal promotions, loyalty discounts, and corporate rates. Subscribe to our newsletter to stay updated.",
+                    question: t('faq.sections.payment.questions.discounts'),
+                    answer: t('faq.sections.payment.answers.discounts'),
                 },
             ],
         },
         {
             id: 4,
-            title: "Pickup & Return",
+            title: t('faq.sections.pickup.title'),
             items: [
                 {
                     id: "pickup-1",
-                    question: "Where can I pick up my rental car?",
-                    answer:
-                        "You can pick up your car at our main office, airport locations, or selected partner stations. Pickup location is chosen during booking.",
+                    question: t('faq.sections.pickup.questions.pickup-location'),
+                    answer: t('faq.sections.pickup.answers.pickup-location'),
                 },
                 {
                     id: "pickup-2",
-                    question: "Can I return the car to a different location?",
-                    answer:
-                        "Yes, one-way rentals are available between certain locations. An additional fee may apply depending on the distance.",
+                    question: t('faq.sections.pickup.questions.different-return'),
+                    answer: t('faq.sections.pickup.answers.different-return'),
                 },
                 {
                     id: "pickup-3",
-                    question: "What happens if I return the car late?",
-                    answer:
-                        "Late returns may result in additional charges. We recommend contacting us if you anticipate being late to explore flexible options.",
+                    question: t('faq.sections.pickup.questions.late-return'),
+                    answer: t('faq.sections.pickup.answers.late-return'),
                 },
                 {
                     id: "pickup-4",
-                    question: "Do I need to refuel the car before returning it?",
-                    answer:
-                        "Cars should be returned with the same fuel level as when rented. Otherwise, a refueling charge will apply.",
+                    question: t('faq.sections.pickup.questions.refuel'),
+                    answer: t('faq.sections.pickup.answers.refuel'),
                 },
             ],
         },
@@ -150,8 +134,8 @@ export const Questions: React.FC = () => {
     };
 
     return (
-        <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
-            <div className="max-w-7xl mx-auto px-4 mt-10 sm:px-6 lg:px-8">
+        <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-b from-white via-gray-50 to-white">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <motion.div
                     ref={ref}
                     variants={staggerContainer}
@@ -160,88 +144,102 @@ export const Questions: React.FC = () => {
                     className="space-y-16"
                 >
                     {faqData.map((section) => (
-                        <div key={section.id} className="accordion-css my-8" data-accordion-close-siblings="true">
-                            <motion.h1
-                                variants={fadeInUp}
-                                className="text-3xl sm:text-5xl md:text-6xl lg:text-5xl font-bold leading-tight drop-shadow-lg mb-10"
-                            >
-                                {section.title}
-                            </motion.h1>
+                        <motion.div 
+                            key={section.id} 
+                            variants={fadeInUp}
+                            className="space-y-8"
+                        >
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+                                    {section.title}
+                                </h2>
+                                <div className="w-24 h-1 bg-gradient-to-r from-red-500 to-red-600 mx-auto rounded-full"></div>
+                            </div>
 
-                            <ul className="accordion-css__list">
+                            <div className="grid gap-4">
                                 {section.items.map((item) => (
-                                    <motion.li
+                                    <motion.div
                                         key={item.id}
-                                        className="accordion-css__item"
-                                        data-accordion-status={activeItem === item.id ? "active" : "not-active"}
-                                        whileHover={{ y: -4, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                                        transition={{ type: "spring", stiffness: 300 }}
+                                        className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
+                                        whileHover={{ y: -2 }}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3 }}
                                     >
                                         <div
-                                            className="accordion-css__item-top"
+                                            className="p-6 cursor-pointer flex items-center justify-between group"
                                             onClick={() => handleToggle(item.id)}
                                         >
-                                            <h3
-                                                className={`accordion-css__item-h3 ${"text-gray-800"}`}
-                                            >
+                                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 group-hover:text-red-600 transition-colors duration-200 pr-4">
                                                 {item.question}
                                             </h3>
-                                            <div className="accordion-css__item-icon">
-                                                <svg
-                                                    className="accordion-css__item-icon-svg"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 36 36"
-                                                    fill="none"
-                                                >
-                                                    <path
-                                                        d="M28.5 22.5L18 12L7.5 22.5"
-                                                        stroke={"currentColor"}
-                                                        strokeWidth="3"
-                                                        strokeMiterlimit="10"
+                                            <div className="flex-shrink-0">
+                                                <div className={`w-8 h-8 rounded-full bg-gray-100 group-hover:bg-red-100 flex items-center justify-center transition-all duration-300 ${activeItem === item.id ? 'bg-red-100' : ''}`}>
+                                                    <ChevronDown 
+                                                        className={`w-5 h-5 text-gray-600 group-hover:text-red-600 transition-all duration-300 ${activeItem === item.id ? 'rotate-180 text-red-600' : ''}`}
                                                     />
-                                                </svg>
-                                            </div>
-                                        </div>
-
-                                        <div className="accordion-css__item-bottom">
-                                            <div className="accordion-css__item-bottom-wrap">
-                                                <div className="accordion-css__item-bottom-content">
-                                                    <p className="accordion-css__item-p">{item.answer}</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </motion.li>
+
+                                        <AnimatePresence>
+                                            {activeItem === item.id && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="px-6 pb-6">
+                                                        <div className="pt-4 border-t border-gray-100">
+                                                            <p className="text-gray-700 leading-relaxed text-base sm:text-lg">
+                                                                {item.answer}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
                                 ))}
-
-
-                            </ul>
-                        </div>
+                            </div>
+                        </motion.div>
                     ))}
 
                 </motion.div>
 
                 <motion.div
                     variants={fadeInUp}
-                    className="mt-16 flex justify-center"
+                    className="mt-20 flex justify-center"
                 >
                     <motion.div
-                        className="bg-gradient-to-r from-red-500 to-red-600 rounded-2xl p-10 text-white shadow-lg max-w-2xl w-full"
-                        whileHover={{ y: -5, boxShadow: "0 10px 20px rgba(0,0,0,0.2)" }}
+                        className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 sm:p-12 text-white shadow-2xl max-w-4xl w-full text-center"
+                        whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
                         transition={{ type: "spring", stiffness: 300 }}
                     >
-                        <h3 className="text-3xl sm:text-4xl font-bold mb-4 drop-shadow-md">
-                            Still have questions?
+                        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+                            {t('faq.contact.title')}
                         </h3>
-                        <p className="text-red-100 mb-6 text-lg sm:text-xl">
-                            Can't find the answer you're looking for? Our support team is here
-                            to help you with any specific questions about our services.
+                        <p className="text-gray-300 mb-8 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto">
+                            {t('faq.contact.description')}
                         </p>
-                        <motion.button
-                            className="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold shadow-md hover:bg-red-50 hover:scale-105 transition-transform duration-200"
-                            whileHover={{ scale: 1.05 }}
-                        >
-                            Contact Support
-                        </motion.button>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <motion.button
+                                className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                {t('faq.contact.contact-support')}
+                            </motion.button>
+                            <motion.button
+                                className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-xl font-semibold border border-white/20 transition-all duration-300"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                {t('faq.contact.call-us')}
+                            </motion.button>
+                        </div>
                     </motion.div>
                 </motion.div>
 

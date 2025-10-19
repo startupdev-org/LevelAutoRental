@@ -1,10 +1,24 @@
 import { motion } from 'framer-motion';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { useTranslation } from 'react-i18next';
 
 export const HowToRentHero: React.FC = () => {
     const { t } = useTranslation();
+    
+    const [isDesktop, setIsDesktop] = useState(false);
+
+    useEffect(() => {
+        // Check once on mount
+        const handleResize = () => {
+            setIsDesktop(window.innerWidth >= 768);
+        };
+        handleResize();
+
+        // Update on resize
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     const steps = [
         {
@@ -35,7 +49,13 @@ export const HowToRentHero: React.FC = () => {
     ];
 
     return (
-        <section className="relative py-60 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/LevelAutoRental/lvl_bg.png)', backgroundPosition: 'center -150px' }}>
+        <section 
+            className="relative py-60 bg-cover bg-center bg-no-repeat" 
+            style={{ 
+                backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
+                backgroundPosition: isDesktop ? 'center -150px' : 'center center'
+            }}
+        >
             {/* Background Overlay */}
             <div className="absolute inset-0 bg-black/60"></div>
             
@@ -83,9 +103,9 @@ export const HowToRentHero: React.FC = () => {
                             className="relative group"
                         >
                             {/* Card Background */}
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full">
+                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full mx-4 md:mx-0">
                                 {/* Number Badge */}
-                                <div className="flex justify-center mb-6">
+                                <div className="flex justify-center mb-4 md:mb-6">
                                     <motion.div
                                         whileHover={{ scale: 1.1 }}
                                         transition={{ duration: 0.2 }}
@@ -99,7 +119,7 @@ export const HowToRentHero: React.FC = () => {
                                 
                                 {/* Content */}
                                 <div className="text-center">
-                                    <h3 className="text-xl font-bold text-white mb-4 leading-tight">
+                                    <h3 className="text-xl font-bold text-white mb-3 md:mb-4 leading-tight">
                                         {step.title}
                                     </h3>
                                     <p className="text-gray-200 text-sm leading-relaxed">

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "../../../utils/animations";
+import { useTranslation } from 'react-i18next';
 
 export const FAQIntro: React.FC = () => {
+    const { t } = useTranslation();
     const [isDesktop, setIsDesktop] = useState<boolean>(
         typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
     );
@@ -24,9 +26,9 @@ export const FAQIntro: React.FC = () => {
     return (
         <section
             className={`
-        relative min-h-[400px] sm:min-h-[600px]
+        relative min-h-[500px] sm:min-h-[600px] lg:min-h-[700px]
         flex items-center justify-center font-sans
-        bg-gray-900 text-white
+        bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white
         ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : ""}
       `}
             style={{
@@ -35,36 +37,34 @@ export const FAQIntro: React.FC = () => {
             }}
         >
             {/* Overlay (desktop only) */}
-            {isDesktop && <div className="absolute inset-0 bg-black/70" />}
+            {isDesktop && <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/80" />}
 
             <motion.div
                 variants={staggerContainer}
                 initial="initial"
                 whileInView="animate"
                 viewport={{ once: true }}
-                className="relative z-10 text-center space-y-6 sm:space-y-8 max-w-3xl px-4"
+                className="relative z-10 text-center space-y-6 sm:space-y-8 max-w-4xl px-4 sm:px-6 lg:px-8"
             >
-                {/* <motion.p
+                <motion.p
                     variants={fadeInUp}
-                    className="text-xs sm:text-sm font-semibold tracking-wider text-red-500 uppercase"
+                    className="text-sm sm:text-base font-semibold tracking-wider text-red-500 uppercase"
                 >
-                    FAQs
-                </motion.p> */}
+                    {t('faq.hero.label')}
+                </motion.p>
 
                 <motion.h1
                     variants={fadeInUp}
-                    className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight drop-shadow-lg"
+                    className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight drop-shadow-lg"
                 >
-                    Frequently Asked Questions
+                    {t('faq.hero.title')}
                 </motion.h1>
 
                 <motion.p
                     variants={fadeInUp}
-                    className="text-sm sm:text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed"
+                    className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
                 >
-                    Before renting a vehicle from LevelAutoRental,
-                    we encourage you to read our Terms and Conditions carefully.
-                    Your safety, privacy, and satisfaction are our highest priorities.
+                    {t('faq.hero.description')}
                 </motion.p>
             </motion.div>
         </section>

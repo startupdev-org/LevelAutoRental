@@ -10,10 +10,14 @@ import { FAQ } from '../pages/faq/FAQ';
 import { Login } from '../pages/auth/Login.tsx';
 import { SignUp } from '../pages/auth/SignUp.tsx';
 import NotFound from '../pages/NotFound';
+import ScrollToTop from './ScrollToTop';
 
 const RouterWrapper = () => {
   return (
     <>
+      {/* Scroll to top on route change */}
+      <ScrollToTop />
+      
       {/* Page transition loader - temporarily disabled to fix multiple instances */}
 
       <Routes>

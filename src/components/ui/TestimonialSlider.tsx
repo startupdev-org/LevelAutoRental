@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Slider from 'react-slick';
+import { useTranslation } from 'react-i18next';
 
 // Add inline styles for the slider
 const SliderStyles = () => (
@@ -45,15 +46,38 @@ const SliderStyles = () => (
     
     .slick-slide > div {
       transition: transform 0.5s ease-in-out;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .slick-slide > div > div {
+      position: relative;
+      z-index: 1;
     }
     
     .slick-center > div {
       transform: translateY(-32px);
+      z-index: 10;
+    }
+    
+    .slick-active > div {
+      z-index: 5;
     }
     
     @media (max-width: 768px) {
       .slick-center > div {
         transform: translateY(0);
+      }
+      .slick-slide {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+      }
+      .slick-track {
+        width: 100% !important;
+        display: flex !important;
+      }
+      .slick-list {
+        overflow: hidden !important;
       }
     }
   `}} />
@@ -64,6 +88,7 @@ interface TestimonialCardProps {
 }
 
 const TestimonialCard = ({ review }: TestimonialCardProps) => {
+  const { t } = useTranslation();
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,10 +138,12 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        zIndex: 10,
+        isolation: 'isolate',
       }}
     >
-      {/* Blurred background overlay */}
-      <div className="absolute inset-0 backdrop-blur-sm bg-black/60"></div>
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-black/80 z-0"></div>
       {/* Quote icon */}
       <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-15 transition-opacity duration-300">
         <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
@@ -124,7 +151,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
         </svg>
       </div>
 
-      <div className="relative z-10 p-8 flex flex-col h-full">
+      <div className="relative z-50 p-8 flex flex-col h-full">
         {/* Product Image Section */}
         <div className="mb-6">
           <div className="flex items-center space-x-4">
@@ -181,7 +208,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
           
           <div className="flex-grow">
             <h4 className="font-bold text-base mb-1 text-white">{review.userName}</h4>
-            <p className="text-sm font-medium text-white">Client Verificat</p>
+            <p className="text-sm font-medium text-white">{t('testimonials.verifiedClient')}</p>
           </div>
         </div>
       </div>
@@ -203,51 +230,49 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
   autoplaySpeed = 4000 
 }) => {
   const sliderRef = useRef<Slider>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Reinitialize slider when mobile state changes
+  useEffect(() => {
+    if (sliderRef.current) {
+      sliderRef.current.slickGoTo(0);
+    }
+  }, [isMobile]);
 
   const sliderSettings = {
     dots: false,
     arrows: false,
     infinite: true,
     speed: 700,
-    slidesToShow: 3,
+    slidesToShow: isMobile ? 1 : 3,
     slidesToScroll: 1,
     autoplay,
     autoplaySpeed,
     pauseOnHover: true,
-    centerMode: !autoplay, // Disable centerMode when autoplay is enabled
+    centerMode: isMobile ? false : !autoplay,
     centerPadding: '0px',
     cssEase: 'ease-out',
     useCSS: true,
     useTransform: true,
     swipeToSlide: true,
     touchMove: true,
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: { 
-          slidesToShow: 3, 
-          centerMode: !autoplay,
-          autoplay,
-          autoplaySpeed
-        }
-      },
-      {
-        breakpoint: 768,
-        settings: { 
-          slidesToShow: 1, 
-          centerMode: false, 
-          centerPadding: '0px',
-          autoplay,
-          autoplaySpeed
-        }
-      }
-    ]
   };
 
   return (
     <div className="relative">
       <SliderStyles />
-      <Slider ref={sliderRef} {...sliderSettings}>
+      <Slider key={isMobile ? 'mobile' : 'desktop'} ref={sliderRef} {...sliderSettings}>
         {testimonials.map((review) => (
           <div key={review.id} className="px-3">
             <TestimonialCard review={review} />
