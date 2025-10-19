@@ -140,6 +140,21 @@
             "title": "The dedicated professionals behind our success"
         }
     },
+    "contact": {
+        "hero": "Let's Make Your Next Journey Easy",
+        "smallLabel": "You can reach us anytime via",
+        "form": {
+            "first-name": "First Name",
+            "last-name": "Last Name",
+            "email": "Email",
+            "email-example": "you@company.com",
+            "phone-number": "Phone Number",
+            "message": "Message",
+            "message-cta": "Leave us a message...",
+            "question": "Where you heard about us",
+            "start": "Get started"
+        }
+    },
     "footer": {
         "description": "Premium car rental service providing exceptional vehicles and unmatched customer experience in Moldova. Your journey starts here.",
         "sections": {

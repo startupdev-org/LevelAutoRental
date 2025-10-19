@@ -4,35 +4,40 @@ import { fadeInUp, staggerContainer } from "../../utils/animations";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { DevOnlyComponent } from "../../utils/devAccess";
+import { useTranslation } from "react-i18next";
 
 export const Contact: React.FC = () => {
+
+  const { t } = useTranslation();
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     message: "",
-    services: {
-      websiteDesign: false,
-      uxDesign: false,
-      userResearch: false,
-      contentCreation: false,
-      strategyConsulting: false,
-      other: false,
-    },
+    discoveryChannels: [
+      { id: 1, label: "Instagram", checked: false },
+      { id: 2, label: "Website", checked: false },
+      { id: 3, label: "TikTok", checked: false },
+      { id: 4, label: "Facebook", checked: false },
+      { id: 5, label: "Friend", checked: false },
+      { id: 6, label: "Other", checked: false },
+    ],
   });
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCheckboxChange = (
-    field: keyof typeof formData.services,
+    field: keyof typeof formData.discoveryChannels,
     checked: boolean
   ) => {
     setFormData((prev) => ({
       ...prev,
-      services: { ...prev.services, [field]: checked },
+      discoveryChannels: { ...prev.discoveryChannels, [field]: checked },
     }));
   };
 
@@ -90,10 +95,10 @@ export const Contact: React.FC = () => {
             {/* Heading */}
             <motion.div variants={fadeInUp} className="mb-10">
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-                Let’s level up your brand, together
+                {t("contact.hero")}
               </h2>
               <p className="text-gray-600 text-base">
-                You can reach us anytime via{" "}
+                {t("contact.smallLabel")}{" "}
                 <a
                   href="mailto:hi@levelautorental.com"
                   className="text-theme-600 underline"
@@ -114,15 +119,15 @@ export const Contact: React.FC = () => {
             >
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
-                  label="First name *"
-                  placeholder="First name"
+                  label={`${t("contact.form.first-name")} *`}
+                  placeholder={t("contact.form.first-name")}
                   value={formData.firstName}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
                   required
                 />
                 <Input
-                  label="Last name *"
-                  placeholder="Last name"
+                  label={`${t("contact.form.last-name")} *`}
+                  placeholder={t("contact.form.last-name")}
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
                   required
@@ -131,17 +136,17 @@ export const Contact: React.FC = () => {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
-                  label="Email *"
+                  label={`${t("contact.form.email")} *`}
                   type="email"
-                  placeholder="you@company.com"
+                  placeholder={t("contact.form.email-example")}
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   required
                 />
                 <Input
-                  label="Phone number"
+                  label={`${t("contact.form.phone-number")} `}
                   type="tel"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+373 (555) 000-000"
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                 />
@@ -152,14 +157,14 @@ export const Contact: React.FC = () => {
                   htmlFor="message"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Message *
+                  {`${t("contact.form.message")} *`}
                 </label>
                 <motion.textarea
                   whileFocus={{ scale: 1.01 }}
                   transition={{ duration: 0.15 }}
                   rows={5}
                   id="message"
-                  placeholder="Leave us a message..."
+                  placeholder={t("contact.form.message-cta")}
                   value={formData.message}
                   onChange={(e) =>
                     handleInputChange("message", e.target.value)
@@ -169,29 +174,24 @@ export const Contact: React.FC = () => {
                 />
               </div>
 
-              {/* Services */}
+              {/* Where you heard about us */}
               <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-700">Services</p>
+                <p className="text-sm font-medium text-gray-700">{t("contact.form.question")} ?</p>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
-                  {[
-                    { key: "websiteDesign", label: "Website design" },
-                    { key: "uxDesign", label: "UX design" },
-                    { key: "userResearch", label: "User research" },
-                    { key: "contentCreation", label: "Content creation" },
-                    { key: "strategyConsulting", label: "Strategy & consulting" },
-                    { key: "other", label: "Other" },
-                  ].map((opt) => (
+                  {formData.discoveryChannels.map((opt, index) => (
                     <label
-                      key={opt.key}
+                      key={opt.id}
                       className="inline-flex items-center gap-2 text-sm text-gray-700"
                     >
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border-gray-300 text-theme-600 focus:ring-theme-500"
-                        checked={(formData.services as any)[opt.key]}
-                        onChange={(e) =>
-                          handleCheckboxChange(opt.key as any, e.target.checked)
-                        }
+                        checked={opt.checked}
+                        onChange={(e) => {
+                          const updated = [...formData.discoveryChannels];
+                          updated[index].checked = e.target.checked;
+                          setFormData({ ...formData, discoveryChannels: updated });
+                        }}
                       />
                       <span>{opt.label}</span>
                     </label>
@@ -199,12 +199,13 @@ export const Contact: React.FC = () => {
                 </div>
               </div>
 
+
               <Button
                 type="submit"
                 size="lg"
                 className="w-full bg-theme-600 hover:bg-theme-700 text-white"
               >
-                Get started
+                {t("contact.form.start")}
               </Button>
             </motion.form>
           </div>
