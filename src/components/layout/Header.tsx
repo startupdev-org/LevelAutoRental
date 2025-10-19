@@ -25,8 +25,9 @@ export const Header: React.FC = () => {
   // Force styling for different pages
   const isDifferentPage =
     (location.pathname === '/not-found') ||
-    (location.pathname === '/auth/login') || 
+    (location.pathname === '/auth/login') ||
     (location.pathname === '/auth/signup') ||
+    (location.pathname === '/contact') ||
     (location.pathname === '/cars');
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -173,10 +174,10 @@ export const Header: React.FC = () => {
               >
                 <span
                   className={`fi ${currentLanguage === 'en'
-                      ? 'fi-gb'
-                      : currentLanguage === 'ru'
-                        ? 'fi-ru'
-                        : 'fi-ro'
+                    ? 'fi-gb'
+                    : currentLanguage === 'ru'
+                      ? 'fi-ru'
+                      : 'fi-ro'
                     } w-6 h-4 rounded-sm`}
                 ></span>
 
@@ -224,14 +225,14 @@ export const Header: React.FC = () => {
             <div className="relative language-dropdown-container">
               <button
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage 
-                  ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' 
+                className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage
+                  ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
                   : 'text-white hover:text-theme-300 hover:bg-white/20'
-                }`}
+                  }`}
               >
                 <Globe className="w-5 h-5" />
               </button>
-              
+
               {/* Mobile Language Dropdown */}
               <AnimatePresence>
                 {showLanguageDropdown && (
@@ -265,10 +266,10 @@ export const Header: React.FC = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage 
-                ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100' 
+              className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage
+                ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
                 : 'text-white hover:text-theme-300 hover:bg-white/20'
-              }`}
+                }`}
             >
               <motion.div
                 animate={{ rotate: isMenuOpen ? 90 : 0 }}
@@ -293,7 +294,7 @@ export const Header: React.FC = () => {
                 className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                 onClick={() => setIsMenuOpen(false)}
               />
-              
+
               {/* Mobile Menu Panel */}
               <motion.div
                 initial={{ x: '100%' }}
@@ -333,11 +334,10 @@ export const Header: React.FC = () => {
                             setIsMenuOpen(false);
                             handleNavigate(item.href);
                           }}
-                          className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                            isActive(item.href)
+                          className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${isActive(item.href)
                               ? 'bg-theme-50 text-theme-600 border-l-4 border-theme-500'
                               : 'text-gray-700 hover:bg-gray-50 hover:text-theme-600'
-                          }`}
+                            }`}
                           style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                         >
                           {item.name}
@@ -356,7 +356,7 @@ export const Header: React.FC = () => {
                       >
                         {t('header.auth')}
                       </Button>
-                      
+
                       {/* Mobile Language Selector */}
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
@@ -372,11 +372,10 @@ export const Header: React.FC = () => {
                                 localStorage.setItem("selectedLanguage", code);
                                 setIsMenuOpen(false);
                               }}
-                              className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
-                                currentLanguage === code
+                              className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${currentLanguage === code
                                   ? 'border-theme-500 bg-theme-50 text-theme-600'
                                   : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                              }`}
+                                }`}
                             >
                               <span className={`${iconClass} w-6 h-4 mb-1`}></span>
                               <span className="text-xs font-medium">{label}</span>
