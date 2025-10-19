@@ -95,7 +95,7 @@ export const Hero: React.FC = () => {
           ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')" 
           : undefined,
         backgroundPosition: window.innerWidth < 768 
-          ? 'center -100px' 
+          ? 'center center' 
           : undefined
       }}
     >
