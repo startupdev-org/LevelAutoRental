@@ -195,7 +195,7 @@ export const Header: React.FC = () => {
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]"
                   >
-                    {LANGUAGES.map(({ code, label, iconClass }) => (
+                    {LANGUAGES.map(({ code, iconClass }) => (
                       <button
                         key={code}
                         onClick={() => {
@@ -207,7 +207,7 @@ export const Header: React.FC = () => {
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
                       >
                         <span className={iconClass}></span>
-                        <span>{label}</span>
+                        <span>{t(`languages.${code}`)}</span>
                       </button>
                     ))}
 
@@ -242,7 +242,7 @@ export const Header: React.FC = () => {
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]"
                   >
-                    {LANGUAGES.map(({ code, label, iconClass }) => (
+                    {LANGUAGES.map(({ code, iconClass }) => (
                       <button
                         key={code}
                         onClick={() => {
@@ -254,7 +254,7 @@ export const Header: React.FC = () => {
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
                       >
                         <span className={iconClass}></span>
-                        <span>{label}</span>
+                        <span>{t(`languages.${code}`)}</span>
                       </button>
                     ))}
                   </motion.div>
@@ -363,7 +363,7 @@ export const Header: React.FC = () => {
                           {t('header.language')}
                         </p>
                         <div className="grid grid-cols-3 gap-2">
-                          {LANGUAGES.map(({ code, label, iconClass }) => (
+                          {LANGUAGES.map(({ code, iconClass }) => (
                             <button
                               key={code}
                               onClick={() => {
@@ -379,7 +379,7 @@ export const Header: React.FC = () => {
                               }`}
                             >
                               <span className={`${iconClass} w-6 h-4 mb-1`}></span>
-                              <span className="text-xs font-medium">{label}</span>
+                              <span className="text-xs font-medium">{t(`languages.${code}`)}</span>
                             </button>
                           ))}
                         </div>

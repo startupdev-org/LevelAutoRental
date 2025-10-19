@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "../../../utils/animations";
+import { useTranslation } from 'react-i18next';
 
 export const FAQIntro: React.FC = () => {
+    const { t } = useTranslation();
     const [isDesktop, setIsDesktop] = useState<boolean>(
         typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
     );
@@ -55,16 +57,14 @@ export const FAQIntro: React.FC = () => {
                     variants={fadeInUp}
                     className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight drop-shadow-lg"
                 >
-                    Frequently Asked Questions
+                    {t('faq.hero.title')}
                 </motion.h1>
 
                 <motion.p
                     variants={fadeInUp}
                     className="text-sm sm:text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed"
                 >
-                    Before renting a vehicle from LevelAutoRental,
-                    we encourage you to read our Terms and Conditions carefully.
-                    Your safety, privacy, and satisfaction are our highest priorities.
+                    {t('faq.hero.description')}
                 </motion.p>
             </motion.div>
         </section>

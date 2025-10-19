@@ -8,6 +8,11 @@
         "auth": "Autentificare",
         "language": "Limbă"
     },
+    "languages": {
+        "en": "Engleză",
+        "ro": "Română",
+        "ru": "Rusă"
+    },
     "hero": {
         "companyType": "Chirie Auto",
         "label": "Servicii premium de închirieri auto disponibil 24/7 în Moldova.",
@@ -76,7 +81,23 @@
     },
     "testimonials": {
         "sectionLabel": "Recenzii",
-        "sectionTitle": "Ce spun oamenii despre noi?"
+        "sectionTitle": "Ce spun oamenii despre noi?",
+        "sectionDescription": "Ascultați ce spun clienții noștri despre serviciile noastre",
+        "verifiedClient": "Client Verificat"
+    },
+    "faq": {
+        "hero": {
+            "label": "Întrebări frecvente",
+            "title": "Întrebări frecvente",
+            "description": "Înainte de a închiria un vehicul de la LevelAutoRental, vă încurajăm să citiți cu atenție Termenii și Condițiile noastre. Siguranța, confidențialitatea și satisfacția dumneavoastră sunt prioritățile noastre cele mai înalte."
+        }
+    },
+    "terms": {
+        "hero": {
+            "label": "Termeni și condiții",
+            "title": "Termeni și condiții de închiriere auto",
+            "description": "Vă rugăm să citiți cu atenție acești termeni și condiții înainte de a închiria un vehicul de la LevelAutoRental. Siguranța, confidențialitatea și satisfacția dumneavoastră sunt prioritățile noastre principale."
+        }
     },
     "about": {
         "hero": {
@@ -134,18 +155,9 @@
             "vehicles": {
                 "title": "Vehicule",
                 "links": {
-                    "cars": "Mașini",
                     "suv": "SUV-uri",
-                    "vans": "Minivanuri & Vanuri",
-                    "exotic": "Mașini exotice"
-                }
-            },
-            "cars": {
-                "title": "Mașini",
-                "links": {
-                    "audi": "Audi",
-                    "bmw": "BMW",
-                    "porsche": "Porsche",
+                    "sports": "Mașini sport",
+                    "luxury": "Mașini lux",
                     "all": "Toate mașinile"
                 }
             },

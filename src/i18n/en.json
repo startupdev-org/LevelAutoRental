@@ -8,6 +8,11 @@
         "auth": "Login",
         "language": "Language"
     },
+    "languages": {
+        "en": "English",
+        "ro": "Romanian",
+        "ru": "Russian"
+    },
     "hero": {
         "companyType": "Car Rental",
         "label": "Premium car rental service available 24/7 in Moldova.",
@@ -76,7 +81,23 @@
     },
     "testimonials": {
         "sectionLabel": "Reviews",
-        "sectionTitle": "What people say about us?"
+        "sectionTitle": "What people say about us?",
+        "sectionDescription": "Listen to what our customers say about our services",
+        "verifiedClient": "Verified Client"
+    },
+    "faq": {
+        "hero": {
+            "label": "FAQs",
+            "title": "Frequently Asked Questions",
+            "description": "Before renting a vehicle from LevelAutoRental, we encourage you to read our Terms and Conditions carefully. Your safety, privacy, and satisfaction are our highest priorities."
+        }
+    },
+    "terms": {
+        "hero": {
+            "label": "Terms & Conditions",
+            "title": "Car Rental Terms & Conditions",
+            "description": "Please read these terms and conditions carefully before renting a vehicle from LevelAutoRental. Your safety, privacy, and satisfaction are our top priorities."
+        }
     },
     "about": {
         "hero": {
@@ -134,18 +155,9 @@
             "vehicles": {
                 "title": "Vehicles",
                 "links": {
-                    "cars": "Cars",
                     "suv": "SUVs",
-                    "vans": "Minivans & Vans",
-                    "exotic": "Exotic Cars"
-                }
-            },
-            "cars": {
-                "title": "Cars",
-                "links": {
-                    "audi": "Audi",
-                    "bmw": "BMW",
-                    "porsche": "Porsche",
+                    "sports": "Sports Cars",
+                    "luxury": "Luxury Cars",
                     "all": "All Cars"
                 }
             },

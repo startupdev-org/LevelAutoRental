@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Slider from 'react-slick';
+import { useTranslation } from 'react-i18next';
 
 // Add inline styles for the slider
 const SliderStyles = () => (
@@ -64,6 +65,7 @@ interface TestimonialCardProps {
 }
 
 const TestimonialCard = ({ review }: TestimonialCardProps) => {
+  const { t } = useTranslation();
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -181,7 +183,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
           
           <div className="flex-grow">
             <h4 className="font-bold text-base mb-1 text-white">{review.userName}</h4>
-            <p className="text-sm font-medium text-white">Client Verificat</p>
+            <p className="text-sm font-medium text-white">{t('testimonials.verifiedClient')}</p>
           </div>
         </div>
       </div>

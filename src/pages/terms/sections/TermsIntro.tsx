@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "../../../utils/animations";
+import { useTranslation } from 'react-i18next';
 
 export const TermsIntro: React.FC = () => {
+    const { t } = useTranslation();
     const [isDesktop, setIsDesktop] = useState<boolean>(
         typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
     );
@@ -48,22 +50,21 @@ export const TermsIntro: React.FC = () => {
                     variants={fadeInUp}
                     className="text-xs sm:text-sm font-semibold tracking-wider text-red-500 uppercase"
                 >
-                    Terms &amp; Conditions
+                    {t('terms.hero.label')}
                 </motion.p>
 
                 <motion.h1
                     variants={fadeInUp}
                     className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight drop-shadow-lg"
                 >
-                    Car Rental Terms &amp; Conditions
+                    {t('terms.hero.title')}
                 </motion.h1>
 
                 <motion.p
                     variants={fadeInUp}
                     className="text-sm sm:text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed"
                 >
-                    Please read these terms and conditions carefully before renting a vehicle from
-                    LevelAutoRental. Your safety, privacy, and satisfaction are our top priorities.
+                    {t('terms.hero.description')}
                 </motion.p>
             </motion.div>
         </section>

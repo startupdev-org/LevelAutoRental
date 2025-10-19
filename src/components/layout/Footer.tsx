@@ -21,19 +21,10 @@ export const Footer: React.FC = () => {
     {
       title: t("footer.sections.vehicles.title"),
       links: [
-        { name: t("footer.sections.vehicles.links.cars"), href: '/cars' },
         { name: t("footer.sections.vehicles.links.suv"), href: '/cars' },
-        { name: t("footer.sections.vehicles.links.vans"), href: '/cars' },
-        { name: t("footer.sections.vehicles.links.exotic"), href: '/cars' }
-      ]
-    },
-    {
-      title: t("footer.sections.cars.title"),
-      links: [
-        { name: t("footer.sections.cars.links.audi"), href: '/cars' },
-        { name: t("footer.sections.cars.links.bmw"), href: '/cars' },
-        { name: t("footer.sections.cars.links.porsche"), href: '/cars' },
-        { name: t("footer.sections.cars.links.all"), href: '/cars' }
+        { name: t("footer.sections.vehicles.links.sports"), href: '/cars' },
+        { name: t("footer.sections.vehicles.links.luxury"), href: '/cars' },
+        { name: t("footer.sections.vehicles.links.all"), href: '/cars' }
       ]
     },
     {
@@ -48,9 +39,9 @@ export const Footer: React.FC = () => {
   ];
 
   const socialLinks = [
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Instagram, href: '#', label: 'Instagram' }
+    { icon: Twitter, href: '#', label: t('footer.social.twitter') },
+    { icon: Facebook, href: '#', label: t('footer.social.facebook') },
+    { icon: Instagram, href: '#', label: t('footer.social.instagram') }
   ];
 
   const contactInfo = [
@@ -116,7 +107,7 @@ export const Footer: React.FC = () => {
             variants={fadeInUp}
             className="lg:col-span-2"
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
               {footerSections.map((section) => (
                 <motion.div
                   key={section.title}
