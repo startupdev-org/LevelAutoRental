@@ -69,6 +69,12 @@ module.exports = {
           '"Segoe UI Symbol"',
           '"Noto Color Emoji"',
         ],
+        montserrat: [
+          "Montserrat",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       keyframes: {
         "accordion-down": {
@@ -80,27 +86,27 @@ module.exports = {
           to: { height: "0" },
         },
         "scale-premium": {
-          "0%": { 
+          "0%": {
             transform: "scale(1)",
             opacity: "1"
           },
-          "50%": { 
+          "50%": {
             transform: "scale(1.1)",
             opacity: "0.8"
           },
-          "100%": { 
+          "100%": {
             transform: "scale(1)",
             opacity: "1"
           },
         },
         "fade-out": {
-          "0%": { 
+          "0%": {
             opacity: "1"
           },
-          "50%": { 
+          "50%": {
             opacity: "0.7"
           },
-          "100%": { 
+          "100%": {
             opacity: "1"
           },
         },
