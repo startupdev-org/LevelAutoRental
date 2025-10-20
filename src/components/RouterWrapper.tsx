@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { About } from '../pages/about/About';
 import { Booking } from '../pages/booking/Booking';
 import { Cars } from '../pages/cars/Cars';
+import { Reviews } from '../pages/reviews/Reviews.tsx';
 import { Contact } from '../pages/contact/Contact';
 import { Home } from '../pages/home/Home';
 import { HowToRent } from '../pages/howToRent/HowToRent';
@@ -18,12 +19,13 @@ const RouterWrapper = () => {
     <>
       {/* Scroll to top on route change */}
       <ScrollToTop />
-      
+
       {/* Page transition loader - temporarily disabled to fix multiple instances */}
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cars" element={<Cars />} />
+        <Route path="/reviews" element={<Reviews />} />
         <Route path="/about" element={<About />} />
         <Route path="/how-to-rent" element={<HowToRent />} />
         <Route path="/contact" element={<Contact />} />
