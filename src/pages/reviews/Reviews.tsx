@@ -1,33 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { useInView } from '../../hooks/useInView';
 import { useTranslation } from 'react-i18next';
 import { reviews } from '../../data/reviews';
 import { ReviewCard } from './sections/ReviewCard';
-
-interface GoogleReview {
-    author_name: string;
-    rating: number;
-    text: string;
-    time: number;
-    profile_photo_url?: string;
-}
-
+import { Star, Heart, Award, TrendingUp, CarFront } from 'lucide-react';
 
 export const Reviews: React.FC = () => {
     const { t } = useTranslation();
     const { ref, isInView } = useInView();
     const [isDesktop, setIsDesktop] = useState<boolean>(
-        typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
+        globalThis.window?.matchMedia("(min-width: 640px)").matches ?? false
     );
 
     console.log('is Desktop: ', isDesktop)
 
     useEffect(() => {
-        if (typeof window === "undefined") return;
+        if (globalThis.window === undefined) return;
 
-        const mediaQuery = window.matchMedia("(min-width: 640px)");
+        const mediaQuery = globalThis.window.matchMedia("(min-width: 640px)");
         const handleChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
 
         // ✅ Set initial value and listen for changes
@@ -50,11 +42,11 @@ export const Reviews: React.FC = () => {
         : 0;
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen font-montserrat">
             {/* Hero Section */}
             <section
                 className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
-          pt-36 font-sans text-white
+          pt-36 font-montserrat text-white overflow-hidden
           ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : "bg-cover bg-center bg-no-repeat"}
           `}
                 style={{
@@ -62,8 +54,8 @@ export const Reviews: React.FC = () => {
                     backgroundPosition: "center -420px",
                 }}
             >
-                {/* Dark Overlay */}
-                <div className="absolute inset-0 bg-black/70" />
+                {/* Dark Overlay with gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-red-900/30" />
 
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
                     <div className="flex items-center justify-center h-full pt-16">
@@ -90,8 +82,37 @@ export const Reviews: React.FC = () => {
 
 
             {/* Reviews Grid Section */}
-            <section className="py-20 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section className="py-20 bg-gradient-to-br from-gray-50 to-white relative overflow-hidden font-montserrat">
+                {/* Background decorative elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <motion.div
+                        animate={{
+                            scale: [1, 1.1, 1],
+                            opacity: [0.1, 0.2, 0.1],
+                        }}
+                        transition={{
+                            duration: 8,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="absolute -top-20 -right-20 w-80 h-80 bg-red-100 rounded-full blur-3xl"
+                    />
+                    <motion.div
+                        animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.05, 0.15, 0.05],
+                        }}
+                        transition={{
+                            duration: 10,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: 2
+                        }}
+                        className="absolute -bottom-20 -left-20 w-96 h-96 bg-red-200 rounded-full blur-3xl"
+                    />
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
                     <motion.div
                         ref={ref}
@@ -127,62 +148,160 @@ export const Reviews: React.FC = () => {
                         initial="initial"
                         whileInView="animate"
                         viewport={{ once: true }}
-                        className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"
+                        className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
                     >
                         <motion.div
                             variants={fadeInUp}
-                            className="bg-gray-100 rounded-3xl px-5 py-8 flex flex-col items-center justify-center text-center"
+                            whileHover={{
+                                scale: 1.05,
+                                y: -5,
+                                boxShadow: "0 20px 40px rgba(239, 68, 68, 0.15)"
+                            }}
+                            className="bg-gradient-to-br from-red-50 to-red-100 rounded-3xl px-6 py-8 flex flex-col items-center justify-center text-center border border-red-200 hover:border-red-300 transition-all duration-300"
                         >
-                            <div className="text-3xl md:text-4xl font-extrabold text-red-500 mb-1">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                                className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-4"
+                            >
+                                <Award className="w-8 h-8 text-white" />
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: 0.4 }}
+                                className="text-3xl md:text-4xl font-extrabold text-red-600 mb-2"
+                            >
                                 {totalReviews}
-                            </div>
-                            <div className="text-sm md:text-base text-gray-600">
+                            </motion.div>
+                            <div className="text-sm md:text-base text-gray-700 font-medium">
                                 {t('pages.reviews.stats.totalReviews')}
                             </div>
                         </motion.div>
 
                         <motion.div
                             variants={fadeInUp}
-                            className="bg-gray-100 rounded-3xl px-5 py-8 flex flex-col items-center justify-center text-center"
+                            whileHover={{
+                                scale: 1.05,
+                                y: -5,
+                                boxShadow: "0 20px 40px rgba(239, 68, 68, 0.15)"
+                            }}
+                            className="bg-gradient-to-br from-red-50 to-red-100 rounded-3xl px-6 py-8 flex flex-col items-center justify-center text-center border border-red-200 hover:border-red-300 transition-all duration-300"
                         >
-                            <div className="text-3xl md:text-4xl font-extrabold text-red-500 mb-1">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                transition={{ duration: 0.5, delay: 0.3 }}
+                                className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-4"
+                            >
+                                <Star className="w-8 h-8 text-white" />
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: 0.5 }}
+                                className="text-3xl md:text-4xl font-extrabold text-red-600 mb-2"
+                            >
                                 {avgRating}
-                            </div>
-                            <div className="text-sm md:text-base text-gray-600">
+                            </motion.div>
+                            <div className="text-sm md:text-base text-gray-700 font-medium">
                                 {t('pages.reviews.stats.averageRating')}
                             </div>
                         </motion.div>
 
                         <motion.div
                             variants={fadeInUp}
-                            className="bg-gray-100 rounded-3xl px-5 py-8 flex flex-col items-center justify-center text-center"
+                            whileHover={{
+                                scale: 1.05,
+                                y: -5,
+                                boxShadow: "0 20px 40px rgba(239, 68, 68, 0.15)"
+                            }}
+                            className="bg-gradient-to-br from-red-50 to-red-100 rounded-3xl px-6 py-8 flex flex-col items-center justify-center text-center border border-red-200 hover:border-red-300 transition-all duration-300"
                         >
-                            <div className="text-3xl md:text-4xl font-extrabold text-red-500 mb-1">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                transition={{ duration: 0.5, delay: 0.4 }}
+                                className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-4"
+                            >
+                                <TrendingUp className="w-8 h-8 text-white" />
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: 0.6 }}
+                                className="text-3xl md:text-4xl font-extrabold text-red-600 mb-2"
+                            >
                                 {satisfactionPercent}%
-                            </div>
-                            <div className="text-sm md:text-base text-gray-600">
+                            </motion.div>
+                            <div className="text-sm md:text-base text-gray-700 font-medium">
                                 {t('pages.reviews.stats.satisfaction')}
                             </div>
                         </motion.div>
                     </motion.div>
 
+                    {/* Reviews Grid with enhanced animations */}
                     <motion.div
                         variants={staggerContainer}
                         initial="initial"
                         animate={isInView ? "animate" : "initial"}
-                        className="flex flex-wrap -mx-3 gap-y-6"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                     >
-                        {reviews.map((review, index) => (
-                            <motion.div
-                                key={review.id}
-                                variants={fadeInUp}
-                                className="w-full md:w-1/2 lg:w-1/3 px-3"
-                            >
-                                <div className="h-full">
-                                    <ReviewCard review={review} index={index} />
-                                </div>
-                            </motion.div>
-                        ))}
+                        <AnimatePresence>
+                            {reviews.map((review, index) => (
+                                <motion.div
+                                    key={review.id}
+                                    variants={fadeInUp}
+                                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -50, scale: 0.9 }}
+                                    transition={{
+                                        duration: 0.6,
+                                        delay: index * 0.1,
+                                        ease: "easeOut"
+                                    }}
+                                    whileHover={{
+                                        y: -8,
+                                        scale: 1.02,
+                                        transition: { duration: 0.2 }
+                                    }}
+                                    className="w-full"
+                                >
+                                    <div className="h-full">
+                                        <ReviewCard review={review} index={index} />
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
+
+
+                    <motion.div
+                        variants={fadeInUp}
+                        className="mt-20 flex justify-center"
+                    >
+                        <motion.div
+                            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 sm:p-12 text-white shadow-2xl max-w-4xl w-full text-center"
+                            whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                        >
+                            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+                                Ready to Experience Excellence?
+                            </h3>
+                            <p className="text-gray-300 mb-8 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto">
+                                Join thousands of satisfied customers who trust LevelAutoRental for their car rental needs.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <motion.button
+                                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Book Your Car Now
+                                </motion.button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 </div>
             </section>
