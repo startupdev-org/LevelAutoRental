@@ -29,25 +29,25 @@ export const Footer: React.FC = () => {
     {
       title: t("footer.sections.reservations.title"),
       links: [
-        { name: t("footer.sections.reservations.links.start"), href: '#' },
+        { name: t("footer.sections.reservations.links.start"), href: '/booking' },
         { name: t("footer.sections.reservations.links.howTo"), href: '/how-to-rent' },
-        { name: t("footer.sections.reservations.links.faq"), href: '#' }
+        { name: t("footer.sections.reservations.links.faq"), href: '/help' }
       ]
     },
     {
       title: t("footer.sections.company.title"),
       links: [
         { name: t("footer.sections.company.links.about"), href: '/about' },
-        { name: t("footer.sections.company.links.reviews"), href: '#' },
-        { name: t("footer.sections.company.links.rental-conditions"), href: '#' }
+        { name: t("footer.sections.company.links.reviews"), href: '/contact' },
+        { name: t("footer.sections.company.links.rental-conditions"), href: '/terms' }
       ]
     }
   ];
 
   const socialLinks: Array<{ icon: React.FC<any>, href: string, label: string }> = [
-    { icon: TikTokIcon as React.FC<any>, href: '#', label: t('footer.social.tiktok') },
-    { icon: FaFacebookF as React.FC<any>, href: '#', label: t('footer.social.facebook') },
-    { icon: Instagram as React.FC<any>, href: '#', label: t('footer.social.instagram') }
+    { icon: TikTokIcon as React.FC<any>, href: 'https://www.tiktok.com/@levelautorental', label: t('footer.social.tiktok') },
+    { icon: FaFacebookF as React.FC<any>, href: 'https://www.facebook.com/levelautorental', label: t('footer.social.facebook') },
+    { icon: Instagram as React.FC<any>, href: 'https://www.instagram.com/level_auto_rental', label: t('footer.social.instagram') }
   ];
 
   const contactInfo = [

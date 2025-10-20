@@ -4,6 +4,7 @@ import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
 import { PiTireFill, PiSpeedometerFill } from "react-icons/pi";
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cars } from '../../data/cars';
 import { useCounter } from '../../hooks/useCounter';
 import { useInView } from '../../hooks/useInView';
@@ -21,6 +22,7 @@ interface CarCardProps {
 
 export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { ref, isInView } = useInView();
+    const { t } = useTranslation();
     const animatedPrice = useCounter(car.pricePerDay, 1500, 0);
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [isFavorite, setIsFavorite] = useState(false);
@@ -155,7 +157,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                           {React.createElement(PiSpeedometerFill as any, { className: "w-4 h-4 text-gray-600" })}
                         </div>
-                        <span className="text-sm font-medium">{car.mileage?.toLocaleString() || 'N/A'} km</span>
+                        <span className="text-sm font-medium">{t('car.mileageLimit')}</span>
                       </div>
                       
                       <div className="flex items-center justify-end gap-2 text-gray-600">

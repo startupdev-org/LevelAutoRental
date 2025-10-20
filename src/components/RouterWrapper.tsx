@@ -9,6 +9,7 @@ import { Terms } from '../pages/terms/Terms.tsx';
 import { FAQ } from '../pages/faq/FAQ';
 import { Login } from '../pages/auth/Login.tsx';
 import { SignUp } from '../pages/auth/SignUp.tsx';
+import { ForgotPassword } from '../pages/auth/ForgotPassword.tsx';
 import NotFound from '../pages/NotFound';
 import ScrollToTop from './ScrollToTop';
 
@@ -32,6 +33,7 @@ const RouterWrapper = () => {
         <Route path="/not-found" element={<NotFound />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/signup" element={<SignUp />} />
+        <Route path="/auth/forgot" element={<ForgotPassword />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

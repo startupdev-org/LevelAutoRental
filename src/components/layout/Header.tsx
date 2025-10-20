@@ -25,10 +25,12 @@ export const Header: React.FC = () => {
   // Force styling for different pages
   const isDifferentPage =
     (location.pathname === '/not-found') ||
-    (location.pathname === '/auth/login') ||
     (location.pathname === '/auth/signup') ||
     (location.pathname === '/contact') ||
     (location.pathname === '/cars');
+
+  // Check if we're on auth pages for transparent header
+  const isAuthPage = location.pathname === '/auth/login' || location.pathname === '/auth/signup';
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
@@ -89,7 +91,7 @@ export const Header: React.FC = () => {
     { name: t('header.cars'), href: '/cars' },
     { name: t('header.about'), href: '/about' },
     { name: t('header.howToRent'), href: '/how-to-rent' },
-    { name: t('header.contact'), href: '/' }
+    { name: t('header.contact'), href: '/contact' }
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -121,7 +123,9 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${isScrolled || isDifferentPage
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${isAuthPage
+        ? 'bg-transparent shadow-none border-transparent'
+        : isScrolled || isDifferentPage
         ? 'bg-white shadow-lg border-b border-gray-200'
         : 'bg-transparent shadow-none border-transparent'
         }`}
@@ -133,7 +137,7 @@ export const Header: React.FC = () => {
             <img
               src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
-              className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${isScrolled || isDifferentPage ? '' : 'brightness-0 invert'
+              className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${isAuthPage || (!isScrolled && !isDifferentPage) ? 'brightness-0 invert' : ''
                 }`}
             />
           </Link>
@@ -144,7 +148,7 @@ export const Header: React.FC = () => {
               <button
                 key={item.name}
                 onClick={() => handleNavigate(item.href)}
-                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-theme-50 hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500 bg-theme-50' : isScrolled || isDifferentPage ? 'text-gray-700' : 'text-white'}`}
+                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-theme-50 hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500 bg-theme-50' : isAuthPage || (!isScrolled && !isDifferentPage) ? 'text-white' : 'text-gray-700'}`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 {item.name}
@@ -225,9 +229,9 @@ export const Header: React.FC = () => {
             <div className="relative language-dropdown-container">
               <button
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage
-                  ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
-                  : 'text-white hover:text-theme-300 hover:bg-white/20'
+                className={`p-3 rounded-lg transition-all duration-200 ${isAuthPage || (!isScrolled && !isDifferentPage)
+                  ? 'text-white hover:text-theme-300 hover:bg-white/20'
+                  : 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
                   }`}
               >
                 <Globe className="w-5 h-5" />
@@ -266,9 +270,9 @@ export const Header: React.FC = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-3 rounded-lg transition-all duration-200 ${isScrolled || isDifferentPage
-                ? 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
-                : 'text-white hover:text-theme-300 hover:bg-white/20'
+              className={`p-3 rounded-lg transition-all duration-200 ${isAuthPage || (!isScrolled && !isDifferentPage)
+                ? 'text-white hover:text-theme-300 hover:bg-white/20'
+                : 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
                 }`}
             >
               <motion.div

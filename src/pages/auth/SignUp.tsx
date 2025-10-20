@@ -2,10 +2,6 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
 import { Mail, Lock, UserRound, Eye, EyeOff } from "lucide-react";
-import PhoneInput from "react-phone-input-2";
-// @ts-ignore
-import "react-phone-input-2/lib/style.css";
-
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -25,24 +21,69 @@ export const SignUp: React.FC = () => {
     };
 
     return (
-        <section className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-10 md:py-12 mt-10 sm:mt-0">
+        <section 
+            className="min-h-[calc(100vh+150px)] md:min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-10 md:py-12 relative"
+        >
+            {/* Mobile Background */}
+            <div 
+                className="absolute inset-0 md:hidden"
+                style={{
+                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat"
+                }}
+            />
+            {/* Desktop Background */}
+            <div 
+                className="hidden md:block absolute inset-0"
+                style={{
+                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat"
+                }}
+            />
+            {/* Desktop overlay - darker */}
+            <div 
+                className="hidden md:block absolute inset-0"
+                style={{ 
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                }}
+            />
+            {/* Mobile-specific overlay */}
+            <div 
+                className="absolute inset-0 md:hidden"
+                style={{ 
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                }}
+            />
             <motion.div
                 variants={fadeInUp}
                 initial="initial"
                 animate="animate"
-                className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2"
+                className="w-full max-w-6xl bg-white rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 relative z-10"
+                style={{ 
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+                }}
             >
                 {/* Left - Image */}
                 <div
-                    className="relative hidden md:block bg-cover bg-center"
+                    className="relative hidden md:block bg-cover bg-center min-h-[600px]"
                     style={{
-                        backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                        backgroundImage: "url('/LevelAutoRental/lvl_bg.png')",
                         minHeight: "560px",
                     }}
                 >
-                    <div className="absolute inset-0 bg-black/50" />
+                    <div className="absolute inset-0 bg-black/70" />
+                    <div 
+                        className="absolute inset-0"
+                        style={{ 
+                            background: 'linear-gradient(315deg, rgba(220, 38, 38, 0.3), rgba(0, 0, 0, 0.4))' 
+                        }}
+                    />
                     <div className="relative z-10 h-full flex flex-col items-start justify-center p-10 text-white">
-                        <h3 className="text-sm font-semibold tracking-wider text-red-300 uppercase">
+                        <h3 className="text-sm font-semibold tracking-wider text-red-600 uppercase">
                             {t("auth.register.left-part.smallLabel")}
                         </h3>
                         <h2 className="mt-4 text-3xl md:text-4xl font-bold leading-tight drop-shadow">
@@ -55,8 +96,8 @@ export const SignUp: React.FC = () => {
                 </div>
 
                 {/* Right - Form */}
-                <div className="flex items-center justify-center p-3 sm:p-6 md:p-10 lg:p-14 xl:p-20">
-                    <div className="w-[90%] max-w-[280px] sm:max-w-md md:max-w-lg mx-auto">
+                <div className="p-6 md:p-16 flex items-center justify-center min-h-[600px]">
+                    <div className="w-full max-w-md">
                         <div className="mb-6 text-center">
                             <h1 className="text-2xl font-bold text-red-600">
                                 {t("auth.register.right-part.label")}
@@ -127,17 +168,14 @@ export const SignUp: React.FC = () => {
                                 <span className="text-xs font-medium text-gray-700">
                                     {t("auth.register.right-part.phone")}
                                 </span>
-                                <div className="mt-2">
-                                    <PhoneInput
-                                        country={"md"}
+                                <div className="mt-2 relative">
+                                    <input
+                                        type="tel"
                                         value={phone}
-                                        onChange={(value) => setPhone(value)}
-                                        inputProps={{
-                                            name: "phone",
-                                            required: true,
-                                        }}
-                                        containerClass="!w-full"
-                                        inputClass="w-full rounded-lg border border-gray-200 pl-14 py-2 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        required
+                                        className="pl-3 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
+                                        placeholder="+373 62 000 112"
                                     />
                                 </div>
                             </label>

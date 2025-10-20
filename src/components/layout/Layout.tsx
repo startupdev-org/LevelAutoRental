@@ -16,6 +16,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
 
+  // Check if current route is an auth page
+  const isAuthPage = location.pathname.startsWith('/auth');
+
   useEffect(() => {
     // Start page transition loader
     setShowLoader(true);
@@ -57,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             {children}
           </motion.main>
         </AnimatePresence>
-        <Footer />
+        {!isAuthPage && <Footer />}
       </div>
       
       {/* Floating Contact Component */}

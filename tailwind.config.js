@@ -115,7 +115,7 @@ module.exports = {
         'mobile-hero': "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')",
         'hero-desktop': "url('/LevelAutoRental/lvl_bg.png')",
         'mobile-loader': "url('/LevelAutoRental/backgrounds/bg3-mobile.jpeg')",
-        'desktop-loader': "url('/LevelAutoRental/backgrounds/bg2-desktop.jpeg')",
+        'desktop-loader': "url('/LevelAutoRental/lvl_bg.png')",
         'mobile-howto': "url('/LevelAutoRental/backgrounds/bg4-mobile.jpeg')",
         'desktop-howto': "url('/LevelAutoRental/lvl_bg.png')",
       },

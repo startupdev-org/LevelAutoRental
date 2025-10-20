@@ -160,45 +160,64 @@
     "auth": {
         "login": {
             "left-part": {
-                "smallLabel": "Bine ai revenit",
-                "label": "Explorează mașini, închiriază rapid",
-                "description": "Găsește și rezervă mașina perfectă pentru călătoria ta. Ridicare rapidă, termeni clari și suport 24/7."
+                "smallLabel": "Добро пожаловать",
+                "label": "Исследуйте автомобили, арендуйте быстро",
+                "description": "Найдите и забронируйте идеальный автомобиль для вашей поездки. Быстрый подбор, четкие условия и поддержка 24/7."
             },
             "right-part": {
-                "label": "Autentificare",
-                "description": "Conectează-te la contul tău pentru a gestiona rezervările și închirierile.",
-                "email": "Email",
-                "email-example": "exemplu@companie.com",
-                "password": "Parolă",
-                "enter-password": "Introdu parola",
-                "remember-me": "Ține-mă minte",
-                "forgot-password": "Am uitat parola",
-                "login": "Autentifică-te",
-                "or": "SAU",
-                "create-account": "Creează un cont"
+                "label": "Вход",
+                "description": "Войдите в свой аккаунт для управления бронированиями и арендой.",
+                "email": "Электронная почта",
+                "email-example": "Введите ваш email",
+                "password": "Пароль",
+                "enter-password": "Введите пароль",
+                "remember-me": "Запомнить меня",
+                "forgot-password": "Забыли пароль?",
+                "login": "Войти",
+                "or": "ИЛИ",
+                "create-account": "Создать аккаунт"
             }
         },
         "register": {
             "left-part": {
-                "smallLabel": "Alătură-te comunității noastre",
-                "label": "Condu libertatea ta",
-                "description": "Creează-ți un cont pentru a rezerva mașini instant, a gestiona închirierile și a beneficia de oferte exclusive pentru membri."
+                "smallLabel": "Начните ваше путешествие",
+                "label": "Арендуйте с уверенностью",
+                "description": "Создайте аккаунт для бронирования премиальных автомобилей, управления резервациями и получения персонализированных высококачественных услуг."
             },
             "right-part": {
-                "label": "Înregistrare",
-                "description": "Înregistrează-te pentru o experiență mai bună.",
-                "first-name": "Prenume",
-                "first-name-placeholder": "Prenume",
-                "last-name": "Nume",
-                "last-name-placeholder": "Nume",
-                "email": "Email",
-                "email-placeholder": "tu@exemplu.com",
-                "phone": "Număr de telefon",
-                "password": "Parolă",
-                "enter-password": "Introdu parola",
-                "join-us": "Alătură-te",
-                "or": "SAU",
-                "already-have-account": "Ai deja un cont?"
+                "label": "Регистрация",
+                "description": "Зарегистрируйтесь для улучшения пользовательского опыта.",
+                "first-name": "Имя",
+                "first-name-placeholder": "Имя",
+                "last-name": "Фамилия",
+                "last-name-placeholder": "Фамилия",
+                "email": "Электронная почта",
+                "email-placeholder": "Введите ваш email",
+                "phone": "Номер телефона",
+                "password": "Пароль",
+                "enter-password": "Введите пароль",
+                "join-us": "Присоединиться",
+                "or": "ИЛИ",
+                "already-have-account": "Уже есть аккаунт?"
+            }
+        },
+        "forgot": {
+            "left-part": {
+                "smallLabel": "Забыли пароль?",
+                "label": "Восстановите доступ",
+                "description": "Не волнуйтесь! Мы поможем вам быстро и безопасно восстановить доступ к вашему аккаунту."
+            },
+            "right-part": {
+                "label": "Восстановление пароля",
+                "description": "Введите ваш email адрес, и мы отправим инструкции для сброса пароля.",
+                "email": "Электронная почта",
+                "email-placeholder": "Введите ваш email",
+                "send-reset": "Восстановить пароль",
+                "back-to-login": "Назад к входу"
+            },
+            "success": {
+                "title": "Email отправлен!",
+                "description": "Мы отправили инструкции по сбросу пароля на ваш email адрес. Проверьте почту и следуйте указанным шагам."
             }
         }
     },
@@ -317,4 +336,8 @@
             }
         }
     }
+  ,
+  "car": {
+    "mileageLimit": "200км/день"
+  }
 }

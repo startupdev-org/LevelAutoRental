@@ -148,7 +148,7 @@
                 "first-name": "Prenume",
                 "last-name": "Nume",
                 "email": "Email",
-                "email-example": "exemplu@companie.com",
+                "email-example": "Introdu email-ul",
                 "phone-number": "Număr de telefon",
                 "message": "Mesaj",
                 "message-cta": "Lasă-ne un mesaj...",
@@ -168,11 +168,11 @@
                 "label": "Autentificare",
                 "description": "Conectează-te la contul tău pentru a gestiona rezervările și închirierile.",
                 "email": "Email",
-                "email-example": "exemplu@companie.com",
+                "email-example": "Introdu email-ul",
                 "password": "Parolă",
                 "enter-password": "Introdu parola",
                 "remember-me": "Ține-mă minte",
-                "forgot-password": "Am uitat parola",
+                "forgot-password": "Ai uitat parola?",
                 "login": "Autentifică-te",
                 "or": "SAU",
                 "create-account": "Creează un cont"
@@ -180,9 +180,9 @@
         },
         "register": {
             "left-part": {
-                "smallLabel": "Alătură-te comunității noastre",
-                "label": "Condu libertatea ta",
-                "description": "Creează-ți un cont pentru a rezerva mașini instant, a gestiona închirierile și a beneficia de oferte exclusive pentru membri."
+                "smallLabel": "Începe călătoria ta",
+                "label": "Închiriază cu încredere",
+                "description": "Creează-ți contul pentru a rezerva mașini premium, a gestiona rezervările și a beneficia de servicii personalizate de calitate superioară."
             },
             "right-part": {
                 "label": "Înregistrare",
@@ -192,13 +192,32 @@
                 "last-name": "Nume",
                 "last-name-placeholder": "Nume",
                 "email": "Email",
-                "email-placeholder": "tu@exemplu.com",
+                "email-placeholder": "Introdu email-ul",
                 "phone": "Număr de telefon",
                 "password": "Parolă",
                 "enter-password": "Introdu parola",
                 "join-us": "Alătură-te",
                 "or": "SAU",
                 "already-have-account": "Ai deja un cont?"
+            }
+        },
+        "forgot": {
+            "left-part": {
+                "smallLabel": "Ai uitat parola?",
+                "label": "Recuperează accesul",
+                "description": "Nu-ți face griji! Te ajutăm să îți recuperezi accesul la contul tău rapid și sigur."
+            },
+            "right-part": {
+                "label": "Recuperare parolă",
+                "description": "Introdu adresa ta de email și îți vom trimite instrucțiuni pentru resetarea parolei.",
+                "email": "Email",
+                "email-placeholder": "Introdu email-ul",
+                "send-reset": "Recuperează parola",
+                "back-to-login": "Înapoi la autentificare"
+            },
+            "success": {
+                "title": "Email trimis!",
+                "description": "Am trimis instrucțiunile de resetare a parolei la adresa ta de email. Verifică inbox-ul și urmează pașii indicați."
             }
         }
     },
@@ -317,4 +336,8 @@
             }
         }
     }
+  ,
+  "car": {
+    "mileageLimit": "200km/zi"
+  }
 }

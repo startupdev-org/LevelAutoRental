@@ -161,18 +161,18 @@
         "login": {
             "left-part": {
                 "smallLabel": "Welcome back",
-                "label": "Explore Cars, Rent Fast",
+                "label": "Explore cars, rent fast",
                 "description": "Find and reserve the perfect car for your trip. Fast pickup, clear terms and 24/7 support."
             },
             "right-part": {
                 "label": "Login",
                 "description": "Sign in to your account to manage bookings and rentals.",
                 "email": "Email",
-                "email-example": "example@company.com",
+                "email-example": "Enter your email",
                 "password": "Password",
                 "enter-password": "Enter your password",
                 "remember-me": "Remember me",
-                "forgot-password": "Forgot password",
+                "forgot-password": "Forgot password?",
                 "login": "Login",
                 "or": "OR",
                 "create-account": "Create an account"
@@ -180,9 +180,9 @@
         },
         "register": {
             "left-part": {
-                "smallLabel": "Join our community",
-                "label": "Drive your freedoms",
-                "description": "Create an account to book cars instantly, manage your rentals, and enjoy member-only deals."
+                "smallLabel": "Start your journey",
+                "label": "Rent with confidence",
+                "description": "Create your account to book premium cars, manage reservations and benefit from personalized high-quality services."
             },
             "right-part": {
                 "label": "Sign Up",
@@ -192,13 +192,32 @@
                 "last-name": "Last Name",
                 "last-name-placeholder": "Last Name",
                 "email": "Email",
-                "email-placeholder": "you@example.com",
+                "email-placeholder": "Enter your email",
                 "phone": "Phone number",
                 "password": "Password",
                 "enter-password": "Enter your password",
                 "join-us": "Join us",
                 "or": "OR",
                 "already-have-account": "Already have an account?"
+            }
+        },
+        "forgot": {
+            "left-part": {
+                "smallLabel": "Forgot password?",
+                "label": "Recover access",
+                "description": "Don't worry! We'll help you recover access to your account quickly and securely."
+            },
+            "right-part": {
+                "label": "Password Recovery",
+                "description": "Enter your email address and we'll send you instructions for resetting your password.",
+                "email": "Email",
+                "email-placeholder": "Enter your email",
+                "send-reset": "Recover password",
+                "back-to-login": "Back to login"
+            },
+            "success": {
+                "title": "Email sent!",
+                "description": "We've sent password reset instructions to your email address. Check your inbox and follow the steps provided."
             }
         }
     },
@@ -317,4 +336,8 @@
             }
         }
     }
+  ,
+  "car": {
+    "mileageLimit": "200km/day"
+  }
 }
