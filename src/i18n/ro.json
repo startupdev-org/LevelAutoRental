@@ -157,6 +157,51 @@
             }
         }
     },
+    "auth": {
+        "login": {
+            "left-part": {
+                "smallLabel": "Bine ai revenit",
+                "label": "Explorează mașini, închiriază rapid",
+                "description": "Găsește și rezervă mașina perfectă pentru călătoria ta. Ridicare rapidă, termeni clari și suport 24/7."
+            },
+            "right-part": {
+                "label": "Autentificare",
+                "description": "Conectează-te la contul tău pentru a gestiona rezervările și închirierile.",
+                "email": "Email",
+                "email-example": "exemplu@companie.com",
+                "password": "Parolă",
+                "enter-password": "Introdu parola",
+                "remember-me": "Ține-mă minte",
+                "forgot-password": "Am uitat parola",
+                "login": "Autentifică-te",
+                "or": "SAU",
+                "create-account": "Creează un cont"
+            }
+        },
+        "register": {
+            "left-part": {
+                "smallLabel": "Alătură-te comunității noastre",
+                "label": "Condu libertatea ta",
+                "description": "Creează-ți un cont pentru a rezerva mașini instant, a gestiona închirierile și a beneficia de oferte exclusive pentru membri."
+            },
+            "right-part": {
+                "label": "Înregistrare",
+                "description": "Înregistrează-te pentru o experiență mai bună.",
+                "first-name": "Prenume",
+                "first-name-placeholder": "Prenume",
+                "last-name": "Nume",
+                "last-name-placeholder": "Nume",
+                "email": "Email",
+                "email-placeholder": "tu@exemplu.com",
+                "phone": "Număr de telefon",
+                "password": "Parolă",
+                "enter-password": "Introdu parola",
+                "join-us": "Alătură-te",
+                "or": "SAU",
+                "already-have-account": "Ai deja un cont?"
+            }
+        }
+    },
     "footer": {
         "description": "Serviciu premium de închirieri auto în Moldova. Călătoria ta începe aici.",
         "sections": {
