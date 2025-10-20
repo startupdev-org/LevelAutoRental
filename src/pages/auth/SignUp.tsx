@@ -1,27 +1,27 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
-import { Mail, Lock, UserRound, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, UserRound, Eye, EyeOff } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
-// @ts-ignore: allow importing CSS without type declarations
-import "react-phone-input-2/lib/style.css"; // <-- very important!
+// @ts-ignore
+import "react-phone-input-2/lib/style.css";
 
 import { Link } from "react-router-dom";
-
+import { useTranslation } from "react-i18next";
 
 export const SignUp: React.FC = () => {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [phone, setPhone] = useState(""); // add state for phone
-
+    const [phone, setPhone] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+
+    const { t } = useTranslation();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: handle signup
-        console.log("signup", { email, password });
+        console.log("signup", { firstName, lastName, email, phone, password });
     };
 
     return (
@@ -32,7 +32,7 @@ export const SignUp: React.FC = () => {
                 animate="animate"
                 className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2"
             >
-                {/* Left - Image / promo (image on left as requested) */}
+                {/* Left - Image */}
                 <div
                     className="relative hidden md:block bg-cover bg-center"
                     style={{
@@ -43,26 +43,14 @@ export const SignUp: React.FC = () => {
                     <div className="absolute inset-0 bg-black/50" />
                     <div className="relative z-10 h-full flex flex-col items-start justify-center p-10 text-white">
                         <h3 className="text-sm font-semibold tracking-wider text-red-300 uppercase">
-                            Join our community
+                            {t("auth.register.left-part.smallLabel")}
                         </h3>
                         <h2 className="mt-4 text-3xl md:text-4xl font-bold leading-tight drop-shadow">
-                            Drive your freedoms
+                            {t("auth.register.left-part.label")}
                         </h2>
                         <p className="mt-4 text-gray-200 max-w-sm">
-                            Create an account to book cars instantly, manage your rentals, and enjoy member-only deals.
+                            {t("auth.register.left-part.description")}
                         </p>
-
-                        <div className="mt-8 flex items-center gap-3">
-                            {/* <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                <div className="w-2 h-2 rounded-full bg-red-400" />
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                <div className="w-2 h-2 rounded-full bg-red-400" />
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                <div className="w-2 h-2 rounded-full bg-red-400" />
-                            </div> */}
-                        </div>
                     </div>
                 </div>
 
@@ -70,18 +58,21 @@ export const SignUp: React.FC = () => {
                 <div className="flex items-center justify-center p-3 sm:p-6 md:p-10 lg:p-14 xl:p-20">
                     <div className="w-[90%] max-w-[280px] sm:max-w-md md:max-w-lg mx-auto">
                         <div className="mb-6 text-center">
-                            <h1 className="text-2xl font-bold text-red-600">Sign Up</h1>
+                            <h1 className="text-2xl font-bold text-red-600">
+                                {t("auth.register.right-part.label")}
+                            </h1>
                             <p className="text-sm text-gray-500 mt-2">
-                                Sign up to improve your user experience.
+                                {t("auth.register.right-part.description")}
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
-
-                            {/* First + Last name in one row */}
+                            {/* First + Last name */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <label className="block">
-                                    <span className="text-xs font-medium text-gray-700">First Name</span>
+                                    <span className="text-xs font-medium text-gray-700">
+                                        {t("auth.register.right-part.first-name")}
+                                    </span>
                                     <div className="mt-2 relative">
                                         <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         <input
@@ -90,13 +81,15 @@ export const SignUp: React.FC = () => {
                                             onChange={(e) => setFirstName(e.target.value)}
                                             required
                                             className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
-                                            placeholder="John"
+                                            placeholder={t("auth.register.right-part.first-name-placeholder")}
                                         />
                                     </div>
                                 </label>
 
                                 <label className="block">
-                                    <span className="text-xs font-medium text-gray-700">Last Name</span>
+                                    <span className="text-xs font-medium text-gray-700">
+                                        {t("auth.register.right-part.last-name")}
+                                    </span>
                                     <div className="mt-2 relative">
                                         <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         <input
@@ -105,14 +98,17 @@ export const SignUp: React.FC = () => {
                                             onChange={(e) => setLastName(e.target.value)}
                                             required
                                             className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
-                                            placeholder="Doe"
+                                            placeholder={t("auth.register.right-part.last-name-placeholder")}
                                         />
                                     </div>
                                 </label>
                             </div>
 
+                            {/* Email */}
                             <label className="block">
-                                <span className="text-xs font-medium text-gray-700">Email</span>
+                                <span className="text-xs font-medium text-gray-700">
+                                    {t("auth.register.right-part.email")}
+                                </span>
                                 <div className="mt-2 relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                                     <input
@@ -121,14 +117,16 @@ export const SignUp: React.FC = () => {
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
                                         className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
-                                        placeholder="you@example.com"
+                                        placeholder={t("auth.register.right-part.email-placeholder")}
                                     />
                                 </div>
                             </label>
 
-                            {/* Phone input (flag + country code) */}
+                            {/* Phone */}
                             <label className="block">
-                                <span className="text-xs font-medium text-gray-700">Phone number</span>
+                                <span className="text-xs font-medium text-gray-700">
+                                    {t("auth.register.right-part.phone")}
+                                </span>
                                 <div className="mt-2">
                                     <PhoneInput
                                         country={"md"}
@@ -144,29 +142,24 @@ export const SignUp: React.FC = () => {
                                 </div>
                             </label>
 
+                            {/* Password */}
                             <label className="block">
-                                <span className="text-xs font-medium text-gray-700">Password</span>
+                                <span className="text-xs font-medium text-gray-700">
+                                    {t("auth.register.right-part.password")}
+                                </span>
                                 <div className="mt-2 relative">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                    {/* <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
-                                        placeholder="Enter your password"
-                                    /> */}
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
                                         className="pl-10 pr-10 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
-                                        placeholder="Enter your password"
+                                        placeholder={t("auth.register.right-part.enter-password")}
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(prev => !prev)}
+                                        onClick={() => setShowPassword((prev) => !prev)}
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 p-1 rounded"
                                     >
@@ -175,31 +168,36 @@ export const SignUp: React.FC = () => {
                                 </div>
                             </label>
 
+                            {/* Submit */}
                             <button
                                 type="submit"
                                 className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md"
                             >
-                                Join us
+                                {t("auth.register.right-part.join-us")}
                             </button>
                         </form>
 
+                        {/* Divider */}
                         <div className="mt-6 flex items-center gap-3">
                             <div className="flex-1 h-px bg-gray-200" />
-                            <div className="text-xs text-gray-400 uppercase">or</div>
+                            <div className="text-xs text-gray-400 uppercase">
+                                {t("auth.register.right-part.or")}
+                            </div>
                             <div className="flex-1 h-px bg-gray-200" />
                         </div>
 
+                        {/* Already have an account */}
                         <div className="mt-6 text-center">
                             <Link
                                 to="/auth/login"
                                 className="inline-block px-6 py-2 border-2 border-red-600 text-red-600 rounded-lg bg-white transition transform duration-200 ease-out hover:bg-red-600 hover:text-white hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-red-200"
                             >
-                                Already have an account?
+                                {t("auth.register.right-part.already-have-account")}
                             </Link>
                         </div>
                     </div>
                 </div>
             </motion.div>
-        </section >
+        </section>
     );
 };

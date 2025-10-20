@@ -157,6 +157,51 @@
             }
         }
     },
+    "auth": {
+        "login": {
+            "left-part": {
+                "smallLabel": "Welcome back",
+                "label": "Explore Cars, Rent Fast",
+                "description": "Find and reserve the perfect car for your trip. Fast pickup, clear terms and 24/7 support."
+            },
+            "right-part": {
+                "label": "Login",
+                "description": "Sign in to your account to manage bookings and rentals.",
+                "email": "Email",
+                "email-example": "example@company.com",
+                "password": "Password",
+                "enter-password": "Enter your password",
+                "remember-me": "Remember me",
+                "forgot-password": "Forgot password",
+                "login": "Login",
+                "or": "OR",
+                "create-account": "Create an account"
+            }
+        },
+        "register": {
+            "left-part": {
+                "smallLabel": "Join our community",
+                "label": "Drive your freedoms",
+                "description": "Create an account to book cars instantly, manage your rentals, and enjoy member-only deals."
+            },
+            "right-part": {
+                "label": "Sign Up",
+                "description": "Sign up to improve your user experience.",
+                "first-name": "First Name",
+                "first-name-placeholder": "First Name",
+                "last-name": "Last Name",
+                "last-name-placeholder": "Last Name",
+                "email": "Email",
+                "email-placeholder": "you@example.com",
+                "phone": "Phone number",
+                "password": "Password",
+                "enter-password": "Enter your password",
+                "join-us": "Join us",
+                "or": "OR",
+                "already-have-account": "Already have an account?"
+            }
+        }
+    },
     "footer": {
         "description": "Premium car rental service providing exceptional vehicles and unmatched customer experience in Moldova. Your journey starts here.",
         "sections": {
