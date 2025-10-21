@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "../../utils/animations";
 import { DevOnlyComponent } from "../../utils/devAccess";
 import { useTranslation } from "react-i18next";
-import { Phone, Mail, MapPin, Instagram } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
 import { FaFacebookF } from "react-icons/fa";
+import { RiInstagramFill } from "react-icons/ri";
 
 // TikTok Icon Component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -26,9 +27,9 @@ export const Contact: React.FC = () => {
 
   // Social media links from footer
   const socialLinks: Array<{ icon: React.FC<any>, href: string, label: string }> = [
-    { icon: TikTokIcon as React.FC<any>, href: 'https://www.tiktok.com/@levelautorental', label: t('footer.social.tiktok') },
+    { icon: TikTokIcon as React.FC<any>, href: 'https://www.tiktok.com/@level.auto.rental.md', label: t('footer.social.tiktok') },
     { icon: FaFacebookF as React.FC<any>, href: 'https://www.facebook.com/levelautorental', label: t('footer.social.facebook') },
-    { icon: Instagram as React.FC<any>, href: 'https://www.instagram.com/level_auto_rental', label: t('footer.social.instagram') }
+    { icon: RiInstagramFill as React.FC<any>, href: 'https://www.instagram.com/level_auto_rental', label: t('footer.social.instagram') }
   ];
 
   const [formData, setFormData] = useState({
@@ -123,7 +124,7 @@ export const Contact: React.FC = () => {
                       <motion.a
                         key={social.label}
                         href={social.href}
-                        className="w-10 h-10 rounded-xl bg-white shadow-sm hover:bg-red-50 flex items-center justify-center text-red-600 hover:text-red-700 transition-all duration-300 hover:scale-105"
+                        className="w-10 h-10 rounded-xl bg-white shadow-sm hover:bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-700 transition-all duration-300 hover:scale-105"
                         aria-label={social.label}
                       >
                         <social.icon className={social.icon === FaFacebookF ? "w-4 h-4" : "w-5 h-5"} />
