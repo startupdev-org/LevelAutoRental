@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 export const HowToRentHero: React.FC = () => {
     const { t } = useTranslation();
-    
+
     const [isDesktop, setIsDesktop] = useState(false);
 
     useEffect(() => {
@@ -49,16 +49,25 @@ export const HowToRentHero: React.FC = () => {
     ];
 
     return (
-        <section 
-            className="relative py-60 bg-cover bg-center bg-no-repeat" 
-            style={{ 
+        <section
+            className="relative py-60 bg-cover bg-center bg-no-repeat"
+            style={{
                 backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
                 backgroundPosition: isDesktop ? 'center -150px' : 'center center'
             }}
         >
             {/* Background Overlay */}
             <div className="absolute inset-0 bg-black/60"></div>
-            
+
+            {/* Bottom Gradient Fade (in front of everything) */}
+            <div className="absolute bottom-0 left-0 w-full h-24 
+                bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
+                z-50 pointer-events-none">
+            </div>
+
+
+
+
             <div className="relative max-w-7xl mx-auto">
                 {/* Header Section */}
                 <motion.div
@@ -116,7 +125,7 @@ export const HowToRentHero: React.FC = () => {
                                         </span>
                                     </motion.div>
                                 </div>
-                                
+
                                 {/* Content */}
                                 <div className="text-center">
                                     <h3 className="text-xl font-bold text-white mb-3 md:mb-4 leading-tight">
