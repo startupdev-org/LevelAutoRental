@@ -157,9 +157,10 @@
             },
             "contact": {
                 "title": "Still have questions?",
-                "description": "Can't find the answer you're looking for? Our support team is here to help you with any specific questions about our services.",
-                "contact-support": "Contact Support",
-                "call-us": "Call +373 62 000 112"
+                "description": "Contact us for help.",
+                "contact-support": "Write Message",
+                "call-us": "Call +373 62 000 112",
+                "response-time": "Response within 2 hours"
             }
         },
         "terms": {
@@ -171,8 +172,8 @@
         },
         "about": {
             "hero": {
-                "label": "About Level Auto Rental",
-                "title": "About Level Auto Rental",
+                "label": "ABOUT COMPANY",
+                "title": "Level Auto Rental",
                 "subtitle": "Premium car rentals. Simple. Fast.",
                 "location": "in Moldova"
             },
@@ -211,10 +212,15 @@
             }
         },
         "contact": {
-            "hero": "Let's Make Your Next Journey Easy",
-            "smallLabel": "You can reach us anytime via",
+            "hero": {
+                "label": "Contact Us",
+                "title": "Get in Touch",
+                "description": "Have questions about our car rental services? We're here to help you with any inquiries or support you need."
+            },
             "contact-info": "Contact Information",
+            "contact-description": "Reach out to us through any of these channels. We're available to assist you with your car rental needs.",
             "send-message": "Send us a message",
+            "form-description": "Fill out the form below and we'll get back to you as soon as possible.",
             "dev-mode": {
                 "title": "Under Development",
                 "description": "This page is currently under development and available only to developers.",
@@ -421,9 +427,10 @@
             },
             "contact": {
                 "title": "Still have questions?",
-                "description": "Can't find the answer you're looking for? Our support team is here to help you with any specific questions about our services.",
-                "contact-support": "Contact Support",
-                "call-us": "Call +373 62 000 112"
+                "description": "Contact us for help.",
+                "contact-support": "Write Message",
+                "call-us": "Call +373 62 000 112",
+                "response-time": "Response within 2 hours"
             }
         }
     },

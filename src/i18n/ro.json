@@ -157,9 +157,10 @@
             },
             "contact": {
                 "title": "Mai ai întrebări?",
-                "description": "Nu găsești răspunsul pe care îl cauți? Echipa noastră de suport este aici pentru a te ajuta cu orice întrebări specifice despre serviciile noastre.",
-                "contact-support": "Contactează Suportul",
-                "call-us": "Sună +373 62 000 112"
+                "description": "Contactează-ne pentru detalii.",
+                "contact-support": "Scrie mesaj",
+                "call-us": "Sună +373 62 000 112",
+                "response-time": "Răspuns în 2 ore"
             }
         },
         "terms": {
@@ -171,8 +172,8 @@
         },
         "about": {
             "hero": {
-                "label": "Despre Level Auto Rental",
-                "title": "Despre Level Auto Rental",
+                "label": "DESPRE COMPANIE",
+                "title": "Level Auto Rental",
                 "subtitle": "Închirieri auto premium. Simplu. Rapid.",
                 "location": "în Moldova"
             },
@@ -211,10 +212,15 @@
             }
         },
         "contact": {
-            "hero": "Hai să facem următoarea ta călătorie mai ușoară",
-            "smallLabel": "Ne poți contacta oricând prin",
+            "hero": {
+                "label": "Contactează-ne",
+                "title": "Informații de contact",
+                "description": ""
+            },
             "contact-info": "Informații de contact",
+            "contact-description": "Contactează-ne prin oricare dintre aceste canale. Suntem disponibili să te ajutăm cu nevoile tale de închirieri auto.",
             "send-message": "Trimite-ne un mesaj",
+            "form-description": "Completează formularul de mai jos și îți vom răspunde cât mai curând posibil.",
             "dev-mode": {
                 "title": "În dezvoltare",
                 "description": "Această pagină este în prezent în dezvoltare și disponibilă doar pentru dezvoltatori.",

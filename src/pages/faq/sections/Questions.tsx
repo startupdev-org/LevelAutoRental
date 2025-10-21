@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, Phone, Mail } from "lucide-react";
+import { ChevronDown, ChevronUp, Mail } from "lucide-react";
+import { BiSolidPhoneCall } from "react-icons/bi";
 import { fadeInUp, staggerContainer } from "../../../utils/animations";
 import { useInView } from "../../../hooks/useInView";
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 interface FAQItem {
     id: string;
@@ -21,6 +23,7 @@ export const Questions: React.FC = () => {
     const [activeItem, setActiveItem] = useState<string | null>(null);
     const { ref, isInView } = useInView();
     const { t } = useTranslation();
+    const navigate = useNavigate();
 
     const faqData: FAQSection[] = [
         {
@@ -243,42 +246,50 @@ export const Questions: React.FC = () => {
                     className="mt-20 flex justify-center"
                 >
                     <motion.div
-                        className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 sm:p-12 text-white shadow-2xl max-w-4xl w-full text-center relative overflow-hidden"
-                        whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
+                        className="bg-white rounded-3xl p-8 sm:p-12 shadow-xl border border-gray-100 max-w-4xl w-full relative overflow-hidden"
+                        whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(0,0,0,0.15)" }}
                         transition={{ type: "spring", stiffness: 300 }}
                     >
                         {/* Background Pattern */}
-                        <div className="absolute inset-0 opacity-10">
-                            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-red-500/20 to-transparent"></div>
+                        <div className="absolute inset-0 opacity-5">
                         </div>
                         
                         <div className="relative z-10">
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-b from-red-500 to-red-600 mb-6 shadow-lg">
-                                <Phone className="w-8 h-8 text-white" />
+                            {/* Icon */}
+                            <div className="flex justify-center mb-6">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-b from-red-500 to-red-600 shadow-lg">
+                                    {BiSolidPhoneCall({ className: "w-8 h-8 text-white" })}
+                                </div>
                             </div>
                             
-                            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+                            {/* Title */}
+                            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 text-center text-gray-900">
                                 {t('pages.faq.contact.title')}
                             </h3>
-                            <p className="text-gray-300 mb-8 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto">
+                            
+                            {/* Description */}
+                            <p className="text-gray-600 mb-8 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto text-center leading-relaxed">
                                 {t('pages.faq.contact.description')}
                             </p>
                             
+                            {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <motion.button
-                                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 flex items-center justify-center gap-3"
+                                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 flex items-center justify-center gap-3 group"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
+                                    onClick={() => navigate('/contact')}
                                 >
-                                    <Mail className="w-5 h-5" />
+                                    <Mail className="w-5 h-5 group-hover:animate-pulse" />
                                     {t('pages.faq.contact.contact-support')}
                                 </motion.button>
                                 <motion.button
-                                    className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-xl font-semibold border border-white/20 transition-all duration-300 flex items-center justify-center gap-3"
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-8 py-4 rounded-xl font-semibold border border-gray-200 transition-all duration-300 flex items-center justify-center gap-3 group"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
+                                    onClick={() => window.open('tel:+37362000112', '_self')}
                                 >
-                                    <Phone className="w-5 h-5" />
+                                    {BiSolidPhoneCall({ className: "w-5 h-5 group-hover:animate-pulse" })}
                                     {t('pages.faq.contact.call-us')}
                                 </motion.button>
                             </div>

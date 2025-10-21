@@ -33,7 +33,7 @@ export const FAQIntro: React.FC = () => {
             <div className="absolute inset-0 bg-black/60"></div>
 
             {/* Bottom Gradient Fade */}
-            <div className="absolute bottom-0 left-0 w-full h-24 
+            <div className="absolute bottom-0 left-0 w-full h-40 
                 bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
                 z-10 pointer-events-none">
             </div>

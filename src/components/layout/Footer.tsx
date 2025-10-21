@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 import { FaFacebookF } from 'react-icons/fa';
-import { RiInstagramFill } from 'react-icons/ri';
+import { GrInstagram } from 'react-icons/gr';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +48,7 @@ export const Footer: React.FC = () => {
   const socialLinks: Array<{ icon: React.FC<any>, href: string, label: string }> = [
     { icon: TikTokIcon as React.FC<any>, href: 'https://www.tiktok.com/@level.auto.rental.md', label: t('footer.social.tiktok') },
     { icon: FaFacebookF as React.FC<any>, href: 'https://www.facebook.com/levelautorental', label: t('footer.social.facebook') },
-    { icon: RiInstagramFill as React.FC<any>, href: 'https://www.instagram.com/level_auto_rental', label: t('footer.social.instagram') }
+    { icon: GrInstagram as React.FC<any>, href: 'https://www.instagram.com/level_auto_rental', label: t('footer.social.instagram') }
   ];
 
   const contactInfo = [

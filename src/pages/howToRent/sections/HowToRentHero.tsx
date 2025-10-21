@@ -60,7 +60,7 @@ export const HowToRentHero: React.FC = () => {
             <div className="absolute inset-0 bg-black/60"></div>
 
             {/* Bottom Gradient Fade (in front of everything) */}
-            <div className="absolute bottom-0 left-0 w-full h-24 
+            <div className="absolute bottom-0 left-0 w-full h-40 
                 bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
                 z-50 pointer-events-none">
             </div>

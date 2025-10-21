@@ -62,6 +62,12 @@ export const About: React.FC = () => {
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/70" />
 
+        {/* Bottom Gradient Fade */}
+        <div className="absolute bottom-0 left-0 w-full h-40 
+            bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
+            z-10 pointer-events-none">
+        </div>
+
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
           <div className="flex items-center justify-center h-full pt-16">
             {/* Centered Text Content */}

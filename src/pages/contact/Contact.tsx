@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "../../utils/animations";
 import { DevOnlyComponent } from "../../utils/devAccess";
 import { useTranslation } from "react-i18next";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin, Send, Clock } from "lucide-react";
 import { FaFacebookF } from "react-icons/fa";
-import { RiInstagramFill } from "react-icons/ri";
+import { GrInstagram } from "react-icons/gr";
+import { BiSolidPhoneCall } from "react-icons/bi";
 
 // TikTok Icon Component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -15,21 +16,31 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 );
 
 export const Contact: React.FC = () => {
-
   const { t } = useTranslation();
+  const [isDesktop, setIsDesktop] = useState<boolean>(false);
 
-  // Contact information from footer
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const handleChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+
+    setIsDesktop(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
   const contactInfo = [
-    { icon: Phone, text: '+373 62 000 112', href: 'tel:+37362000112' },
-    { icon: Mail, text: 'info@levelautorental.com', href: 'mailto:info@levelautorental.com' },
-    { icon: MapPin, text: 'Chisinau, Moldova', href: '#' }
+    { icon: Phone, text: '+373 62 000 112', href: 'tel:+37362000112', label: 'Phone' },
+    { icon: Mail, text: 'info@levelautorental.com', href: 'mailto:info@levelautorental.com', label: 'Email' },
+    { icon: MapPin, text: 'Chisinau, Moldova', href: '#', label: 'Location' }
   ];
 
-  // Social media links from footer
   const socialLinks: Array<{ icon: React.FC<any>, href: string, label: string }> = [
     { icon: TikTokIcon as React.FC<any>, href: 'https://www.tiktok.com/@level.auto.rental.md', label: t('footer.social.tiktok') },
     { icon: FaFacebookF as React.FC<any>, href: 'https://www.facebook.com/levelautorental', label: t('footer.social.facebook') },
-    { icon: RiInstagramFill as React.FC<any>, href: 'https://www.instagram.com/level_auto_rental', label: t('footer.social.instagram') }
+    { icon: GrInstagram as React.FC<any>, href: 'https://www.instagram.com/level_auto_rental', label: t('footer.social.instagram') }
   ];
 
   const [formData, setFormData] = useState({
@@ -39,7 +50,6 @@ export const Contact: React.FC = () => {
     phone: "",
     message: "",
   });
-
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -62,166 +72,241 @@ export const Contact: React.FC = () => {
             <p className="text-gray-600 mb-8">
               {t("pages.contact.dev-mode.description")}
             </p>
-            <button className="w-full py-2.5 bg-theme-600 hover:bg-theme-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md">
+            <button className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md">
               <a href="/">{t("pages.contact.dev-mode.button")}</a>
             </button>
           </div>
         </div>
       }
     >
-      <section className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white">
-        {/* Left side - Image */}
-        <motion.div
-          variants={fadeInUp}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          className="relative h-80 sm:h-[60vh] lg:h-auto"
+      <div className="min-h-screen">
+        {/* Hero Section */}
+        <section
+          className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
+            pt-36 font-sans text-white
+            ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : "bg-cover bg-center bg-no-repeat"}
+            `}
+          style={{
+            backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
+            backgroundPosition: isDesktop ? 'center -400px' : 'center center'
+          }}
         >
-          <img
-            src="/LevelAutoRental/lvl_bg.png"
-            alt="Contact visual"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/40" />
-        </motion.div>
+          {/* Dark Overlay */}
+          <div className="absolute inset-0 bg-black/70" />
 
-        {/* Right side - Form and Info */}
-        <motion.div
-          variants={staggerContainer}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          className="flex items-center justify-center px-6 sm:px-8 lg:px-16 py-4 lg:py-6"
-        >
-          <div className="w-full max-w-2xl">
-            {/* Contact Information */}
-            <motion.div variants={fadeInUp} className="mb-6 pt-2 lg:pt-4">
-              <div className="bg-gray-50 rounded-2xl p-6 mb-6 relative overflow-hidden shadow-sm">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500"></div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">{t("pages.contact.contact-info")}</h3>
-                <div className="space-y-3 mb-4">
+          {/* Bottom Gradient Fade */}
+          <div className="absolute bottom-0 left-0 w-full h-40 
+              bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
+              z-10 pointer-events-none">
+          </div>
+
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
+            <div className="flex items-center justify-center h-full pt-16">
+              {/* Centered Text Content */}
+              <div className="text-center space-y-10 max-w-4xl">
+                <div className="space-y-8">
+                  <div className="space-y-6">
+                    <p className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+                      {t('pages.contact.hero.label')}
+                    </p>
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
+                      {t('pages.contact.hero.title')}
+                    </h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Contact Content Section */}
+        <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              
+              {/* Contact Information */}
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: true }}
+                className="space-y-8"
+              >
+                <motion.div variants={fadeInUp}>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                    {t('pages.contact.contact-info')}
+                  </h3>
+                  <p className="text-gray-600 mb-8">
+                    {t('pages.contact.contact-description')}
+                  </p>
+                </motion.div>
+
+                {/* Contact Cards */}
+                <div className="space-y-4">
                   {contactInfo.map((contact, index) => (
                     <motion.a
                       key={index}
                       href={contact.href}
                       variants={fadeInUp}
-                      className="flex items-center space-x-4 text-gray-700 hover:text-theme-600 transition-colors duration-300 group"
+                      className="flex items-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:bg-red-50 transition-colors duration-300">
-                        <contact.icon className="w-5 h-5 text-red-600 group-hover:text-red-700 transition-colors duration-300" />
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
+                        <contact.icon className="w-6 h-6 text-white" />
                       </div>
-                      <span className="text-sm font-medium">{contact.text}</span>
+                      <div>
+                        <p className="font-semibold text-gray-900">{contact.text}</p>
+                        <p className="text-sm text-gray-500">{contact.label}</p>
+                      </div>
                     </motion.a>
                   ))}
                 </div>
-                
+
                 {/* Social Media */}
-                <div className="border-t border-gray-200 pt-4">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">{t("footer.social.follow-us")}</h4>
+                <motion.div variants={fadeInUp} className="pt-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                    {t('footer.social.follow-us')}
+                  </h4>
                   <div className="flex space-x-3">
                     {socialLinks.map((social) => (
                       <motion.a
                         key={social.label}
                         href={social.href}
-                        className="w-10 h-10 rounded-xl bg-white shadow-sm hover:bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-700 transition-all duration-300 hover:scale-105"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-12 h-12 rounded-xl bg-white shadow-sm hover:shadow-lg flex items-center justify-center text-gray-600 hover:text-red-600 transition-all duration-300 hover:scale-110 border border-gray-100"
                         aria-label={social.label}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        <social.icon className={social.icon === FaFacebookF ? "w-4 h-4" : "w-5 h-5"} />
+                        <social.icon className={social.icon === FaFacebookF ? "w-5 h-5" : "w-6 h-6"} />
                       </motion.a>
                     ))}
                   </div>
-                </div>
-              </div>
-            </motion.div>
+                </motion.div>
+              </motion.div>
 
-            {/* Form */}
-            <motion.div variants={fadeInUp} className="bg-gray-50 rounded-2xl p-6 relative overflow-hidden shadow-sm">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500"></div>
-              <h3 className="text-lg font-bold text-gray-900 mb-4">{t("pages.contact.send-message")}</h3>
-              <motion.form
-                onSubmit={handleSubmit}
+              {/* Contact Form */}
+              <motion.div
                 variants={staggerContainer}
                 initial="initial"
                 whileInView="animate"
                 viewport={{ once: true }}
-                className="space-y-4"
+                className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8"
               >
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <label className="block">
-                    <span className="text-xs font-medium text-gray-700">{t("pages.contact.form.first-name")} *</span>
-                    <input
-                      type="text"
-                      placeholder={t("pages.contact.form.first-name")}
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      required
-                      className="mt-2 px-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-theme-200 focus:border-theme-400 transition"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-gray-700">{t("pages.contact.form.last-name")} *</span>
-                    <input
-                      type="text"
-                      placeholder={t("pages.contact.form.last-name")}
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      required
-                      className="mt-2 px-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-theme-200 focus:border-theme-400 transition"
-                    />
-                  </label>
-                </div>
+                <motion.div variants={fadeInUp}>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    {t('pages.contact.send-message')}
+                  </h3>
+                  <p className="text-gray-600 mb-8">
+                    {t('pages.contact.form-description')}
+                  </p>
+                </motion.div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <label className="block">
-                    <span className="text-xs font-medium text-gray-700">{t("pages.contact.form.email")} *</span>
-                    <input
-                      type="email"
-                      placeholder={t("pages.contact.form.email-example")}
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      required
-                      className="mt-2 px-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-theme-200 focus:border-theme-400 transition"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-gray-700">{t("pages.contact.form.phone-number")}</span>
-                    <input
-                      type="tel"
-                      placeholder="+373 (555) 000-000"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      className="mt-2 px-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-theme-200 focus:border-theme-400 transition"
-                    />
-                  </label>
-                </div>
-
-                <label className="block">
-                  <span className="text-xs font-medium text-gray-700">{t("pages.contact.form.message")} *</span>
-                  <motion.textarea
-                    whileFocus={{ scale: 1.01 }}
-                    transition={{ duration: 0.15 }}
-                    rows={3}
-                    placeholder={t("pages.contact.form.message-cta")}
-                    value={formData.message}
-                    onChange={(e) => handleInputChange("message", e.target.value)}
-                    className="mt-2 px-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-theme-200 focus:border-theme-400 transition resize-none"
-                    required
-                  />
-                </label>
-
-
-                <button
-                  type="submit"
-                  className="w-full py-2 bg-theme-600 hover:bg-theme-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md"
+                <motion.form
+                  onSubmit={handleSubmit}
+                  variants={staggerContainer}
+                  initial="initial"
+                  whileInView="animate"
+                  viewport={{ once: true }}
+                  className="space-y-6"
                 >
-                  {t("pages.contact.form.start")}
-                </button>
-              </motion.form>
-            </motion.div>
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <motion.div variants={fadeInUp}>
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700 mb-3 block">
+                          {t('pages.contact.form.first-name')} *
+                        </span>
+                        <input
+                          type="text"
+                          placeholder={t('pages.contact.form.first-name')}
+                          value={formData.firstName}
+                          onChange={(e) => handleInputChange("firstName", e.target.value)}
+                          required
+                          className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300 hover:border-gray-300"
+                        />
+                      </label>
+                    </motion.div>
+                    <motion.div variants={fadeInUp}>
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700 mb-3 block">
+                          {t('pages.contact.form.last-name')} *
+                        </span>
+                        <input
+                          type="text"
+                          placeholder={t('pages.contact.form.last-name')}
+                          value={formData.lastName}
+                          onChange={(e) => handleInputChange("lastName", e.target.value)}
+                          required
+                          className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300 hover:border-gray-300"
+                        />
+                      </label>
+                    </motion.div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <motion.div variants={fadeInUp}>
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700 mb-3 block">
+                          {t('pages.contact.form.email')} *
+                        </span>
+                        <input
+                          type="email"
+                          placeholder={t('pages.contact.form.email-example')}
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          required
+                          className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300 hover:border-gray-300"
+                        />
+                      </label>
+                    </motion.div>
+                    <motion.div variants={fadeInUp}>
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700 mb-3 block">
+                          {t('pages.contact.form.phone-number')}
+                        </span>
+                        <input
+                          type="tel"
+                          placeholder="+373 (555) 000-000"
+                          value={formData.phone}
+                          onChange={(e) => handleInputChange("phone", e.target.value)}
+                          className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300 hover:border-gray-300"
+                        />
+                      </label>
+                    </motion.div>
+                  </div>
+
+                  <motion.div variants={fadeInUp}>
+                    <label className="block">
+                      <span className="text-sm font-medium text-gray-700 mb-3 block">
+                        {t('pages.contact.form.message')} *
+                      </span>
+                      <textarea
+                        rows={3}
+                        placeholder={t('pages.contact.form.message-cta')}
+                        value={formData.message}
+                        onChange={(e) => handleInputChange("message", e.target.value)}
+                        className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300 resize-none hover:border-gray-300"
+                        required
+                      />
+                    </label>
+                  </motion.div>
+
+                  <motion.button
+                    type="submit"
+                    variants={fadeInUp}
+                    className="w-full py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Send className="w-5 h-5" />
+                    {t('pages.contact.form.start')}
+                  </motion.button>
+                </motion.form>
+              </motion.div>
+            </div>
           </div>
-        </motion.div>
-      </section>
+        </section>
+      </div>
     </DevOnlyComponent>
   );
 };
