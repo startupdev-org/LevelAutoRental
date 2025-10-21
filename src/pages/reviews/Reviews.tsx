@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { reviews } from '../../data/reviews';
 import { ReviewCard } from './sections/ReviewCard';
 import { Star, Heart, Award, TrendingUp, CarFront } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const Reviews: React.FC = () => {
     const { t } = useTranslation();
@@ -13,6 +14,8 @@ export const Reviews: React.FC = () => {
     const [isDesktop, setIsDesktop] = useState<boolean>(
         globalThis.window?.matchMedia("(min-width: 640px)").matches ?? false
     );
+
+    const navigate = useNavigate();
 
     console.log('is Desktop: ', isDesktop)
 
@@ -286,7 +289,7 @@ export const Reviews: React.FC = () => {
                             whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
                             transition={{ type: "spring", stiffness: 300 }}
                         >
-                            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+                            <h3 className="text-    2xl sm:text-3xl lg:text-4xl font-bold mb-4">
                                 Ready to Experience Excellence?
                             </h3>
                             <p className="text-gray-300 mb-8 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto">
@@ -297,6 +300,7 @@ export const Reviews: React.FC = () => {
                                     className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
+                                    onClick={() => navigate('/cars')}
                                 >
                                     Book Your Car Now
                                 </motion.button>

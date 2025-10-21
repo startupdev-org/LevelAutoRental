@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Review } from '../../../data/reviews';
-import { Star, Heart } from 'lucide-react';
+import { Star, CarFront } from 'lucide-react';
 
 interface ReviewCardProps {
     review: Review;
@@ -61,7 +61,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, index }) => {
                             initial={{ opacity: 0, x: 10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.4, delay: index * 0.1 + 0.4 }}
-                            className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full"
+                            className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-xl min-w-[110px] text-center whitespace-nowrap"
                         >
                             {review.date}
                         </motion.span>
@@ -116,7 +116,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, index }) => {
                     whileHover={{ scale: 1.05 }}
                     className="inline-flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-red-100 to-red-200 text-red-700 text-sm font-semibold rounded-full border border-red-300 shadow-sm"
                 >
-                    <Heart className="w-3 h-3" />
+                    <CarFront className="w-3 h-3" />
                     {review.category}
                 </motion.span>
             </motion.div>
@@ -128,39 +128,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, index }) => {
                 transition={{ duration: 0.5, delay: index * 0.1 + 0.7 }}
                 className="mb-4"
             >
-                <p className="text-gray-700 leading-relaxed text-sm">
+                <p className="text-gray-700 leading-relaxed text-m">
                     {review.comment}
                 </p>
             </motion.div>
-
-            {/* Translation Link */}
-            {review.isTranslated && review.originalLanguage && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 + 0.8 }}
-                    className="pt-3 border-t border-red-100"
-                >
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                        <motion.span
-                            animate={{ rotate: [0, 360] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                            className="text-red-500"
-                        >
-                            🌐
-                        </motion.span>
-                        Tradus de LevelAutoRental •{' '}
-                        <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="text-red-600 hover:text-red-800 underline font-medium"
-                        >
-                            Vedeți originalul ({review.originalLanguage})
-                        </motion.button>
-                    </p>
-                </motion.div>
-            )}
         </motion.div>
     );
 };
