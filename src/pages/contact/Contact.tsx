@@ -56,14 +56,13 @@ export const Contact: React.FC = () => {
           <div className="max-w-md w-full text-center">
             <h1 className="text-6xl font-bold text-gray-300 mb-4">🚧</h1>
             <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-              Under Development
+              {t("pages.contact.dev-mode.title")}
             </h2>
             <p className="text-gray-600 mb-8">
-              This page is currently under development and available only to
-              developers.
+              {t("pages.contact.dev-mode.description")}
             </p>
             <button className="w-full py-2.5 bg-theme-600 hover:bg-theme-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md">
-              <a href="/">Go Back Home</a>
+              <a href="/">{t("pages.contact.dev-mode.button")}</a>
             </button>
           </div>
         </div>
@@ -97,8 +96,9 @@ export const Contact: React.FC = () => {
           <div className="w-full max-w-2xl">
             {/* Contact Information */}
             <motion.div variants={fadeInUp} className="mb-6 pt-2 lg:pt-4">
-              <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Contact Information</h3>
+              <div className="bg-gray-50 rounded-2xl p-6 mb-6 relative overflow-hidden shadow-sm">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500"></div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">{t("pages.contact.contact-info")}</h3>
                 <div className="space-y-3 mb-4">
                   {contactInfo.map((contact, index) => (
                     <motion.a
@@ -107,8 +107,8 @@ export const Contact: React.FC = () => {
                       variants={fadeInUp}
                       className="flex items-center space-x-4 text-gray-700 hover:text-theme-600 transition-colors duration-300 group"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:bg-theme-50 transition-colors duration-300">
-                        <contact.icon className="w-5 h-5 text-gray-600 group-hover:text-theme-600 transition-colors duration-300" />
+                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:bg-red-50 transition-colors duration-300">
+                        <contact.icon className="w-5 h-5 text-red-600 group-hover:text-red-700 transition-colors duration-300" />
                       </div>
                       <span className="text-sm font-medium">{contact.text}</span>
                     </motion.a>
@@ -123,7 +123,7 @@ export const Contact: React.FC = () => {
                       <motion.a
                         key={social.label}
                         href={social.href}
-                        className="w-10 h-10 rounded-xl bg-white shadow-sm hover:bg-theme-50 flex items-center justify-center text-gray-600 hover:text-theme-600 transition-all duration-300 hover:scale-105"
+                        className="w-10 h-10 rounded-xl bg-white shadow-sm hover:bg-red-50 flex items-center justify-center text-red-600 hover:text-red-700 transition-all duration-300 hover:scale-105"
                         aria-label={social.label}
                       >
                         <social.icon className={social.icon === FaFacebookF ? "w-4 h-4" : "w-5 h-5"} />
@@ -135,8 +135,9 @@ export const Contact: React.FC = () => {
             </motion.div>
 
             {/* Form */}
-            <motion.div variants={fadeInUp} className="bg-gray-50 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Send us a message</h3>
+            <motion.div variants={fadeInUp} className="bg-gray-50 rounded-2xl p-6 relative overflow-hidden shadow-sm">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500"></div>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">{t("pages.contact.send-message")}</h3>
               <motion.form
                 onSubmit={handleSubmit}
                 variants={staggerContainer}

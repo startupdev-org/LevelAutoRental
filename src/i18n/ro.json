@@ -145,6 +145,13 @@
         "contact": {
             "hero": "Hai să facem următoarea ta călătorie mai ușoară",
             "smallLabel": "Ne poți contacta oricând prin",
+            "contact-info": "Informații de contact",
+            "send-message": "Trimite-ne un mesaj",
+            "dev-mode": {
+                "title": "În dezvoltare",
+                "description": "Această pagină este în prezent în dezvoltare și disponibilă doar pentru dezvoltatori.",
+                "button": "Înapoi la pagina principală"
+            },
             "form": {
                 "first-name": "Prenume",
                 "last-name": "Nume",

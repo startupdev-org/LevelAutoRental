@@ -145,11 +145,18 @@
         "contact": {
             "hero": "Let's Make Your Next Journey Easy",
             "smallLabel": "You can reach us anytime via",
+            "contact-info": "Contact Information",
+            "send-message": "Send us a message",
+            "dev-mode": {
+                "title": "Under Development",
+                "description": "This page is currently under development and available only to developers.",
+                "button": "Go Back Home"
+            },
             "form": {
                 "first-name": "First Name",
                 "last-name": "Last Name",
                 "email": "Email",
-                "email-example": "example@company.com",
+                "email-example": "Enter your email",
                 "phone-number": "Phone Number",
                 "message": "Message",
                 "message-cta": "Leave us a message...",
