@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 
 export const HowToRentHero: React.FC = () => {
     const { t } = useTranslation();
-
     const [isDesktop, setIsDesktop] = useState(false);
 
     useEffect(() => {
@@ -20,6 +19,7 @@ export const HowToRentHero: React.FC = () => {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+    // Create steps array directly - this will update when translations change
     const steps = [
         {
             number: 1,
@@ -68,7 +68,7 @@ export const HowToRentHero: React.FC = () => {
 
 
 
-            <div className="relative max-w-7xl mx-auto">
+            <div className="relative max-w-[1600px] mx-auto">
                 {/* Header Section */}
                 <motion.div
                     variants={staggerContainer}
@@ -103,16 +103,16 @@ export const HowToRentHero: React.FC = () => {
                     initial="initial"
                     whileInView="animate"
                     viewport={{ once: true }}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-16 lg:gap-20"
                 >
                     {steps.map((step, index) => (
                         <motion.div
-                            key={step.title}
+                            key={step.number}
                             variants={fadeInUp}
                             className="relative group"
                         >
                             {/* Card Background */}
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full mx-4 md:mx-0">
+                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full mx-4 md:mx-0 w-[120%] -ml-[10%]">
                                 {/* Number Badge */}
                                 <div className="flex justify-center mb-4 md:mb-6">
                                     <motion.div
@@ -139,7 +139,7 @@ export const HowToRentHero: React.FC = () => {
 
                             {/* Connecting Arrow */}
                             {index < steps.length - 1 && (
-                                <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
+                                <div className="hidden lg:block absolute top-1/2 -right-16 transform -translate-y-1/2 z-10">
                                     <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
                                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
