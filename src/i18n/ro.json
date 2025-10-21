@@ -91,7 +91,75 @@
             "hero": {
                 "label": "Întrebări frecvente",
                 "title": "Întrebări frecvente",
-                "description": "Înainte de a închiria un vehicul de la LevelAutoRental, te încurajăm să citești cu atenție Termenii și Condițiile noastre. Siguranța, confidențialitatea și satisfacția ta sunt cele mai importante pentru noi."
+                "description": "Găsește răspunsuri la întrebările frecvente despre serviciile noastre de închiriere auto."
+            },
+            "sections": {
+                "booking": {
+                    "title": "Rezervări și Booking",
+                    "questions": {
+                        "how-to-book": "Cum rezerv o mașină?",
+                        "modify-cancel": "Pot modifica sau anula rezervarea?",
+                        "account-required": "Trebuie să creez un cont pentru a închiria o mașină?",
+                        "advance-booking": "Cu cât timp înainte ar trebui să rezerv o mașină?"
+                    },
+                    "answers": {
+                        "how-to-book": "Poți rezerva o mașină direct prin site-ul nostru selectând datele de preluare și returnare, alegând un vehicul și completând formularul de rezervare. Procesul nostru de rezervare este simplu și sigur, cu confirmare instantanee trimisă pe email.",
+                        "modify-cancel": "• **Modificări**: Schimbă datele, vehiculul sau locația de preluare prin contul tău\\n• **Politica de Anulare**: Anulare gratuită până la 24 ore înainte de preluare\\n• **Disponibilitate**: Modificările sunt supuse disponibilității vehiculului\\n• **Rambursări**: Procesate în 3-5 zile lucrătoare",
+                        "account-required": "Poți naviga prin vehiculele și prețurile noastre fără să creezi un cont, dar având un cont îți este mai ușor să gestionezi rezervările, să vezi istoricul închirierilor și să accelerezi rezervările viitoare. Crearea contului este rapidă și gratuită.",
+                        "advance-booking": "• **Recomandat**: Rezervă cu 3-5 zile înainte pentru cea mai bună selecție\\n• **Sezoane de Vârf**: Rezervă cu 1-2 săptămâni înainte în perioadele de sărbători\\n• **Ultimul Moment**: Disponibilitate limitată dar posibilă cu taxe suplimentare\\n• **Opțiuni Flexibile**: Rezervări în aceeași zi disponibile pentru nevoi urgente"
+                    }
+                },
+                "requirements": {
+                    "title": "Cerințe și Politici",
+                    "questions": {
+                        "documents": "Ce documente am nevoie pentru a închiria o mașină?",
+                        "age-requirement": "Există o cerință de vârstă?",
+                        "insurance": "Este inclusă asigurarea?",
+                        "additional-driver": "Pot adăuga un șofer suplimentar?"
+                    },
+                    "answers": {
+                        "documents": "Vei avea nevoie de permis de conducere valabil, un act de identitate emis de stat (precum pașaportul) și o carte de credit sau debit pe numele șoferului. Șoferii internaționali ar trebui să aibă și un permis de conducere internațional.",
+                        "age-requirement": "• **Vârsta Minimă**: 21 de ani pentru majoritatea vehiculelor\n• **Taxa Șofer Tânăr**: Taxă suplimentară pentru șoferii sub 25 de ani\n• **Vehicule de Lux**: 25+ ani pentru mașini premium\n• **Șoferi Seniori**: Nu există limită de vârstă maximă",
+                        "insurance": "• **Acoperire de Bază**: Inclusă în toate închirierile\n• **Daune la Coliziune**: Upgrade opțional disponibil\n• **Efecte Personale**: Acoperire suplimentară pentru obiecte personale\n• **Asistență Rutieră**: Suport de urgență 24/7",
+                        "additional-driver": "• **Înregistrare**: Adaugă șoferi în timpul rezervării sau la preluare\n• **Cerințe**: Permis valabil și verificare vârstă\n• **Taxe**: Taxă suplimentară per șofer suplimentar\n• **Responsabilități**: Toți șoferii împărtășesc răspunderea"
+                    }
+                },
+                "payment": {
+                    "title": "Plăți și Taxe",
+                    "questions": {
+                        "payment-methods": "Ce metode de plată acceptați?",
+                        "deposit": "Este necesar un depozit?",
+                        "additional-fees": "Există taxe suplimentare de care ar trebui să știu?",
+                        "discounts": "Oferiți reduceri?"
+                    },
+                    "answers": {
+                        "payment-methods": "• **Carduri de Credit**: Visa, MasterCard, American Express\n• **Carduri de Debit**: Acceptate cu fonduri suficiente\n• **Plăți Numerar**: Disponibile în locații selectate\n• **Transfer Bancar**: Pentru conturi corporative",
+                        "deposit": "• **Depozit de Garanție**: Necesar la preluare\n• **Suma**: Variază după tipul de vehicul (€200-€1000)\n• **Rambursare**: Returnat după inspecția vehiculului\n• **Perioada de Reținere**: 3-5 zile lucrătoare pentru procesare",
+                        "additional-fees": "• **Returnare Întârziată**: €25 pe oră după perioada de grație\n• **Kilometraj Suplimentar**: €0,25 per kilometru peste limită\n• **Combustibil**: Taxă serviciu realimentare dacă necesar\n• **Curățare**: €50 pentru murdărie/deteriorare excesivă",
+                        "discounts": "• **Rezervare Devreme**: 10% reducere pentru 7+ zile înainte\n• **Termen Lung**: 15% reducere pentru închirieri de 7+ zile\n• **Program de Loialitate**: Tarife exclusive pentru clienți fideli\n• **Corporate**: Tarife speciale pentru conturi de business"
+                    }
+                },
+                "pickup": {
+                    "title": "Preluare și Returnare",
+                    "questions": {
+                        "pickup-location": "Unde pot prelua mașina închiriată?",
+                        "different-return": "Pot returna mașina într-o locație diferită?",
+                        "late-return": "Ce se întâmplă dacă returnez mașina cu întârziere?",
+                        "refuel": "Trebuie să realimentez mașina înainte de returnare?"
+                    },
+                    "answers": {
+                        "pickup-location": "• **Birou Principal**: Locația centrală din Chișinău\n• **Aeroport**: Aeroportul Internațional Chișinău\n• **Stații Partenere**: Hoteluri și stații selectate\n• **Serviciu de Livrare**: Disponibil pentru închirieri premium",
+                        "different-return": "• **Închirieri Sens Unic**: Disponibile între orașe majore\n• **Taxă Suplimentară**: €50-€200 în funcție de distanță\n• **Notificare Înainte**: Rezervă cu 48 ore înainte\n• **Restricții**: Unele locații pot să nu permită returnări",
+                        "late-return": "• **Perioada de Grație**: 30 minute gratuite\n• **Taxe Întârziere**: €25 pe oră după perioada de grație\n• **Comunicare**: Contactează-ne dacă vei întârzia\n• **Flexibilitate**: Încercăm să acomodăm întârzierile când este posibil",
+                        "refuel": "• **Același Nivel**: Returnează cu același combustibil ca la preluare\n• **Serviciu Realimentare**: €50 + costul combustibilului dacă necesar\n• **Stații Apropiate**: Hărți furnizate pentru confort\n• **Bon**: Păstrează bonurile de combustibil pentru verificare"
+                    }
+                }
+            },
+            "contact": {
+                "title": "Mai ai întrebări?",
+                "description": "Nu găsești răspunsul pe care îl cauți? Echipa noastră de suport este aici pentru a te ajuta cu orice întrebări specifice despre serviciile noastre.",
+                "contact-support": "Contactează Suportul",
+                "call-us": "Sună +373 62 000 112"
             }
         },
         "terms": {
