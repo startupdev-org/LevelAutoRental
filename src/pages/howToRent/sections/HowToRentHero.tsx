@@ -4,7 +4,7 @@ import { fadeInUp, staggerContainer } from '../../../utils/animations';
 import { useTranslation } from 'react-i18next';
 
 export const HowToRentHero: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     const [isDesktop, setIsDesktop] = useState(false);
 
@@ -50,6 +50,7 @@ export const HowToRentHero: React.FC = () => {
 
     return (
         <section
+            key={i18n.language}
             className="relative py-60 bg-cover bg-center bg-no-repeat"
             style={{
                 backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
