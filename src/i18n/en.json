@@ -89,9 +89,78 @@
     "pages": {
         "faq": {
             "hero": {
-                "label": "FAQs",
+                "label": "Help Center",
                 "title": "Frequently Asked Questions",
-                "description": "Before renting a vehicle from LevelAutoRental, we encourage you to read our Terms and Conditions carefully. Your safety, privacy, and satisfaction are our highest priorities."
+                "description": "Find answers to common questions about our car rental services. If you can't find what you're looking for, our support team is here to help."
+            },
+            "sections": {
+                "booking": {
+                    "title": "Booking & Reservations",
+                    "questions": {
+                        "how-to-book": "How do I book a car?",
+                        "modify-cancel": "Can I modify or cancel my reservation?",
+                        "account-required": "Do I need to create an account to rent a car?",
+                        "advance-booking": "How far in advance should I book a car?"
+                    },
+                    "answers": {
+                        "how-to-book": "You can book a car directly through our website by selecting your pickup and return dates, choosing a vehicle, and completing the booking form. Our booking process is simple and secure, with instant confirmation sent to your email.",
+                        "modify-cancel": "• **Modifications**: Change dates, vehicle, or pickup location through your account\n• **Cancellation Policy**: Free cancellation up to 24 hours before pickup\n• **Availability**: Changes subject to vehicle availability\n• **Refunds**: Processed within 3-5 business days",
+                        "account-required": "You can browse our vehicles and prices without creating an account, but having an account makes it easier to manage reservations, view your rental history, and speed up future bookings. Account creation is quick and free.",
+                        "advance-booking": "• **Recommended**: Book 3-5 days in advance for best selection\n• **Peak Seasons**: Reserve 1-2 weeks ahead during holidays\n• **Last-Minute**: Limited availability but possible with additional fees\n• **Flexible Options**: Same-day bookings available for urgent needs"
+                    }
+                },
+                "requirements": {
+                    "title": "Requirements & Policies",
+                    "questions": {
+                        "documents": "What documents do I need to rent a car?",
+                        "age-requirement": "Is there an age requirement?",
+                        "insurance": "Is insurance included?",
+                        "additional-driver": "Can I add an additional driver?"
+                    },
+                    "answers": {
+                        "documents": "You'll need a valid driver's license, a government-issued ID (like a passport), and a credit or debit card in the driver's name. International drivers should also have an international driving permit.",
+                        "age-requirement": "• **Minimum Age**: 21 years old for most vehicles\n• **Young Driver Fee**: Additional charge for drivers under 25\n• **Luxury Vehicles**: 25+ years for premium cars\n• **Senior Drivers**: No maximum age limit",
+                        "insurance": "• **Basic Coverage**: Included in all rentals\n• **Collision Damage**: Optional upgrade available\n• **Personal Effects**: Additional coverage for belongings\n• **Roadside Assistance**: 24/7 emergency support",
+                        "additional-driver": "• **Registration**: Add drivers during booking or at pickup\n• **Requirements**: Valid license and age verification\n• **Fees**: Additional charge per extra driver\n• **Responsibilities**: All drivers share liability"
+                    }
+                },
+                "payment": {
+                    "title": "Payment & Fees",
+                    "questions": {
+                        "payment-methods": "What payment methods do you accept?",
+                        "deposit": "Is a deposit required?",
+                        "additional-fees": "Are there additional fees I should know about?",
+                        "discounts": "Do you offer discounts?"
+                    },
+                    "answers": {
+                        "payment-methods": "• **Credit Cards**: Visa, MasterCard, American Express\n• **Debit Cards**: Accepted with sufficient funds\n• **Cash Payments**: Available at select locations\n• **Bank Transfer**: For corporate accounts",
+                        "deposit": "• **Security Deposit**: Required at pickup\n• **Amount**: Varies by vehicle type (€200-€1000)\n• **Refund**: Returned after vehicle inspection\n• **Hold Period**: 3-5 business days for processing",
+                        "additional-fees": "• **Late Return**: €25 per hour after grace period\n• **Extra Mileage**: €0.25 per kilometer over limit\n• **Fuel**: Refueling service fee if needed\n• **Cleaning**: €50 for excessive dirt/damage",
+                        "discounts": "• **Early Booking**: 10% off for 7+ days advance\n• **Long-term**: 15% off for 7+ day rentals\n• **Loyalty Program**: Exclusive rates for repeat customers\n• **Corporate**: Special rates for business accounts"
+                    }
+                },
+                "pickup": {
+                    "title": "Pickup & Return",
+                    "questions": {
+                        "pickup-location": "Where can I pick up my rental car?",
+                        "different-return": "Can I return the car to a different location?",
+                        "late-return": "What happens if I return the car late?",
+                        "refuel": "Do I need to refuel the car before returning it?"
+                    },
+                    "answers": {
+                        "pickup-location": "• **Main Office**: Central Chisinau location\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
+                        "different-return": "• **One-way Rentals**: Available between major cities\n• **Additional Fee**: €50-€200 depending on distance\n• **Advance Notice**: Book 48 hours in advance\n• **Restrictions**: Some locations may not allow returns",
+                        "late-return": "• **Grace Period**: 30 minutes free\n• **Late Fees**: €25 per hour after grace period\n• **Communication**: Contact us if you'll be late\n• **Flexibility**: We try to accommodate delays when possible",
+                        "refuel": "• **Same Level**: Return with same fuel as pickup\n• **Refueling Service**: €50 + fuel cost if needed\n• **Nearby Stations**: Maps provided for convenience\n• **Receipt**: Keep fuel receipts for verification"
+                    }
+                }
+            },
+            "contact": {
+                "title": "Still have questions?",
+                "description": "Contact us for help.",
+                "contact-support": "Write Message",
+                "call-us": "Call +373 62 000 112",
+                "response-time": "Response within 2 hours"
             }
         },
         "terms": {
@@ -103,8 +172,8 @@
         },
         "about": {
             "hero": {
-                "label": "About Level Auto Rental",
-                "title": "About Level Auto Rental",
+                "label": "ABOUT COMPANY",
+                "title": "Level Auto Rental",
                 "subtitle": "Premium car rentals. Simple. Fast.",
                 "location": "in Moldova"
             },
@@ -143,13 +212,25 @@
             }
         },
         "contact": {
-            "hero": "Let's Make Your Next Journey Easy",
-            "smallLabel": "You can reach us anytime via",
+            "hero": {
+                "label": "Contact Us",
+                "title": "Get in Touch",
+                "description": "Have questions about our car rental services? We're here to help you with any inquiries or support you need."
+            },
+            "contact-info": "Contact Information",
+            "contact-description": "Reach out to us through any of these channels. We're available to assist you with your car rental needs.",
+            "send-message": "Send us a message",
+            "form-description": "Fill out the form below and we'll get back to you as soon as possible.",
+            "dev-mode": {
+                "title": "Under Development",
+                "description": "This page is currently under development and available only to developers.",
+                "button": "Go Back Home"
+            },
             "form": {
                 "first-name": "First Name",
                 "last-name": "Last Name",
                 "email": "Email",
-                "email-example": "example@company.com",
+                "email-example": "Enter your email",
                 "phone-number": "Phone Number",
                 "message": "Message",
                 "message-cta": "Leave us a message...",
@@ -292,10 +373,10 @@
                         "advance-booking": "How far in advance should I book a car?"
                     },
                     "answers": {
-                        "how-to-book": "You can book a car directly through our website by selecting your pickup and return dates, choosing a vehicle, and completing the booking form.",
-                        "modify-cancel": "Yes, you can modify or cancel your booking through your account dashboard. Please note that changes may be subject to availability and cancellation policies.",
-                        "account-required": "You can browse without an account, but creating one makes it easier to manage reservations, view history, and speed up future bookings.",
-                        "advance-booking": "We recommend booking at least a few days in advance to secure your preferred car. During peak seasons, earlier bookings are strongly advised."
+                        "how-to-book": "You can book a car directly through our website by selecting your pickup and return dates, choosing a vehicle, and completing the booking form. Our booking process is simple and secure, with instant confirmation sent to your email.",
+                        "modify-cancel": "• **Modifications**: Change dates, vehicle, or pickup location through your account\n• **Cancellation Policy**: Free cancellation up to 24 hours before pickup\n• **Availability**: Changes subject to vehicle availability\n• **Refunds**: Processed within 3-5 business days",
+                        "account-required": "You can browse our vehicles and prices without creating an account, but having an account makes it easier to manage reservations, view your rental history, and speed up future bookings. Account creation is quick and free.",
+                        "advance-booking": "• **Recommended**: Book 3-5 days in advance for best selection\n• **Peak Seasons**: Reserve 1-2 weeks ahead during holidays\n• **Last-Minute**: Limited availability but possible with additional fees\n• **Flexible Options**: Same-day bookings available for urgent needs"
                     }
                 },
                 "requirements": {
@@ -307,10 +388,10 @@
                         "additional-driver": "Can I add an additional driver?"
                     },
                     "answers": {
-                        "documents": "You'll need a valid driver's license, a government-issued ID (like a passport), and a credit or debit card in the driver's name.",
-                        "age-requirement": "Yes, the minimum age is typically 21 years. Drivers under 25 may be subject to a young driver surcharge.",
-                        "insurance": "Basic insurance is included in all rentals. You can choose additional coverage options for extra protection during the booking process.",
-                        "additional-driver": "Yes, additional drivers can be added at the time of booking or during pickup. All drivers must present a valid license and meet the age requirements."
+                        "documents": "You'll need a valid driver's license, a government-issued ID (like a passport), and a credit or debit card in the driver's name. International drivers should also have an international driving permit.",
+                        "age-requirement": "• **Minimum Age**: 21 years old for most vehicles\n• **Young Driver Fee**: Additional charge for drivers under 25\n• **Luxury Vehicles**: 25+ years for premium cars\n• **Senior Drivers**: No maximum age limit",
+                        "insurance": "• **Basic Coverage**: Included in all rentals\n• **Collision Damage**: Optional upgrade available\n• **Personal Effects**: Additional coverage for belongings\n• **Roadside Assistance**: 24/7 emergency support",
+                        "additional-driver": "• **Registration**: Add drivers during booking or at pickup\n• **Requirements**: Valid license and age verification\n• **Fees**: Additional charge per extra driver\n• **Responsibilities**: All drivers share liability"
                     }
                 },
                 "payment": {
@@ -322,10 +403,10 @@
                         "discounts": "Do you offer discounts?"
                     },
                     "answers": {
-                        "payment-methods": "We accept major credit cards (Visa, MasterCard, American Express), debit cards, and in some locations, cash. Online payments are processed securely.",
-                        "deposit": "Yes, a refundable security deposit is required at pickup. The amount depends on the vehicle type and rental duration.",
-                        "additional-fees": "Additional fees may apply for late returns, extra mileage, additional drivers, fuel, or special equipment like GPS and child seats.",
-                        "discounts": "Yes, we offer seasonal promotions, loyalty discounts, and corporate rates. Subscribe to our newsletter to stay updated."
+                        "payment-methods": "• **Credit Cards**: Visa, MasterCard, American Express\n• **Debit Cards**: Accepted with sufficient funds\n• **Cash Payments**: Available at select locations\n• **Bank Transfer**: For corporate accounts",
+                        "deposit": "• **Security Deposit**: Required at pickup\n• **Amount**: Varies by vehicle type (€200-€1000)\n• **Refund**: Returned after vehicle inspection\n• **Hold Period**: 3-5 business days for processing",
+                        "additional-fees": "• **Late Return**: €25 per hour after grace period\n• **Extra Mileage**: €0.25 per kilometer over limit\n• **Fuel**: Refueling service fee if needed\n• **Cleaning**: €50 for excessive dirt/damage",
+                        "discounts": "• **Early Booking**: 10% off for 7+ days advance\n• **Long-term**: 15% off for 7+ day rentals\n• **Loyalty Program**: Exclusive rates for repeat customers\n• **Corporate**: Special rates for business accounts"
                     }
                 },
                 "pickup": {
@@ -337,18 +418,19 @@
                         "refuel": "Do I need to refuel the car before returning it?"
                     },
                     "answers": {
-                        "pickup-location": "You can pick up your car at our main office, airport locations, or selected partner stations. Pickup location is chosen during booking.",
-                        "different-return": "Yes, one-way rentals are available between certain locations. An additional fee may apply depending on the distance.",
-                        "late-return": "Late returns may result in additional charges. We recommend contacting us if you anticipate being late to explore flexible options.",
-                        "refuel": "Cars should be returned with the same fuel level as when rented. Otherwise, a refueling charge will apply."
+                        "pickup-location": "• **Main Office**: Central Chisinau location\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
+                        "different-return": "• **One-way Rentals**: Available between major cities\n• **Additional Fee**: €50-€200 depending on distance\n• **Advance Notice**: Book 48 hours in advance\n• **Restrictions**: Some locations may not allow returns",
+                        "late-return": "• **Grace Period**: 30 minutes free\n• **Late Fees**: €25 per hour after grace period\n• **Communication**: Contact us if you'll be late\n• **Flexibility**: We try to accommodate delays when possible",
+                        "refuel": "• **Same Level**: Return with same fuel as pickup\n• **Refueling Service**: €50 + fuel cost if needed\n• **Nearby Stations**: Maps provided for convenience\n• **Receipt**: Keep fuel receipts for verification"
                     }
                 }
             },
             "contact": {
                 "title": "Still have questions?",
-                "description": "Can't find the answer you're looking for? Our support team is here to help you with any specific questions about our services.",
-                "contact-support": "Contact Support",
-                "call-us": "Call +373 62 000 112"
+                "description": "Contact us for help.",
+                "contact-support": "Write Message",
+                "call-us": "Call +373 62 000 112",
+                "response-time": "Response within 2 hours"
             }
         }
     },

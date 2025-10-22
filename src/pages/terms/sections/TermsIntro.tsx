@@ -39,6 +39,12 @@ export const TermsIntro: React.FC = () => {
             {/* Overlay (desktop only) */}
             {isDesktop && <div className="absolute inset-0 bg-black/70" />}
 
+            {/* Bottom Gradient Fade */}
+            <div className="absolute bottom-0 left-0 w-full h-40 
+                bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
+                z-10 pointer-events-none">
+            </div>
+
             <motion.div
                 variants={staggerContainer}
                 initial="initial"

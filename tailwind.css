@@ -247,8 +247,8 @@ body {
   }
 
   html {
-    /* Prevent white background on overscroll */
-    background-color: transparent !important;
+    /* Use black background */
+    background-color: #1A0F0F !important;
     overscroll-behavior: none;
   }
 }
