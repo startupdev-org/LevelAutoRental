@@ -165,9 +165,49 @@
         },
         "terms": {
             "hero": {
-                "label": "Termeni și condiții",
-                "title": "Termeni și condiții pentru închirierea auto",
-                "description": "Te rugăm să citești cu atenție acești termeni și condiții înainte de a închiria un vehicul de la LevelAutoRental. Siguranța, confidențialitatea și satisfacția ta sunt prioritățile noastre principale."
+                "label": "Documente legale",
+                "title": "Termeni și condiții"
+            },
+            "sections": {
+                "intro": {
+                    "title": "Introducere și acordul dumneavoastră",
+                    "description": "Dacă continuați să utilizați site-ul nostru, sunteți de acord cu termenii de utilizare. Respectăm Regulamentul general privind protecția datelor (GDPR) al Uniunii Europene, iar cerințele GDPR au devenit parte integrantă a acestor termeni de utilizare. Când utilizați site-ul nostru, colectăm și stocăm informațiile dumneavoastră personale. Acești termeni de utilizare explică cum colectăm și folosim datele dvs. personale. Dacă aveți întrebări sau aveți nevoie de clarificări cu privire la utilizarea datelor dvs. personale, vă rugăm să ne contactați prin intermediul formularului de contact."
+                },
+                "cookies": {
+                    "title": "Fișiere Cookie",
+                    "bullet1": "Cookie-urile sunt stocate în browserul dvs. pentru a vă personaliza experiența de utilizare",
+                    "bullet2": "Prin acceptarea Politicii privind cookie-urile, sunteți de acord cu utilizarea lor",
+                    "bullet3": "Utilizăm cookie-uri pentru a îmbunătăți calitatea experienței pe site-ul nostru",
+                    "bullet4": "Cookie-urile ne ajută să primim rapoarte privind erorile care apar la utilizarea site-ului"
+                },
+                "personal-data": {
+                    "title": "Date personale",
+                    "bullet1": "Colectăm informații personale: nume, email, număr de telefon și adresa IP",
+                    "bullet2": "Colectăm date doar atunci când efectuați o achiziție pe site",
+                    "bullet3": "Informațiile sunt folosite pentru identificare, confirmare și comunicare cu clienții",
+                    "bullet4": "Noi nu transmitem aceste informații terților - datele sunt stocate în siguranță"
+                },
+                "location": {
+                    "title": "Locația dumneavoastră",
+                    "bullet1": "Folosim adresa dvs. IP pentru a determina locația dumneavoastră",
+                    "bullet2": "Informațiile despre locație ne ajută să vă personalizăm experiența",
+                    "bullet3": "Locația vă ajută să afișăm anunțuri relevante din apropierea dumneavoastră",
+                    "bullet4": "Folosim locația pentru a difuza anunțuri direcționate și relevante"
+                },
+                "payment": {
+                    "title": "Informații despre cardul dvs. de credit",
+                    "bullet1": "Când efectuați o achiziție, introduceți detaliile cardului dvs. de credit sau PayPal",
+                    "bullet2": "Întregul proces de plată este procesat de sistemele de plată specializate",
+                    "bullet3": "Nu stocăm detaliile cardului dvs. de credit",
+                    "bullet4": "Nu avem acces la informațiile de plată în nicio etapă a procesului de cumpărare"
+                },
+                "notifications": {
+                    "title": "Notificări de sistem",
+                    "bullet1": "Prin utilizarea site-ului, sunteți de acord să primiți notificări la adresa dvs. de e-mail",
+                    "bullet2": "Notificările pot include informații despre rezervări, confirmări și actualizări",
+                    "bullet3": "Notificările servesc ca mementouri și sfaturi utile pentru utilizarea site-ului",
+                    "bullet4": "Singura modalitate de a nu mai primi notificări este să vă ștergeți contul"
+                }
             }
         },
         "about": {

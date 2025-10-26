@@ -1,34 +1,129 @@
-import React from "react";
-import { TermsIntro } from "./sections/TermsIntro";
-import { RentalRequirements } from "./sections/RentalRequirements";
-import { InsuranceLiability } from "./sections/InsuranceLiability";
-import { VehicleUse } from "./sections/VehicleUse";
-import { PaymentCancellation } from "./sections/PaymentCancellation";
-import { ReturnPolicy } from "./sections/ReturnPolicy";
-import { PrivacyData } from "./sections/PrivacyData";
-import { TermsContact } from "./sections/TermsContact";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { fadeInUp, staggerContainer } from "../../utils/animations";
+import { useTranslation } from "react-i18next";
+import { FileText, Cookie, Shield, MapPin, CreditCard, Bell } from "lucide-react";
 
 export const Terms: React.FC = () => {
+    const { t } = useTranslation();
+    const [isDesktop, setIsDesktop] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsDesktop(window.innerWidth >= 768);
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    const getSectionContent = (sectionKey: string) => {
+        const isList = sectionKey !== 'intro';
+        return {
+            icon: sectionKey === 'intro' ? FileText : 
+                  sectionKey === 'cookies' ? Cookie :
+                  sectionKey === 'personal-data' ? Shield :
+                  sectionKey === 'location' ? MapPin :
+                  sectionKey === 'payment' ? CreditCard : Bell,
+            title: t(`pages.terms.sections.${sectionKey}.title`),
+            description: isList ? null : t(`pages.terms.sections.${sectionKey}.description`),
+            bullets: isList ? [
+                t(`pages.terms.sections.${sectionKey}.bullet1`),
+                t(`pages.terms.sections.${sectionKey}.bullet2`),
+                t(`pages.terms.sections.${sectionKey}.bullet3`),
+                t(`pages.terms.sections.${sectionKey}.bullet4`)
+            ].filter(Boolean) : null,
+            key: sectionKey
+        };
+    };
+
+    const sections = ['intro', 'cookies', 'personal-data', 'location', 'payment', 'notifications'].map(getSectionContent);
+
     return (
-        <>
-            {/* Hero / Intro Section */}
-            <TermsIntro />
+        <div className="min-h-screen">
+            {/* Hero Section */}
+            <section
+                className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
+                    pt-36 font-sans text-white
+                    ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : "bg-cover bg-center bg-no-repeat"}
+                    `}
+                style={{
+                    backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
+                    backgroundPosition: isDesktop ? 'center -400px' : 'center center'
+                }}
+            >
+                {/* Dark Overlay */}
+                <div className="absolute inset-0 bg-black/70" />
 
-            {/* Main Terms Content */}
-            <section className="bg-gradient-to-b from-gray-50 via-white to-gray-100 min-h-screen py-12 sm:py-16 md:py-20">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 space-y-10 sm:space-y-12 md:space-y-16">
+                {/* Bottom Gradient Fade */}
+                <div className="absolute bottom-0 left-0 w-full h-40 
+                    bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
+                    z-10 pointer-events-none">
+                </div>
 
-                    {/* Individual sections */}
-                    <RentalRequirements />
-                    <InsuranceLiability />
-                    <VehicleUse />
-                    <PaymentCancellation />
-                    <ReturnPolicy />
-                    <PrivacyData />
-                    <TermsContact />
-
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
+                    <div className="flex items-center justify-center h-full pt-16">
+                        <div className="text-center space-y-10 max-w-4xl">
+                            <div className="space-y-8">
+                                <div className="space-y-6">
+                                    <p className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+                                        {t('pages.terms.hero.label')}
+                                    </p>
+                                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
+                                        {t('pages.terms.hero.title')}
+                                    </h1>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
-        </>
+
+            {/* Main Content Section */}
+            <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <motion.div
+                        variants={staggerContainer}
+                        initial="initial"
+                        whileInView="animate"
+                        viewport={{ once: true }}
+                        className="space-y-8"
+                    >
+                        {sections.map((section) => (
+                            <motion.div
+                                key={section.key}
+                                variants={fadeInUp}
+                                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-lg transition-all duration-300"
+                            >
+                                <div className="flex items-start gap-6">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                        <section.icon className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                                            {section.title}
+                                        </h2>
+                                        {section.description ? (
+                                            <p className="text-gray-600 leading-relaxed">
+                                                {section.description}
+                                            </p>
+                                        ) : section.bullets ? (
+                                            <ul className="space-y-3">
+                                                {section.bullets.map((bullet, index) => (
+                                                    <li key={index} className="flex items-start gap-3">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                                                        <span className="text-gray-600 leading-relaxed">{bullet}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </div>
+            </section>
+        </div>
     );
 };

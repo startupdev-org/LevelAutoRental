@@ -165,9 +165,49 @@
         },
         "terms": {
             "hero": {
-                "label": "Terms & Conditions",
-                "title": "Car Rental Terms & Conditions",
-                "description": "Please read these terms and conditions carefully before renting a vehicle from LevelAutoRental. Your safety, privacy, and satisfaction are our top priorities."
+                "label": "Legal documents",
+                "title": "Terms & Conditions"
+            },
+            "sections": {
+                "intro": {
+                    "title": "Introduction and your agreement",
+                    "description": "If you continue to use our website, you agree to the terms of use. We respect the European Union General Data Protection Regulation (GDPR), and GDPR requirements have become an integral part of these terms of use. When you use our website, we collect and store your personal information. These terms of use explain how we collect and use your personal data. If you have questions or need clarification regarding the use of your personal data, please contact us through the contact form."
+                },
+                "cookies": {
+                    "title": "Cookie Files",
+                    "bullet1": "Cookies are stored in your browser to personalize your experience using the website",
+                    "bullet2": "By accepting the Cookie Policy, you agree to the use of cookies",
+                    "bullet3": "We use cookies to improve the quality of the experience on our website",
+                    "bullet4": "Cookies help us receive reports on errors that occur when using our website"
+                },
+                "personal-data": {
+                    "title": "Personal data",
+                    "bullet1": "We collect personal information: name, email, phone number and IP address",
+                    "bullet2": "We collect data only when you make a purchase on the site",
+                    "bullet3": "Information is used for identification, confirmation and customer communication",
+                    "bullet4": "We do not transmit this information to third parties - data is stored securely"
+                },
+                "location": {
+                    "title": "Your location",
+                    "bullet1": "We use your IP address to determine your location",
+                    "bullet2": "Location information helps us personalize your experience",
+                    "bullet3": "Your location helps us display relevant ads near you",
+                    "bullet4": "We use your location to broadcast targeted and relevant ads"
+                },
+                "payment": {
+                    "title": "Your credit card information",
+                    "bullet1": "When making a purchase, you enter your credit card details or PayPal address",
+                    "bullet2": "The entire payment process is handled by specialized payment systems",
+                    "bullet3": "We do not store your credit card details",
+                    "bullet4": "We do not have access to payment information at any stage of the purchase process"
+                },
+                "notifications": {
+                    "title": "System notifications",
+                    "bullet1": "By using our website, you agree to receive notifications at your email address",
+                    "bullet2": "Notifications may include booking information, confirmations and updates",
+                    "bullet3": "Notifications serve as reminders and useful tips for using the site",
+                    "bullet4": "The only way to stop receiving notifications is to delete your account"
+                }
             }
         },
         "about": {
