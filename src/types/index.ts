@@ -8,6 +8,7 @@ export interface Car {
   pricePerDay: number;
   seats: number;
   transmission: 'Automatic' | 'Manual';
+  body: 'Coupe' | 'Sedan' | 'SUV',
   fuelType: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol';
   features: string[];
   rating: number;

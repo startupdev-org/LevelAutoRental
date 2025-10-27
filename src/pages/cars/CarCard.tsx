@@ -13,7 +13,7 @@ import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-    
+
 
 interface CarCardProps {
     car: Car;
@@ -50,7 +50,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
         >
             <Card className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-2xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}>
                 {/* Image Container */}
-                <div 
+                <div
                     className="relative overflow-hidden"
                     onMouseMove={(e) => {
                         if (car.photoGallery && car.photoGallery.length > 1) {
@@ -60,9 +60,9 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             const width = rect.width;
                             const photoIndex = Math.floor((x / width) * car.photoGallery.length);
                             const clampedIndex = Math.max(0, Math.min(photoIndex, car.photoGallery.length - 1));
-                            
+
                             setActivePhotoIndex(clampedIndex);
-                            
+
                             const imageContainer = container.querySelector('.photo-gallery') as HTMLElement;
                             if (imageContainer) {
                                 const translateX = -(clampedIndex * 100);
@@ -109,18 +109,17 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             />
                         )}
                     </div>
-                    
+
                     {/* Photo Navigation Lines */}
                     {car.photoGallery && car.photoGallery.length > 1 && (
                         <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1 px-4">
                             {car.photoGallery.map((_, index) => (
                                 <div
                                     key={index}
-                                    className={`flex-1 h-0.5 rounded-full transition-colors duration-200 ${
-                                        index === activePhotoIndex 
-                                            ? 'bg-white/90' 
-                                            : 'bg-white/30'
-                                    }`}
+                                    className={`flex-1 h-0.5 rounded-full transition-colors duration-200 ${index === activePhotoIndex
+                                        ? 'bg-white/90'
+                                        : 'bg-white/30'
+                                        }`}
                                 />
                             ))}
                         </div>
@@ -153,39 +152,39 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                     {/* Specifications Grid */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                          {React.createElement(PiSpeedometerFill as any, { className: "w-4 h-4 text-gray-600" })}
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                {React.createElement(PiSpeedometerFill as any, { className: "w-4 h-4 text-gray-600" })}
+                            </div>
+                            <span className="text-sm font-medium">{t('car.mileageLimit')}</span>
                         </div>
-                        <span className="text-sm font-medium">{t('car.mileageLimit')}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-end gap-2 text-gray-600">
-                        <span className="text-sm font-medium">{car.transmission === 'Automatic' ? 'Automată' : 'Manuală'}</span>
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                          {renderTransmissionIcon(car.transmission)}
+
+                        <div className="flex items-center justify-end gap-2 text-gray-600">
+                            <span className="text-sm font-medium">{car.transmission === 'Automatic' ? 'Automată' : 'Manuală'}</span>
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                {renderTransmissionIcon(car.transmission)}
+                            </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                          {React.createElement(FaGasPump as any, { className: "w-4 h-4 text-gray-600" })}
+
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                {React.createElement(FaGasPump as any, { className: "w-4 h-4 text-gray-600" })}
+                            </div>
+                            <span className="text-sm font-medium">
+                                {car.fuelType === 'gasoline' ? 'Benzină' :
+                                    car.fuelType === 'diesel' ? 'Diesel' :
+                                        car.fuelType === 'petrol' ? 'Benzină' :
+                                            car.fuelType === 'hybrid' ? 'Hibrid' :
+                                                car.fuelType === 'electric' ? 'Electric' : car.fuelType} {car.fuelConsumption || 'N/A'}
+                            </span>
                         </div>
-                        <span className="text-sm font-medium">
-                          {car.fuelType === 'gasoline' ? 'Benzină' : 
-                           car.fuelType === 'diesel' ? 'Diesel' : 
-                           car.fuelType === 'petrol' ? 'Benzină' : 
-                           car.fuelType === 'hybrid' ? 'Hibrid' : 
-                           car.fuelType === 'electric' ? 'Electric' : car.fuelType} {car.fuelConsumption || 'N/A'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-end gap-2 text-gray-600">
-                        <span className="text-sm font-medium">{car.drivetrain || 'N/A'}</span>
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                          {React.createElement(TbCar4WdFilled as any, { className: "w-4 h-4 text-gray-600" })}
+
+                        <div className="flex items-center justify-end gap-2 text-gray-600">
+                            <span className="text-sm font-medium">{car.drivetrain || 'N/A'}</span>
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                {React.createElement(TbCar4WdFilled as any, { className: "w-4 h-4 text-gray-600" })}
+                            </div>
                         </div>
-                      </div>
                     </div>
 
                     {/* Price and CTA */}
@@ -194,11 +193,11 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             <span className="text-xl font-bold text-gray-800">{car.pricePerDay} MDL</span>
                             <span className="text-gray-500 text-sm">/zi</span>
                         </div>
-                        
+
                         {/* Rating and Favorite Section */}
                         <div className="flex items-center gap-3">
                             {/* Favorite Heart Icon */}
-                            <div 
+                            <div
                                 className="cursor-pointer transition-colors duration-200 hover:scale-110"
                                 onClick={() => setIsFavorite(!isFavorite)}
                             >
@@ -212,7 +211,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                     </svg>
                                 )}
                             </div>
-                            
+
                             {/* Star Rating */}
                             <div className="flex items-center gap-1 text-gray-600">
                                 <Star className="w-4 h-4 text-yellow-500 fill-current" />
