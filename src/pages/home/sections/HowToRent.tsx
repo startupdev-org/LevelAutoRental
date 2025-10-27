@@ -75,7 +75,7 @@ export const HowToRent: React.FC = () => {
                     initial="initial"
                     whileInView="animate"
                     viewport={{ once: true }}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-16 lg:gap-20"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-20"
                 >
                     {steps.map((step, index) => (
                         <motion.div
@@ -84,7 +84,7 @@ export const HowToRent: React.FC = () => {
                             className="relative group"
                         >
                             {/* Card Background */}
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full mx-4 md:mx-0 w-[120%] -ml-[10%]">
+                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 h-full mx-4  md:mx-0 lg:w-[120%] w-[90%] lg:-ml-[10%] -ml-[-5%]">
                                 {/* Number Badge */}
                                 <div className="flex justify-center mb-4 md:mb-6">
                                     <motion.div
