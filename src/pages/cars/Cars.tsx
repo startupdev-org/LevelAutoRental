@@ -28,6 +28,10 @@ export const Cars: React.FC = () => {
     yearTo: '',
     priceFrom: '',
     priceTo: '',
+    fuel: '',
+    drivetrain: '',
+    body: '',
+    transmission: ''
   });
 
   // Applied filters state (what's actually used for filtering)
@@ -41,6 +45,10 @@ export const Cars: React.FC = () => {
     yearTo: '',
     priceFrom: '',
     priceTo: '',
+    fuel: '',
+    drivetrain: '',
+    body: '',
+    transmission: ''
   });
 
   const [sortBy, setSortBy] = useState('default');
@@ -95,6 +103,24 @@ export const Cars: React.FC = () => {
       if (appliedFilters.priceTo && car.pricePerDay > Number.parseInt(appliedFilters.priceTo)) {
         return false;
       }
+
+      // Fuel
+      if (appliedFilters.fuel && car.fuelType?.toLowerCase() !== appliedFilters.fuel.toLowerCase()) {
+        return false;
+      }
+      // drivetrain
+      if (appliedFilters.drivetrain && car.drivetrain?.toLowerCase() !== appliedFilters.drivetrain.toLowerCase()) {
+        return false;
+      }
+      // Body
+      if (appliedFilters.body && car.body?.toLowerCase() !== appliedFilters.body.toLowerCase()) {
+        return false;
+      }
+      // Transmission
+      if (appliedFilters.transmission && car.transmission?.toLowerCase() !== appliedFilters.transmission.toLowerCase()) {
+        return false;
+      }
+
 
       return true;
     });
@@ -177,6 +203,10 @@ export const Cars: React.FC = () => {
       yearTo: '',
       priceFrom: '',
       priceTo: '',
+      fuel: '',
+      drivetrain: '',
+      body: '',
+      transmission: ''
     });
     setAppliedFilters({
       make: '',
@@ -188,6 +218,10 @@ export const Cars: React.FC = () => {
       yearTo: '',
       priceFrom: '',
       priceTo: '',
+      fuel: '',
+      drivetrain: '',
+      body: '',
+      transmission: ''
     });
     setValidationErrors({
       yearRange: false,
@@ -208,6 +242,8 @@ export const Cars: React.FC = () => {
 
     setApplyError(''); // Clear error if no issues
     setAppliedFilters({ ...filters });
+
+    console.log('All the filters are: ', filters)
   };
 
 
@@ -240,8 +276,10 @@ export const Cars: React.FC = () => {
 
           {/* Filter Inputs */}
           <div className="relative z-10 space-y-8">
+
             {/* First Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
               {/* Make */}
               <div className="space-y-3">
                 <label htmlFor="make-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
@@ -491,13 +529,146 @@ export const Cars: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* More parameters */}
+            {showAllParams && (
+              <div className="mt-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+
+                  {/* Fuel Type */}
+                  <div className="space-y-3">
+                    <label htmlFor="fuel-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
+                      <span>Tipul de combustibil</span>
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </label>
+                    <div className="flex gap-4">
+                      <div className="relative group flex-1">
+                        <select
+                          id="fuel-select"
+                          value={filters.fuel}
+                          onChange={(e) => handleFilterChange('fuel', e.target.value)}
+                          className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
+                        >
+                          <option value="" className="py-2">Selectează tipul de combustibil</option>
+                          <option value="W205" className="py-2 bg-white text-gray-700">Benzina</option>
+                          <option value="W167" className="py-2 bg-white text-gray-700">Motorina</option>
+                          <option value="C257" className="py-2 bg-white text-gray-700">Hybrid</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+
+
+                  {/* drivetrain */}
+                  <div className="space-y-3">
+                    <label htmlFor="drivetrain-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
+                      <span>Tracțiune</span>
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </label>
+                    <div className="relative group">
+                      <select
+                        id="drivetrain-select"
+                        value={filters.drivetrain}
+                        onChange={(e) => handleFilterChange('drivetrain', e.target.value)}
+                        className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
+                      >
+                        <option value="" className="py-2">Selectează tipul tractiunii</option>
+                        <option value="fata">Față</option>
+                        <option value="spate">Spate</option>
+                        <option value="4x4">4x4</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Body Type */}
+                  <div className="space-y-3">
+                    <label htmlFor="body-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
+                      <span>Caroserie</span>
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </label>
+                    <div className="relative group">
+                      <select
+                        id="body-select"
+                        value={filters.make}
+                        onChange={(e) => handleFilterChange('body', e.target.value)}
+                        className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
+                      >
+                        <option value="" className="py-2">Selectează marca</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="hatchback">Hatchback</option>
+                        <option value="coupe">Coupe</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Transmission */}
+                  <div className="space-y-3">
+                    <label htmlFor="transmission-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
+                      <span>Transmisie</span>
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </label>
+                    <div className="relative group">
+                      <select
+                        id="transmission-select"
+                        value={filters.make}
+                        onChange={(e) => handleFilterChange('transmission', e.target.value)}
+                        className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
+                      >
+                        <option value="" className="py-2">Selectează transmisia</option>
+                        <option value="sedan">Manuala</option>
+                        <option value="suv">Automata</option>
+                        <option value="hatchback">Variator</option>
+                        <option value="coupe">Robotizata</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* Filter Actions */}
           <div className="relative z-10 flex justify-between items-center mt-12 pt-8 border-t-2 border-gray-100">
             <div className="flex items-center gap-8">
               <button
-                onClick={() => setShowAllParams(!showAllParams)}
+                onClick={() => {
+                  setShowAllParams(!showAllParams)
+                  handleFilterChange('fuelType', '');
+                  handleFilterChange('drivetrain', '');
+                  handleFilterChange('body', '');
+                  handleFilterChange('transmission', '');
+                }}
                 className="flex items-center text-gray-700 hover:text-gray-900 transition-all duration-300 bg-gray-50 hover:bg-gray-100 px-6 py-3 rounded-2xl shadow-sm hover:shadow-md font-semibold"
               >
                 <span>Toți parametrii</span>
@@ -539,6 +710,9 @@ export const Cars: React.FC = () => {
             </button>
           </div>
         </motion.div>
+
+
+
 
         {/* Results Section */}
         <div className="flex justify-between items-center mb-10">
