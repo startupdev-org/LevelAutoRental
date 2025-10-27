@@ -119,12 +119,15 @@ export const Cars: React.FC = () => {
           variants={staggerContainer}
           initial="initial"
           animate={isInView ? "animate" : "initial"}
-          className="bg-white rounded-lg shadow-lg p-6 mb-8"
+          className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8 backdrop-blur-sm"
         >
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-800">Filtre</h3>
-            <div className="flex items-center text-red-600 cursor-pointer">
-              <span className="mr-2">Salvează căutarea</span>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">Filtre</h3>
+              <p className="text-gray-600">Găsește mașina perfectă pentru tine</p>
+            </div>
+            <div className="flex items-center text-red-600 cursor-pointer hover:text-red-700 transition-colors duration-200 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl">
+              <span className="mr-2 font-medium">Salvează căutarea</span>
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
               </svg>
@@ -132,17 +135,19 @@ export const Cars: React.FC = () => {
           </div>
 
           {/* Filter Inputs */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* First Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Make */}
-              <div>
+              <div className="space-y-2">
+                <label htmlFor="make-select" className="text-sm font-semibold text-gray-700 block">Marca</label>
                 <select
+                  id="make-select"
                   value={filters.make}
                   onChange={(e) => handleFilterChange('make', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700"
                 >
-                  <option value="">Marca</option>
+                  <option value="">Selectează marca</option>
                   {uniqueMakes.map((make) => (
                     <option key={make} value={make}>{make}</option>
                   ))}
@@ -150,13 +155,15 @@ export const Cars: React.FC = () => {
               </div>
 
               {/* Model */}
-              <div>
+              <div className="space-y-2">
+                <label htmlFor="model-select" className="text-sm font-semibold text-gray-700 block">Model</label>
                 <select
+                  id="model-select"
                   value={filters.model}
                   onChange={(e) => handleFilterChange('model', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700"
                 >
-                  <option value="">Model</option>
+                  <option value="">Selectează modelul</option>
                   <option value="AMG C43">AMG C43</option>
                   <option value="GLE">GLE</option>
                   <option value="CLS">CLS</option>
@@ -165,116 +172,138 @@ export const Cars: React.FC = () => {
               </div>
 
               {/* Generation */}
-              <div className="flex gap-2">
-                <select
-                  value={filters.generation}
-                  onChange={(e) => handleFilterChange('generation', e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                >
-                  <option value="">Generație</option>
-                  <option value="W205">W205</option>
-                  <option value="W167">W167</option>
-                  <option value="C257">C257</option>
-                </select>
-                <button className="px-3 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </button>
+              <div className="space-y-2">
+                <label htmlFor="generation-select" className="text-sm font-semibold text-gray-700 block">Generație</label>
+                <div className="flex gap-3">
+                  <select
+                    id="generation-select"
+                    value={filters.generation}
+                    onChange={(e) => handleFilterChange('generation', e.target.value)}
+                    className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700"
+                  >
+                    <option value="">Selectează generația</option>
+                    <option value="W205">W205</option>
+                    <option value="W167">W167</option>
+                    <option value="C257">C257</option>
+                  </select>
+                  <button className="px-4 py-3.5 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-all duration-200 hover:shadow-md">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Second Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Kilometers */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Kilometri parcurşi, d..."
-                  value={filters.kilometersFrom}
-                  onChange={(e) => handleFilterChange('kilometersFrom', e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
-                <input
-                  type="text"
-                  placeholder="până la"
-                  value={filters.kilometersTo}
-                  onChange={(e) => handleFilterChange('kilometersTo', e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
+              <div className="space-y-2">
+                <label htmlFor="kilometers-from" className="text-sm font-semibold text-gray-700 block">Kilometri parcurși</label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    id="kilometers-from"
+                    placeholder="De la..."
+                    value={filters.kilometersFrom}
+                    onChange={(e) => handleFilterChange('kilometersFrom', e.target.value)}
+                    className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700 placeholder-gray-400"
+                  />
+                  <input
+                    type="text"
+                    id="kilometers-to"
+                    placeholder="Până la..."
+                    value={filters.kilometersTo}
+                    onChange={(e) => handleFilterChange('kilometersTo', e.target.value)}
+                    className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700 placeholder-gray-400"
+                  />
+                </div>
               </div>
 
               {/* Year */}
-              <div className="flex gap-2">
-                <select
-                  value={filters.yearFrom}
-                  onChange={(e) => handleFilterChange('yearFrom', e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                >
-                  <option value="">An, de la</option>
-                  {Array.from({ length: 10 }, (_, i) => 2024 - i).map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-                <select
-                  value={filters.yearTo}
-                  onChange={(e) => handleFilterChange('yearTo', e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                >
-                  <option value="">până la</option>
-                  {Array.from({ length: 10 }, (_, i) => 2024 - i).map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
+              <div className="space-y-2">
+                <label htmlFor="year-from" className="text-sm font-semibold text-gray-700 block">Anul</label>
+                <div className="flex gap-3">
+                  <select
+                    id="year-from"
+                    value={filters.yearFrom}
+                    onChange={(e) => handleFilterChange('yearFrom', e.target.value)}
+                    className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700"
+                  >
+                    <option value="">De la</option>
+                    {Array.from({ length: 10 }, (_, i) => 2024 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                  <select
+                    id="year-to"
+                    value={filters.yearTo}
+                    onChange={(e) => handleFilterChange('yearTo', e.target.value)}
+                    className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700"
+                  >
+                    <option value="">Până la</option>
+                    {Array.from({ length: 10 }, (_, i) => 2024 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
+            </div>
 
-              {/* Price */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Preţ, de la 356 000 ..."
-                  value={filters.priceFrom}
-                  onChange={(e) => handleFilterChange('priceFrom', e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
-                <input
-                  type="text"
-                  placeholder="până la 986 000 MDL"
-                  value={filters.priceTo}
-                  onChange={(e) => handleFilterChange('priceTo', e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
+            {/* Third Row - Price */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label htmlFor="price-from" className="text-sm font-semibold text-gray-700 block">Prețul</label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    id="price-from"
+                    placeholder="De la..."
+                    value={filters.priceFrom}
+                    onChange={(e) => handleFilterChange('priceFrom', e.target.value)}
+                    className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700 placeholder-gray-400"
+                  />
+                  <input
+                    type="text"
+                    id="price-to"
+                    placeholder="Până la..."
+                    value={filters.priceTo}
+                    onChange={(e) => handleFilterChange('priceTo', e.target.value)}
+                    className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700 placeholder-gray-400"
+                  />
+                </div>
               </div>
+              <div></div> {/* Empty div to maintain grid structure */}
             </div>
           </div>
 
           {/* Filter Actions */}
-          <div className="flex justify-between items-center mt-6">
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
+            <div className="flex items-center gap-6">
               <button
                 onClick={() => setShowAllParams(!showAllParams)}
-                className="flex items-center text-gray-600 hover:text-gray-800"
+                className="flex items-center text-gray-600 hover:text-gray-800 transition-colors duration-200 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl"
               >
-                <span>Toți parametrii</span>
-                <svg className={`w-4 h-4 ml-1 transition-transform ${showAllParams ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="font-medium">Toți parametrii</span>
+                <svg className={`w-4 h-4 ml-2 transition-transform duration-200 ${showAllParams ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               <button
                 onClick={resetFilters}
-                className="flex items-center text-gray-600 hover:text-gray-800"
+                className="flex items-center text-gray-600 hover:text-gray-800 transition-colors duration-200 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl"
               >
-                <span>Resetează filtrele</span>
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="font-medium">Resetează filtrele</span>
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             <button
               onClick={applyFilters}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              Aplică
+              Aplică filtrele
             </button>
           </div>
         </motion.div>
@@ -282,14 +311,16 @@ export const Cars: React.FC = () => {
         {/* Results Section */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Maşini disponibile</h2>
-            <p className="text-gray-600 mt-1">{filteredCars.length} maşini disponibile</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Mașini disponibile</h2>
+            <p className="text-gray-600 text-lg">{filteredCars.length} mașini disponibile</p>
           </div>
-          <div>
+          <div className="flex items-center gap-3">
+            <label htmlFor="sort-select" className="text-sm font-semibold text-gray-700">Sortează după:</label>
             <select
+              id="sort-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm hover:shadow-md transition-all duration-200 text-gray-700 min-w-[200px]"
             >
               <option value="default">Implicit</option>
               <option value="price-low">Preț: Mic la Mare</option>
