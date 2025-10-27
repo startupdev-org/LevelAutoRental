@@ -4,7 +4,6 @@ import { cars } from '../../data/cars';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from './CarCard';
-import { Info } from 'lucide-react';
 
 export const Cars: React.FC = () => {
   const { ref, isInView } = useInView();
