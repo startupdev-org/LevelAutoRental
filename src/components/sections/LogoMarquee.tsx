@@ -1,15 +1,22 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export const LogoMarquee: React.FC = () => {
+  const navigate = useNavigate();
+
   const logos = [
-    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi" },
-    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW" },
-    { src: "/LevelAutoRental/logos/hyundai.png", alt: "Hyundai" },
-    { src: "/LevelAutoRental/logos/maserati.png", alt: "Maserati" },
-    { src: "/LevelAutoRental/logos/merc.svg", alt: "Mercedes-Benz" },
-    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi" },
-    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW" },
+    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi", filter: "audi" },
+    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW", filter: "bmw" },
+    { src: "/LevelAutoRental/logos/hyundai.png", alt: "Hyundai", filter: "hyundai" },
+    { src: "/LevelAutoRental/logos/maserati.png", alt: "Maserati", filter: "maserati" },
+    { src: "/LevelAutoRental/logos/merc.svg", alt: "Mercedes-Benz", filter: "mercedes" },
+    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi", filter: "audi" },
+    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW", filter: "bmw" },
   ];
+
+  const handleLogoClick = (filter: string) => {
+    navigate(`/cars?make=${filter}`);
+  };
 
   return (
     <section className="py-16 mt-32 lg:mt-20 w-full">
@@ -21,7 +28,8 @@ export const LogoMarquee: React.FC = () => {
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                  onClick={() => handleLogoClick(logo.filter)}
+                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
                 />
               </li>
             ))}
@@ -33,7 +41,8 @@ export const LogoMarquee: React.FC = () => {
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                  onClick={() => handleLogoClick(logo.filter)}
+                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
                 />
               </li>
             ))}

@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { cars } from '../../data/cars';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
@@ -7,6 +8,7 @@ import { CarCard } from './CarCard';
 
 export const Cars: React.FC = () => {
   const { ref, isInView } = useInView();
+  const [searchParams] = useSearchParams();
 
   const InfoIconPath = (
     <path
@@ -55,6 +57,29 @@ export const Cars: React.FC = () => {
   const [showAllParams, setShowAllParams] = useState(false);
   const [applyError, setApplyError] = useState('');
 
+  // Read URL parameters on mount and apply them
+  useEffect(() => {
+    const makeParam = searchParams.get('make');
+    if (makeParam) {
+      const initialFilters = {
+        make: makeParam,
+        model: '',
+        generation: '',
+        kilometersFrom: '',
+        kilometersTo: '',
+        yearFrom: '',
+        yearTo: '',
+        priceFrom: '',
+        priceTo: '',
+        fuel: '',
+        drivetrain: '',
+        body: '',
+        transmission: ''
+      };
+      setFilters(initialFilters);
+      setAppliedFilters(initialFilters);
+    }
+  }, [searchParams]);
 
   // Validation states
   const [validationErrors, setValidationErrors] = useState({
@@ -75,11 +100,13 @@ export const Cars: React.FC = () => {
   // Filter and sort cars
   const filteredCars = useMemo(() => {
     let filtered = cars.filter((car) => {
-      const carMake = car.name.split(' ')[0].toLowerCase();
+      // Extract make: split on '-' first for cases like "Mercedes-AMG" -> "Mercedes"
+      const firstPart = car.name.split(' ')[0];
+      const carMake = firstPart.includes('-') ? firstPart.split('-')[0].toLowerCase() : firstPart.toLowerCase();
       const carModel = car.name.split(' ').slice(1).join(' ').toLowerCase();
 
       // Make filter
-      if (appliedFilters.make && !carMake.includes(appliedFilters.make.toLowerCase())) {
+      if (appliedFilters.make && carMake !== appliedFilters.make.toLowerCase()) {
         return false;
       }
 
