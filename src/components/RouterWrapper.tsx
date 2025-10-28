@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { About } from '../pages/about/About';
 import { Booking } from '../pages/booking/Booking';
 import { Cars } from '../pages/cars/Cars';
+import { CarDetails } from '../pages/cars/individual/CarDetails';
 import { Reviews } from '../pages/reviews/Reviews.tsx';
 import { Contact } from '../pages/contact/Contact';
 import { Home } from '../pages/home/Home';
@@ -25,6 +26,7 @@ const RouterWrapper = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cars" element={<Cars />} />
+        <Route path="/cars/:carId" element={<CarDetails />} />
         <Route path="/reviews" element={<Reviews />} />
         <Route path="/about" element={<About />} />
         <Route path="/how-to-rent" element={<HowToRent />} />

@@ -27,7 +27,8 @@ export const Header: React.FC = () => {
     (location.pathname === '/not-found') ||
     (location.pathname === '/auth/signup') ||
     (location.pathname === '/contact') ||
-    (location.pathname === '/cars');
+    (location.pathname === '/cars') ||
+    (document.getElementById('car-not-found'));
 
   // Check if we're on auth pages for transparent header
   const isAuthPage = location.pathname === '/auth/login' || location.pathname === '/auth/signup';
@@ -126,8 +127,8 @@ export const Header: React.FC = () => {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${isAuthPage
         ? 'bg-transparent shadow-none border-transparent'
         : isScrolled || isDifferentPage
-        ? 'bg-white shadow-lg border-b border-gray-200'
-        : 'bg-transparent shadow-none border-transparent'
+          ? 'bg-white shadow-lg border-b border-gray-200'
+          : 'bg-transparent shadow-none border-transparent'
         }`}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
