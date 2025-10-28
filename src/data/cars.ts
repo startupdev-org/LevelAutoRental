@@ -19,7 +19,7 @@ export const cars: Car[] = [
     transmission: 'Automatic',
     body: 'Coupe',
     fuelType: 'gasoline',
-    features: ['V6 BiTurbo 3.0L', '4MATIC AWD', 'Sport-Lux Interior'],
+    features: ['AMG Package', 'V6 BiTurbo 3.0L', '4MATIC AWD', 'Sport-Lux Interior'],
     rating: 4.9,
     reviews: 156
   },
