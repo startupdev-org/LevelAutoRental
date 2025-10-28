@@ -291,6 +291,34 @@
                 "totalReviews": "Recenzii Totale",
                 "averageRating": "Evaluare Medie",
                 "satisfaction": "Satisfacția Clienților"
+            },
+            "cta": {
+                "title": "Gata să Experimentezi Excelența?",
+                "description": "Alătură-te miilor de clienți mulțumiți care au încredere în LevelAutoRental pentru nevoile lor de închiriere auto.",
+                "button": "Rezervă Mașina Acum"
+            },
+            "categories": {
+                "Închiriere": "Închiriere",
+                "Spălare": "Spălare",
+                "Vânzare": "Vânzare",
+                "Detailing auto": "Detailing auto"
+            },
+            "comments": {
+                "1": "Am avut experiență cu mai multe servicii de închiriere, iar acesta este, probabil, unul dintre cele mai rapide și de încredere. Mașinile îngrijite, contractul este transparent și bine detaliat, fără condiții speciale sau plată în plus pentru plecări peste hotare, loiali. Dacă ar trebui să recomand un parc de închirieri, cu siguranță ar fi acesta.",
+                "2": "Totul super 🔥 service la nivel, masini fain, personal de nota 10. 🙌😍",
+                "5": "Serviciu excelent, gamă largă de mașini, posibilitatea de a prelungi contractul de închiriere la distanță! Băieți extraordinari. ✊",
+                "6": "Am găsit mașina de închiriat pe care o căutam.",
+                "7": "Serviciu excelent. Sunt multe mașini. Procesul de închiriere este foarte rapid. Oferă mașini și străinilor. Recomand!",
+                "10": "Serviciu foarte bun! Mașina era curată și în stare perfectă. Procesul de rezervare a fost simplu și rapid. Voi folosi din nou cu siguranță serviciile acestea.",
+                "11": "Cea mai bună experiență de închiriere auto! Prețuri excelente, serviciu clienți extraordinar, iar mașina a depășit așteptările mele. Recomand cu încredere!",
+                "13": "Experiență fantastică! Am închiriat un Mercedes și totul a fost perfect. Echipa este profesionistă, am fost reprezentați imediat și procesul a fost foarte simplu. Mașina era în stare impecabilă!",
+                "14": "Recomand cu toată încrederea! Serviciu rapid, mașini noi și prețuri corecte. Am folosit serviciile de două ori deja și de fiecare dată am fost foarte mulțumită.",
+                "15": "Excelent serviciu pentru închirieri auto în Chișinău. Oferă și livrare la domiciliu, ceea ce este foarte convenabil. Mașinile sunt îngrijite și prețurile sunt mai bune decât la concurență.",
+                "16": "Am închiriat pentru weekend și am fost foarte impresionată de calitatea serviciului. Personal foarte amabil și răspunde prompt la întrebări. Mașina a fost curată și în stare perfectă de funcționare.",
+                "17": "Serviciu profesionist și de încredere. Contractul este clar, fără surprize. Am închiriat de mai multe ori și de fiecare dată totul a mers perfect. Recomand!",
+                "18": "Cea mai bună companie de închirieri auto din Moldova! Prețuri corecte, mașini calitative și echipa super de ajutor. Voi folosi din nou cu siguranță!",
+                "19": "Serviciu rapid, mașini bune, prețuri corecte. Ce mai poți cere? Recomand cu toată încrederea pentru oricine are nevoie de mașină închiriată în Chișinău.",
+                "20": "Am fost foarte mulțumit de serviciul oferit. Prețuri competitive, mașini bune și personal prietenos. Voi reveni cu siguranță pentru următoarea închiriere!"
             }
         }
     },

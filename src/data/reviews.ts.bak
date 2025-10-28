@@ -151,7 +151,8 @@ export const reviews: Review[] = [
         date: '5 decembrie 2024',
         category: 'Spălare',
         comment: 'Serviciu de spălare auto de calitate superioară! Mașina a ieșit ca nouă. Personalul este foarte atent la detalii și folosește produse de calitate. Voi reveni sigur!'
-    },
+    }
+];
     {
         id: '13',
         userName: 'Cristian Popescu',
