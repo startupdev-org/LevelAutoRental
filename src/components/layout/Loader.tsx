@@ -102,32 +102,15 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
       
       {/* Loading Content */}
       <div className="relative flex flex-col items-center justify-center min-h-screen">
-        {/* Logo with fallback */}
+        {/* Logo */}
         <div className="relative w-64 h-24 flex items-center justify-center">
-          {/* Fallback - White text that shows immediately */}
-          <div 
-            className="absolute inset-0 flex items-center justify-center text-white text-4xl font-bold tracking-wider"
-            style={{ 
-              animation: 'scale-premium 2s ease-in-out infinite',
-            }}
-          >
-            LEVEL AUTO RENTAL
-          </div>
-          
-          {/* Actual logo - loads on top */}
           <img 
             src="/LevelAutoRental/logo.png" 
             alt="Level Auto Rental" 
-            className="relative w-64 h-auto brightness-0 invert drop-shadow-lg"
+            className="w-64 h-auto brightness-0 invert drop-shadow-lg"
             style={{ 
               animation: 'scale-premium 2s ease-in-out infinite',
             }}
-            onLoad={(e) => {
-              // Hide fallback text when logo loads
-              const fallback = e.currentTarget.previousElementSibling as HTMLElement;
-              if (fallback) fallback.style.display = 'none';
-            }}
-            onError={() => {}}
           />
         </div>
       </div>
