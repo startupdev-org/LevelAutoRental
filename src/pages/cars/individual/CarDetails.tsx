@@ -54,33 +54,48 @@ export const CarDetails: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* quick stats */}
-                            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-black/40 backdrop-blur-sm rounded-lg px-4 py-3">
-                                <div className="flex items-center gap-4 text-white">
-                                    <div className="flex items-center gap-2">
-                                        <CarFront className="w-5 h-5" />
-                                        <span className="text-sm">{car.model ?? car.name}</span>
+                            {/* quick stats overlay:
+                                - show compact view on mobile (name, year, price)
+                                - show detailed view on md+ (original layout)
+                            */}
+                            {/* Compact mobile view: only name, year and price */}
+                            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-sm text-white md:hidden">
+                                <div className="min-w-0">
+                                    <div className="font-semibold truncate">{car.name}</div>
+                                    <div className="text-[11px] text-gray-200">{car.year}</div>
+                                </div>
+                                <div className="ml-3 text-right">
+                                    <div className="font-bold">{formatPrice(car.pricePerDay)}</div>
+                                </div>
+                            </div>
+
+                            {/* Detailed view on md+ (keeps original info) */}
+                            <div className="hidden md:flex absolute bottom-3 left-3 right-3 flex items-center justify-between bg-black/40 backdrop-blur-sm rounded-lg px-3 py-2 text-sm">
+                                <div className="flex items-center gap-3 text-white">
+                                    <div className="flex items-center gap-1">
+                                        <CarFront className="w-4 h-4" />
+                                        <span className="text-xs">{car.model ?? car.name}</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="w-5 h-5" />
-                                        <span className="text-sm">{car.year}</span>
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="w-4 h-4" />
+                                        <span className="text-xs">{car.year}</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <MapPin className="w-5 h-5" />
-                                        <span className="text-sm">{car.location ?? 'Local'}</span>
+                                    <div className="flex items-center gap-1">
+                                        <MapPin className="w-4 h-4" />
+                                        <span className="text-xs">{car.location ?? 'Local'}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
                                     <div className="text-right text-white">
-                                        <div className="text-lg font-bold">{formatPrice(car.pricePerDay)}</div>
-                                        <div className="text-xs text-gray-200">Include asigurare standard</div>
+                                        <div className="text-sm font-bold">{formatPrice(car.pricePerDay)}</div>
+                                        <div className="text-[11px] text-gray-200">Include asigurare standard</div>
                                     </div>
                                     <button
-                                        onClick={() => {/* favorite action */ }}
-                                        className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"
+                                        onClick={() => { /* favorite action */ }}
+                                        className="p-1.5 bg-white/10 hover:bg-white/20 rounded-full text-white"
                                         aria-label="Favorite"
                                     >
-                                        <Heart className="w-5 h-5" />
+                                        <Heart className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
