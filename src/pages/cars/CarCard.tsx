@@ -13,6 +13,7 @@ import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
+import { redirect, useNavigate } from 'react-router-dom';
 
 
 interface CarCardProps {
@@ -26,6 +27,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const animatedPrice = useCounter(car.pricePerDay, 1500, 0);
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [isFavorite, setIsFavorite] = useState(false);
+
+    const navigate = useNavigate();
 
     const renderTransmissionIcon = (transmission: string) => {
         switch (transmission.toLowerCase()) {
@@ -48,7 +51,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
             animate={isInView ? "animate" : "initial"}
             transition={{ delay: index * 0.1 }}
         >
-            <Card className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-2xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}>
+            <Card
+                className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-2xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}
+                onClick={() => navigate(`/cars/${car.id}`)}
+            >
                 {/* Image Container */}
                 <div
                     className="relative overflow-hidden"
