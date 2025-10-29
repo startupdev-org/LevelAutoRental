@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "../../utils/animations";
-import { DevOnlyComponent } from "../../utils/devAccess";
 import { useTranslation } from "react-i18next";
 import { Phone, Mail, MapPin, Send, Clock } from "lucide-react";
 import { FaFacebookF } from "react-icons/fa";
@@ -61,25 +60,7 @@ export const Contact: React.FC = () => {
   };
 
   return (
-    <DevOnlyComponent
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full text-center">
-            <h1 className="text-6xl font-bold text-gray-300 mb-4">🚧</h1>
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-              {t("pages.contact.dev-mode.title")}
-            </h2>
-            <p className="text-gray-600 mb-8">
-              {t("pages.contact.dev-mode.description")}
-            </p>
-            <button className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md">
-              <a href="/">{t("pages.contact.dev-mode.button")}</a>
-            </button>
-          </div>
-        </div>
-      }
-    >
-      <div className="min-h-screen">
+    <div className="min-h-screen">
         {/* Hero Section */}
         <section
           className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
@@ -306,7 +287,6 @@ export const Contact: React.FC = () => {
             </div>
           </div>
         </section>
-      </div>
-    </DevOnlyComponent>
+    </div>
   );
 };
