@@ -165,28 +165,36 @@ export const CarDetails: React.FC = () => {
                         {/* MAIN DETAILS + CTA */}
                         <div className="bg-white rounded-2xl shadow-xl p-10 scale-[1.05]">
                             <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <h1 className="min-w-[340px] text-3xl font-extrabold text-gray-900 leading-tight h-14 truncate"
-                                    >
-                                        {car.name}
-                                    </h1>
+                                <div className="min-w-0">
+                                    <div className="flex items-start justify-between gap-4">
+                                        {/* Title + meta */}
+                                        <div className="flex-1 min-w-0">
+                                            {/* TITLE - first row */}
+                                            <h1
+                                                className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight truncate"
+                                                title={car.name}
+                                            >
+                                                {car.name}
+                                            </h1>
 
+                                            {/* REVIEWS + PRICE - second row */}
+                                            <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                                    <div className="flex items-center gap-1 text-yellow-400">
+                                                        <Star className="w-4 h-4" />
+                                                        <span className="font-semibold">{car.rating ?? '—'}</span>
+                                                    </div>
+                                                    <span className="text-gray-500">· {car.reviews ?? 0} recenzii</span>
+                                                    <span className="hidden sm:inline text-gray-400">· {car.location ?? 'Local'}</span>
+                                                </div>
 
-                                    <div className="flex items-center justify-between mt-2">
-                                        <div className="flex items-center gap-3 text-sm text-gray-500">
-                                            <div className="flex items-center gap-1 text-yellow-400">
-                                                <Star className="w-4 h-4" />
-                                                <span className="font-semibold">{car.rating ?? '—'}</span>
+                                                <div className="text-right text-red-600 font-extrabold text-lg sm:text-xl md:text-2xl">
+                                                    {formatPrice(car.pricePerDay)}
+                                                    <div className="text-xs text-gray-500 font-normal">Estimativ / zi</div>
+                                                </div>
                                             </div>
-                                            <span>· {car.reviews ?? 0} recenzii</span>
                                         </div>
-
-                                        <div className="text-right text-red-600 font-bold text-lg md:text-2xl min-w-[120px]">
-                                            {formatPrice(car.pricePerDay)}
-                                        </div>
-
                                     </div>
-
                                 </div>
                             </div>
 
