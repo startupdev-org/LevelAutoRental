@@ -28,7 +28,7 @@ export const CarDetails: React.FC = () => {
     const formatPrice = (p?: number) => (p ? `${p} € / zi` : 'Contact');
 
     return (
-        <div className="max-w-[1450px] mx-auto px-6 lg:px-12 py-12">
+        <div id='individual-car-page' className="max-w-[1450px] mx-auto px-6 lg:px-12 py-12">
             {/* Use grid on large screens: left is a scrollable column, right is a fixed/sticky aside */}
             <div className="flex flex-col lg:grid lg:grid-cols-[1fr_420px] gap-10">
                 {/* LEFT: scrollable column (contains gallery + specs + gallery + reviews) */}
@@ -74,21 +74,21 @@ export const CarDetails: React.FC = () => {
                                 <div className="flex items-center gap-3 text-white">
                                     <div className="flex items-center gap-1">
                                         <CarFront className="w-4 h-4" />
-                                        <span className="text-xs">{car.model ?? car.name}</span>
+                                        <span className="text-s">{car.model ?? car.name}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Calendar className="w-4 h-4" />
-                                        <span className="text-xs">{car.year}</span>
+                                        <span className="text-s">{car.year}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <MapPin className="w-4 h-4" />
-                                        <span className="text-xs">{car.location ?? 'Local'}</span>
+                                        <span className="text-s">{car.location ?? 'Local'}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="text-right text-white">
-                                        <div className="text-sm font-bold">{formatPrice(car.pricePerDay)}</div>
-                                        <div className="text-[11px] text-gray-200">Include asigurare standard</div>
+                                        <div className="text-lg font-bold">{formatPrice(car.pricePerDay)}</div>
+                                        <div className="text-m text-gray-200">Include asigurare standard</div>
                                     </div>
                                     <button
                                         onClick={() => { /* favorite action */ }}
@@ -161,39 +161,38 @@ export const CarDetails: React.FC = () => {
 
                 {/* RIGHT: sticky details, seller, and reviews */}
                 <aside className="lg:col-start-2 mt-24">
-                    <div className="sticky top-20 flex flex-col gap-10">
+                    {/* increase space from top (header) and account for device safe-area */}
+                    <div
+                        className="sticky flex flex-col gap-10"
+                        // larger top offset so the sticky block sits lower under the header
+                        style={{ top: 'calc(7rem + env(safe-area-inset-top))' }}
+                    >
                         {/* MAIN DETAILS + CTA */}
-                        <div className="bg-white rounded-2xl shadow-xl p-10 scale-[1.05]">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
-                                    <div className="flex items-start justify-between gap-4">
-                                        {/* Title + meta */}
-                                        <div className="flex-1 min-w-0">
-                                            {/* TITLE - first row */}
-                                            <h1
-                                                className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight truncate"
-                                                title={car.name}
-                                            >
-                                                {car.name}
-                                            </h1>
+                        <div className="bg-white rounded-2xl shadow-xl p-10 scale-[1.05] mt-4 lg:mt-0">
+                            <div className="flex flex-col gap-3">
+                                {/* TITLE - first row (full width, truncates) */}
+                                <h1
+                                    className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight truncate"
+                                    title={car.name}
+                                >
+                                    {car.name}
+                                </h1>
 
-                                            {/* REVIEWS + PRICE - second row */}
-                                            <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                                <div className="flex items-center gap-3 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-1 text-yellow-400">
-                                                        <Star className="w-4 h-4" />
-                                                        <span className="font-semibold">{car.rating ?? '—'}</span>
-                                                    </div>
-                                                    <span className="text-gray-500">· {car.reviews ?? 0} recenzii</span>
-                                                    <span className="hidden sm:inline text-gray-400">· {car.location ?? 'Local'}</span>
-                                                </div>
-
-                                                <div className="text-right text-red-600 font-extrabold text-lg sm:text-xl md:text-2xl">
-                                                    {formatPrice(car.pricePerDay)}
-                                                    <div className="text-xs text-gray-500 font-normal">Estimativ / zi</div>
-                                                </div>
-                                            </div>
+                                {/* SECOND ROW: left = rating + reviews, right = price (aligned) */}
+                                <div className="mt-0 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3 text-sm text-gray-600 min-w-0">
+                                        <div className="flex items-center gap-1 text-yellow-400 flex-shrink-0">
+                                            <Star className="w-4 h-4" />
+                                            <span className="font-semibold">{car.rating ?? '—'}</span>
                                         </div>
+                                        <span className="truncate text-gray-500">· {car.reviews ?? 0} recenzii</span>
+                                    </div>
+
+                                    <div className="flex-shrink-0 text-right">
+                                        <div className="text-red-600 font-extrabold text-lg sm:text-xl md:text-2xl">
+                                            {formatPrice(car.pricePerDay)}
+                                        </div>
+                                        <div className="text-xs text-gray-500">Pret estimativ / zi</div>
                                     </div>
                                 </div>
                             </div>

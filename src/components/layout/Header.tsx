@@ -28,7 +28,8 @@ export const Header: React.FC = () => {
     (location.pathname === '/auth/signup') ||
     (location.pathname === '/contact') ||
     (location.pathname === '/cars') ||
-    (document.getElementById('car-not-found'));
+    (document.getElementById('car-not-found')) ||
+    (document.getElementById('individual-car-page'));
 
   // Check if we're on auth pages for transparent header
   const isAuthPage = location.pathname === '/auth/login' || location.pathname === '/auth/signup';
