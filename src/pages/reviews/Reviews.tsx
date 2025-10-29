@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { useTranslation } from 'react-i18next';
@@ -15,26 +15,6 @@ export const Reviews: React.FC = () => {
 
     const navigate = useNavigate();
 
-    // Filter state
-    const [filterCategory, setFilterCategory] = useState<string>('Închiriere');
-    const [appliedCategory, setAppliedCategory] = useState<string>('Închiriere');
-
-    // Get unique categories
-    const uniqueCategories = useMemo(() => {
-        const categories = reviews.map(r => r.category);
-        return [...new Set(categories)];
-    }, []);
-
-    // Filter reviews based on applied category
-    const filteredReviews = useMemo(() => {
-        if (!appliedCategory) return reviews;
-        return reviews.filter((review) => review.category === appliedCategory);
-    }, [appliedCategory]);
-
-    const applyFilter = () => {
-        setAppliedCategory(filterCategory);
-    };
-
     useEffect(() => {
         if (globalThis.window === undefined) return;
 
@@ -50,14 +30,14 @@ export const Reviews: React.FC = () => {
     }, []);
 
 
-    // derived stats based on filtered reviews
-    const totalReviews = filteredReviews.length;
+    // derived stats
+    const totalReviews = reviews.length;
     const avgRating = totalReviews
-        ? (filteredReviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / totalReviews)
+        ? (reviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / totalReviews)
             .toFixed(1)
         : "0.0";
     const satisfactionPercent = totalReviews
-        ? Math.round((filteredReviews.filter((r) => (r.rating ?? 0) >= 4).length / totalReviews) * 100)
+        ? Math.round((reviews.filter((r) => (r.rating ?? 0) >= 4).length / totalReviews) * 100)
         : 0;
 
     return (
@@ -191,55 +171,11 @@ export const Reviews: React.FC = () => {
                         </motion.div>
                     </motion.div>
 
-                    {/* Filter Section */}
-                    <div className="mb-10 flex flex-col lg:flex-row gap-4 items-stretch">
-                        {/* Filter Card */}
-                        <div className="flex-1 border border-gray-300 rounded-xl py-6 bg-transparent">
-                            <div className="flex flex-col lg:flex-row gap-0 items-stretch">
-                                {/* Category Filter */}
-                                <div className="flex-1 relative px-6 py-4 lg:py-0">
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-                                        {t('pages.reviews.filter.category', { defaultValue: 'Categorie' })}
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            value={filterCategory}
-                                            onChange={(e) => setFilterCategory(e.target.value)}
-                                            className="w-full text-lg font-bold text-gray-900 bg-transparent border-none outline-none appearance-none cursor-pointer pr-8"
-                                        >
-                                            <option value="">{t('pages.reviews.filter.allCategories', { defaultValue: 'Toate categoriile' })}</option>
-                                            {uniqueCategories.map((category) => (
-                                                <option key={category} value={category}>
-                                                    {t(`pages.reviews.categories.${category}`, { defaultValue: category })}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Filter Button - Separate on Right */}
-                        <div className="lg:w-auto w-full flex items-end">
-                            <button
-                                onClick={applyFilter}
-                                className="w-full lg:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-4 lg:py-6 rounded-xl transition-colors duration-200 text-base lg:text-lg"
-                            >
-                                {t('pages.reviews.filter.apply', { defaultValue: 'Filtrează' })}
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Reviews Grid with enhanced animations */}
                     <div
                         className="columns-1 md:columns-2 lg:columns-3 gap-6"
                     >
-                        {filteredReviews.map((review, index) => (
+                        {reviews.map((review, index) => (
                             <motion.div
                                 key={review.id}
                                 initial={{ opacity: 0, y: 20 }}
