@@ -19,6 +19,8 @@ export const CarDetails: React.FC = () => {
 
     // Lightbox state & handlers for gallery images
     const [lightboxOpen, setLightboxOpen] = useState(false);
+    // touch start X for swipe navigation on mobile lightbox
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
     const openLightbox = (src?: string) => {
         if (src) setLightboxImage(src);
         setLightboxOpen(true);
@@ -80,8 +82,9 @@ export const CarDetails: React.FC = () => {
                             <img
                                 src={heroImage ?? car.image}
                                 alt={car.name}
-                                onClick={() => openLightbox(heroImage ?? car.image)}
-                                className="cursor-zoom-in w-full h-[420px] md:h-[520px] object-cover"
+                                // onClick={() => openLightbox(heroImage ?? car.image)}
+                                className="w-full h-[240px] sm:h-[320px] md:h-[520px] lg:h-[600px] object-cover"
+                                loading="eager"
                             />
 
                             {/* badges */}
@@ -145,15 +148,20 @@ export const CarDetails: React.FC = () => {
 
                         {/* Thumbnails - set hero image (no lightbox, no thumbnail animation) */}
                         {gallery.length > 0 && (
-                            <div className="mt-4 grid grid-cols-4 gap-3">
+                            <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-3">
                                 {gallery.map((src, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => setHeroImage(src)}
+                                        onClick={() => setHeroImage(src)} // thumbnails only change hero image
                                         className={`rounded-xl overflow-hidden border-2 ${heroImage === src ? 'border-red-500' : 'border-transparent'}`}
                                         aria-label={`Select ${car.name} thumbnail ${i + 1}`}
                                     >
-                                        <img src={src} alt={`${car.name}-${i}`} className="w-full h-32 object-cover" />
+                                        <img
+                                            src={src}
+                                            alt={`${car.name}-${i}`}
+                                            className="w-full h-20 sm:h-24 md:h-28 object-cover"
+                                            loading="lazy"
+                                        />
                                     </button>
                                 ))}
                             </div>
@@ -190,7 +198,7 @@ export const CarDetails: React.FC = () => {
 
                             <div className="mt-6 bg-white rounded-2xl p-6 shadow">
                                 <h3 className="text-xl font-semibold mb-4">Galerie</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
                                     {gallery.map((src, i) => (
                                         <button
                                             key={i}
@@ -198,7 +206,12 @@ export const CarDetails: React.FC = () => {
                                             className="overflow-hidden rounded-lg"
                                             aria-label={`Open gallery image ${i + 1}`}
                                         >
-                                            <img src={src} alt={`${car.name}-gallery-${i}`} className="w-full h-40 object-cover rounded-lg" />
+                                            <img
+                                                src={src}
+                                                alt={`${car.name}-gallery-${i}`}
+                                                className="w-full h-36 sm:h-40 md:h-48 object-cover rounded-lg"
+                                                loading="lazy"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -334,55 +347,70 @@ export const CarDetails: React.FC = () => {
             {/* Lightbox modal */}
             {lightboxOpen && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
                     role="dialog"
                     aria-modal="true"
                     onClick={closeLightbox}
                 >
-                    <div className="relative max-w-[95%] max-h-[95%]" onClick={(e) => e.stopPropagation()}>
+                    <div
+                        className="relative flex items-center justify-center gap-3 sm:gap-6 md:gap-10 lg:max-w-[90%] sm:max-w-[30%] max-h-[96%] w-full"
+                        onClick={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
+                        onTouchEnd={(e) => {
+                            if (touchStartX == null) return setTouchStartX(null);
+                            const endX = e.changedTouches[0]?.clientX ?? 0;
+                            const diff = touchStartX - endX;
+                            setTouchStartX(null);
+                            if (Math.abs(diff) < 40) return;
+                            if (diff > 0) goToNextImage();
+                            else goToPrevImage();
+                        }}
+                    >
+                        {/* Left Arrow */}
                         <button
-                            onClick={closeLightbox}
-                            aria-label="Close image"
-                            className="absolute top-3 right-3 z-20 flex items-center justify-center rounded-full bg-white/90 p-2 shadow-md hover:bg-white hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                            onClick={goToPrevImage}
+                            aria-label="Previous image"
+                            className="flex items-center justify-center rounded-full bg-white/90 p-2 shadow-md hover:bg-white transition focus:outline-none"
                         >
-                            <X className="w-5 h-5 text-gray-700" />
+                            <ChevronLeft className="w-6 h-6 text-gray-700" />
                         </button>
 
-                        {/* Prev arrow */}
-                        {gallery.length > 1 && (
-                            <button
-                                onClick={goToPrevImage}
-                                aria-label="Previous image"
-                                className="absolute top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white focus:outline-none"
-                                style={{ left: '-3.25rem' }}
-                            >
-                                <ChevronLeft className="w-5 h-5 text-gray-700" />
-                            </button>
-                        )}
+                        {/* Image container */}
+                        <div className="relative">
+                            <motion.img
+                                src={lightboxImage ?? car.image}
+                                alt={car.name}
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.18 }}
+                                className="mx-auto max-w-full max-h-[45vh] sm:max-h-[50vh] md:max-h-[80vh] object-contain rounded-md shadow-lg"
+                            />
 
-                        {/* Next arrow */}
-                        {gallery.length > 1 && (
+                            {/* Close button at top-right of the image */}
                             <button
-                                onClick={goToNextImage}
-                                aria-label="Next image"
-                                className="absolute top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white focus:outline-none"
-                                style={{ right: '-3.25rem' }}
+                                onClick={closeLightbox}
+                                aria-label="Close image"
+                                className="absolute top-2 right-2 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/80 p-1 sm:p-2 shadow-md hover:bg-white hover:dark:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
                             >
-                                <ChevronRight className="w-5 h-5 text-gray-700" />
+                                <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-200" />
                             </button>
-                        )}
 
-                        <motion.img
-                            src={lightboxImage ?? car.image}
-                            alt={car.name}
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.18 }}
-                            className="w-full h-auto max-h-[90vh] object-contain rounded-md shadow-lg"
-                        />
+                        </div>
+
+                        {/* Right Arrow */}
+                        <button
+                            onClick={goToNextImage}
+                            aria-label="Next image"
+                            className="flex items-center justify-center rounded-full bg-white/90 p-2 shadow-md hover:bg-white transition focus:outline-none"
+                        >
+                            <ChevronRight className="w-6 h-6 text-gray-700" />
+                        </button>
                     </div>
                 </div>
             )}
+
+
+
         </div>
     );
 };
