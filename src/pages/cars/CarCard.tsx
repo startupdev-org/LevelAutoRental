@@ -53,7 +53,6 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
         >
             <Card
                 className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-2xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}
-                onClick={() => navigate(`/cars/${car.id}`)}
             >
                 {/* Image Container */}
                 <div
@@ -143,7 +142,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-5 flex flex-col justify-between flex-1">
+                <div className="p-5 flex flex-col justify-between flex-1" onClick={() => navigate(`/cars/${car.id}`)}>
                     {/* Car Name and Year */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between">
