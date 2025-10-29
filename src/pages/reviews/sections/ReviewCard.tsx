@@ -11,7 +11,7 @@ interface ReviewCardProps {
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({ review, index }) => {
     const { t } = useTranslation();
-
+    
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -50,7 +50,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, index }) => {
                 <span className="text-sm font-semibold text-gray-700">
                     {review.rating}.0
                 </span>
-                {review.category && (
+                {review.category && !['Spălare', 'Detailing auto', 'Vânzare'].includes(review.category) && (
                     <span className="ml-auto px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">
                         {t(`pages.reviews.categories.${review.category}`, { defaultValue: review.category })}
                     </span>
