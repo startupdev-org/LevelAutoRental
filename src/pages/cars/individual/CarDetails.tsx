@@ -43,7 +43,7 @@ export const CarDetails: React.FC = () => {
     useEffect(() => {
         setSelectedImage(car?.image);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [carId]);
+    }, [carId, car?.image]);
 
     if (!car) {
         return <CarNotFound />
