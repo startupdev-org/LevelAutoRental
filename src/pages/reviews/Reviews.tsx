@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,26 @@ export const Reviews: React.FC = () => {
 
     const navigate = useNavigate();
 
+    // Filter state
+    const [filterCategory, setFilterCategory] = useState<string>('Închiriere');
+    const [appliedCategory, setAppliedCategory] = useState<string>('Închiriere');
+
+    // Get unique categories
+    const uniqueCategories = useMemo(() => {
+        const categories = reviews.map(r => r.category);
+        return [...new Set(categories)];
+    }, []);
+
+    // Filter reviews based on applied category
+    const filteredReviews = useMemo(() => {
+        if (!appliedCategory) return reviews;
+        return reviews.filter((review) => review.category === appliedCategory);
+    }, [appliedCategory]);
+
+    const applyFilter = () => {
+        setAppliedCategory(filterCategory);
+    };
+
     useEffect(() => {
         if (globalThis.window === undefined) return;
 
@@ -30,14 +50,14 @@ export const Reviews: React.FC = () => {
     }, []);
 
 
-    // derived stats
-    const totalReviews = reviews.length;
+    // derived stats based on filtered reviews
+    const totalReviews = filteredReviews.length;
     const avgRating = totalReviews
-        ? (reviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / totalReviews)
+        ? (filteredReviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / totalReviews)
             .toFixed(1)
         : "0.0";
     const satisfactionPercent = totalReviews
-        ? Math.round((reviews.filter((r) => (r.rating ?? 0) >= 4).length / totalReviews) * 100)
+        ? Math.round((filteredReviews.filter((r) => (r.rating ?? 0) >= 4).length / totalReviews) * 100)
         : 0;
 
     return (
@@ -127,8 +147,7 @@ export const Reviews: React.FC = () => {
                     >
                         <motion.div
                             variants={fadeInUp}
-                            whileHover={{ scale: 1.05 }}
-                            className="bg-gray-100 rounded-lg p-5 flex flex-row items-center gap-5 hover:bg-gray-200 transition-all duration-300"
+                            className="bg-gray-100 rounded-2xl p-5 flex flex-row items-center gap-5"
                         >
                             <Award className="w-12 h-12 text-gray-600 flex-shrink-0" />
                             <div className="flex flex-col">
@@ -143,8 +162,7 @@ export const Reviews: React.FC = () => {
 
                         <motion.div
                             variants={fadeInUp}
-                            whileHover={{ scale: 1.05 }}
-                            className="bg-gray-100 rounded-lg p-5 flex flex-row items-center gap-5 hover:bg-gray-200 transition-all duration-300"
+                            className="bg-gray-100 rounded-2xl p-5 flex flex-row items-center gap-5"
                         >
                             <Star className="w-12 h-12 text-gray-600 flex-shrink-0" />
                             <div className="flex flex-col">
@@ -159,8 +177,7 @@ export const Reviews: React.FC = () => {
 
                         <motion.div
                             variants={fadeInUp}
-                            whileHover={{ scale: 1.05 }}
-                            className="bg-gray-100 rounded-lg p-5 flex flex-row items-center gap-5 hover:bg-gray-200 transition-all duration-300"
+                            className="bg-gray-100 rounded-2xl p-5 flex flex-row items-center gap-5"
                         >
                             <TrendingUp className="w-12 h-12 text-gray-600 flex-shrink-0" />
                             <div className="flex flex-col">
@@ -174,11 +191,55 @@ export const Reviews: React.FC = () => {
                         </motion.div>
                     </motion.div>
 
+                    {/* Filter Section */}
+                    <div className="mb-10 flex flex-col lg:flex-row gap-4 items-stretch">
+                        {/* Filter Card */}
+                        <div className="flex-1 border border-gray-300 rounded-xl py-6 bg-transparent">
+                            <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+                                {/* Category Filter */}
+                                <div className="flex-1 relative px-6 py-4 lg:py-0">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                                        {t('pages.reviews.filter.category', { defaultValue: 'Categorie' })}
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            value={filterCategory}
+                                            onChange={(e) => setFilterCategory(e.target.value)}
+                                            className="w-full text-lg font-bold text-gray-900 bg-transparent border-none outline-none appearance-none cursor-pointer pr-8"
+                                        >
+                                            <option value="">{t('pages.reviews.filter.allCategories', { defaultValue: 'Toate categoriile' })}</option>
+                                            {uniqueCategories.map((category) => (
+                                                <option key={category} value={category}>
+                                                    {t(`pages.reviews.categories.${category}`, { defaultValue: category })}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Filter Button - Separate on Right */}
+                        <div className="lg:w-auto w-full flex items-end">
+                            <button
+                                onClick={applyFilter}
+                                className="w-full lg:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-4 lg:py-6 rounded-xl transition-colors duration-200 text-base lg:text-lg"
+                            >
+                                {t('pages.reviews.filter.apply', { defaultValue: 'Filtrează' })}
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Reviews Grid with enhanced animations */}
                     <div
                         className="columns-1 md:columns-2 lg:columns-3 gap-6"
                     >
-                        {reviews.filter((review) => review.category === 'Închiriere').map((review, index) => (
+                        {filteredReviews.map((review, index) => (
                             <motion.div
                                 key={review.id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -189,9 +250,12 @@ export const Reviews: React.FC = () => {
                                     ease: "easeOut"
                                 }}
                                 whileHover={{
-                                    y: -8,
-                                    scale: 1.02,
-                                    transition: { duration: 0.2 }
+                                    y: -12,
+                                    scale: 1.03,
+                                    transition: { 
+                                        duration: 0.4,
+                                        ease: [0.25, 0.46, 0.45, 0.94] // Custom cubic-bezier for smooth animation
+                                    }
                                 }}
                                 className="w-full break-inside-avoid mb-6"
                             >

@@ -18,6 +18,10 @@ export interface Car {
   fuelConsumption?: number; // Fuel consumption (L/100km)
   drivetrain?: string; // Drivetrain type (FWD, RWD, 4WD, AWD)
   time?: string; // Time specification
+  power?: string; // Engine power (e.g., "300 HP")
+  acceleration?: string; // 0-100 km/h acceleration (e.g., "5.2s")
+  description?: string; // Short description
+  longDescription?: string; // Detailed description
 }
 
 export interface BookingForm {

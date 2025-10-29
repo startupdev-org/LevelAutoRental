@@ -93,26 +93,26 @@ export const Terms: React.FC = () => {
                             <motion.div
                                 key={section.key}
                                 variants={fadeInUp}
-                                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-lg transition-all duration-300"
+                                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 hover:shadow-lg transition-all duration-300"
                             >
-                                <div className="flex items-start gap-6">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                                        <section.icon className="w-6 h-6 text-white" />
+                                <div className="flex items-start gap-3 md:gap-6">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                        <section.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
                                     </div>
-                                    <div className="flex-1">
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 break-words">
                                             {section.title}
                                         </h2>
                                         {section.description ? (
-                                            <p className="text-gray-600 leading-relaxed">
+                                            <p className="text-gray-600 leading-relaxed text-sm md:text-base break-words hyphens-auto">
                                                 {section.description}
                                             </p>
                                         ) : section.bullets ? (
                                             <ul className="space-y-3">
                                                 {section.bullets.map((bullet, index) => (
-                                                    <li key={index} className="flex items-start gap-3">
+                                                    <li key={index} className="flex items-start gap-2 md:gap-3">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                                                        <span className="text-gray-600 leading-relaxed">{bullet}</span>
+                                                        <span className="text-gray-600 leading-relaxed text-sm md:text-base break-words hyphens-auto flex-1 min-w-0">{bullet}</span>
                                                     </li>
                                                 ))}
                                             </ul>

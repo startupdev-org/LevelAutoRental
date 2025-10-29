@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Calendar, MapPin } from 'lucide-react';
 import { cars } from '../../data/cars';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
@@ -23,35 +24,142 @@ export const Cars: React.FC = () => {
   const [filters, setFilters] = useState({
     make: '',
     model: '',
-    generation: '',
-    kilometersFrom: '',
-    kilometersTo: '',
-    yearFrom: '',
-    yearTo: '',
-    priceFrom: '',
-    priceTo: '',
-    fuel: '',
-    drivetrain: '',
-    body: '',
-    transmission: ''
+    location: '',
+    dateRange: ''
   });
 
   // Applied filters state (what's actually used for filtering)
   const [appliedFilters, setAppliedFilters] = useState({
     make: '',
     model: '',
-    generation: '',
-    kilometersFrom: '',
-    kilometersTo: '',
-    yearFrom: '',
-    yearTo: '',
-    priceFrom: '',
-    priceTo: '',
-    fuel: '',
-    drivetrain: '',
-    body: '',
-    transmission: ''
+    location: '',
+    dateRange: ''
   });
+
+  // Dropdown states
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showDateCalendar, setShowDateCalendar] = useState(false);
+
+  // Close all dropdowns
+  const closeAllDropdowns = () => {
+    setShowLocationDropdown(false);
+    setShowDateCalendar(false);
+  };
+
+  // Handle opening a specific dropdown and closing others
+  const openDropdown = (dropdownType: 'location' | 'date') => {
+    if ((dropdownType === 'location' && showLocationDropdown) ||
+        (dropdownType === 'date' && showDateCalendar)) {
+      closeAllDropdowns();
+      return;
+    }
+    
+    closeAllDropdowns();
+    if (dropdownType === 'location') {
+      setShowLocationDropdown(true);
+    } else if (dropdownType === 'date') {
+      setShowDateCalendar(true);
+    }
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        closeAllDropdowns();
+      }
+    };
+
+    if (showLocationDropdown || showDateCalendar) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLocationDropdown, showDateCalendar]);
+
+  // Helper functions
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+  };
+
+  const generateCalendarDays = (date: Date): (string | null)[] => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+    const days: (string | null)[] = [];
+    const currentDate = new Date(startDate);
+
+    for (let i = 0; i < 42; i++) {
+      if (currentDate.getMonth() === month) {
+        days.push(currentDate.toISOString().split('T')[0]);
+      } else {
+        days.push(null);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return days;
+  };
+
+  const isSameDay = (date1: Date, date2: Date): boolean => {
+    return date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate();
+  };
+
+  // Initialize date range with today's date if empty
+  const todayDate = new Date().toISOString().split('T')[0];
+  useEffect(() => {
+    if (!filters.dateRange) {
+      setFilters(prev => ({ ...prev, dateRange: todayDate }));
+    }
+  }, []);
+
+  // Get min/max values for sliders
+  const priceRange = useMemo(() => {
+    const prices = cars.map(car => car.pricePerDay);
+    return { min: Math.min(...prices), max: Math.max(...prices) };
+  }, []);
+
+  const yearRangeData = useMemo(() => {
+    const years = cars.map(car => car.year);
+    return { min: Math.min(...years), max: Math.max(...years) };
+  }, []);
+
+  // Sidebar filter state
+  const [sidebarFilters, setSidebarFilters] = useState({
+    rentalType: 'Any', // Per Day, Per Hour, Any
+    priceRange: [0, 1000] as [number, number], // Will be updated in useEffect
+    yearRange: [2010, 2025] as [number, number], // Will be updated in useEffect
+    transmission: 'Any', // Any, Manual, Automatic
+    fuelType: 'Any', // Any, Petrol, Diesel, Electric, Hybrid, etc.
+    seats: 'Any', // Any, 2, 4, 5, 7
+    vehicleCondition: 'All', // All, Brand New, Used
+    availability: 'Any' // Any, Available, Not Available
+  });
+
+  // Update sidebar filters when priceRange and yearRangeData are available
+  useEffect(() => {
+    if (priceRange.min && priceRange.max && yearRangeData.min && yearRangeData.max) {
+      setSidebarFilters(prev => ({
+        ...prev,
+        priceRange: prev.priceRange[0] === 0 && prev.priceRange[1] === 1000 
+          ? [priceRange.min, priceRange.max] 
+          : prev.priceRange,
+        yearRange: prev.yearRange[0] === 2010 && prev.yearRange[1] === 2025
+          ? [yearRangeData.min, yearRangeData.max]
+          : prev.yearRange
+      }));
+    }
+  }, [priceRange.min, priceRange.max, yearRangeData.min, yearRangeData.max]);
 
   const [sortBy, setSortBy] = useState('default');
   const [showAllParams, setShowAllParams] = useState(false);
@@ -64,17 +172,8 @@ export const Cars: React.FC = () => {
       const initialFilters = {
         make: makeParam,
         model: '',
-        generation: '',
-        kilometersFrom: '',
-        kilometersTo: '',
-        yearFrom: '',
-        yearTo: '',
-        priceFrom: '',
-        priceTo: '',
-        fuel: '',
-        drivetrain: '',
-        body: '',
-        transmission: ''
+        location: '',
+        dateRange: ''
       };
       setFilters(initialFilters);
       setAppliedFilters(initialFilters);
@@ -115,39 +214,44 @@ export const Cars: React.FC = () => {
         return false;
       }
 
-      // Year filter
-      if (appliedFilters.yearFrom && car.year < Number.parseInt(appliedFilters.yearFrom)) {
-        return false;
-      }
-      if (appliedFilters.yearTo && car.year > Number.parseInt(appliedFilters.yearTo)) {
-        return false;
-      }
-
-      // Price filter
-      if (appliedFilters.priceFrom && car.pricePerDay < Number.parseInt(appliedFilters.priceFrom)) {
-        return false;
-      }
-      if (appliedFilters.priceTo && car.pricePerDay > Number.parseInt(appliedFilters.priceTo)) {
+      // Sidebar filters
+      // Price range filter
+      if (car.pricePerDay < sidebarFilters.priceRange[0] || car.pricePerDay > sidebarFilters.priceRange[1]) {
         return false;
       }
 
-      // Fuel
-      if (appliedFilters.fuel && car.fuelType?.toLowerCase() !== appliedFilters.fuel.toLowerCase()) {
-        return false;
-      }
-      // drivetrain
-      if (appliedFilters.drivetrain && car.drivetrain?.toLowerCase() !== appliedFilters.drivetrain.toLowerCase()) {
-        return false;
-      }
-      // Body
-      if (appliedFilters.body && car.body?.toLowerCase() !== appliedFilters.body.toLowerCase()) {
-        return false;
-      }
-      // Transmission
-      if (appliedFilters.transmission && car.transmission?.toLowerCase() !== appliedFilters.transmission.toLowerCase()) {
+      // Year range filter
+      if (car.year < sidebarFilters.yearRange[0] || car.year > sidebarFilters.yearRange[1]) {
         return false;
       }
 
+      // Transmission filter
+      if (sidebarFilters.transmission !== 'Any' && car.transmission !== sidebarFilters.transmission) {
+        return false;
+      }
+
+      // Fuel type filter
+      if (sidebarFilters.fuelType !== 'Any') {
+        const fuelTypeMap: Record<string, string> = {
+          'Petrol': 'gasoline',
+          'Gasoline': 'gasoline',
+          'Diesel': 'diesel',
+          'Electric': 'electric',
+          'Hybrid': 'hybrid'
+        };
+        const mappedFuelType = fuelTypeMap[sidebarFilters.fuelType] || sidebarFilters.fuelType.toLowerCase();
+        if (car.fuelType !== mappedFuelType) {
+          return false;
+        }
+      }
+
+      // Seats filter
+      if (sidebarFilters.seats !== 'Any') {
+        const seatsCount = parseInt(sidebarFilters.seats);
+        if (car.seats !== seatsCount) {
+          return false;
+        }
+      }
 
       return true;
     });
@@ -167,7 +271,7 @@ export const Cars: React.FC = () => {
       default:
         return filtered;
     }
-  }, [appliedFilters, sortBy]);
+  }, [appliedFilters, sortBy, sidebarFilters]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -183,72 +287,36 @@ export const Cars: React.FC = () => {
   }, [filters]);
 
   const validateRanges = (currentFilters: typeof filters) => {
-    const errors = {
+    // No validation needed for simplified filters
+    setValidationErrors({
       yearRange: false,
       priceRange: false,
       kilometersRange: false,
-    };
-
-    // Validate year range
-    if (currentFilters.yearFrom && currentFilters.yearTo) {
-      const fromYear = Number.parseInt(currentFilters.yearFrom);
-      const toYear = Number.parseInt(currentFilters.yearTo);
-      if (!Number.isNaN(fromYear) && !Number.isNaN(toYear) && fromYear > toYear) {
-        errors.yearRange = true;
-      }
-    }
-
-    // Validate price range
-    if (currentFilters.priceFrom && currentFilters.priceTo) {
-      const fromPrice = Number.parseInt(currentFilters.priceFrom);
-      const toPrice = Number.parseInt(currentFilters.priceTo);
-      if (!Number.isNaN(fromPrice) && !Number.isNaN(toPrice) && fromPrice > toPrice) {
-        errors.priceRange = true;
-      }
-    }
-
-    // Validate kilometers range
-    if (currentFilters.kilometersFrom && currentFilters.kilometersTo) {
-      const fromKm = Number.parseInt(currentFilters.kilometersFrom);
-      const toKm = Number.parseInt(currentFilters.kilometersTo);
-      if (!Number.isNaN(fromKm) && !Number.isNaN(toKm) && fromKm > toKm) {
-        errors.kilometersRange = true;
-      }
-    }
-
-    setValidationErrors(errors);
+    });
   };
 
   const resetFilters = () => {
     setFilters({
       make: '',
       model: '',
-      generation: '',
-      kilometersFrom: '',
-      kilometersTo: '',
-      yearFrom: '',
-      yearTo: '',
-      priceFrom: '',
-      priceTo: '',
-      fuel: '',
-      drivetrain: '',
-      body: '',
-      transmission: ''
+      location: '',
+      dateRange: ''
     });
     setAppliedFilters({
       make: '',
       model: '',
-      generation: '',
-      kilometersFrom: '',
-      kilometersTo: '',
-      yearFrom: '',
-      yearTo: '',
-      priceFrom: '',
-      priceTo: '',
-      fuel: '',
-      drivetrain: '',
-      body: '',
-      transmission: ''
+      location: '',
+      dateRange: ''
+    });
+    setSidebarFilters({
+      rentalType: 'Any',
+      priceRange: [priceRange.min, priceRange.max],
+      yearRange: [yearRangeData.min, yearRangeData.max],
+      transmission: 'Any',
+      fuelType: 'Any',
+      seats: 'Any',
+      vehicleCondition: 'All',
+      availability: 'Any'
     });
     setValidationErrors({
       yearRange: false,
@@ -257,532 +325,412 @@ export const Cars: React.FC = () => {
     });
   };
 
+  const handleSidebarFilterChange = (key: string, value: any) => {
+    setSidebarFilters(prev => ({ ...prev, [key]: value }));
+  };
+
   const applyFilters = () => {
-    if (
-      validationErrors.yearRange ||
-      validationErrors.priceRange ||
-      validationErrors.kilometersRange
-    ) {
-      setApplyError('Corectați erorile din filtre înainte de a aplica.');
-      return; // Stop applying
-    }
-
-    setApplyError(''); // Clear error if no issues
     setAppliedFilters({ ...filters });
-
     console.log('All the filters are: ', filters)
   };
 
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1450px] mx-auto px-8 sm:px-12 lg:px-16 py-16 mt-16">
-        {/* Filter Section */}
-        <motion.div
-          ref={ref}
-          variants={staggerContainer}
-          initial="initial"
-          animate={isInView ? "animate" : "initial"}
-          className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-10 mb-10 backdrop-blur-sm relative overflow-hidden"
-        >
-          {/* Background gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-red-50/30 via-transparent to-blue-50/20 pointer-events-none"></div>
-
-          <div className="relative z-10 flex justify-between items-center mb-10">
-            <div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-3">Filtre</h3>
-              <p className="text-gray-600 text-lg">Găsește mașina perfectă pentru tine</p>
-            </div>
-            <div className="flex items-center text-red-600 cursor-pointer hover:text-red-700 transition-all duration-300 bg-red-50 hover:bg-red-100 px-6 py-3 rounded-2xl shadow-sm hover:shadow-md">
-              <span className="mr-3 font-semibold">Salvează căutarea</span>
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Filter Inputs */}
-          <div className="relative z-10 space-y-8">
-
-            {/* First Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-
-              {/* Make */}
-              <div className="space-y-3">
-                <label htmlFor="make-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                  <span>Marca</span>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
+        {/* Top Filter Section - Full Width */}
+        <div className="mt-8 mb-10 flex flex-col lg:flex-row gap-4 items-stretch relative">
+          {/* Filter Card */}
+          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl overflow-visible">
+          <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+            {/* Car Brand */}
+            <div className="flex-1 relative border-r border-gray-200 px-5 py-4 lg:py-4">
+              <label className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5 block">
+                Marca
                 </label>
-                <div className="relative group">
+              <div className="relative">
                   <select
-                    id="make-select"
                     value={filters.make}
                     onChange={(e) => handleFilterChange('make', e.target.value)}
-                    className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
+                  className="w-full text-base font-bold text-gray-900 bg-transparent border-none outline-none appearance-none cursor-pointer pr-8 focus:ring-0"
                   >
-                    <option value="" className="py-2">Selectează marca</option>
+                  <option value="">Selectează marca</option>
                     {uniqueMakes.map((make) => (
-                      <option key={make} value={make} className="py-2 bg-white text-gray-700">{make}</option>
+                    <option key={make} value={make}>{make}</option>
                     ))}
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              {/* Model */}
-              <div className="space-y-3">
-                <label htmlFor="model-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                  <span>Model</span>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+            {/* Car Model */}
+            <div className="flex-1 relative border-r border-gray-200 px-5 py-4 lg:py-4">
+              <label className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5 block">
+                Model
                 </label>
-                <div className="relative group">
+              <div className="relative">
                   <select
-                    id="model-select"
                     value={filters.model}
                     onChange={(e) => handleFilterChange('model', e.target.value)}
-                    className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
-                  >
-                    <option value="" className="py-2">Selectează modelul</option>
-                    <option value="AMG C43" className="py-2 bg-white text-gray-700">AMG C43</option>
-                    <option value="GLE" className="py-2 bg-white text-gray-700">GLE</option>
-                    <option value="CLS" className="py-2 bg-white text-gray-700">CLS</option>
-                    <option value="Ghibli" className="py-2 bg-white text-gray-700">Ghibli</option>
+                  className="w-full text-base font-bold text-gray-900 bg-transparent border-none outline-none appearance-none cursor-pointer pr-8 focus:ring-0"
+                >
+                  <option value="">Orice</option>
+                  <option value="AMG C43">AMG C43</option>
+                  <option value="GLE">GLE</option>
+                  <option value="CLS">CLS</option>
+                  <option value="Ghibli">Ghibli</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Generation */}
-              <div className="space-y-3">
-                <label htmlFor="generation-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                  <span>Generație</span>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </label>
-                <div className="flex gap-4">
-                  <div className="relative group flex-1">
-                    <select
-                      id="generation-select"
-                      value={filters.generation}
-                      onChange={(e) => handleFilterChange('generation', e.target.value)}
-                      className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
-                    >
-                      <option value="" className="py-2">Selectează generația</option>
-                      <option value="W205" className="py-2 bg-white text-gray-700">W205</option>
-                      <option value="W167" className="py-2 bg-white text-gray-700">W167</option>
-                      <option value="C257" className="py-2 bg-white text-gray-700">C257</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                  <button className="px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 rounded-2xl border-2 border-gray-200 transition-all duration-300 hover:shadow-lg group">
-                    <svg className="w-5 h-5 text-gray-600 group-hover:text-gray-800 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Second Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Kilometers */}
-              <div className="space-y-3">
-                <label htmlFor="kilometers-from" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                  <span>Kilometri parcurși</span>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                  <AnimatePresence>
-                    {validationErrors.kilometersRange && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.25 }}
-                        className="flex items-center gap-1 text-red-500 text-xs"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          {InfoIconPath}
-                        </svg>
-                        <span>Kilometrajul „de la” trebuie să fie mai mic decât „până la”.</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </label>
-                <div className="flex gap-4">
-                  <input
-                    type="text"
-                    id="kilometers-from"
-                    placeholder="De la..."
-                    value={filters.kilometersFrom}
-                    onChange={(e) => handleFilterChange('kilometersFrom', e.target.value)}
-                    className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-white shadow-lg hover:shadow-xl transition-all duration-300 text-gray-700 placeholder-gray-400 font-medium"
-                  />
-                  <input
-                    type="text"
-                    id="kilometers-to"
-                    placeholder="Până la..."
-                    value={filters.kilometersTo}
-                    onChange={(e) => handleFilterChange('kilometersTo', e.target.value)}
-                    className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-white shadow-lg hover:shadow-xl transition-all duration-300 text-gray-700 placeholder-gray-400 font-medium"
-                  />
+            {/* Location */}
+            <div className="flex-1 relative border-r border-gray-200 px-5 py-4 lg:py-4 dropdown-container overflow-visible">
+              <label className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5 block">
+                Locație
+              </label>
+              <div className="relative overflow-visible">
+                <MapPin className="absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <div
+                  className="pl-6 pr-8 text-base font-medium text-gray-900 cursor-pointer hover:text-gray-700 transition-colors"
+                  onClick={() => openDropdown('location')}
+                >
+                  {filters.location || 'Selectează locația'}
                 </div>
-              </div>
-
-              {/* Year */}
-              <div className="space-y-3">
-                <label htmlFor="year-from" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                  <span>Anul</span>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                  <AnimatePresence>
-                    {validationErrors.yearRange && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.25 }}
-                        className="flex items-center gap-1 text-red-500 text-xs"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          {InfoIconPath}
-                        </svg>
-                        <span>Anul „de la” trebuie să fie mai mic decât „până la”.</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </label>
-                <div className="flex gap-4">
-                  <div className="relative group flex-1">
-                    <select
-                      id="year-from"
-                      value={filters.yearFrom}
-                      onChange={(e) => handleFilterChange('yearFrom', e.target.value)}
-                      className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
+                </div>
+
+                {/* Location Dropdown */}
+                <AnimatePresence>
+                  {showLocationDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[200px]"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <option value="" className="py-2">De la</option>
-                      {Array.from({ length: 10 }, (_, i) => 2024 - i).map(year => (
-                        <option key={year} value={year} className="py-2 bg-white text-gray-700">{year}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="relative group flex-1">
-                    <select
-                      id="year-to"
-                      value={filters.yearTo}
-                      onChange={(e) => handleFilterChange('yearTo', e.target.value)}
-                      className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
-                    >
-                      <option value="" className="py-2">Până la</option>
-                      {Array.from({ length: 10 }, (_, i) => 2024 - i).map(year => (
-                        <option key={year} value={year} className="py-2 bg-white text-gray-700">{year}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Third Row - Price */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <label htmlFor="price-from" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                  <span>Prețul</span>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                  <AnimatePresence>
-                    {validationErrors.priceRange && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.25 }}
-                        className="flex items-center gap-1 text-red-500 text-xs"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          {InfoIconPath}
-                        </svg>
-                        <span>Prețul "de la" trebuie să fie mai mic decât "până la"</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </label>
-                <div className="flex gap-4">
-                  <input
-                    type="text"
-                    id="price-from"
-                    placeholder="De la..."
-                    value={filters.priceFrom}
-                    onChange={(e) => handleFilterChange('priceFrom', e.target.value)}
-                    className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-white shadow-lg hover:shadow-xl transition-all duration-300 text-gray-700 placeholder-gray-400 font-medium"
-                  />
-                  <input
-                    type="text"
-                    id="price-to"
-                    placeholder="Până la..."
-                    value={filters.priceTo}
-                    onChange={(e) => handleFilterChange('priceTo', e.target.value)}
-                    className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-white shadow-lg hover:shadow-xl transition-all duration-300 text-gray-700 placeholder-gray-400 font-medium"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* More parameters */}
-            {showAllParams && (
-              <div className="mt-8 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-
-                  {/* Fuel Type */}
-                  <div className="space-y-3">
-                    <label htmlFor="fuel-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                      <span>Tipul de combustibil</span>
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </label>
-                    <div className="flex gap-4">
-                      <div className="relative group flex-1">
-                        <select
-                          id="fuel-select"
-                          value={filters.fuel}
-                          onChange={(e) => handleFilterChange('fuel', e.target.value)}
-                          className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
+                      <div className="py-1">
+                        <div
+                          className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                          onClick={() => {
+                            handleFilterChange('location', 'Chisinau Airport');
+                            closeAllDropdowns();
+                          }}
                         >
-                          <option value="" className="py-2">Selectează tipul de combustibil</option>
-                          <option value="W205" className="py-2 bg-white text-gray-700">Benzina</option>
-                          <option value="W167" className="py-2 bg-white text-gray-700">Motorina</option>
-                          <option value="C257" className="py-2 bg-white text-gray-700">Hybrid</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                          <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
+                          Chisinau Airport
+                        </div>
+                        <div
+                          className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                          onClick={() => {
+                            handleFilterChange('location', 'Chisinau');
+                            closeAllDropdowns();
+                          }}
+                        >
+                          Chisinau
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-
-
-                  {/* drivetrain */}
-                  <div className="space-y-3">
-                    <label htmlFor="drivetrain-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                      <span>Tracțiune</span>
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </label>
-                    <div className="relative group">
-                      <select
-                        id="drivetrain-select"
-                        value={filters.drivetrain}
-                        onChange={(e) => handleFilterChange('drivetrain', e.target.value)}
-                        className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
-                      >
-                        <option value="" className="py-2">Selectează tipul tractiunii</option>
-                        <option value="fata">Față</option>
-                        <option value="spate">Spate</option>
-                        <option value="4x4">4x4</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Body Type */}
-                  <div className="space-y-3">
-                    <label htmlFor="body-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                      <span>Caroserie</span>
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </label>
-                    <div className="relative group">
-                      <select
-                        id="body-select"
-                        value={filters.make}
-                        onChange={(e) => handleFilterChange('body', e.target.value)}
-                        className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
-                      >
-                        <option value="" className="py-2">Selectează marca</option>
-                        <option value="sedan">Sedan</option>
-                        <option value="suv">SUV</option>
-                        <option value="hatchback">Hatchback</option>
-                        <option value="coupe">Coupe</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Transmission */}
-                  <div className="space-y-3">
-                    <label htmlFor="transmission-select" className="text-sm font-bold text-gray-800 block flex items-center gap-2">
-                      <span>Transmisie</span>
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </label>
-                    <div className="relative group">
-                      <select
-                        id="transmission-select"
-                        value={filters.make}
-                        onChange={(e) => handleFilterChange('transmission', e.target.value)}
-                        className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium appearance-none cursor-pointer backdrop-blur-sm"
-                      >
-                        <option value="" className="py-2">Selectează transmisia</option>
-                        <option value="sedan">Manuala</option>
-                        <option value="suv">Automata</option>
-                        <option value="hatchback">Variator</option>
-                        <option value="coupe">Robotizata</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            )}
-
-          </div>
-
-          {/* Filter Actions */}
-          <div className="relative z-10 flex justify-between items-center mt-12 pt-8 border-t-2 border-gray-100">
-            <div className="flex items-center gap-8">
-              <button
-                onClick={() => {
-                  setShowAllParams(!showAllParams)
-                  handleFilterChange('fuelType', '');
-                  handleFilterChange('drivetrain', '');
-                  handleFilterChange('body', '');
-                  handleFilterChange('transmission', '');
-                }}
-                className="flex items-center text-gray-700 hover:text-gray-900 transition-all duration-300 bg-gray-50 hover:bg-gray-100 px-6 py-3 rounded-2xl shadow-sm hover:shadow-md font-semibold"
-              >
-                <span>Toți parametrii</span>
-                <svg className={`w-5 h-5 ml-3 transition-transform duration-300 ${showAllParams ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <button
-                onClick={resetFilters}
-                className="flex items-center text-gray-700 hover:text-gray-900 transition-all duration-300 bg-gray-50 hover:bg-gray-100 px-6 py-3 rounded-2xl shadow-sm hover:shadow-md font-semibold"
-              >
-                <span>Resetează filtrele</span>
-                <svg className="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
-            <AnimatePresence>
-              {applyError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.25 }}
-                  className="flex items-center gap-1 text-red-500 text-xs"
+
+            {/* Date Range */}
+            <div className="flex-1 relative px-5 py-4 lg:py-4 dropdown-container overflow-visible">
+              <label className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1.5 block">
+                Perioadă
+              </label>
+              <div className="relative overflow-visible">
+                <Calendar className="absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <div
+                  className="pl-6 pr-8 text-base font-medium text-gray-900 cursor-pointer hover:text-gray-700 transition-colors"
+                  onClick={() => openDropdown('date')}
                 >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    {InfoIconPath}
+                  {filters.dateRange ? formatDate(filters.dateRange) : 'Selectează perioada'}
+                </div>
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                  <span className="text-red-500 text-sm font-medium">{applyError}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <button
-              onClick={applyFilters}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-10 py-4 rounded-2xl font-bold transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 text-lg"
-            >
-              Aplică filtrele
-            </button>
-          </div>
-        </motion.div>
+                </div>
 
-
-
-
-        {/* Results Section */}
-        <div className="flex justify-between items-center mb-10">
-          <div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">Mașini disponibile</h2>
-            <p className="text-gray-600 text-xl">{filteredCars.length} mașini disponibile</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <label htmlFor="sort-select" className="text-sm font-bold text-gray-800">Sortează după:</label>
-            <div className="relative group">
-              <select
-                id="sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-6 py-4 pr-12 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-300 text-gray-700 font-medium min-w-[220px] appearance-none cursor-pointer backdrop-blur-sm"
-              >
-                <option value="default" className="py-2">Implicit</option>
-                <option value="price-low" className="py-2 bg-white text-gray-700">Preț: Mic la Mare</option>
-                <option value="price-high" className="py-2 bg-white text-gray-700">Preț: Mare la Mic</option>
-                <option value="year-new" className="py-2 bg-white text-gray-700">An: Nou la Vechi</option>
-                <option value="year-old" className="py-2 bg-white text-gray-700">An: Vechi la Nou</option>
-                <option value="rating" className="py-2 bg-white text-gray-700">Rating</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                {/* Calendar Dropdown */}
+                <AnimatePresence>
+                  {showDateCalendar && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <button
+                          onClick={() => {
+                            const currentDate = filters.dateRange || todayDate;
+                            const newDate = new Date(currentDate);
+                            newDate.setMonth(newDate.getMonth() - 1);
+                            handleFilterChange('dateRange', newDate.toISOString().split('T')[0]);
+                          }}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <div className="text-sm font-medium text-gray-700">
+                          {new Date(filters.dateRange || todayDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        </div>
+                        <button
+                          onClick={() => {
+                            const currentDate = filters.dateRange || todayDate;
+                            const newDate = new Date(currentDate);
+                            newDate.setMonth(newDate.getMonth() + 1);
+                            handleFilterChange('dateRange', newDate.toISOString().split('T')[0]);
+                          }}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
+                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                          <div key={day} className="text-gray-500 font-medium">{day}</div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {generateCalendarDays(new Date(filters.dateRange || todayDate)).map((day, index) => (
+                          <div
+                            key={index}
+                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded hover:bg-gray-100 transition-colors ${
+                              day ? 'text-gray-700' : 'text-gray-300'
+                            } ${
+                              day && filters.dateRange && isSameDay(new Date(day), new Date(filters.dateRange))
+                                ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                : ''
+                            }`}
+                            onClick={() => {
+                              if (day) {
+                                handleFilterChange('dateRange', day);
+                                closeAllDropdowns();
+                              }
+                            }}
+                          >
+                            {day ? new Date(day).getDate() : ''}
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Cars Grid */}
-        <motion.div
-          variants={staggerContainer}
-          initial="initial"
-          animate={isInView ? "animate" : "initial"}
-          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
-        >
-          {filteredCars.map((car, index) => (
-            <CarCard key={car.id} car={car} index={index} />
-          ))}
-        </motion.div>
+        {/* Search Button - Separate on Right */}
+        <div className="lg:w-auto w-full flex items-stretch">
+              <button
+                onClick={applyFilters}
+              className="w-full lg:min-w-[180px] lg:w-auto h-full bg-theme-500 hover:bg-theme-600 text-white font-bold px-8 py-4 rounded-2xl text-base lg:text-lg flex items-center justify-center transition-colors duration-200"
+              >
+                Caută
+              </button>
+          </div>
+        </div>
+
+        {/* Main Layout with Sidebar */}
+        <div className="flex gap-6">
+          {/* Left Sidebar - Filters */}
+          <aside className="hidden lg:block w-80 flex-shrink-0">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 sticky top-4 max-h-[calc(100vh-4rem)] overflow-y-auto shadow-sm">
+              <div className="flex justify-between items-center mb-5 pb-4 border-b border-gray-100">
+                <h3 className="text-lg font-bold text-gray-900">Filters</h3>
+                <button
+                  onClick={resetFilters}
+                  className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Reset All
+                </button>
+              </div>
+
+              <div className="space-y-6 pt-1">
+                {/* Price Range */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 block">
+                    PRICE RANGE
+                  </label>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm font-semibold text-gray-700">
+                      <span>${sidebarFilters.priceRange[0]}</span>
+                      <span>${sidebarFilters.priceRange[1]}</span>
+                    </div>
+                    <div className="relative h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="absolute h-2 bg-theme-500 rounded-full"
+                        style={{
+                          left: `${((sidebarFilters.priceRange[0] - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
+                          width: `${((sidebarFilters.priceRange[1] - sidebarFilters.priceRange[0]) / (priceRange.max - priceRange.min)) * 100}%`
+                        }}
+                      />
+                      <input
+                        type="range"
+                        min={priceRange.min}
+                        max={priceRange.max}
+                        value={sidebarFilters.priceRange[0]}
+                        onChange={(e) => handleSidebarFilterChange('priceRange', [parseInt(e.target.value), sidebarFilters.priceRange[1]])}
+                        className="absolute w-full h-2 opacity-0 cursor-pointer z-10"
+                      />
+                      <input
+                        type="range"
+                        min={priceRange.min}
+                        max={priceRange.max}
+                        value={sidebarFilters.priceRange[1]}
+                        onChange={(e) => handleSidebarFilterChange('priceRange', [sidebarFilters.priceRange[0], parseInt(e.target.value)])}
+                        className="absolute w-full h-2 opacity-0 cursor-pointer z-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Year */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 block">
+                    YEAR
+                  </label>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm font-semibold text-gray-700">
+                      <span>{sidebarFilters.yearRange[0]}</span>
+                      <span>{sidebarFilters.yearRange[1]}</span>
+                    </div>
+                    <div className="relative h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="absolute h-2 bg-theme-500 rounded-full"
+                        style={{
+                          left: `${((sidebarFilters.yearRange[0] - yearRangeData.min) / (yearRangeData.max - yearRangeData.min)) * 100}%`,
+                          width: `${((sidebarFilters.yearRange[1] - sidebarFilters.yearRange[0]) / (yearRangeData.max - yearRangeData.min)) * 100}%`
+                        }}
+                      />
+                      <input
+                        type="range"
+                        min={yearRangeData.min}
+                        max={yearRangeData.max}
+                        value={sidebarFilters.yearRange[0]}
+                        onChange={(e) => handleSidebarFilterChange('yearRange', [parseInt(e.target.value), sidebarFilters.yearRange[1]])}
+                        className="absolute w-full h-2 opacity-0 cursor-pointer z-10"
+                      />
+                      <input
+                        type="range"
+                        min={yearRangeData.min}
+                        max={yearRangeData.max}
+                        value={sidebarFilters.yearRange[1]}
+                        onChange={(e) => handleSidebarFilterChange('yearRange', [sidebarFilters.yearRange[0], parseInt(e.target.value)])}
+                        className="absolute w-full h-2 opacity-0 cursor-pointer z-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transmission */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 block">
+                    TRANSMISSION
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Any', 'Manual', 'Automatic'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => handleSidebarFilterChange('transmission', type)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          sidebarFilters.transmission === type
+                            ? 'bg-theme-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fuel Type */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 block">
+                    FUEL TYPE
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Any', 'Petrol', 'Diesel', 'Electric', 'Hybrid'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => handleSidebarFilterChange('fuelType', type)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          sidebarFilters.fuelType === type
+                            ? 'bg-theme-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Seats */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 block">
+                    SEAT
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Any', '2', '4', '5', '7'].map((seat) => (
+                      <button
+                        key={seat}
+                        onClick={() => handleSidebarFilterChange('seats', seat)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          sidebarFilters.seats === seat
+                            ? 'bg-theme-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {seat === 'Any' ? 'Any' : `${seat} Seater`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Cars Grid */}
+            <motion.div
+              variants={staggerContainer}
+              initial="initial"
+              animate={isInView ? "animate" : "initial"}
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5"
+            >
+              {filteredCars.map((car, index) => (
+                <CarCard key={car.id} car={car} index={index} />
+              ))}
+            </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );

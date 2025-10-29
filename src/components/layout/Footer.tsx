@@ -30,7 +30,7 @@ export const Footer: React.FC = () => {
     {
       title: t("footer.sections.reservations.title"),
       links: [
-        { name: t("footer.sections.reservations.links.start"), href: '/booking' },
+        { name: t("footer.sections.reservations.links.start"), href: '/' },
         { name: t("footer.sections.reservations.links.howTo"), href: '/how-to-rent' },
         { name: t("footer.sections.reservations.links.faq"), href: '/help' }
       ]
