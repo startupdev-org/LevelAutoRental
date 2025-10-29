@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Star, CarFront, Calendar, MapPin, Heart } from 'lucide-react';
+import { Star, CarFront, Calendar, MapPin, Heart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { cars } from '../../../data/cars';
 import { CarNotFound } from './CarNotFound';
@@ -11,12 +11,53 @@ export const CarDetails: React.FC = () => {
     const navigate = useNavigate();
     const car = cars.find((c) => c.id.toString() === carId);
 
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image);
+    // heroImage: image shown in the main hero (changes when clicking thumbnails)
+    const [heroImage, setHeroImage] = useState<string | undefined>(car?.image);
+    // lightboxImage: image shown inside the lightbox / gallery viewer (separate)
+    const [lightboxImage, setLightboxImage] = useState<string | undefined>(car?.image);
     const gallery = (car && (car.photoGallery ?? [car.image]).filter(Boolean)) || [];
 
+    // Lightbox state & handlers for gallery images
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const openLightbox = (src?: string) => {
+        if (src) setLightboxImage(src);
+        setLightboxOpen(true);
+        document.body.style.overflow = 'hidden';
+    };
+    const closeLightbox = () => {
+        setLightboxOpen(false);
+        document.body.style.overflow = '';
+    };
+
+    // keyboard navigation for lightbox: Escape to close, ArrowLeft/ArrowRight to navigate
+    const goToPrevImage = () => {
+        if (!gallery.length) return;
+        const idx = Math.max(0, gallery.findIndex((g) => g === lightboxImage));
+        const prev = (idx - 1 + gallery.length) % gallery.length;
+        setLightboxImage(gallery[prev]);
+    };
+    const goToNextImage = () => {
+        if (!gallery.length) return;
+        const idx = Math.max(0, gallery.findIndex((g) => g === lightboxImage));
+        const next = (idx + 1) % gallery.length;
+        setLightboxImage(gallery[next]);
+    };
+
     useEffect(() => {
-        // reset selected image when car changes
-        setSelectedImage(car?.image);
+        if (!lightboxOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') goToPrevImage();
+            if (e.key === 'ArrowRight') goToNextImage();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [lightboxOpen, lightboxImage, gallery]);
+
+    useEffect(() => {
+        // reset hero and lightbox images when car changes
+        setHeroImage(car?.image);
+        setLightboxImage(car?.image);
         // scroll to top on mount
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [carId]);
@@ -37,9 +78,10 @@ export const CarDetails: React.FC = () => {
                         {/* Gallery / Hero */}
                         <div className="relative rounded-xl overflow-hidden shadow-xl bg-gray-900 mt-20">
                             <img
-                                src={selectedImage ?? car.image}
+                                src={heroImage ?? car.image}
                                 alt={car.name}
-                                className="w-full h-[420px] md:h-[520px] object-cover"
+                                onClick={() => openLightbox(heroImage ?? car.image)}
+                                className="cursor-zoom-in w-full h-[420px] md:h-[520px] object-cover"
                             />
 
                             {/* badges */}
@@ -71,18 +113,18 @@ export const CarDetails: React.FC = () => {
 
                             {/* Detailed view on md+ (keeps original info) */}
                             <div className="hidden md:flex absolute bottom-3 left-3 right-3 flex items-center justify-between bg-black/40 backdrop-blur-sm rounded-lg px-3 py-2 text-sm">
-                                <div className="flex items-center gap-3 text-white">
+                                <div className="flex items-center gap-3 text-white font-bold">
                                     <div className="flex items-center gap-1">
                                         <CarFront className="w-4 h-4" />
-                                        <span className="text-s">{car.model ?? car.name}</span>
+                                        <span className="text-lg">{car.model ?? car.name}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Calendar className="w-4 h-4" />
-                                        <span className="text-s">{car.year}</span>
+                                        <span className="text-lg">{car.year}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <MapPin className="w-4 h-4" />
-                                        <span className="text-s">{car.location ?? 'Local'}</span>
+                                        <span className="text-lg">{car.location ?? 'Local'}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -101,16 +143,17 @@ export const CarDetails: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Thumbnails */}
+                        {/* Thumbnails - set hero image (no lightbox, no thumbnail animation) */}
                         {gallery.length > 0 && (
                             <div className="mt-4 grid grid-cols-4 gap-3">
                                 {gallery.map((src, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => setSelectedImage(src)}
-                                        className={`rounded-xl overflow-hidden border-2 ${selectedImage === src ? 'border-red-500' : 'border-transparent'} transition-all`}
+                                        onClick={() => setHeroImage(src)}
+                                        className={`rounded-xl overflow-hidden border-2 ${heroImage === src ? 'border-red-500' : 'border-transparent'}`}
+                                        aria-label={`Select ${car.name} thumbnail ${i + 1}`}
                                     >
-                                        <img src={src} alt={`${car.name}-${i}`} className="w-full h-20 object-cover" />
+                                        <img src={src} alt={`${car.name}-${i}`} className="w-full h-32 object-cover" />
                                     </button>
                                 ))}
                             </div>
@@ -149,7 +192,14 @@ export const CarDetails: React.FC = () => {
                                 <h3 className="text-xl font-semibold mb-4">Galerie</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {gallery.map((src, i) => (
-                                        <img key={i} src={src} alt={`${car.name}-gallery-${i}`} className="w-full h-40 object-cover rounded-lg" />
+                                        <button
+                                            key={i}
+                                            onClick={() => openLightbox(src)}
+                                            className="overflow-hidden rounded-lg"
+                                            aria-label={`Open gallery image ${i + 1}`}
+                                        >
+                                            <img src={src} alt={`${car.name}-gallery-${i}`} className="w-full h-40 object-cover rounded-lg" />
+                                        </button>
                                     ))}
                                 </div>
                             </div>
@@ -280,6 +330,59 @@ export const CarDetails: React.FC = () => {
                     Rezervă {car.pricePerDay ? `${car.pricePerDay} €` : ''}
                 </button>
             </div>
+
+            {/* Lightbox modal */}
+            {lightboxOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={closeLightbox}
+                >
+                    <div className="relative max-w-[95%] max-h-[95%]" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            onClick={closeLightbox}
+                            aria-label="Close image"
+                            className="absolute top-3 right-3 z-20 flex items-center justify-center rounded-full bg-white/90 p-2 shadow-md hover:bg-white hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                        >
+                            <X className="w-5 h-5 text-gray-700" />
+                        </button>
+
+                        {/* Prev arrow */}
+                        {gallery.length > 1 && (
+                            <button
+                                onClick={goToPrevImage}
+                                aria-label="Previous image"
+                                className="absolute top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white focus:outline-none"
+                                style={{ left: '-3.25rem' }}
+                            >
+                                <ChevronLeft className="w-5 h-5 text-gray-700" />
+                            </button>
+                        )}
+
+                        {/* Next arrow */}
+                        {gallery.length > 1 && (
+                            <button
+                                onClick={goToNextImage}
+                                aria-label="Next image"
+                                className="absolute top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white focus:outline-none"
+                                style={{ right: '-3.25rem' }}
+                            >
+                                <ChevronRight className="w-5 h-5 text-gray-700" />
+                            </button>
+                        )}
+
+                        <motion.img
+                            src={lightboxImage ?? car.image}
+                            alt={car.name}
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.18 }}
+                            className="w-full h-auto max-h-[90vh] object-contain rounded-md shadow-lg"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
