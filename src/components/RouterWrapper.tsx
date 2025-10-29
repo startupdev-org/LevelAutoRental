@@ -12,6 +12,7 @@ import { FAQ } from '../pages/faq/FAQ';
 import { Login } from '../pages/auth/Login.tsx';
 import { SignUp } from '../pages/auth/SignUp.tsx';
 import { ForgotPassword } from '../pages/auth/ForgotPassword.tsx';
+import { Calculator } from '../pages/calculator/Calculator';
 import NotFound from '../pages/NotFound';
 import ScrollToTop from './ScrollToTop';
 
@@ -32,6 +33,7 @@ const RouterWrapper = () => {
         <Route path="/how-to-rent" element={<HowToRent />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/booking" element={<Booking />} />
+        <Route path="/calculator" element={<Calculator />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<FAQ />} />
         <Route path="/not-found" element={<NotFound />} />

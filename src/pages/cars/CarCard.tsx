@@ -56,7 +56,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
             >
                 {/* Image Container */}
                 <div
-                    className="relative overflow-hidden"
+                    className="relative overflow-hidden cursor-pointer"
+                    onClick={() => navigate(`/cars/${car.id}`)}
                     onMouseMove={(e) => {
                         if (car.photoGallery && car.photoGallery.length > 1) {
                             const container = e.currentTarget;
@@ -204,7 +205,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             {/* Favorite Heart Icon */}
                             <div
                                 className="cursor-pointer transition-colors duration-200 hover:scale-110"
-                                onClick={() => setIsFavorite(!isFavorite)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsFavorite(!isFavorite);
+                                }}
                             >
                                 {isFavorite ? (
                                     <svg className="w-5 h-5 text-red-500 fill-current" viewBox="0 0 24 24">
