@@ -61,7 +61,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, index }) => {
             {review.comment && review.comment !== 'Evaluare fără recenzie' && (
                 <div className="pt-4 border-t border-gray-100">
                     <p className="text-gray-700 text-[15px] leading-relaxed">
-                        {review.comment}
+                        {t(`pages.reviews.comments.${review.id}`, { defaultValue: review.comment })}
                     </p>
                 </div>
             )}
