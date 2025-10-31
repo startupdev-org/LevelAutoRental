@@ -3,9 +3,11 @@ import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 import { FaFacebookF } from 'react-icons/fa';
 import { GrInstagram } from 'react-icons/gr';
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
+
+import { hiddenPaths } from '../../data';
 
 // TikTok Icon Component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -16,6 +18,9 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 export const Footer: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+
+  if (hiddenPaths.includes(location.pathname)) return null;
 
   const footerSections = [
     {

@@ -12,6 +12,9 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const shouldRenderHeader = location.pathname !== '/dashboard';
+
+  if (!shouldRenderHeader) return null;
 
   // page where the sidebar will always be on scroll
   const shouldHeaderBeActive = () => {

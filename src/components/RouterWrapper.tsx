@@ -15,6 +15,7 @@ import { ForgotPassword } from '../pages/auth/ForgotPassword.tsx';
 import { Calculator } from '../pages/calculator/Calculator';
 import NotFound from '../pages/NotFound';
 import ScrollToTop from './ScrollToTop';
+import { Dashboard } from '../pages/dashboard/Dashboard.tsx';
 
 const RouterWrapper = () => {
   return (
@@ -40,6 +41,9 @@ const RouterWrapper = () => {
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/signup" element={<SignUp />} />
         <Route path="/auth/forgot" element={<ForgotPassword />} />
+
+        <Route path="/dashboard" element={<Dashboard />} />
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
