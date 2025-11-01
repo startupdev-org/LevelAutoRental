@@ -1,20 +1,13 @@
 import React, { useMemo } from 'react';
 import { cars } from '../../data/cars';
+import { orders } from '../../data/index';
 import { format } from 'date-fns';
 
-export const OrdersTable: React.FC = () => {
-    const orders = useMemo(
-        () =>
-            cars.slice(0, 8).map((c, idx) => ({
-                id: `#${26678 - idx}`,
-                date: format(new Date(Date.now() - idx * 86400000), 'MMM dd, yyyy'),
-                status: idx % 3 === 0 ? 'Paid' : idx % 3 === 1 ? 'Pending' : 'Refunded',
-                amount: (c.pricePerDay * (1 + (idx % 3))).toFixed(2),
-                customer: `Customer ${idx + 1}`,
-                avatar: c.image,
-            })),
-        []
-    );
+type OrdersTableProps = {
+    title: string;
+};
+
+export const OrdersTable: React.FC<OrdersTableProps> = ({ title }) => {
 
     return (
         <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
@@ -22,7 +15,7 @@ export const OrdersTable: React.FC = () => {
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div>
                     <p className="text-red-500 uppercase tracking-wider text-xs font-semibold">Orders</p>
-                    <h2 className="text-2xl font-bold text-gray-800 mt-1">Recent Orders</h2>
+                    <h2 className="text-2xl font-bold text-gray-800 mt-1">{title}</h2>
                 </div>
                 <div className="flex gap-2">
                     <span className="px-3 py-1 text-xs font-semibold bg-gray-100 rounded-full">All orders</span>

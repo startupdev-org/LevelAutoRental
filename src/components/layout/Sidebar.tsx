@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Menu, X, Home, Briefcase, FileText, Calendar as Cal, Users, Settings, LogOut } from 'lucide-react';
 import { Avatar, IconButton } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 type SidebarProps = {
     collapsed: boolean;
@@ -9,6 +10,7 @@ type SidebarProps = {
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
+
     const nav = [
         { key: 'dashboard', label: 'Dashboard', icon: <Home className="w-4 h-4" /> },
         { key: 'cars', label: 'Cars', icon: <Briefcase className="w-4 h-4" /> },
@@ -18,13 +20,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
         { key: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
     ];
 
+    const navigate = useNavigate();
+
     return (
         <motion.aside
             initial={false}
             animate={{ width: collapsed ? 72 : 280 }}
             transition={{ type: 'spring', stiffness: 260, damping: 30 }}
             className="fixed left-0 top-0 h-screen bg-white border-r border-gray-100 flex flex-col z-40 overflow-hidden cursor-pointer"
-            onClick={() => collapsed && setCollapsed(false)} // open when clicking collapsed sidebar
+            onClick={() => collapsed && setCollapsed(false)}
         >
             {/* Header */}
             <div className="px-4 py-4 flex items-center justify-between border-b border-gray-100">
@@ -40,7 +44,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
                     )}
                 </div>
 
-                {/* Hamburger toggle visible only when sidebar is open */}
                 {!collapsed && (
                     <button
                         onClick={() => setCollapsed(true)}
@@ -58,7 +61,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
                     {nav.map(n => (
                         <li key={n.key}>
                             <button
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 ${!collapsed ? 'text-gray-600' : 'justify-center'
+                                onClick={() => navigate(`/${n.key}`)}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                                    ${!collapsed
+                                        ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                        : 'justify-center'
                                     }`}
                             >
                                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-gray-100">

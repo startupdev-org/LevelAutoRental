@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { LANGUAGES } from "../../constants";
 import { useTranslation } from 'react-i18next';
+import { hiddenPaths } from '../../data';
 
 export const Header: React.FC = () => {
 
@@ -12,7 +13,7 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const shouldRenderHeader = location.pathname !== '/dashboard';
+  const shouldRenderHeader = !hiddenPaths.some(path => location.pathname.startsWith(path));
 
   if (!shouldRenderHeader) return null;
 

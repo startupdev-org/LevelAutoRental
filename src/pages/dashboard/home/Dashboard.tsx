@@ -1,17 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import {
-    Card,
-    Box,
-    Button,
-} from '@mui/material';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { format } from 'date-fns';
-import { cars } from '../../data/cars';
-import { sparkData, mainChart } from '../../data/index';
-import { Sidebar } from '../../components/layout/Sidebar';
-import { OrdersTable } from '../../components/dashboard/OrderTable';
-import { SalesChartCard } from '../../components/dashboard/Chart';
-import { getCurrentFormattedDate } from '../../utils/date';
+import { cars } from '../../../data/cars';
+import { sparkData, mainChart } from '../../../data/index';
+import { Sidebar } from '../../../components/layout/Sidebar';
+import { OrdersTable } from '../../../components/dashboard/OrderTable';
+import { SalesChartCard } from '../../../components/dashboard/Chart';
+import { getCurrentFormattedDate } from '../../../utils/date';
+import { Card } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
 
 interface CardStatsProps {
     title: string;
@@ -104,7 +101,7 @@ export const Dashboard: React.FC = () => {
                             <div className="hidden sm:block">
                             </div>
                             <div className="flex items-center gap-2">
-                                <Button variant="contained" className="bg-theme-500 hover:bg-theme-600 ml-1">
+                                <Button className="bg-theme-500 hover:bg-theme-600 ml-1">
                                     Export
                                 </Button>
                             </div>
@@ -143,15 +140,9 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     {/* Orders Table */}
-                    <OrdersTable />
-
-                    {/* Footer actions */}
-                    <Box className="flex gap-3 mt-4 flex-wrap">
-                        <Button variant="contained" className="bg-theme-500 hover:bg-theme-600">
-                            Add Car
-                        </Button>
-                        <Button variant="outlined">Export CSV</Button>
-                    </Box>
+                    <div className="col-span-1 md:col-span-3 mt-10 mb-10">
+                        <OrdersTable title="Recent Orders" />
+                    </div>
                 </div>
             </main>
         </div>
