@@ -2,12 +2,15 @@ import React, { useMemo } from 'react';
 import { cars } from '../../data/cars';
 import { orders } from '../../data/index';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 type OrdersTableProps = {
     title: string;
 };
 
 export const OrdersTable: React.FC<OrdersTableProps> = ({ title }) => {
+
+    const navigate = useNavigate();
 
     return (
         <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
@@ -47,7 +50,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                     {orders.map((o) => (
-                        <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                        <tr key={o.id} className="cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => navigate(`/orders/${o.id}`)}
+
+                        >
                             <td className="px-6 py-4 text-gray-800 font-medium">{o.id}</td>
                             <td className="px-6 py-4 text-gray-500">{o.date}</td>
                             <td className="px-6 py-4">
