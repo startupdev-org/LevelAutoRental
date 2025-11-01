@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Search, Filter, X } from 'lucide-react';
+import { Calendar, MapPin, Search, Filter, X, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench } from 'lucide-react';
 import { cars } from '../../data/cars';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
@@ -385,6 +385,8 @@ export const Cars: React.FC = () => {
       priceRange: false,
       kilometersRange: false,
     });
+    // Clear URL params
+    navigate('/cars', { replace: true });
   };
 
   const handleSidebarFilterChange = (key: string, value: any) => {
@@ -439,33 +441,81 @@ export const Cars: React.FC = () => {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
         {/* Top Filter Section - Full Width */}
         <div className="mt-8 mb-10 flex flex-col gap-3">
-          {/* Error Message */}
+          {/* Mobile Error Notification - Fixed at top */}
           <AnimatePresence>
             {applyError && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="w-full bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium"
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="fixed top-24 left-4 right-4 z-[10000] md:hidden bg-white border-l-4 border-theme-500 text-gray-900 px-4 py-3 rounded-xl text-sm font-medium shadow-xl"
               >
-                {applyError}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-theme-500 flex items-center justify-center mt-0.5">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="flex-1 text-gray-900">{applyError}</p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Error Message and Reset Button - Same Row (Desktop) */}
+          <div className="hidden md:flex items-center justify-between gap-4 min-h-[48px]">
+            {/* Error Message Container - Always present to prevent layout shift */}
+            <div className="flex-1 min-w-0">
+              <AnimatePresence>
+                {applyError && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium"
+                  >
+                    {applyError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            {/* Reset Button - Always visible */}
+            <button
+              onClick={resetFilters}
+              className="text-sm font-medium text-gray-500 hover:text-theme-600 transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
+            >
+              <X className="w-4 h-4" />
+              Clear all filters
+            </button>
+          </div>
+
+          {/* Reset Button - Mobile */}
+          <div className="flex md:hidden justify-end">
+            <button
+              onClick={resetFilters}
+              className="text-sm font-medium text-gray-500 hover:text-theme-600 transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              <X className="w-4 h-4" />
+              Clear all filters
+            </button>
+          </div>
+          
           {/* Filter Card */}
           <div className="bg-white border border-gray-100 rounded-xl overflow-visible shadow-sm">
           <div className="flex flex-col lg:flex-row gap-0 items-stretch">
             {/* Car Brand */}
             <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-gray-100 px-5 py-4">
-              <label className="text-xs font-medium text-gray-500 mb-2 block">
+              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.make ? 'text-theme-500' : 'text-gray-500'}`}>
                 Marca
                 </label>
               <div className="relative">
                   <select
                     value={filters.make}
                     onChange={(e) => handleFilterChange('make', e.target.value)}
-                  className="w-full text-sm lg:text-base font-medium text-gray-900 bg-transparent border-none outline-none appearance-none cursor-pointer focus:ring-0"
+                  className={`w-full text-sm lg:text-base font-medium bg-transparent border-none outline-none appearance-none cursor-pointer focus:ring-0 transition-colors ${filters.make ? 'text-theme-600' : 'text-gray-900'}`}
                   >
                   <option value="">Selectează marca</option>
                     {uniqueMakes.map((make) => (
@@ -477,14 +527,14 @@ export const Cars: React.FC = () => {
 
             {/* Car Model */}
             <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-gray-100 px-5 py-4">
-              <label className="text-xs font-medium text-gray-500 mb-2 block">
+              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.model ? 'text-theme-500' : 'text-gray-500'}`}>
                 Model
                 </label>
               <div className="relative">
                   <select
                     value={filters.model}
                     onChange={(e) => handleFilterChange('model', e.target.value)}
-                  className="w-full text-sm lg:text-base font-medium text-gray-900 bg-transparent border-none outline-none appearance-none cursor-pointer focus:ring-0"
+                  className={`w-full text-sm lg:text-base font-medium bg-transparent border-none outline-none appearance-none cursor-pointer focus:ring-0 transition-colors ${filters.model ? 'text-theme-600' : 'text-gray-900'}`}
                 >
                   <option value="">Orice</option>
                   <option value="AMG C43">AMG C43</option>
@@ -497,12 +547,12 @@ export const Cars: React.FC = () => {
 
             {/* Location */}
             <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-gray-100 px-5 py-4 dropdown-container overflow-visible">
-              <label className="text-xs font-medium text-gray-500 mb-2 block">
+              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.location ? 'text-theme-500' : 'text-gray-500'}`}>
                 Locație
               </label>
               <div className="relative overflow-visible">
                 <div
-                  className="text-sm lg:text-base font-medium text-gray-900 cursor-pointer hover:text-gray-700 transition-colors"
+                  className={`text-sm lg:text-base font-medium cursor-pointer transition-colors ${filters.location ? 'text-theme-600' : 'text-gray-900 hover:text-gray-700'}`}
                   onClick={() => openDropdown('location')}
                 >
                   {filters.location || 'Selectează locația'}
@@ -521,7 +571,7 @@ export const Cars: React.FC = () => {
                     >
                       <div className="py-1">
                         <div
-                          className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau Airport' ? 'bg-theme-50 text-theme-600 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                           onClick={() => {
                             handleFilterChange('location', 'Chisinau Airport');
                             closeAllDropdowns();
@@ -530,7 +580,7 @@ export const Cars: React.FC = () => {
                           Chisinau Airport
                         </div>
                         <div
-                          className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau' ? 'bg-theme-50 text-theme-600 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                           onClick={() => {
                             handleFilterChange('location', 'Chisinau');
                             closeAllDropdowns();
@@ -547,12 +597,12 @@ export const Cars: React.FC = () => {
 
             {/* Date Range */}
             <div className="flex-1 relative border-b lg:border-b-0 px-5 py-4 dropdown-container overflow-visible">
-              <label className="text-xs font-medium text-gray-500 mb-2 block">
+              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-theme-500' : 'text-gray-500'}`}>
                 Perioadă
               </label>
               <div className="relative overflow-visible">
                 <div
-                  className="text-sm lg:text-base font-medium text-gray-900 cursor-pointer hover:text-gray-700 transition-colors"
+                  className={`text-sm lg:text-base font-medium cursor-pointer transition-colors ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-theme-600' : 'text-gray-900 hover:text-gray-700'}`}
                   onClick={() => openDropdown('date')}
                 >
                   {formatDateRange(filters.dateRange) || 'Selectează perioada'}
@@ -641,7 +691,7 @@ export const Cars: React.FC = () => {
                                 day ? 'text-gray-700' : 'text-gray-300'
                               } ${
                                 isSelected
-                                  ? 'bg-gray-900 text-white hover:bg-gray-800 font-medium'
+                                  ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
                                   : isInRange
                                   ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                                   : 'hover:bg-gray-100'
@@ -667,7 +717,7 @@ export const Cars: React.FC = () => {
               <div className="flex-1 lg:flex-1 lg:px-0 lg:py-3">
                 <button
                   onClick={applyFilters}
-                  className="w-full py-4 lg:h-full bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 rounded-2xl text-sm lg:text-base flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-4 lg:h-full bg-theme-500 hover:bg-theme-600 text-white font-semibold px-6 rounded-2xl text-sm lg:text-base flex items-center justify-center gap-2 transition-colors"
                 >
                   <Search className="w-3.5 h-3.5 stroke-2" />
                   Caută
@@ -678,7 +728,7 @@ export const Cars: React.FC = () => {
               <div className="lg:px-4 lg:mr-10 lg:py-3">
                 <button
                   onClick={() => setShowAdvancedFilters(true)}
-                  className="w-14 h-14 lg:w-auto lg:h-full lg:aspect-square bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-2xl flex items-center justify-center transition-colors"
+                  className={`w-14 h-14 lg:w-auto lg:h-full lg:aspect-square rounded-2xl flex items-center justify-center transition-colors ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600' : 'bg-gray-100 hover:bg-theme-50 text-gray-900 hover:text-theme-600'}`}
                 >
                   <Filter className="w-5 h-5 stroke-2" />
                 </button>
@@ -747,7 +797,7 @@ export const Cars: React.FC = () => {
                         </div>
                         <div className="relative h-1.5 bg-gray-100 rounded-full">
                           <div 
-                            className="absolute h-1.5 bg-gray-900 rounded-full"
+                            className="absolute h-1.5 bg-theme-500 rounded-full"
                             style={{
                               left: `${((sidebarFilters.priceRange[0] - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
                               width: `${((sidebarFilters.priceRange[1] - sidebarFilters.priceRange[0]) / (priceRange.max - priceRange.min)) * 100}%`
@@ -784,7 +834,7 @@ export const Cars: React.FC = () => {
                         </div>
                         <div className="relative h-1.5 bg-gray-100 rounded-full">
                           <div 
-                            className="absolute h-1.5 bg-gray-900 rounded-full"
+                            className="absolute h-1.5 bg-theme-500 rounded-full"
                             style={{
                               left: `${((sidebarFilters.yearRange[0] - yearRangeData.min) / (yearRangeData.max - yearRangeData.min)) * 100}%`,
                               width: `${((sidebarFilters.yearRange[1] - sidebarFilters.yearRange[0]) / (yearRangeData.max - yearRangeData.min)) * 100}%`
@@ -820,7 +870,7 @@ export const Cars: React.FC = () => {
                             onClick={() => handleSidebarFilterChange('transmission', type)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               sidebarFilters.transmission === type
-                                ? 'bg-gray-900 text-white'
+                                ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -840,7 +890,7 @@ export const Cars: React.FC = () => {
                             onClick={() => handleSidebarFilterChange('fuelType', type)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               sidebarFilters.fuelType === type
-                                ? 'bg-gray-900 text-white'
+                                ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -860,7 +910,7 @@ export const Cars: React.FC = () => {
                             onClick={() => handleSidebarFilterChange('seats', seat)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               sidebarFilters.seats === seat
-                                ? 'bg-gray-900 text-white'
+                                ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -890,6 +940,215 @@ export const Cars: React.FC = () => {
               <CarCard key={car.id} car={car} index={index} />
             ))}
           </motion.div>
+
+          {/* Rental Options Section */}
+          <div className="mt-16 bg-white rounded-lg border border-gray-200 p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Opțiuni de închiriere</h2>
+            
+            <p className="text-gray-700 leading-relaxed mb-8">
+              O varietate de opțiuni disponibile pentru activare extinde semnificativ posibilitățile în cadrul închirierii unei mașini de la AUTOHUB. De exemplu, puteți activa asigurarea CASCO, care acoperă toate tipurile de daune ale vehiculului, iar prin activarea serviciului Priority Service beneficiați de procesare prioritară a documentelor și suport prioritar pe tot parcursul închirierii. De asemenea, sunt disponibile opțiuni precum: închirierea scaunelor auto pentru copii, asistență rutieră, livrare la adresa indicată și multe altele.
+            </p>
+
+            <div className="space-y-6">
+              {/* Delivery Option */}
+              <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
+                <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
+                  <Car className="w-5 h-5 text-theme-500" />
+                  Preluarea automobilului la adresa convenabilă pentru dvs./dumneavoastră
+                </h3>
+                <p className="text-gray-600 text-sm">Costul se calculează separat și depinde de locul livrării</p>
+              </div>
+
+              {/* Return Option */}
+              <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
+                <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
+                  <Car className="w-5 h-5 text-theme-500" />
+                  Returnarea mașinii la adresa convenabilă pentru dumneavoastră
+                </h3>
+                <p className="text-gray-600 text-sm">Prețul se negociază separat și depinde de locul returnării</p>
+              </div>
+
+              {/* Options Grid */}
+              <div className="grid md:grid-cols-2 gap-4 mt-6">
+                {/* Unlimited KM */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
+                      <Gauge className="w-5 h-5 text-theme-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Kilometraj nelimitat</h4>
+                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 50% mai mare</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Speed Limit Increase */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-theme-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Creșterea limitei de viteză</h4>
+                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personal Driver */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <UserRound className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Șofer personal</h4>
+                      <p className="text-gray-700 font-semibold text-sm">din 800 MDL pe zi</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Priority Service */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <Star className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Priority Service</h4>
+                      <p className="text-gray-700 font-semibold text-sm">din 1000 MDL pe zi</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tire Insurance */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-theme-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Asigurare pentru anvelope și parbriz</h4>
+                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Child Seat */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <Baby className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Scaun auto pentru copii</h4>
+                      <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SIM Card */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <Wifi className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Cartelă SIM cu internet</h4>
+                      <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Roadside Assistance */}
+                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <Wrench className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Asistență rutieră</h4>
+                      <p className="text-gray-700 font-semibold text-sm">din 500 MDL pe zi</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contract Section */}
+          <div className="mt-8 bg-white rounded-lg border border-gray-200 p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Contract</h2>
+            
+            <p className="text-gray-700 leading-relaxed mb-6">
+              Compania noastră oferă servicii de închiriere auto pe teritoriul Republicii Moldova, respectând cu strictețe legislația în vigoare. Interacțiunea cu clienții se bazează pe Contractul de închiriere, care garantează protecția juridică a intereselor acestora.
+            </p>
+
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Condiții și cerințe</h3>
+            <p className="text-gray-700 mb-4">
+              Pentru a închiria o mașină, trebuie îndeplinite următoarele cerințe și acceptate următoarele condiții:
+            </p>
+
+            <ul className="space-y-3 text-gray-700">
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Vârsta minimă a șoferului: 21 ani.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Permis de conducere valabil, categoria B.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Experiență de conducere de cel puțin 3 ani.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Deținerea buletinului de identitate.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Achitarea integrală (100%) a taxei de închiriere pentru mașina selectată.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Depunerea unui depozit conform valorii stabilite în Contract. Depozitul reprezintă o asigurare a îndeplinirii obligațiilor de către Chiriaș și este returnat după 10 zile de la predarea mașinii, în absența încălcărilor majore.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Toate amenzile primite în timpul utilizării vehiculului revin în responsabilitatea șoferului.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>În lipsa poliței CASCO, responsabilitatea pentru accidente revine șoferului.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Limita zilnică de parcurs este de 200 km. În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Plata se poate efectua în numerar, prin transfer bancar sau cu cardul.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Clientul are dreptul la recalcularea costului în caz de returnare anticipată a vehiculului.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Prelungirea Contractului de închiriere este posibilă în format la distanță, dar nu este garantată.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Este posibilă livrarea sau returnarea mașinii la adresa convenabilă. Costul se confirmă la telefon +373 79 75-22-22.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                <span>Înainte de semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 0 lei. După semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 500 lei.</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

@@ -63,13 +63,11 @@ export const Contact: React.FC = () => {
     <div className="min-h-screen">
         {/* Hero Section */}
         <section
-          className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
-            pt-36 font-sans text-white
-            ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : "bg-cover bg-center bg-no-repeat"}
-            `}
+          className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans text-white"
           style={{
             backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
-            backgroundPosition: isDesktop ? 'center -400px' : 'center center'
+            backgroundPosition: isDesktop ? 'center -400px' : 'center center',
+            backgroundSize: isDesktop ? '115%' : 'cover'
           }}
         >
           {/* Dark Overlay */}

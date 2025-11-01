@@ -398,6 +398,7 @@
                 "links": {
                     "start": "Start a reservation",
                     "howTo": "How to reserve",
+                    "calculator": "Rental Calculator",
                     "faq": "Help & FAQ"
                 }
             },
@@ -508,6 +509,52 @@
     },
     "car": {
         "mileageLimit": "200km/day",
-        "seeCar": "See car"
+        "seeCar": "See car",
+        "seeMorePhotos": "See {{count}} more photos"
+    },
+    "calculator": {
+        "selectVehicle": "Select vehicle",
+        "rentalPeriod": "Rental period",
+        "numberOfDays": "Number of days",
+        "day": "day",
+        "days": "days",
+        "locations": {
+            "title": "Locations",
+            "chisinauAirport": "Chisinau Airport",
+            "chisinauCenter": "Chisinau Center",
+            "chisinauNord": "Chișinău Nord"
+        },
+        "pickup": "Pickup",
+        "return": "Return",
+        "additionalOptions": "Additional options",
+        "unlimitedMileage": "Unlimited mileage",
+        "noSpeedLimit": "No speed limit",
+        "tireInsurance": "Tire insurance",
+        "personalDriver": "Personal driver",
+        "priorityService": "Priority Service",
+        "childCarSeat": "Child car seat",
+        "simWithInternet": "SIM with internet",
+        "roadsideAssistance": "Roadside assistance",
+        "totalCost": "Total cost",
+        "priceDetails": "Price details",
+        "selectedVehicle": "Selected vehicle",
+        "pricePerDay": "Price per day",
+        "numberDays": "Number of days",
+        "discount": "Discount",
+        "basePrice": "Base price",
+        "additionalServices": "Additional services",
+        "noSpeedLimitShort": "No speed limit",
+        "insurance": "Insurance",
+        "childSeat": "Child seat",
+        "simInternet": "SIM internet",
+        "assistance": "Assistance",
+        "services": "Services",
+        "bookNow": "Book now",
+        "contactUs": "Contact us",
+        "pricesAreIndicative": "Prices are indicative",
+        "pricesDescription": "For an exact and personalized offer, please contact us directly.",
+        "discountApplied4": "Discount applied: -4% for 8+ days",
+        "discountApplied2": "Discount applied: -2% for 4+ days",
+        "perDay": "/day"
     }
 }

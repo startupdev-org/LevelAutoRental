@@ -236,36 +236,212 @@ export const CarDetails: React.FC = () => {
                         </div>
 
                         {/* Rental Options */}
-                        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">Opțiuni de închiriere</h2>
+                        <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Opțiuni de închiriere</h2>
                             
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                {[
-                                    { icon: Car, title: 'Livrare', price: 'Negociabil' },
-                                    { icon: Car, title: 'Returnare', price: 'Negociabil' },
-                                    { icon: Gauge, title: 'Km nelimitat', price: '+50%', highlight: true },
-                                    { icon: Zap, title: 'Fără limită', price: '+20%', highlight: true },
-                                    { icon: UserRound, title: 'Șofer', price: '800 MDL' },
-                                    { icon: Star, title: 'Priority', price: '1000 MDL' },
-                                    { icon: Shield, title: 'Asigurare', price: '+20%', highlight: true },
-                                    { icon: Baby, title: 'Scaun copii', price: '100 MDL' },
-                                    { icon: Wifi, title: 'Internet', price: '100 MDL' },
-                                    { icon: Wrench, title: 'Asistență', price: '500 MDL' }
-                                ].map((option, i) => {
-                                    const Icon = option.icon;
-                                    return (
-                                        <div key={i} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all hover:shadow-sm text-center">
-                                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 mb-3">
-                                                <Icon className="w-6 h-6 text-gray-700" />
+                            <p className="text-gray-700 leading-relaxed mb-8">
+                                O varietate de opțiuni disponibile pentru activare extinde semnificativ posibilitățile în cadrul închirierii unei mașini de la AUTOHUB. De exemplu, puteți activa asigurarea CASCO, care acoperă toate tipurile de daune ale vehiculului, iar prin activarea serviciului Priority Service beneficiați de procesare prioritară a documentelor și suport prioritar pe tot parcursul închirierii. De asemenea, sunt disponibile opțiuni precum: închirierea scaunelor auto pentru copii, asistență rutieră, livrare la adresa indicată și multe altele.
+                            </p>
+
+                            <div className="space-y-6">
+                                {/* Delivery Option */}
+                                <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
+                                    <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
+                                        <Car className="w-5 h-5 text-theme-500" />
+                                        Preluarea automobilului la adresa convenabilă pentru dvs./dumneavoastră
+                                    </h3>
+                                    <p className="text-gray-600 text-sm">Costul se calculează separat și depinde de locul livrării</p>
+                                </div>
+
+                                {/* Return Option */}
+                                <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
+                                    <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
+                                        <Car className="w-5 h-5 text-theme-500" />
+                                        Returnarea mașinii la adresa convenabilă pentru dumneavoastră
+                                    </h3>
+                                    <p className="text-gray-600 text-sm">Prețul se negociază separat și depinde de locul returnării</p>
+                                </div>
+
+                                {/* Options Grid */}
+                                <div className="grid md:grid-cols-2 gap-4 mt-6">
+                                    {/* Unlimited KM */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
+                                                <Gauge className="w-5 h-5 text-theme-500" />
                                             </div>
-                                            <h3 className="font-medium text-gray-900 text-xs mb-2">{option.title}</h3>
-                                            <div className={`text-sm font-bold ${option.highlight ? 'text-theme-500' : 'text-gray-700'}`}>
-                                                {option.price}
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Kilometraj nelimitat</h4>
+                                                <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 50% mai mare</p>
                                             </div>
                                         </div>
-                                    );
-                                })}
+                                    </div>
+
+                                    {/* Speed Limit Increase */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
+                                                <Zap className="w-5 h-5 text-theme-500" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Creșterea limitei de viteză</h4>
+                                                <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Personal Driver */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                <UserRound className="w-5 h-5 text-gray-700" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Șofer personal</h4>
+                                                <p className="text-gray-700 font-semibold text-sm">din 800 MDL pe zi</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Priority Service */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                <Star className="w-5 h-5 text-gray-700" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Priority Service</h4>
+                                                <p className="text-gray-700 font-semibold text-sm">din 1000 MDL pe zi</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Tire Insurance */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
+                                                <Shield className="w-5 h-5 text-theme-500" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Asigurare pentru anvelope și parbriz</h4>
+                                                <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Child Seat */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                <Baby className="w-5 h-5 text-gray-700" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Scaun auto pentru copii</h4>
+                                                <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SIM Card */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                <Wifi className="w-5 h-5 text-gray-700" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Cartelă SIM cu internet</h4>
+                                                <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Roadside Assistance */}
+                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                <Wrench className="w-5 h-5 text-gray-700" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900 mb-1">Asistență rutieră</h4>
+                                                <p className="text-gray-700 font-semibold text-sm">din 500 MDL pe zi</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+
+                        {/* Contract Section */}
+                        <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Contract</h2>
+                            
+                            <p className="text-gray-700 leading-relaxed mb-6">
+                                Compania noastră oferă servicii de închiriere auto pe teritoriul Republicii Moldova, respectând cu strictețe legislația în vigoare. Interacțiunea cu clienții se bazează pe Contractul de închiriere, care garantează protecția juridică a intereselor acestora.
+                            </p>
+
+                            <h3 className="text-xl font-semibold text-gray-900 mb-4">Condiții și cerințe</h3>
+                            <p className="text-gray-700 mb-4">
+                                Pentru a închiria o mașină, trebuie îndeplinite următoarele cerințe și acceptate următoarele condiții:
+                            </p>
+
+                            <ul className="space-y-3 text-gray-700">
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Vârsta minimă a șoferului: 21 ani.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Permis de conducere valabil, categoria B.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Experiență de conducere de cel puțin 3 ani.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Deținerea buletinului de identitate.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Achitarea integrală (100%) a taxei de închiriere pentru mașina selectată.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Depunerea unui depozit conform valorii stabilite în Contract. Depozitul reprezintă o asigurare a îndeplinirii obligațiilor de către Chiriaș și este returnat după 10 zile de la predarea mașinii, în absența încălcărilor majore.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Toate amenzile primite în timpul utilizării vehiculului revin în responsabilitatea șoferului.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>În lipsa poliței CASCO, responsabilitatea pentru accidente revine șoferului.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Limita zilnică de parcurs este de 200 km. În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Plata se poate efectua în numerar, prin transfer bancar sau cu cardul.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Clientul are dreptul la recalcularea costului în caz de returnare anticipată a vehiculului.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Prelungirea Contractului de închiriere este posibilă în format la distanță, dar nu este garantată.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Este posibilă livrarea sau returnarea mașinii la adresa convenabilă. Costul se confirmă la telefon +373 79 75-22-22.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
+                                    <span>Înainte de semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 0 lei. După semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 500 lei.</span>
+                                </li>
+                            </ul>
                         </div>
 
                     </div>

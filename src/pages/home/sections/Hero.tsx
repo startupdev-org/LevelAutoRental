@@ -1,17 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { BiSolidPhoneCall } from "react-icons/bi";
 import React, { useState, useMemo } from 'react';
-import { BookingForm } from '../../../types';
 import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cars } from '../../../data/cars';
 
 export const Hero: React.FC = () => {
 
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
 
   const navigate = useNavigate();
   const todayDate = new Date().toISOString().split('T')[0];
@@ -136,14 +134,15 @@ export const Hero: React.FC = () => {
 
   return (
     <section
-      className="relative h-[725px] bg-cover bg-no-repeat pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-fixed md:bg-hero-desktop md:bg-hero-desktop"
+      className="relative h-[725px] bg-cover bg-no-repeat bg-fixed pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-hero-desktop md:bg-hero-desktop"
       style={{
         backgroundImage: window.innerWidth < 768
           ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')"
           : undefined,
         backgroundPosition: window.innerWidth < 768
           ? 'center center'
-          : undefined
+          : undefined,
+        backgroundSize: window.innerWidth >= 768 ? '115%' : 'cover'
       }}
     >
       {/* Dark Overlay */}
@@ -717,7 +716,6 @@ export const Hero: React.FC = () => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 

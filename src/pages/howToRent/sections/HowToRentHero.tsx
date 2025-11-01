@@ -51,10 +51,11 @@ export const HowToRentHero: React.FC = () => {
     return (
         <section
             key={i18n.language}
-            className="relative py-60 bg-cover bg-center bg-no-repeat"
+            className="relative py-60 bg-cover bg-center bg-no-repeat bg-fixed"
             style={{
                 backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
-                backgroundPosition: isDesktop ? 'center -150px' : 'center center'
+                backgroundPosition: isDesktop ? 'center -150px' : 'center center',
+                backgroundSize: isDesktop ? '115%' : 'cover'
             }}
         >
             {/* Background Overlay */}

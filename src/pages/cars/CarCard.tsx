@@ -3,6 +3,7 @@ import { Filter, HelpCircle, Leaf, Search, Star, Users, Circle, Zap, Image } fro
 import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
 import { PiTireFill, PiSpeedometerFill } from "react-icons/pi";
+import { BiSolidHeart } from "react-icons/bi";
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cars } from '../../data/cars';
@@ -26,7 +27,44 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { t } = useTranslation();
     const animatedPrice = useCounter(car.pricePerDay, 1500, 0);
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
-    const [isFavorite, setIsFavorite] = useState(false);
+    
+    // Load favorite state from localStorage
+    const getFavorites = (): number[] => {
+        try {
+            const favorites = localStorage.getItem('carFavorites');
+            return favorites ? JSON.parse(favorites) : [];
+        } catch {
+            return [];
+        }
+    };
+
+    const [isFavorite, setIsFavorite] = useState(() => {
+        const favorites = getFavorites();
+        return favorites.includes(car.id);
+    });
+
+    // Save favorites to localStorage
+    const saveFavorite = (carId: number, favorite: boolean) => {
+        const favorites = getFavorites();
+        if (favorite) {
+            if (!favorites.includes(carId)) {
+                favorites.push(carId);
+            }
+        } else {
+            const index = favorites.indexOf(carId);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            }
+        }
+        localStorage.setItem('carFavorites', JSON.stringify(favorites));
+    };
+
+    // Handle favorite toggle
+    const handleFavoriteToggle = () => {
+        const newFavoriteState = !isFavorite;
+        setIsFavorite(newFavoriteState);
+        saveFavorite(car.id, newFavoriteState);
+    };
 
     const navigate = useNavigate();
 
@@ -65,8 +103,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             const rect = container.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const width = rect.width;
-                            const photoIndex = Math.floor((x / width) * car.photoGallery.length);
-                            const clampedIndex = Math.max(0, Math.min(photoIndex, car.photoGallery.length - 1));
+                            const maxPhotos = 5;
+                            const photosToShow = Math.min(car.photoGallery.length, maxPhotos);
+                            const photoIndex = Math.floor((x / width) * photosToShow);
+                            const clampedIndex = Math.max(0, Math.min(photoIndex, photosToShow - 1));
 
                             setActivePhotoIndex(clampedIndex);
 
@@ -89,31 +129,51 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                 >
                     <div className="flex transition-transform duration-300 ease-out group-hover:scale-105 photo-gallery">
                         {car.photoGallery && car.photoGallery.length > 1 ? (
-                            car.photoGallery.map((photo, index) => (
-                                <div
-                                    key={index}
-                                    className="relative w-full h-56 flex-shrink-0"
-                                    style={{ minWidth: '100%' }}
-                                >
-                                    <img
-                                        src={photo}
-                                        alt={`${car.name} - Photo ${index + 1}`}
-                                        className="w-full h-56 object-cover object-center bg-gray-100"
-                                    />
-                                    {(() => {
-                                        const totalPhotos = car.photoGallery?.length ?? 0;
-                                        const remainingPhotos = totalPhotos - (index + 1);
-                                        const isLastPhoto = remainingPhotos === 0;
-                                        
-                                        return isLastPhoto && (
-                                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
-                                                <Image className="w-8 h-8 mb-2" />
-                                                <span className="text-lg font-semibold">{t('car.seeCar')}</span>
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            ))
+                            (() => {
+                                const maxPhotos = 5;
+                                const photosToShow = car.photoGallery.slice(0, maxPhotos);
+                                const totalPhotos = car.photoGallery.length;
+                                const remainingPhotos = totalPhotos - maxPhotos;
+                                
+                                return photosToShow.map((photo, index) => (
+                                    <div
+                                        key={index}
+                                        className="relative w-full h-56 flex-shrink-0"
+                                        style={{ minWidth: '100%' }}
+                                    >
+                                        <img
+                                            src={photo}
+                                            alt={`${car.name} - Photo ${index + 1}`}
+                                            className="w-full h-56 object-cover object-center bg-gray-100"
+                                        />
+                                        {(() => {
+                                            const isLastVisiblePhoto = index === photosToShow.length - 1;
+                                            
+                                            if (isLastVisiblePhoto && remainingPhotos > 0) {
+                                                return (
+                                                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                                                        <Image className="w-8 h-8 mb-2" />
+                                                        <span className="text-lg font-semibold">
+                                                            {t('car.seeMorePhotos', { count: remainingPhotos })}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            if (isLastVisiblePhoto && remainingPhotos === 0) {
+                                                return (
+                                                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                                                        <Image className="w-8 h-8 mb-2" />
+                                                        <span className="text-lg font-semibold">{t('car.seeCar')}</span>
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            return null;
+                                        })()}
+                                    </div>
+                                ));
+                            })()
                         ) : (
                             <img
                                 src={car.image}
@@ -126,7 +186,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     {/* Photo Navigation Lines */}
                     {car.photoGallery && car.photoGallery.length > 1 && (
                         <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1 px-4">
-                            {car.photoGallery.map((_, index) => (
+                            {Array.from({ length: Math.min(car.photoGallery.length, 5) }).map((_, index) => (
                                 <div
                                     key={index}
                                     className={`flex-1 h-0.5 rounded-full transition-colors duration-200 ${index === activePhotoIndex
@@ -138,15 +198,34 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         </div>
                     )}
 
-                    {/* Free for Rent Badge */}
+                    {/* Availability Badge */}
                     {car.availability && (
-                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-800 rounded-full px-3 py-1 text-xs font-semibold shadow-sm flex items-center gap-2 transition-opacity duration-300 group-hover:opacity-0">
-                            <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
+                            <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {car.availability}
+                            <span className="whitespace-nowrap">{car.availability}</span>
                         </div>
                     )}
+
+                    {/* Favorite Heart Icon - Top Right */}
+                    <div
+                        className={`absolute top-3 right-3 z-10 group/heart transition-opacity duration-300 cursor-pointer ${
+                            isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleFavoriteToggle();
+                        }}
+                    >
+                        {React.createElement(BiSolidHeart as any, { 
+                            className: `transition-all duration-300 hover:scale-110 ${
+                                isFavorite 
+                                    ? 'w-6 h-6 text-red-500' 
+                                    : 'w-6 h-6 text-gray-400 group-hover/heart:text-red-500'
+                            }`
+                        })}
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -218,32 +297,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             <span className="text-gray-500 text-sm">/zi</span>
                         </div>
 
-                        {/* Rating and Favorite Section */}
-                        <div className="flex items-center gap-3">
-                            {/* Favorite Heart Icon */}
-                            <div
-                                className="cursor-pointer transition-colors duration-200 hover:scale-110"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsFavorite(!isFavorite);
-                                }}
-                            >
-                                {isFavorite ? (
-                                    <svg className="w-5 h-5 text-red-500 fill-current" viewBox="0 0 24 24">
-                                        <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                    </svg>
-                                ) : (
-                                    <svg className="w-5 h-5 text-gray-500 hover:text-red-500 fill-none stroke-current" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                    </svg>
-                                )}
-                            </div>
-
-                            {/* Star Rating */}
-                            <div className="flex items-center gap-1 text-gray-600">
-                                <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                                <span className="text-sm font-semibold">{car.rating}</span>
-                            </div>
+                        {/* Rating */}
+                        <div className="flex items-center gap-1">
+                            <span className="text-sm font-semibold text-gray-900 h-6 flex items-center justify-center">{car.rating}</span>
+                            <img src="/LevelAutoRental/assets/star.png" alt="Rating" className="w-6 h-6 flex-shrink-0 ml-2" />
                         </div>
                     </div>
                 </div>

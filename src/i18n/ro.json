@@ -397,6 +397,7 @@
                 "links": {
                     "start": "Începe o rezervare",
                     "howTo": "Cum să rezervi",
+                    "calculator": "Calculator închirieri",
                     "faq": "Întrebări frecvente"
                 }
             },
@@ -506,6 +507,52 @@
     },
     "car": {
         "mileageLimit": "200km/zi",
-        "seeCar": "Vezi mașina"
+        "seeCar": "Vezi mașina",
+        "seeMorePhotos": "Vezi încă {{count}} fotografii"
+    },
+    "calculator": {
+        "selectVehicle": "Selectați vehiculul",
+        "rentalPeriod": "Perioada închirierii",
+        "numberOfDays": "Număr de zile",
+        "day": "zi",
+        "days": "zile",
+        "locations": {
+            "title": "Locații",
+            "chisinauAirport": "Aeroportul Chișinău",
+            "chisinauCenter": "Centrul Chișinău",
+            "chisinauNord": "Chișinău Nord"
+        },
+        "pickup": "Preluare",
+        "return": "Returnare",
+        "additionalOptions": "Opțiuni suplimentare",
+        "unlimitedMileage": "Kilometraj nelimitat",
+        "noSpeedLimit": "Fără limită de viteză",
+        "tireInsurance": "Asigurare anvelope",
+        "personalDriver": "Șofer personal",
+        "priorityService": "Priority Service",
+        "childCarSeat": "Scaun auto copii",
+        "simWithInternet": "SIM cu internet",
+        "roadsideAssistance": "Asistență rutieră",
+        "totalCost": "Cost total",
+        "priceDetails": "Detalii preț",
+        "selectedVehicle": "Vehicul selectat",
+        "pricePerDay": "Preț pe zi",
+        "numberDays": "Număr zile",
+        "discount": "Discount",
+        "basePrice": "Preț bază",
+        "additionalServices": "Servicii adiționale",
+        "noSpeedLimitShort": "Fără limită viteză",
+        "insurance": "Asigurare",
+        "childSeat": "Scaun copii",
+        "simInternet": "SIM internet",
+        "assistance": "Asistență",
+        "services": "Servicii",
+        "bookNow": "Rezervă acum",
+        "contactUs": "Contactează-ne",
+        "pricesAreIndicative": "Prețurile sunt orientative",
+        "pricesDescription": "Pentru o ofertă exactă și personalizată, vă rugăm să ne contactați direct.",
+        "discountApplied4": "Discount aplicat: -4% pentru 8+ zile",
+        "discountApplied2": "Discount aplicat: -2% pentru 4+ zile",
+        "perDay": "/zi"
     }
 }

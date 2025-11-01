@@ -62,6 +62,11 @@ export const Header: React.FC = () => {
 
   // Add scroll listener for navbar background
   React.useEffect(() => {
+    // Initialize scroll state for pages that should always have active header
+    if (shouldHeaderBeActive()) {
+      setIsScrolled(true);
+    }
+
     const handleScroll = () => {
 
       const scrollPosition = window.scrollY;
@@ -72,7 +77,7 @@ export const Header: React.FC = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [location.pathname]);
 
   // Close language dropdown when clicking outside
   React.useEffect(() => {

@@ -51,13 +51,11 @@ export const About: React.FC = () => {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section
-        className={`relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat 
-          pt-36 font-sans text-white
-          ${isDesktop ? "bg-fixed bg-cover bg-center bg-no-repeat" : "bg-cover bg-center bg-no-repeat"}
-          `}
+        className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans text-white"
         style={{
           backgroundImage: isDesktop ? 'url(/LevelAutoRental/bg-hero.jpg)' : 'url(/LevelAutoRental/backgrounds/bg4-mobile.jpeg)',
-          backgroundPosition: isDesktop ? 'center -420px' : 'center -300px'
+          backgroundPosition: isDesktop ? 'center -420px' : 'center -300px',
+          backgroundSize: isDesktop ? '115%' : 'cover'
         }}>
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/70" />
