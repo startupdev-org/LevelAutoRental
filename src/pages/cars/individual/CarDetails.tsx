@@ -153,11 +153,28 @@ export const CarDetails: React.FC = () => {
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Transmisie</div>
-                                    <div className="text-lg font-semibold text-gray-900">{car.transmission}</div>
+                                    <div className="text-lg font-semibold text-gray-900">
+                                        {(() => {
+                                            const trans = car.transmission?.trim() || '';
+                                            if (trans.toLowerCase() === 'automatic' || trans === 'Automatic') {
+                                                return 'Automată';
+                                            }
+                                            if (trans.toLowerCase() === 'manual' || trans === 'Manual') {
+                                                return 'Manuală';
+                                            }
+                                            return trans || 'Automată';
+                                        })()}
+                                    </div>
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Combustibil</div>
-                                    <div className="text-lg font-semibold text-gray-900 capitalize">{car.fuelType}</div>
+                                    <div className="text-lg font-semibold text-gray-900">
+                                        {car.fuelType === 'gasoline' ? 'Benzină' :
+                                            car.fuelType === 'diesel' ? 'Diesel' :
+                                                car.fuelType === 'petrol' ? 'Benzină' :
+                                                    car.fuelType === 'hybrid' ? 'Hibrid' :
+                                                        car.fuelType === 'electric' ? 'Electric' : car.fuelType}
+                                    </div>
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Caroserie</div>

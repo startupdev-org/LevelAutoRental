@@ -507,6 +507,7 @@
         }
     },
     "car": {
-        "mileageLimit": "200km/day"
+        "mileageLimit": "200km/day",
+        "seeCar": "See car"
     }
 }

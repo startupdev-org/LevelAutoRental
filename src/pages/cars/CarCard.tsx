@@ -30,7 +30,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
     const navigate = useNavigate();
 
-    const renderTransmissionIcon = (transmission: string) => {
+    const renderTransmissionIcon = (transmission: string | undefined) => {
+        if (!transmission) return React.createElement(TbAutomaticGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
         switch (transmission.toLowerCase()) {
             case 'automatic':
                 return React.createElement(TbAutomaticGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
@@ -39,7 +40,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
             case 'hybrid':
                 return <Leaf className="w-5 h-5 text-green-500" />;
             default:
-                return <HelpCircle className="w-5 h-5 text-gray-400" />;
+                return React.createElement(TbAutomaticGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
         }
     };
 
@@ -99,12 +100,18 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                         alt={`${car.name} - Photo ${index + 1}`}
                                         className="w-full h-56 object-cover object-center bg-gray-100"
                                     />
-                                    {index === (car.photoGallery?.length ?? 0) - 1 && (
-                                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
-                                            <Image className="w-8 h-8 mb-2" />
-                                            <span className="text-lg font-semibold">Inca {car.photoGallery?.length} fotografii</span>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const totalPhotos = car.photoGallery?.length ?? 0;
+                                        const remainingPhotos = totalPhotos - (index + 1);
+                                        const isLastPhoto = remainingPhotos === 0;
+                                        
+                                        return isLastPhoto && (
+                                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                                                <Image className="w-8 h-8 mb-2" />
+                                                <span className="text-lg font-semibold">{t('car.seeCar')}</span>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             ))
                         ) : (
@@ -166,9 +173,20 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         </div>
 
                         <div className="flex items-center justify-end gap-2 text-gray-600">
-                            <span className="text-sm font-medium">{car.transmission === 'Automatic' ? 'Automată' : 'Manuală'}</span>
+                            <span className="text-sm font-medium">
+                                {(() => {
+                                    const trans = car.transmission?.trim() || '';
+                                    if (trans.toLowerCase() === 'automatic' || trans === 'Automatic') {
+                                        return 'Automată';
+                                    }
+                                    if (trans.toLowerCase() === 'manual' || trans === 'Manual') {
+                                        return 'Manuală';
+                                    }
+                                    return trans || 'Automată';
+                                })()}
+                            </span>
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                {renderTransmissionIcon(car.transmission)}
+                                {renderTransmissionIcon(car.transmission || 'Automatic')}
                             </div>
                         </div>
 
@@ -181,12 +199,12 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                     car.fuelType === 'diesel' ? 'Diesel' :
                                         car.fuelType === 'petrol' ? 'Benzină' :
                                             car.fuelType === 'hybrid' ? 'Hibrid' :
-                                                car.fuelType === 'electric' ? 'Electric' : car.fuelType} {car.fuelConsumption || 'N/A'}
+                                                car.fuelType === 'electric' ? 'Electric' : car.fuelType}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-end gap-2 text-gray-600">
-                            <span className="text-sm font-medium">{car.drivetrain || 'N/A'}</span>
+                            <span className="text-sm font-medium">{car.drivetrain || ''}</span>
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                 {React.createElement(TbCar4WdFilled as any, { className: "w-4 h-4 text-gray-600" })}
                             </div>

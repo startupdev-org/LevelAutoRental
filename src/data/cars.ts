@@ -19,6 +19,7 @@ export const cars: Car[] = [
     transmission: 'Automatic',
     body: 'Coupe',
     fuelType: 'gasoline',
+    drivetrain: 'AWD',
     features: ['AMG Package', 'V6 BiTurbo 3.0L', '4MATIC AWD', 'Sport-Lux Interior'],
     rating: 4.9,
     reviews: 156
@@ -41,6 +42,7 @@ export const cars: Car[] = [
     body: 'SUV',
     transmission: 'Automatic',
     fuelType: 'gasoline',
+    drivetrain: 'AWD',
     features: ['Motor Benzină 2.0L', 'Interior Premium', 'Design Imponător'],
     rating: 4.8,
     reviews: 134
@@ -63,6 +65,7 @@ export const cars: Car[] = [
     body: 'SUV',
     transmission: 'Automatic',
     fuelType: 'diesel',
+    drivetrain: 'AWD',
     features: ['Motor 3.0 Diesel', 'Interior Luxos Premium', 'Confort Exclusiv'],
     rating: 4.9,
     reviews: 187
@@ -85,6 +88,7 @@ export const cars: Car[] = [
     body: 'SUV',
     transmission: 'Automatic',
     fuelType: 'gasoline',
+    drivetrain: 'RWD',
     features: ['Motor V6 3.0', 'Interior Premium Piele', 'Ocazii Speciale'],
     rating: 4.9,
     reviews: 203

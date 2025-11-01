@@ -151,7 +151,11 @@ export const Dashboard: React.FC = () => {
                                 </div>
                                 <div className="flex items-center justify-between text-sm text-gray-500">
                                     <div>{car.seats} seats</div>
-                                    <div className="capitalize">{car.transmission}</div>
+                                    <div className="capitalize">
+                                        {car.transmission === 'Automatic' ? 'Automată' : 
+                                         car.transmission === 'Manual' ? 'Manuală' : 
+                                         car.transmission || 'Automată'}
+                                    </div>
                                 </div>
                             </div>
                         </Card>

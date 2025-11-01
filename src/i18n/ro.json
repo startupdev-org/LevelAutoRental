@@ -505,6 +505,7 @@
         }
     },
     "car": {
-        "mileageLimit": "200km/zi"
+        "mileageLimit": "200km/zi",
+        "seeCar": "Vezi mașina"
     }
 }
