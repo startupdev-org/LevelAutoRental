@@ -39,12 +39,12 @@ export const Hero: React.FC = () => {
   const openDropdown = (dropdownType: 'location' | 'pickup' | 'return') => {
     // If clicking on the same dropdown that's already open, close it
     if ((dropdownType === 'location' && showLocationDropdown) ||
-        (dropdownType === 'pickup' && showPickupCalendar) ||
-        (dropdownType === 'return' && showReturnCalendar)) {
+      (dropdownType === 'pickup' && showPickupCalendar) ||
+      (dropdownType === 'return' && showReturnCalendar)) {
       closeAllDropdowns();
       return;
     }
-    
+
     // Close all dropdowns first, then open the selected one
     closeAllDropdowns();
     switch (dropdownType) {
@@ -64,7 +64,7 @@ export const Hero: React.FC = () => {
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      
+
       // Check if click is outside the entire search bar container
       if (!target.closest('.dropdown-container')) {
         closeAllDropdowns();
@@ -88,14 +88,14 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section 
+    <section
       className="relative h-[725px] bg-cover bg-no-repeat pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-fixed md:bg-hero-desktop md:bg-hero-desktop"
       style={{
-        backgroundImage: window.innerWidth < 768 
-          ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')" 
+        backgroundImage: window.innerWidth < 768
+          ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')"
           : undefined,
-        backgroundPosition: window.innerWidth < 768 
-          ? 'center center' 
+        backgroundPosition: window.innerWidth < 768
+          ? 'center center'
           : undefined
       }}
     >
@@ -136,8 +136,8 @@ export const Hero: React.FC = () => {
                       ease: "easeInOut"
                     }}
                   />
-                  
-                  <motion.button 
+
+                  <motion.button
                     className="relative px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

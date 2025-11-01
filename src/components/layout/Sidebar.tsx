@@ -73,11 +73,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
 
             {/* Footer */}
             <div className="px-4 py-4 border-t border-gray-100 flex items-center gap-3">
-                <Avatar sx={{ width: 40, height: 40 }}>O</Avatar>
+                <Avatar sx={{ width: 40, height: 40 }}>V</Avatar>
                 {!collapsed && (
                     <div className="flex-1">
-                        <div className="text-sm font-semibold text-gray-900">Olivia Rhye</div>
-                        <div className="text-xs text-gray-500">olivia@levelauto.rent</div>
+                        <div className="text-sm font-semibold text-gray-900">Victorin</div>
+                        <div className="text-xs text-gray-500">victorin@levelauto.rent</div>
                     </div>
                 )}
                 <IconButton size="small" className="text-gray-500">
