@@ -20,7 +20,10 @@ export const Footer: React.FC = () => {
   const { t, i18n } = useTranslation();
   const location = useLocation();
 
-  if (hiddenPaths.includes(location.pathname)) return null;
+  const shouldReturnFooter = !hiddenPaths.some(path => location.pathname.startsWith(path));
+
+  if (!shouldReturnFooter) return null;
+
 
   const footerSections = [
     {
