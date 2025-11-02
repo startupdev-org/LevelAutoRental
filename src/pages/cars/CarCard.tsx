@@ -91,7 +91,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
             transition={{ delay: index * 0.1 }}
         >
             <Card
-                className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-2xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}
+                className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-3xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}
             >
                 {/* Image Container */}
                 <div

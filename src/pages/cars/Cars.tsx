@@ -40,18 +40,24 @@ export const Cars: React.FC = () => {
   // Dropdown states
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showDateCalendar, setShowDateCalendar] = useState(false);
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
     setShowLocationDropdown(false);
     setShowDateCalendar(false);
+    setShowMakeDropdown(false);
+    setShowModelDropdown(false);
   };
 
   // Handle opening a specific dropdown and closing others
-  const openDropdown = (dropdownType: 'location' | 'date') => {
+  const openDropdown = (dropdownType: 'location' | 'date' | 'make' | 'model') => {
     if ((dropdownType === 'location' && showLocationDropdown) ||
-        (dropdownType === 'date' && showDateCalendar)) {
+        (dropdownType === 'date' && showDateCalendar) ||
+        (dropdownType === 'make' && showMakeDropdown) ||
+        (dropdownType === 'model' && showModelDropdown)) {
       closeAllDropdowns();
       return;
     }
@@ -61,6 +67,10 @@ export const Cars: React.FC = () => {
       setShowLocationDropdown(true);
     } else if (dropdownType === 'date') {
       setShowDateCalendar(true);
+    } else if (dropdownType === 'make') {
+      setShowMakeDropdown(true);
+    } else if (dropdownType === 'model') {
+      setShowModelDropdown(true);
     }
   };
 
@@ -73,12 +83,12 @@ export const Cars: React.FC = () => {
       }
     };
 
-    if (showLocationDropdown || showDateCalendar) {
+    if (showLocationDropdown || showDateCalendar || showMakeDropdown || showModelDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showLocationDropdown, showDateCalendar]);
+  }, [showLocationDropdown, showDateCalendar, showMakeDropdown, showModelDropdown]);
 
   // Prevent body scroll when drawer is open
   useEffect(() => {
@@ -218,10 +228,38 @@ export const Cars: React.FC = () => {
   const uniqueMakes = useMemo(() => {
     const makes = cars.map(car => {
       const parts = car.name.split(' ');
-      return parts[0]; // First part is usually the make
+      const firstPart = parts[0];
+      // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
+      return firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
     });
     return [...new Set(makes)];
   }, []);
+
+  // Map makes to their available models
+  const makeToModels = useMemo(() => {
+    const mapping: Record<string, string[]> = {};
+    cars.forEach(car => {
+      const parts = car.name.split(' ');
+      const firstPart = parts[0];
+      // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
+      const make = firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
+      const model = parts.slice(1).join(' '); // Rest is the model
+      
+      if (!mapping[make]) {
+        mapping[make] = [];
+      }
+      if (model && !mapping[make].includes(model)) {
+        mapping[make].push(model);
+      }
+    });
+    return mapping;
+  }, []);
+
+  // Get available models for selected make
+  const availableModels = useMemo(() => {
+    if (!filters.make) return [];
+    return makeToModels[filters.make] || [];
+  }, [filters.make, makeToModels]);
 
   // Filter and sort cars
   const filteredCars = useMemo(() => {
@@ -301,7 +339,28 @@ export const Cars: React.FC = () => {
   }, [appliedFilters, sortBy, sidebarFilters]);
 
   const handleFilterChange = (key: string, value: string | { startDate: string; endDate: string }) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => {
+      const newFilters = { ...prev, [key]: value };
+      
+      // If make is being changed, reset model if it's not valid for the new make
+      if (key === 'make') {
+        const newMake = value as string;
+        if (newMake && prev.model) {
+          const validModels = makeToModels[newMake] || [];
+          const currentModelValid = validModels.some(model => 
+            model.toLowerCase() === prev.model.toLowerCase()
+          );
+          if (!currentModelValid) {
+            newFilters.model = '';
+          }
+        } else if (!newMake) {
+          // If make is cleared, also clear model
+          newFilters.model = '';
+        }
+      }
+      
+      return newFilters;
+    });
     setApplyError('');
   };
 
@@ -438,9 +497,50 @@ export const Cars: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
+      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
         {/* Top Filter Section - Full Width */}
-        <div className="mt-8 mb-10 flex flex-col gap-3">
+        <div className="mt-8 mb-10 relative">
+          <div 
+            className="rounded-3xl overflow-visible min-h-[620px] md:min-h-[350px] flex flex-col justify-end relative"
+          >
+            {/* Background Image Container - Clipped */}
+            <div 
+              className="absolute inset-0 rounded-3xl overflow-hidden bg-cover bg-center md:bg-[center_-400px] z-0"
+              style={{ backgroundImage: 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)' }}
+            >
+              {/* Black Overlay */}
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+            </div>
+            
+            {/* Advanced Filters Button - Top Corner (Desktop) */}
+            <button
+              onClick={() => setShowAdvancedFilters(true)}
+              className={`hidden md:flex absolute top-6 right-6 w-14 h-14 rounded-2xl items-center justify-center transition-all transform hover:scale-105 z-20 ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600 shadow-lg' : 'bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 border border-white/20'}`}
+            >
+              <Filter className="w-5 h-5 stroke-2" />
+            </button>
+            
+            {/* Hero Text */}
+            <div className="absolute top-6 left-4 right-4 md:top-12 md:left-12 md:right-auto z-10 max-w-[calc(100%-2rem)] md:max-w-3xl">
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4"
+              >
+                Închiriază Mașina Ta Ideală
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="text-sm md:text-base lg:text-lg text-white/90 font-medium leading-relaxed"
+              >
+                Flotă variată de vehicule premium • Servicii complete cu sau fără șofer • Asistență permanentă și prețuri clare
+              </motion.p>
+            </div>
+            
+            <div className="flex flex-col gap-4 p-6 md:p-8 relative z-10">
           {/* Mobile Error Notification - Fixed at top */}
           <AnimatePresence>
             {applyError && (
@@ -464,7 +564,7 @@ export const Cars: React.FC = () => {
           </AnimatePresence>
 
           {/* Error Message and Reset Button - Same Row (Desktop) */}
-          <div className="hidden md:flex items-center justify-between gap-4 min-h-[48px]">
+          <div className="hidden md:flex items-center justify-between gap-4">
             {/* Error Message Container - Always present to prevent layout shift */}
             <div className="flex-1 min-w-0">
               <AnimatePresence>
@@ -474,7 +574,7 @@ export const Cars: React.FC = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium"
+                    className="bg-red-500/10 backdrop-blur-sm border border-red-400/30 text-red-100 px-4 py-3 rounded-xl text-sm font-medium"
                   >
                     {applyError}
                   </motion.div>
@@ -485,77 +585,174 @@ export const Cars: React.FC = () => {
             {/* Reset Button - Always visible */}
             <button
               onClick={resetFilters}
-              className="text-sm font-medium text-gray-500 hover:text-theme-600 transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
+              className="text-sm md:text-base text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3 md:w-4 md:h-4" />
               Clear all filters
             </button>
           </div>
 
-          {/* Reset Button - Mobile */}
-          <div className="flex md:hidden justify-end">
+          {/* Filter and Reset Buttons - Mobile */}
+          <div className="flex md:hidden items-center justify-between gap-2.5 mb-2">
+            {/* Reset Button - Mobile */}
             <button
               onClick={resetFilters}
-              className="text-sm font-medium text-gray-500 hover:text-theme-600 transition-colors flex items-center gap-2 whitespace-nowrap"
+              className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap"
             >
               <X className="w-4 h-4" />
               Clear all filters
+            </button>
+            
+            {/* Advanced Filters Button - Mobile */}
+            <button
+              onClick={() => setShowAdvancedFilters(true)}
+              className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600 shadow-lg' : 'backdrop-blur-md bg-white/20 hover:bg-white/30 border border-white/30 text-white'}`}
+            >
+              <Filter className="w-5 h-5 stroke-2" />
             </button>
           </div>
           
-          {/* Filter Card */}
-          <div className="bg-white border border-gray-100 rounded-xl overflow-visible shadow-sm">
+          {/* Filter Card - Glassmorphism Style */}
+          <div className="backdrop-blur-md bg-white/20 border border-white/30 rounded-3xl overflow-visible shadow-lg">
           <div className="flex flex-col lg:flex-row gap-0 items-stretch">
             {/* Car Brand */}
-            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-gray-100 px-5 py-4">
-              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.make ? 'text-theme-500' : 'text-gray-500'}`}>
+            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.make ? 'text-white' : 'text-white/80'}`}>
                 Marca
                 </label>
-              <div className="relative">
-                  <select
-                    value={filters.make}
-                    onChange={(e) => handleFilterChange('make', e.target.value)}
-                  className={`w-full text-sm lg:text-base font-medium bg-transparent border-none outline-none appearance-none cursor-pointer focus:ring-0 transition-colors ${filters.make ? 'text-theme-600' : 'text-gray-900'}`}
-                  >
-                  <option value="">Selectează marca</option>
-                    {uniqueMakes.map((make) => (
-                    <option key={make} value={make}>{make}</option>
-                    ))}
-                  </select>
+              <div className="relative overflow-visible">
+                <div
+                  className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.make ? 'text-white' : 'text-white/70'}`}
+                  onClick={() => openDropdown('make')}
+                >
+                  {filters.make || 'Selectează marca'}
                 </div>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+
+                {/* Make Dropdown */}
+                <AnimatePresence>
+                  {showMakeDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="py-1">
+                        <div
+                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                          onClick={() => {
+                            handleFilterChange('make', '');
+                            closeAllDropdowns();
+                          }}
+                        >
+                          Selectează marca
+                        </div>
+                        {uniqueMakes.map((make) => (
+                          <div
+                            key={make}
+                            className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                            onClick={() => {
+                              handleFilterChange('make', make);
+                              closeAllDropdowns();
+                            }}
+                          >
+                            {make}
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+            </div>
 
             {/* Car Model */}
-            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-gray-100 px-5 py-4">
-              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.model ? 'text-theme-500' : 'text-gray-500'}`}>
+            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.model ? 'text-white' : 'text-white/80'}`}>
                 Model
                 </label>
-              <div className="relative">
-                  <select
-                    value={filters.model}
-                    onChange={(e) => handleFilterChange('model', e.target.value)}
-                  className={`w-full text-sm lg:text-base font-medium bg-transparent border-none outline-none appearance-none cursor-pointer focus:ring-0 transition-colors ${filters.model ? 'text-theme-600' : 'text-gray-900'}`}
+              <div className="relative overflow-visible">
+                <div
+                  className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : filters.model ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
+                  onClick={() => filters.make && openDropdown('model')}
                 >
-                  <option value="">Orice</option>
-                  <option value="AMG C43">AMG C43</option>
-                  <option value="GLE">GLE</option>
-                  <option value="CLS">CLS</option>
-                  <option value="Ghibli">Ghibli</option>
-                  </select>
+                  {!filters.make ? 'Selectează marca' : (filters.model || 'Orice')}
+                </div>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+
+                {/* Model Dropdown */}
+                <AnimatePresence>
+                  {showModelDropdown && filters.make && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="py-1">
+                        <div
+                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                          onClick={() => {
+                            handleFilterChange('model', '');
+                            closeAllDropdowns();
+                          }}
+                        >
+                          Orice
+                        </div>
+                        {availableModels.length > 0 ? (
+                          availableModels.map((model) => (
+                            <div
+                              key={model}
+                              className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                              onClick={() => {
+                                handleFilterChange('model', model);
+                                closeAllDropdowns();
+                              }}
+                            >
+                              {model}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-gray-500">
+                            Nu sunt modele disponibile
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
             {/* Location */}
-            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-gray-100 px-5 py-4 dropdown-container overflow-visible">
-              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.location ? 'text-theme-500' : 'text-gray-500'}`}>
+            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.location ? 'text-white' : 'text-white/80'}`}>
                 Locație
               </label>
               <div className="relative overflow-visible">
                 <div
-                  className={`text-sm lg:text-base font-medium cursor-pointer transition-colors ${filters.location ? 'text-theme-600' : 'text-gray-900 hover:text-gray-700'}`}
+                  className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.location ? 'text-white' : 'text-white/70'}`}
                   onClick={() => openDropdown('location')}
                 >
                   {filters.location || 'Selectează locația'}
+                </div>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
 
                 {/* Location Dropdown */}
@@ -566,12 +763,12 @@ export const Cars: React.FC = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[200px]"
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="py-1">
                         <div
-                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau Airport' ? 'bg-theme-50 text-theme-600 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau Airport' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                           onClick={() => {
                             handleFilterChange('location', 'Chisinau Airport');
                             closeAllDropdowns();
@@ -580,7 +777,7 @@ export const Cars: React.FC = () => {
                           Chisinau Airport
                         </div>
                         <div
-                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau' ? 'bg-theme-50 text-theme-600 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                           onClick={() => {
                             handleFilterChange('location', 'Chisinau');
                             closeAllDropdowns();
@@ -596,16 +793,21 @@ export const Cars: React.FC = () => {
             </div>
 
             {/* Date Range */}
-            <div className="flex-1 relative border-b lg:border-b-0 px-5 py-4 dropdown-container overflow-visible">
-              <label className={`text-xs font-medium mb-2 block transition-colors ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-theme-500' : 'text-gray-500'}`}>
+            <div className="flex-1 relative border-b-0 md:border-b lg:border-b-0 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/80'}`}>
                 Perioadă
               </label>
               <div className="relative overflow-visible">
                 <div
-                  className={`text-sm lg:text-base font-medium cursor-pointer transition-colors ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-theme-600' : 'text-gray-900 hover:text-gray-700'}`}
+                  className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/70'}`}
                   onClick={() => openDropdown('date')}
                 >
                   {formatDateRange(filters.dateRange) || 'Selectează perioada'}
+                </div>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
 
                 {/* Calendar Dropdown */}
@@ -616,11 +818,11 @@ export const Cars: React.FC = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[280px]"
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Instruction Message */}
-                      <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                         <p className="text-xs text-gray-600">
                           {!filters.dateRange.startDate 
                             ? 'Selectează data de început' 
@@ -640,7 +842,7 @@ export const Cars: React.FC = () => {
                               dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
                             }));
                           }}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
                         >
                           <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -659,7 +861,7 @@ export const Cars: React.FC = () => {
                               dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
                             }));
                           }}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
                         >
                           <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -687,7 +889,7 @@ export const Cars: React.FC = () => {
                           return (
                             <div
                               key={index}
-                              className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
+                              className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${
                                 day ? 'text-gray-700' : 'text-gray-300'
                               } ${
                                 isSelected
@@ -711,31 +913,26 @@ export const Cars: React.FC = () => {
               </div>
             </div>
 
-            {/* Search Button & Filter Button Container */}
-            <div className="flex gap-3 px-5 py-3 lg:contents">
-              {/* Search Button */}
-              <div className="flex-1 lg:flex-1 lg:px-0 lg:py-3">
-                <button
-                  onClick={applyFilters}
-                  className="w-full py-4 lg:h-full bg-theme-500 hover:bg-theme-600 text-white font-semibold px-6 rounded-2xl text-sm lg:text-base flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Search className="w-3.5 h-3.5 stroke-2" />
-                  Caută
-                </button>
-              </div>
-
-              {/* Advanced Filters Button */}
-              <div className="lg:px-4 lg:mr-10 lg:py-3">
-                <button
-                  onClick={() => setShowAdvancedFilters(true)}
-                  className={`w-14 h-14 lg:w-auto lg:h-full lg:aspect-square rounded-2xl flex items-center justify-center transition-colors ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600' : 'bg-gray-100 hover:bg-theme-50 text-gray-900 hover:text-theme-600'}`}
-                >
-                  <Filter className="w-5 h-5 stroke-2" />
-                </button>
-              </div>
+            {/* Search Button */}
+            <div className="px-4 py-3 md:px-6 md:py-5 flex-[1.5] lg:flex-[1]">
+              <button
+                onClick={applyFilters}
+                className="w-full py-3.5 md:py-4 lg:py-3.5 bg-gradient-to-r from-theme-500 to-theme-600 hover:from-theme-600 hover:to-theme-700 text-white font-bold px-6 md:px-8 rounded-2xl text-sm md:text-base flex items-center justify-center gap-2.5 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+              >
+                <Search className="w-4 h-4 md:w-5 md:h-5 stroke-[2.5]" />
+                Caută
+              </button>
             </div>
           </div>
           </div>
+          </div>
+          </div>
+          {/* Keys Image Overlay - Outside rounded container */}
+          <img 
+            src="/LevelAutoRental/assets/Design Elements/keys.png" 
+            alt="" 
+            className="absolute hidden lg:block lg:bottom-[100px] lg:right-[250px] bottom-[400px] right-[0px]  lg:w-[300px] w-[200px] h-auto object-contain z-[10] pointer-events-none"
+          />
         </div>
 
         {/* Advanced Filters Drawer */}
@@ -929,17 +1126,53 @@ export const Cars: React.FC = () => {
         {/* Main Layout */}
         <div className="w-full mt-8">
           {/* Cars Grid */}
-          <motion.div
-            ref={ref}
-            variants={staggerContainer}
-            initial="initial"
-            animate={isInView ? "animate" : "initial"}
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
-          >
-            {filteredCars.map((car, index) => (
-              <CarCard key={car.id} car={car} index={index} />
-            ))}
-          </motion.div>
+          {filteredCars.length > 0 ? (
+            <motion.div
+              ref={ref}
+              variants={staggerContainer}
+              initial="initial"
+              animate={isInView ? "animate" : "initial"}
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
+            >
+              {filteredCars.map((car, index) => (
+                <CarCard key={car.id} car={car} index={index} />
+              ))}
+            </motion.div>
+          ) : (
+            // Check if any filters are applied
+            (appliedFilters.make || appliedFilters.model || appliedFilters.location || 
+             appliedFilters.dateRange.startDate || appliedFilters.dateRange.endDate ||
+             Object.values(sidebarFilters).some(value => {
+               if (Array.isArray(value)) {
+                 return value[0] !== (value[1] === 2025 ? 2020 : 0) || value[1] !== 2025;
+               }
+               return value !== 'Any' && value !== 'All';
+             })) ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-16 px-4"
+              >
+                <div className="max-w-md mx-auto">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Search className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Nu s-au găsit mașini
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Nu am găsit mașini care să corespundă criteriilor dvs. de filtrare. Vă rugăm să încercați să modificați filtrele.
+                  </p>
+                  <button
+                    onClick={resetFilters}
+                    className="px-6 py-3 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-xl transition-colors"
+                  >
+                    Resetează filtrele
+                  </button>
+                </div>
+              </motion.div>
+            ) : null
+          )}
 
           {/* Rental Options Section */}
           <div className="mt-16 bg-white rounded-lg border border-gray-200 p-8">
