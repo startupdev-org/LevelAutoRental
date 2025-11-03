@@ -4,6 +4,7 @@ import { Sidebar } from '../../../../components/layout/Sidebar';
 import { cars } from '../../../../data/cars';
 import { orders } from '../../../../data/index';
 import { Calendar, Clock, Heart } from 'lucide-react';
+import { getDateDiffInDays } from '../../../../utils/date';
 
 export const OrderDetails: React.FC = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -34,11 +35,11 @@ export const OrderDetails: React.FC = () => {
                 className="transition-all duration-300"
                 style={{ marginLeft: sidebarCollapsed ? 72 : 280 }}
             >
-                <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-20">
+                <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-10">
                     <div className="flex flex-col lg:grid lg:grid-cols-[1fr_360px] gap-8 lg:gap-12">
                         {/* LEFT COLUMN: Order + Car Info */}
                         <div className="space-y-6">
-                            <h1 className="text-3xl font-bold text-gray-900">Order {order.id}</h1>
+                            <h1 className="text-3xl font-bold text-gray-900">Order #{order.id}</h1>
 
                             {/* Car Summary */}
                             <div className="cursor-pointer flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200"
@@ -56,7 +57,7 @@ export const OrderDetails: React.FC = () => {
                             </div>
 
                             {/* Booking Details */}
-                            <div className="bg-white rounded-lg border border-gray-200 p-6">
+                            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-8">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Booking Information</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="flex items-center gap-2">
@@ -75,7 +76,27 @@ export const OrderDetails: React.FC = () => {
                                         <Clock className="w-5 h-5 text-gray-500" />
                                         <span className="text-gray-700 text-sm">Return Time: {order.returnTime || '--:--'}</span>
                                     </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-700 text-sm">Rental Days: {getDateDiffInDays(order.pickupDate, order.returnDate)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-700 text-sm">Total Price: {getDateDiffInDays(order.pickupDate, order.returnDate) * car.pricePerDay} MDL</span>
+                                    </div>
                                 </div>
+
+                                {car.features?.length > 0 && (
+                                    <>
+                                        <h2 className="text-xl font-bold text-gray-900">Additional Features</h2>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            {car.features.map((feature, i) => (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <span className="text-gray-700 text-sm">{feature}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Customer Info */}
@@ -133,16 +154,10 @@ export const OrderDetails: React.FC = () => {
                                 >
                                     Cancel Order
                                 </button>
-                                <button
-                                    className="w-full flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-6 rounded-xl transition-colors"
-                                >
-                                    <Heart className="w-5 h-5" />
-                                    Mark as Favorite
-                                </button>
                             </div>
                         </aside>
                     </div>
-                </div>
+                </div >
             </main >
         </div >
     );
