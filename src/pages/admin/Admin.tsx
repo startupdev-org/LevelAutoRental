@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button';
 import { Calendar, Clock } from 'lucide-react';
 import { getDateDiffInDays } from '../../utils/date';
 import Settings from '../dashboard/settings/Settings';
+import Users from '../dashboard/users/Users';
 
 interface CardStatsProps {
     title: string;
@@ -297,10 +298,7 @@ const CalendarView: React.FC = () => (
 );
 
 const UsersView: React.FC = () => (
-    <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-6">Users</h1>
-        <p className="text-gray-600">Users management coming soon...</p>
-    </div>
+    <Users />
 );
 
 const SettingsView: React.FC = () => (
@@ -344,7 +342,7 @@ export const Admin: React.FC = () => {
                 className="transition-all duration-300"
                 style={{ marginLeft: sidebarCollapsed ? 72 : 280, paddingTop: 32 }}
             >
-                <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8">
                     {renderContent()}
                 </div>
             </main>
