@@ -8,11 +8,7 @@ type TabKey =
     | "password"
     | "appearance"
     | "email"
-    | "notifications"
-    | "team"
-    | "billing"
-    | "integrations"
-    | "api";
+    | "notifications";
 
 function TabPanel({
     children,
@@ -28,17 +24,12 @@ function TabPanel({
 
 export const Settings: React.FC = () => {
     const [tab, setTab] = useState<TabKey>("my-details");
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     // My details / Profile state
-    const [firstName, setFirstName] = useState("Olivia");
-    const [lastName, setLastName] = useState("Rhye");
-    const [email, setEmail] = useState("olivia@untitledui.com");
-    const [username, setUsername] = useState("olivia");
-    const [website, setWebsite] = useState("www.untitledui.com");
-    const [bio, setBio] = useState(
-        "I'm a Product Designer based in Melbourne, Australia. I specialise in UX/UI design, brand strategy and Webflow development."
-    );
+    const [firstName, setFirstName] = useState("Victorin");
+    const [lastName, setLastName] = useState("Levitchi");
+    const [email, setEmail] = useState("victorin@levelautorental.com");
+    const [username, setUsername] = useState("victorin");
 
     // Avatar upload preview
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -60,23 +51,15 @@ export const Settings: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
 
     // Preferences
-    const [themeMode, setThemeMode] = useState<"system" | "light" | "dark">(
-        "system"
-    );
     const [marketingEmails, setMarketingEmails] = useState(true);
     const [productEmails, setProductEmails] = useState(true);
-
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files?.[0]) return;
-        setAvatarFile(e.target.files[0]);
-    };
 
     const onSaveDetails = () => {
         console.log("Save details:", { firstName, lastName, email });
     };
 
     const onSaveProfile = () => {
-        console.log("Save profile:", { username, website, bio, avatarFile });
+        console.log("Save profile:", { username, avatarFile });
     };
 
     const onUpdatePassword = () => {
@@ -91,32 +74,13 @@ export const Settings: React.FC = () => {
         { key: "my-details", label: "My details" },
         { key: "profile", label: "Profile" },
         { key: "password", label: "Password" },
-        { key: "appearance", label: "Appearance" },
         { key: "email", label: "Email" },
         { key: "notifications", label: "Notifications" },
-        { key: "team", label: "Team" },
-        { key: "billing", label: "Billing" },
-        { key: "integrations", label: "Integrations" },
-        { key: "api", label: "API" },
     ];
-
-    // sample orders for table preview
-    const sampleOrders = Array.from({ length: 6 }).map((_, idx) => ({
-        id: `#${26678 - idx}`,
-        date: format(new Date(Date.now() - idx * 86400000), "MMM dd, yyyy"),
-        status: idx % 3 === 0 ? "Paid" : idx % 3 === 1 ? "Pending" : "Refunded",
-        amount: (50 + idx * 10).toFixed(2),
-        customer: `Customer ${idx + 1}`,
-    }));
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
-            <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
-
-            <main
-                className="transition-all duration-300"
-                style={{ marginLeft: sidebarCollapsed ? 72 : 280 }}
-            >
+            <main className="flex-1 transition-all duration-300 p-8">
                 <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
                     {/* Top header */}
                     <div className="flex items-center justify-between mb-6">
@@ -126,7 +90,7 @@ export const Settings: React.FC = () => {
                                     <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full bg-gray-200 flex items-center justify-center text-lg font-semibold text-gray-600">
-                                        O
+                                        V
                                     </div>
                                 )}
                             </div>
@@ -214,38 +178,6 @@ export const Settings: React.FC = () => {
                                         />
                                     </label>
                                 </div>
-
-                                <div className="space-y-3">
-                                    <div className="text-sm text-gray-700 font-medium">Your photo</div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100">
-                                            {avatarPreview ? (
-                                                <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-gray-500">O</div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex flex-col gap-2">
-                                            <label className="inline-block">
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleAvatarChange}
-                                                    className="hidden"
-                                                    id="avatar-upload"
-                                                />
-                                                <button
-                                                    onClick={() => document.getElementById("avatar-upload")?.click()}
-                                                    className="px-3 py-2 bg-white border border-gray-200 rounded-md text-sm"
-                                                >
-                                                    Upload photo
-                                                </button>
-                                            </label>
-                                            <div className="text-xs text-gray-400">SVG, PNG, JPG or GIF (max. 800x400px)</div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </TabPanel>
 
@@ -262,26 +194,6 @@ export const Settings: React.FC = () => {
                                             className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50"
                                         />
                                         <div className="text-xs text-gray-400 mt-1">Visible on your public profile</div>
-                                    </label>
-
-                                    <label>
-                                        <div className="text-xs text-gray-500 mb-1">Website</div>
-                                        <input
-                                            value={website}
-                                            onChange={(e) => setWebsite(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50"
-                                        />
-                                    </label>
-
-                                    <label>
-                                        <div className="text-xs text-gray-500 mb-1">Your bio</div>
-                                        <textarea
-                                            value={bio}
-                                            onChange={(e) => setBio(e.target.value)}
-                                            rows={5}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50"
-                                        />
-                                        <div className="text-xs text-gray-400 mt-1">{bio.length} characters</div>
                                     </label>
 
                                     <div className="flex gap-3">
@@ -336,24 +248,6 @@ export const Settings: React.FC = () => {
                             </div>
                         </TabPanel>
 
-                        <TabPanel value={tab} index="appearance">
-                            <h2 className="text-lg font-semibold mb-4">Appearance</h2>
-                            <div className="flex gap-4 items-center">
-                                <label className="flex items-center gap-2">
-                                    <input type="radio" name="theme" checked={themeMode === "system"} onChange={() => setThemeMode("system")} />
-                                    <span className="text-sm ml-1">System</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input type="radio" name="theme" checked={themeMode === "light"} onChange={() => setThemeMode("light")} />
-                                    <span className="text-sm ml-1">Light</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input type="radio" name="theme" checked={themeMode === "dark"} onChange={() => setThemeMode("dark")} />
-                                    <span className="text-sm ml-1">Dark</span>
-                                </label>
-                            </div>
-                        </TabPanel>
-
                         <TabPanel value={tab} index="email">
                             <h2 className="text-lg font-semibold mb-4">Email preferences</h2>
                             <label className="flex items-center justify-between mb-3">
@@ -385,25 +279,6 @@ export const Settings: React.FC = () => {
                             </label>
                         </TabPanel>
 
-                        <TabPanel value={tab} index="team">
-                            <h2 className="text-lg font-semibold mb-2">Team</h2>
-                            <p className="text-sm text-gray-500">Manage team access and roles from here.</p>
-                        </TabPanel>
-
-                        <TabPanel value={tab} index="billing">
-                            <h2 className="text-lg font-semibold mb-2">Billing</h2>
-                            <p className="text-sm text-gray-500">Payment methods, invoices and subscription plan.</p>
-                        </TabPanel>
-
-                        <TabPanel value={tab} index="integrations">
-                            <h2 className="text-lg font-semibold mb-2">Integrations</h2>
-                            <p className="text-sm text-gray-500">Connect third-party services and webhooks.</p>
-                        </TabPanel>
-
-                        <TabPanel value={tab} index="api">
-                            <h2 className="text-lg font-semibold mb-2">API</h2>
-                            <p className="text-sm text-gray-500">Create API keys and manage access.</p>
-                        </TabPanel>
                     </div>
                 </div>
             </main>

@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Calendar, Clock } from 'lucide-react';
 import { getDateDiffInDays } from '../../utils/date';
+import Settings from '../dashboard/settings/Settings';
 
 interface CardStatsProps {
     title: string;
@@ -303,10 +304,7 @@ const UsersView: React.FC = () => (
 );
 
 const SettingsView: React.FC = () => (
-    <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-6">Settings</h1>
-        <p className="text-gray-600">Settings coming soon...</p>
-    </div>
+    <Settings />
 );
 
 export const Admin: React.FC = () => {
