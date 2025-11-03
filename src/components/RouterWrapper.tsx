@@ -16,14 +16,7 @@ import { Calculator } from '../pages/calculator/Calculator';
 import NotFound from '../pages/NotFound';
 import ScrollToTop from './ScrollToTop';
 
-<<<<<<< HEAD
-import { Dashboard } from '../pages/dashboard/home/Dashboard.tsx';
-import { Orders } from '../pages/dashboard/orders/Orders.tsx';
-import { OrderDetails } from '../pages/dashboard/orders/individual/OrdersDetails.tsx';
-import { Settings } from '../pages/dashboard/settings/Settings.tsx';
-=======
 import { Admin } from '../pages/admin/Admin.tsx';
->>>>>>> origin/main
 
 const RouterWrapper = () => {
   return (
@@ -50,14 +43,7 @@ const RouterWrapper = () => {
         <Route path="/auth/signup" element={<SignUp />} />
         <Route path="/auth/forgot" element={<ForgotPassword />} />
 
-<<<<<<< HEAD
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/orders/:orderId" element={<OrderDetails />} />
-        <Route path="/settings" element={<Settings />} />
-=======
         <Route path="/admin" element={<Admin />} />
->>>>>>> origin/main
 
         <Route path="*" element={<NotFound />} />
       </Routes >
