@@ -51,7 +51,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title }) => {
                 <tbody className="bg-white divide-y divide-gray-200">
                     {orders.map((o) => (
                         <tr key={o.id} className="cursor-pointer hover:bg-gray-50 transition-colors"
-                            onClick={() => navigate(`/orders/${o.id}`)}
+                            onClick={() => navigate(`/admin?section=orders&orderId=${o.id}`)}
 
                         >
                             <td className="px-6 py-4 text-gray-800 font-medium">{o.id}</td>
