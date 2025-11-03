@@ -1,3 +1,5 @@
+import { User } from '../types/index'
+
 export const hiddenPaths = ['/admin'];
 
 export const sparkData = Array.from({ length: 12 }).map((_, i) => ({
@@ -127,4 +129,87 @@ export const orders = [
         returnDate: 'Nov 12, 2025',
         returnTime: '02:30 PM',
     },
+];
+
+export const users: User[] = [
+    {
+        id: 1,
+        firstName: "Victorin",
+        lastName: "Levitchi",
+        username: "victorin",
+        email: "victorin@example.com",
+        role: "Admin",
+    },
+    {
+        id: 2,
+        firstName: "Jane",
+        lastName: "Doe",
+        username: "janedoe",
+        email: "jane@example.com",
+        role: "User",
+    },
+    {
+        id: 3,
+        firstName: "John",
+        lastName: "Smith",
+        username: "johnsmith",
+        email: "john.smith@example.com",
+        role: "User",
+    },
+    {
+        id: 4,
+        firstName: "Alice",
+        lastName: "Johnson",
+        username: "alicej",
+        email: "alice.johnson@example.com",
+        role: "User ",
+    },
+    {
+        id: 5,
+        firstName: "Bob",
+        lastName: "Brown",
+        username: "bobbrown",
+        email: "bob.brown@example.com",
+        role: "User",
+    },
+    {
+        id: 6,
+        firstName: "Emma",
+        lastName: "Wilson",
+        username: "emmawilson",
+        email: "emma.wilson@example.com",
+        role: "Admin",
+    },
+    {
+        id: 7,
+        firstName: "Michael",
+        lastName: "Davis",
+        username: "mikedavis",
+        email: "michael.davis@example.com",
+        role: "User",
+    },
+    {
+        id: 8,
+        firstName: "Sophia",
+        lastName: "Taylor",
+        username: "sophiat",
+        email: "sophia.taylor@example.com",
+        role: "User",
+    },
+    {
+        id: 9,
+        firstName: "Daniel",
+        lastName: "Anderson",
+        username: "danieland",
+        email: "daniel.anderson@example.com",
+        role: "User ",
+    },
+    {
+        id: 10,
+        firstName: "Olivia",
+        lastName: "Thomas",
+        username: "oliviat",
+        email: "olivia.thomas@example.com",
+        role: "User",
+    }
 ];

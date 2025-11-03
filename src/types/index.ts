@@ -52,3 +52,13 @@ export interface Feature {
   title: string;
   description: string;
 }
+
+export interface User {
+  id: number;
+  avatar?: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  role: string;
+};
