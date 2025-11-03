@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Menu, X, Home, Briefcase, FileText, Calendar as Cal, Users, Settings, LogOut } from 'lucide-react';
 import { Avatar, IconButton } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 type SidebarProps = {
     collapsed: boolean;
@@ -21,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     ];
 
     const navigate = useNavigate();
+    const location = useLocation();
 
     return (
         <motion.aside
@@ -61,14 +62,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
                     {nav.map(n => (
                         <li key={n.key}>
                             <button
-                                onClick={() => navigate(`/${n.key}`)}
+                                onClick={() => navigate(`/admin?section=${n.key}`)}
                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                                    ${!collapsed
-                                        ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                        : 'justify-center'
+                                    ${location.search.includes(`section=${n.key}`) || (!location.search && n.key === 'dashboard')
+                                        ? 'bg-theme-50 text-theme-700'
+                                        : !collapsed
+                                            ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            : 'justify-center'
                                     }`}
                             >
-                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-gray-100">
+                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-md ${location.search.includes(`section=${n.key}`) || (!location.search && n.key === 'dashboard') ? 'bg-theme-100' : 'bg-gray-100'}`}>
                                     {n.icon}
                                 </span>
                                 {!collapsed && <span>{n.label}</span>}

@@ -1,4 +1,4 @@
-export const hiddenPaths = ['/dashboard', '/admin', '/settings', '/orders', '/users'];
+export const hiddenPaths = ['/admin'];
 
 export const sparkData = Array.from({ length: 12 }).map((_, i) => ({
     x: i,
