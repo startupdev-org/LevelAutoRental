@@ -19,6 +19,7 @@ import ScrollToTop from './ScrollToTop';
 import { Dashboard } from '../pages/dashboard/home/Dashboard.tsx';
 import { Orders } from '../pages/dashboard/orders/Orders.tsx';
 import { OrderDetails } from '../pages/dashboard/orders/individual/OrdersDetails.tsx';
+import { Settings } from '../pages/dashboard/settings/Settings.tsx';
 
 const RouterWrapper = () => {
   return (
@@ -48,6 +49,7 @@ const RouterWrapper = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/:orderId" element={<OrderDetails />} />
+        <Route path="/settings" element={<Settings />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
