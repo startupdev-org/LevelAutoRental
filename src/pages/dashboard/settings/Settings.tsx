@@ -109,31 +109,39 @@ export const Settings: React.FC = () => {
         >
             {/* Profile Card */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
                 {/* Profile Overview */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg p-6">
-                    <div className="text-center">
-                        <div className="w-24 h-24 mx-auto rounded-full overflow-hidden ring-4 ring-red-500/50 shadow-lg mb-4">
-                            {avatarPreview ? (
-                                <img
-                                    src={avatarPreview}
-                                    alt="avatar"
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-3xl font-bold text-white">
-                                    {firstName.charAt(0)}
-                                </div>
-                            )}
+             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg p-10 flex flex-col justify-center items-center">
+                <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-red-500/50 shadow-lg mb-4">
+                    {avatarPreview ? (
+                        <img
+                            src={avatarPreview}
+                            alt="avatar"
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-3xl sm:text-4xl md:text-5xl font-bold text-white">
+                            {firstName.charAt(0)}
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-1">{firstName} {lastName}</h3>
-                        <p className="text-gray-400 text-sm mb-4">@{username}</p>
-                        <div className="space-y-2">
-                            <div className="text-sm text-gray-300 bg-white/5 rounded-lg px-3 py-2">
-                                {email}
-                            </div>
-                        </div>
+                    )}
+                </div>
+
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-2xl font-bold text-white mb-1">
+                    {firstName} {lastName}
+                </h3>
+
+                <p className="text-sm sm:text-base md:text-lg text-gray-400 mb-4">
+                    @{username}
+                </p>
+
+                <div className="space-y-2">
+                    <div className="text-sm sm:text-base md:text-lg text-gray-300 bg-white/5 rounded-lg px-3 py-2">
+                        {email}
                     </div>
                 </div>
+            </div>
+
+
 
                 {/* Quick Actions */}
                 <div className="lg:col-span-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg p-6">
