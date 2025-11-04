@@ -55,13 +55,13 @@ export const Cars: React.FC = () => {
   // Handle opening a specific dropdown and closing others
   const openDropdown = (dropdownType: 'location' | 'date' | 'make' | 'model') => {
     if ((dropdownType === 'location' && showLocationDropdown) ||
-        (dropdownType === 'date' && showDateCalendar) ||
-        (dropdownType === 'make' && showMakeDropdown) ||
-        (dropdownType === 'model' && showModelDropdown)) {
+      (dropdownType === 'date' && showDateCalendar) ||
+      (dropdownType === 'make' && showMakeDropdown) ||
+      (dropdownType === 'model' && showModelDropdown)) {
       closeAllDropdowns();
       return;
     }
-    
+
     closeAllDropdowns();
     if (dropdownType === 'location') {
       setShowLocationDropdown(true);
@@ -180,8 +180,8 @@ export const Cars: React.FC = () => {
     if (priceRange.min && priceRange.max && yearRangeData.min && yearRangeData.max) {
       setSidebarFilters(prev => ({
         ...prev,
-        priceRange: prev.priceRange[0] === 0 && prev.priceRange[1] === 1000 
-          ? [priceRange.min, priceRange.max] 
+        priceRange: prev.priceRange[0] === 0 && prev.priceRange[1] === 1000
+          ? [priceRange.min, priceRange.max]
           : prev.priceRange,
         yearRange: prev.yearRange[0] === 2010 && prev.yearRange[1] === 2025
           ? [yearRangeData.min, yearRangeData.max]
@@ -201,7 +201,7 @@ export const Cars: React.FC = () => {
     const locationParam = searchParams.get('location');
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
-    
+
     if (makeParam || modelParam || locationParam || startDateParam || endDateParam) {
       const initialFilters = {
         make: makeParam || '',
@@ -244,7 +244,7 @@ export const Cars: React.FC = () => {
       // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
       const make = firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
       const model = parts.slice(1).join(' '); // Rest is the model
-      
+
       if (!mapping[make]) {
         mapping[make] = [];
       }
@@ -341,13 +341,13 @@ export const Cars: React.FC = () => {
   const handleFilterChange = (key: string, value: string | { startDate: string; endDate: string }) => {
     setFilters(prev => {
       const newFilters = { ...prev, [key]: value };
-      
+
       // If make is being changed, reset model if it's not valid for the new make
       if (key === 'make') {
         const newMake = value as string;
         if (newMake && prev.model) {
           const validModels = makeToModels[newMake] || [];
-          const currentModelValid = validModels.some(model => 
+          const currentModelValid = validModels.some(model =>
             model.toLowerCase() === prev.model.toLowerCase()
           );
           if (!currentModelValid) {
@@ -358,7 +358,7 @@ export const Cars: React.FC = () => {
           newFilters.model = '';
         }
       }
-      
+
       return newFilters;
     });
     setApplyError('');
@@ -366,13 +366,13 @@ export const Cars: React.FC = () => {
 
   const handleDateSelect = (selectedDate: string) => {
     const { startDate, endDate } = filters.dateRange;
-    
+
     // If no start date, set it as start date
     if (!startDate) {
       handleFilterChange('dateRange', { startDate: selectedDate, endDate: '' });
       return;
     }
-    
+
     // If start date exists but no end date yet
     if (!endDate) {
       // If selected date is before start date, reset start date
@@ -454,26 +454,26 @@ export const Cars: React.FC = () => {
 
   const applyFilters = () => {
     // Validate that at least one filter is set
-    const hasFilters = 
-      filters.make || 
-      filters.model || 
-      filters.location || 
-      filters.dateRange.startDate || 
+    const hasFilters =
+      filters.make ||
+      filters.model ||
+      filters.location ||
+      filters.dateRange.startDate ||
       filters.dateRange.endDate;
-    
+
     if (!hasFilters) {
       setApplyError('Vă rugăm să selectați cel puțin un filtru pentru căutare.');
       setTimeout(() => setApplyError(''), 3000);
       return;
     }
-    
+
     setApplyError('');
     setAppliedFilters({ ...filters });
     closeAllDropdowns();
-    
+
     // Update URL with search parameters
     const params = new URLSearchParams();
-    
+
     if (filters.make) {
       params.set('make', filters.make);
     }
@@ -489,7 +489,7 @@ export const Cars: React.FC = () => {
     if (filters.dateRange.endDate) {
       params.set('endDate', filters.dateRange.endDate);
     }
-    
+
     const queryString = params.toString();
     navigate(`/cars${queryString ? `?${queryString}` : ''}`, { replace: true });
   };
@@ -500,18 +500,18 @@ export const Cars: React.FC = () => {
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
         {/* Top Filter Section - Full Width */}
         <div className="mt-8 mb-10 relative">
-          <div 
+          <div
             className="rounded-3xl overflow-visible min-h-[620px] md:min-h-[350px] flex flex-col justify-end relative"
           >
             {/* Background Image Container - Clipped */}
-            <div 
+            <div
               className="absolute inset-0 rounded-3xl overflow-hidden bg-cover bg-center md:bg-[center_-400px] z-0"
               style={{ backgroundImage: 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)' }}
             >
               {/* Black Overlay */}
               <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
             </div>
-            
+
             {/* Advanced Filters Button - Top Corner (Desktop) */}
             <button
               onClick={() => setShowAdvancedFilters(true)}
@@ -519,10 +519,10 @@ export const Cars: React.FC = () => {
             >
               <Filter className="w-5 h-5 stroke-2" />
             </button>
-            
+
             {/* Hero Text */}
             <div className="absolute top-6 left-4 right-4 md:top-12 md:left-12 md:right-auto z-10 max-w-[calc(100%-2rem)] md:max-w-3xl">
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
@@ -530,7 +530,7 @@ export const Cars: React.FC = () => {
               >
                 Închiriază Mașina Ta Ideală
               </motion.h1>
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
@@ -539,398 +539,396 @@ export const Cars: React.FC = () => {
                 Flotă variată de vehicule premium • Servicii complete cu sau fără șofer • Asistență permanentă și prețuri clare
               </motion.p>
             </div>
-            
-            <div className="flex flex-col gap-4 p-6 md:p-8 relative z-10">
-          {/* Mobile Error Notification - Fixed at top */}
-          <AnimatePresence>
-            {applyError && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="fixed top-24 left-4 right-4 z-[10000] md:hidden bg-white border-l-4 border-theme-500 text-gray-900 px-4 py-3 rounded-xl text-sm font-medium shadow-xl"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-theme-500 flex items-center justify-center mt-0.5">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="flex-1 text-gray-900">{applyError}</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          {/* Error Message and Reset Button - Same Row (Desktop) */}
-          <div className="hidden md:flex items-center justify-between gap-4">
-            {/* Error Message Container - Always present to prevent layout shift */}
-            <div className="flex-1 min-w-0">
+            <div className="flex flex-col gap-4 p-6 md:p-8 relative z-10">
+              {/* Mobile Error Notification - Fixed at top */}
               <AnimatePresence>
                 {applyError && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-red-500/10 backdrop-blur-sm border border-red-400/30 text-red-100 px-4 py-3 rounded-xl text-sm font-medium"
+                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="fixed top-24 left-4 right-4 z-[10000] md:hidden bg-white border-l-4 border-theme-500 text-gray-900 px-4 py-3 rounded-xl text-sm font-medium shadow-xl"
                   >
-                    {applyError}
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-theme-500 flex items-center justify-center mt-0.5">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="flex-1 text-gray-900">{applyError}</p>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-            
-            {/* Reset Button - Always visible */}
-            <button
-              onClick={resetFilters}
-              className="text-sm md:text-base text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
-            >
-              <X className="w-3 h-3 md:w-4 md:h-4" />
-              Clear all filters
-            </button>
-          </div>
 
-          {/* Filter and Reset Buttons - Mobile */}
-          <div className="flex md:hidden items-center justify-between gap-2.5 mb-2">
-            {/* Reset Button - Mobile */}
-            <button
-              onClick={resetFilters}
-              className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap"
-            >
-              <X className="w-4 h-4" />
-              Clear all filters
-            </button>
-            
-            {/* Advanced Filters Button - Mobile */}
-            <button
-              onClick={() => setShowAdvancedFilters(true)}
-              className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600 shadow-lg' : 'backdrop-blur-md bg-white/20 hover:bg-white/30 border border-white/30 text-white'}`}
-            >
-              <Filter className="w-5 h-5 stroke-2" />
-            </button>
-          </div>
-          
-          {/* Filter Card - Glassmorphism Style */}
-          <div className="backdrop-blur-md bg-white/20 border border-white/30 rounded-3xl overflow-visible shadow-lg">
-          <div className="flex flex-col lg:flex-row gap-0 items-stretch">
-            {/* Car Brand */}
-            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
-              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.make ? 'text-white' : 'text-white/80'}`}>
-                Marca
-                </label>
-              <div className="relative overflow-visible">
-                <div
-                  className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.make ? 'text-white' : 'text-white/70'}`}
-                  onClick={() => openDropdown('make')}
+              {/* Error Message and Reset Button - Same Row (Desktop) */}
+              <div className="hidden md:flex items-center justify-between gap-4">
+                {/* Error Message Container - Always present to prevent layout shift */}
+                <div className="flex-1 min-w-0">
+                  <AnimatePresence>
+                    {applyError && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="bg-red-500/10 backdrop-blur-sm border border-red-400/30 text-red-100 px-4 py-3 rounded-xl text-sm font-medium"
+                      >
+                        {applyError}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Reset Button - Always visible */}
+                <button
+                  onClick={resetFilters}
+                  className="text-sm md:text-base text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
                 >
-                  {filters.make || 'Selectează marca'}
-                </div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  <X className="w-3 h-3 md:w-4 md:h-4" />
+                  Clear all filters
+                </button>
+              </div>
 
-                {/* Make Dropdown */}
-                <AnimatePresence>
-                  {showMakeDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="py-1">
-                        <div
-                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                          onClick={() => {
-                            handleFilterChange('make', '');
-                            closeAllDropdowns();
-                          }}
-                        >
-                          Selectează marca
-                        </div>
-                        {uniqueMakes.map((make) => (
-                          <div
-                            key={make}
-                            className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                            onClick={() => {
-                              handleFilterChange('make', make);
-                              closeAllDropdowns();
-                            }}
+              {/* Filter and Reset Buttons - Mobile */}
+              <div className="flex md:hidden items-center justify-between gap-2.5 mb-2">
+                {/* Reset Button - Mobile */}
+                <button
+                  onClick={resetFilters}
+                  className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap"
+                >
+                  <X className="w-4 h-4" />
+                  Clear all filters
+                </button>
+
+                {/* Advanced Filters Button - Mobile */}
+                <button
+                  onClick={() => setShowAdvancedFilters(true)}
+                  className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600 shadow-lg' : 'backdrop-blur-md bg-white/20 hover:bg-white/30 border border-white/30 text-white'}`}
+                >
+                  <Filter className="w-5 h-5 stroke-2" />
+                </button>
+              </div>
+
+              {/* Filter Card - Glassmorphism Style */}
+              <div className="backdrop-blur-md bg-white/20 border border-white/30 rounded-3xl overflow-visible shadow-lg">
+                <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+                  {/* Car Brand */}
+                  <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+                    <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.make ? 'text-white' : 'text-white/80'}`}>
+                      Marca
+                    </label>
+                    <div className="relative overflow-visible">
+                      <div
+                        className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.make ? 'text-white' : 'text-white/70'}`}
+                        onClick={() => openDropdown('make')}
+                      >
+                        {filters.make || 'Selectează marca'}
+                      </div>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+
+                      {/* Make Dropdown */}
+                      <AnimatePresence>
+                        {showMakeDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            {make}
-                          </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {/* Car Model */}
-            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
-              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.model ? 'text-white' : 'text-white/80'}`}>
-                Model
-                </label>
-              <div className="relative overflow-visible">
-                <div
-                  className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : filters.model ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
-                  onClick={() => filters.make && openDropdown('model')}
-                >
-                  {!filters.make ? 'Selectează marca' : (filters.model || 'Orice')}
-                </div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-
-                {/* Model Dropdown */}
-                <AnimatePresence>
-                  {showModelDropdown && filters.make && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="py-1">
-                        <div
-                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                          onClick={() => {
-                            handleFilterChange('model', '');
-                            closeAllDropdowns();
-                          }}
-                        >
-                          Orice
-                        </div>
-                        {availableModels.length > 0 ? (
-                          availableModels.map((model) => (
-                            <div
-                              key={model}
-                              className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                              onClick={() => {
-                                handleFilterChange('model', model);
-                                closeAllDropdowns();
-                              }}
-                            >
-                              {model}
+                            <div className="py-1">
+                              <div
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('make', '');
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                Selectează marca
+                              </div>
+                              {uniqueMakes.map((make) => (
+                                <div
+                                  key={make}
+                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                  onClick={() => {
+                                    handleFilterChange('make', make);
+                                    closeAllDropdowns();
+                                  }}
+                                >
+                                  {make}
+                                </div>
+                              ))}
                             </div>
-                          ))
-                        ) : (
-                          <div className="px-4 py-2 text-sm text-gray-500">
-                            Nu sunt modele disponibile
-                          </div>
+                          </motion.div>
                         )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+                      </AnimatePresence>
+                    </div>
+                  </div>
 
-            {/* Location */}
-            <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
-              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.location ? 'text-white' : 'text-white/80'}`}>
-                Locație
-              </label>
-              <div className="relative overflow-visible">
-                <div
-                  className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.location ? 'text-white' : 'text-white/70'}`}
-                  onClick={() => openDropdown('location')}
-                >
-                  {filters.location || 'Selectează locația'}
-                </div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-
-                {/* Location Dropdown */}
-                <AnimatePresence>
-                  {showLocationDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="py-1">
-                        <div
-                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau Airport' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                          onClick={() => {
-                            handleFilterChange('location', 'Chisinau Airport');
-                            closeAllDropdowns();
-                          }}
-                        >
-                          Chisinau Airport
-                        </div>
-                        <div
-                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                          onClick={() => {
-                            handleFilterChange('location', 'Chisinau');
-                            closeAllDropdowns();
-                          }}
-                        >
-                          Chisinau
-                        </div>
+                  {/* Car Model */}
+                  <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+                    <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.model ? 'text-white' : 'text-white/80'}`}>
+                      Model
+                    </label>
+                    <div className="relative overflow-visible">
+                      <div
+                        className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : filters.model ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
+                        onClick={() => filters.make && openDropdown('model')}
+                      >
+                        {!filters.make ? 'Selectează marca' : (filters.model || 'Orice')}
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {/* Date Range */}
-            <div className="flex-1 relative border-b-0 md:border-b lg:border-b-0 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
-              <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/80'}`}>
-                Perioadă
-              </label>
-              <div className="relative overflow-visible">
-                <div
-                  className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/70'}`}
-                  onClick={() => openDropdown('date')}
-                >
-                  {formatDateRange(filters.dateRange) || 'Selectează perioada'}
-                </div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-
-                {/* Calendar Dropdown */}
-                <AnimatePresence>
-                  {showDateCalendar && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {/* Instruction Message */}
-                      <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                        <p className="text-xs text-gray-600">
-                          {!filters.dateRange.startDate 
-                            ? 'Selectează data de început' 
-                            : !filters.dateRange.endDate 
-                            ? 'Selectează data de sfârșit'
-                            : 'Clic pentru a schimba perioada'}
-                        </p>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </div>
-                      <div className="flex items-center justify-between mb-3">
-                        <button
-                          onClick={() => {
-                            const currentDate = filters.dateRange.startDate || todayDate;
-                            const newDate = new Date(currentDate);
-                            newDate.setMonth(newDate.getMonth() - 1);
-                            setFilters(prev => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                            }));
-                          }}
-                          className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                        >
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <div className="text-sm font-medium text-gray-700">
-                          {new Date(filters.dateRange.startDate || todayDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                        </div>
-                        <button
-                          onClick={() => {
-                            const currentDate = filters.dateRange.startDate || todayDate;
-                            const newDate = new Date(currentDate);
-                            newDate.setMonth(newDate.getMonth() + 1);
-                            setFilters(prev => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                            }));
-                          }}
-                          className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                        >
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                          <div key={day} className="text-gray-500 font-medium">{day}</div>
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-7 gap-1">
-                        {generateCalendarDays(new Date(filters.dateRange.startDate || todayDate)).map((day, index) => {
-                          if (!day) return <div key={index}></div>;
-                          
-                          const dayDate = new Date(day);
-                          const dayString = day;
-                          const isStartDate = filters.dateRange.startDate && isSameDay(dayDate, new Date(filters.dateRange.startDate));
-                          const isEndDate = filters.dateRange.endDate && isSameDay(dayDate, new Date(filters.dateRange.endDate));
-                          const isInRange = filters.dateRange.startDate && filters.dateRange.endDate && 
-                                            dayString >= filters.dateRange.startDate && 
-                                            dayString <= filters.dateRange.endDate;
-                          const isSelected = isStartDate || isEndDate;
 
-                          return (
-                            <div
-                              key={index}
-                              className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${
-                                day ? 'text-gray-700' : 'text-gray-300'
-                              } ${
-                                isSelected
-                                  ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                  : isInRange
-                                  ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                  : 'hover:bg-gray-100'
-                              }`}
-                              onClick={() => {
-                                handleDateSelect(day);
-                              }}
-                            >
-                              {new Date(day).getDate()}
+                      {/* Model Dropdown */}
+                      <AnimatePresence>
+                        {showModelDropdown && filters.make && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="py-1">
+                              <div
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('model', '');
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                Orice
+                              </div>
+                              {availableModels.length > 0 ? (
+                                availableModels.map((model) => (
+                                  <div
+                                    key={model}
+                                    className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                    onClick={() => {
+                                      handleFilterChange('model', model);
+                                      closeAllDropdowns();
+                                    }}
+                                  >
+                                    {model}
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="px-4 py-2 text-sm text-gray-500">
+                                  Nu sunt modele disponibile
+                                </div>
+                              )}
                             </div>
-                          );
-                        })}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+                    <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.location ? 'text-white' : 'text-white/80'}`}>
+                      Locație
+                    </label>
+                    <div className="relative overflow-visible">
+                      <div
+                        className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.location ? 'text-white' : 'text-white/70'}`}
+                        onClick={() => openDropdown('location')}
+                      >
+                        {filters.location || 'Selectează locația'}
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+
+                      {/* Location Dropdown */}
+                      <AnimatePresence>
+                        {showLocationDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="py-1">
+                              <div
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau Airport' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('location', 'Chisinau Airport');
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                Chisinau Airport
+                              </div>
+                              <div
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('location', 'Chisinau');
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                Chisinau
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="flex-1 relative border-b-0 md:border-b lg:border-b-0 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+                    <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/80'}`}>
+                      Perioadă
+                    </label>
+                    <div className="relative overflow-visible">
+                      <div
+                        className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/70'}`}
+                        onClick={() => openDropdown('date')}
+                      >
+                        {formatDateRange(filters.dateRange) || 'Selectează perioada'}
+                      </div>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+
+                      {/* Calendar Dropdown */}
+                      <AnimatePresence>
+                        {showDateCalendar && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* Instruction Message */}
+                            <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                              <p className="text-xs text-gray-600">
+                                {!filters.dateRange.startDate
+                                  ? 'Selectează data de început'
+                                  : !filters.dateRange.endDate
+                                    ? 'Selectează data de sfârșit'
+                                    : 'Clic pentru a schimba perioada'}
+                              </p>
+                            </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <button
+                                onClick={() => {
+                                  const currentDate = filters.dateRange.startDate || todayDate;
+                                  const newDate = new Date(currentDate);
+                                  newDate.setMonth(newDate.getMonth() - 1);
+                                  setFilters(prev => ({
+                                    ...prev,
+                                    dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
+                                  }));
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
+                              >
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+                              <div className="text-sm font-medium text-gray-700">
+                                {new Date(filters.dateRange.startDate || todayDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const currentDate = filters.dateRange.startDate || todayDate;
+                                  const newDate = new Date(currentDate);
+                                  newDate.setMonth(newDate.getMonth() + 1);
+                                  setFilters(prev => ({
+                                    ...prev,
+                                    dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
+                                  }));
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
+                              >
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
+                              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                                <div key={day} className="text-gray-500 font-medium">{day}</div>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-7 gap-1">
+                              {generateCalendarDays(new Date(filters.dateRange.startDate || todayDate)).map((day, index) => {
+                                if (!day) return <div key={index}></div>;
+
+                                const dayDate = new Date(day);
+                                const dayString = day;
+                                const isStartDate = filters.dateRange.startDate && isSameDay(dayDate, new Date(filters.dateRange.startDate));
+                                const isEndDate = filters.dateRange.endDate && isSameDay(dayDate, new Date(filters.dateRange.endDate));
+                                const isInRange = filters.dateRange.startDate && filters.dateRange.endDate &&
+                                  dayString >= filters.dateRange.startDate &&
+                                  dayString <= filters.dateRange.endDate;
+                                const isSelected = isStartDate || isEndDate;
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
+                                      } ${isSelected
+                                        ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                        : isInRange
+                                          ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                          : 'hover:bg-gray-100'
+                                      }`}
+                                    onClick={() => {
+                                      handleDateSelect(day);
+                                    }}
+                                  >
+                                    {new Date(day).getDate()}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <div className="px-4 py-3 md:px-6 md:py-5 flex-[1.5] lg:flex-[1]">
+                    <button
+                      onClick={applyFilters}
+                      className="w-full py-3.5 md:py-4 lg:py-3.5 bg-gradient-to-r from-theme-500 to-theme-600 hover:from-theme-600 hover:to-theme-700 text-white font-bold px-6 md:px-8 rounded-2xl text-sm md:text-base flex items-center justify-center gap-2.5 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                    >
+                      <Search className="w-4 h-4 md:w-5 md:h-5 stroke-[2.5]" />
+                      Caută
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-
-            {/* Search Button */}
-            <div className="px-4 py-3 md:px-6 md:py-5 flex-[1.5] lg:flex-[1]">
-              <button
-                onClick={applyFilters}
-                className="w-full py-3.5 md:py-4 lg:py-3.5 bg-gradient-to-r from-theme-500 to-theme-600 hover:from-theme-600 hover:to-theme-700 text-white font-bold px-6 md:px-8 rounded-2xl text-sm md:text-base flex items-center justify-center gap-2.5 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-              >
-                <Search className="w-4 h-4 md:w-5 md:h-5 stroke-[2.5]" />
-                Caută
-              </button>
-            </div>
-          </div>
-          </div>
-          </div>
           </div>
           {/* Keys Image Overlay - Outside rounded container */}
-          <img 
-            src="/LevelAutoRental/assets/Design Elements/keys.png" 
-            alt="" 
+          <img
+            src="/LevelAutoRental/assets/Design Elements/keys.png"
+            alt=""
             className="absolute hidden lg:block lg:bottom-[100px] lg:right-[250px] bottom-[400px] right-[0px]  lg:w-[300px] w-[200px] h-auto object-contain z-[10] pointer-events-none"
           />
         </div>
@@ -993,7 +991,7 @@ export const Cars: React.FC = () => {
                           <span className="font-semibold text-gray-900">${sidebarFilters.priceRange[1]}</span>
                         </div>
                         <div className="relative h-1.5 bg-gray-100 rounded-full">
-                          <div 
+                          <div
                             className="absolute h-1.5 bg-theme-500 rounded-full"
                             style={{
                               left: `${((sidebarFilters.priceRange[0] - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
@@ -1030,7 +1028,7 @@ export const Cars: React.FC = () => {
                           <span className="font-semibold text-gray-900">{sidebarFilters.yearRange[1]}</span>
                         </div>
                         <div className="relative h-1.5 bg-gray-100 rounded-full">
-                          <div 
+                          <div
                             className="absolute h-1.5 bg-theme-500 rounded-full"
                             style={{
                               left: `${((sidebarFilters.yearRange[0] - yearRangeData.min) / (yearRangeData.max - yearRangeData.min)) * 100}%`,
@@ -1065,11 +1063,10 @@ export const Cars: React.FC = () => {
                           <button
                             key={type}
                             onClick={() => handleSidebarFilterChange('transmission', type)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              sidebarFilters.transmission === type
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.transmission === type
                                 ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
+                              }`}
                           >
                             {type}
                           </button>
@@ -1085,11 +1082,10 @@ export const Cars: React.FC = () => {
                           <button
                             key={type}
                             onClick={() => handleSidebarFilterChange('fuelType', type)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              sidebarFilters.fuelType === type
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.fuelType === type
                                 ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
+                              }`}
                           >
                             {type}
                           </button>
@@ -1105,11 +1101,10 @@ export const Cars: React.FC = () => {
                           <button
                             key={seat}
                             onClick={() => handleSidebarFilterChange('seats', seat)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              sidebarFilters.seats === seat
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.seats === seat
                                 ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
+                              }`}
                           >
                             {seat === 'Any' ? 'Any' : `${seat} Seater`}
                           </button>
@@ -1140,14 +1135,14 @@ export const Cars: React.FC = () => {
             </motion.div>
           ) : (
             // Check if any filters are applied
-            (appliedFilters.make || appliedFilters.model || appliedFilters.location || 
-             appliedFilters.dateRange.startDate || appliedFilters.dateRange.endDate ||
-             Object.values(sidebarFilters).some(value => {
-               if (Array.isArray(value)) {
-                 return value[0] !== (value[1] === 2025 ? 2020 : 0) || value[1] !== 2025;
-               }
-               return value !== 'Any' && value !== 'All';
-             })) ? (
+            (appliedFilters.make || appliedFilters.model || appliedFilters.location ||
+              appliedFilters.dateRange.startDate || appliedFilters.dateRange.endDate ||
+              Object.values(sidebarFilters).some(value => {
+                if (Array.isArray(value)) {
+                  return value[0] !== (value[1] === 2025 ? 2020 : 0) || value[1] !== 2025;
+                }
+                return value !== 'Any' && value !== 'All';
+              })) ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1177,7 +1172,7 @@ export const Cars: React.FC = () => {
           {/* Rental Options Section */}
           <div className="mt-16 bg-white rounded-lg border border-gray-200 p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Opțiuni de închiriere</h2>
-            
+
             <p className="text-gray-700 leading-relaxed mb-8">
               O varietate de opțiuni disponibile pentru activare extinde semnificativ posibilitățile în cadrul închirierii unei mașini de la AUTOHUB. De exemplu, puteți activa asigurarea CASCO, care acoperă toate tipurile de daune ale vehiculului, iar prin activarea serviciului Priority Service beneficiați de procesare prioritară a documentelor și suport prioritar pe tot parcursul închirierii. De asemenea, sunt disponibile opțiuni precum: închirierea scaunelor auto pentru copii, asistență rutieră, livrare la adresa indicată și multe altele.
             </p>
@@ -1313,7 +1308,7 @@ export const Cars: React.FC = () => {
           {/* Contract Section */}
           <div className="mt-8 bg-white rounded-lg border border-gray-200 p-8 mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Contract</h2>
-            
+
             <p className="text-gray-700 leading-relaxed mb-6">
               Compania noastră oferă servicii de închiriere auto pe teritoriul Republicii Moldova, respectând cu strictețe legislația în vigoare. Interacțiunea cu clienții se bazează pe Contractul de închiriere, care garantează protecția juridică a intereselor acestora.
             </p>
