@@ -16,8 +16,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
 
-  // Check if current route is an auth page
+  // Check if current route is an auth page or admin page
   const isAuthPage = location.pathname.startsWith('/auth');
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     // Start page transition loader
@@ -63,8 +64,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {!isAuthPage && <Footer />}
       </div>
       
-      {/* Floating Contact Component */}
-      <FloatingContact />
+      {/* Floating Contact Component - Hidden on admin page */}
+      {!isAdminPage && <FloatingContact />}
     </>
   );
 };

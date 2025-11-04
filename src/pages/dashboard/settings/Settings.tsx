@@ -101,17 +101,18 @@ export const Settings: React.FC = () => {
 
     return (
         <div
-            className="min-h-screen bg-gray-50 text-gray-900"
+            className="space-y-6"
             style={{
                 fontFamily:
                     '"Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             }}
         >
-            <main className="flex-1 transition-all duration-300 p-4 sm:p-8">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-2 ring-white shadow">
+            {/* Profile Card */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Profile Overview */}
+                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg p-6">
+                    <div className="text-center">
+                        <div className="w-24 h-24 mx-auto rounded-full overflow-hidden ring-4 ring-red-500/50 shadow-lg mb-4">
                             {avatarPreview ? (
                                 <img
                                     src={avatarPreview}
@@ -119,289 +120,205 @@ export const Settings: React.FC = () => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-2xl font-semibold text-gray-700">
+                                <div className="w-full h-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-3xl font-bold text-white">
                                     {firstName.charAt(0)}
                                 </div>
                             )}
                         </div>
-
-                        <div>
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
-                                Settings
-                            </h1>
-                            <p className="text-sm sm:text-base md:text-lg text-gray-600 mt-1 max-w-xl">
-                                Manage your account, profile and preferences
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => {
-                                console.log("cancel");
-                            }}
-                            className="px-3 sm:px-4 py-2 rounded-md border border-gray-200 bg-white text-sm sm:text-base font-semibold text-gray-900"
-                        >
-                            Cancel
-                        </button>
-
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => {
-                                    if (tab === "my-details") onSaveDetails();
-                                    if (tab === "profile") onSaveProfile();
-                                    if (tab === "password") onUpdatePassword();
-                                }}
-                                className="px-4 sm:px-5 py-2 sm:py-3 rounded-md bg-theme-500 text-white text-sm sm:text-base font-bold shadow hover:brightness-95"
-                            >
-                                Save changes
-                            </button>
+                        <h3 className="text-xl font-bold text-white mb-1">{firstName} {lastName}</h3>
+                        <p className="text-gray-400 text-sm mb-4">@{username}</p>
+                        <div className="space-y-2">
+                            <div className="text-sm text-gray-300 bg-white/5 rounded-lg px-3 py-2">
+                                {email}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Tabs (centered) */}
-                <div className="mb-6 flex justify-center">
-                    <nav className="inline-flex bg-transparent gap-2 p-1 rounded-full">
+                {/* Quick Actions */}
+                <div className="lg:col-span-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-white">Account Settings</h3>
+                        <button
+                            onClick={() => {
+                                if (tab === "my-details") onSaveDetails();
+                                if (tab === "profile") onSaveProfile();
+                                if (tab === "password") onUpdatePassword();
+                            }}
+                            className="px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 text-sm font-semibold hover:border-red-500/60 transition-all"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-2 mb-6">
                         {tabs.map((t) => (
                             <button
                                 key={t.key}
                                 onClick={() => setTab(t.key)}
-                                className={`text-base sm:text-lg px-4 sm:px-5 py-2 rounded-full transition-all font-medium ${tab === t.key
-                                    ? "bg-white shadow text-gray-900"
-                                    : "text-gray-600 hover:bg-white/60"
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.key
+                                    ? "bg-red-500/20 border border-red-500/50 text-white"
+                                    : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10"
                                     }`}
                             >
                                 {t.label}
                             </button>
                         ))}
-                    </nav>
-                </div>
+                    </div>
 
-                {/* Card container */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mx-auto max-w-6xl">
+                    {/* Content Area */}
+                    <div className="bg-white/5 backdrop-blur-xl rounded-lg border border-white/10 p-6">
                     {/* My details */}
                     <TabPanel value={tab} index="my-details">
-                        <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
-                            <div className="flex-1 pr-0 lg:pr-6">
-                                <h2 className="text-xl sm:text-2xl font-semibold mb-4">
-                                    Personal info
-                                </h2>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white mb-4">Personal Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label className="block">
+                                    <div className="text-sm text-gray-400 font-medium mb-1.5">First name</div>
+                                    <input
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm text-white"
+                                    />
+                                </label>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
-                                    <label className="block">
-                                        <div className="text-sm sm:text-base text-gray-500 font-semibold mb-2">First name</div>
-                                        <input
-                                            value={firstName}
-                                            onChange={(e) => setFirstName(e.target.value)}
-                                            className="w-full px-4 py-3 sm:py-4 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-theme-100 text-base sm:text-lg"
-                                        />
-                                    </label>
+                                <label className="block">
+                                    <div className="text-sm text-gray-400 font-medium mb-1.5">Last name</div>
+                                    <input
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm text-white"
+                                    />
+                                </label>
 
-                                    <label className="block">
-                                        <div className="text-sm sm:text-base text-gray-500 font-semibold mb-2">Last name</div>
-                                        <input
-                                            value={lastName}
-                                            onChange={(e) => setLastName(e.target.value)}
-                                            className="w-full px-4 py-3 sm:py-4 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-theme-100 text-base sm:text-lg"
-                                        />
-                                    </label>
-
-                                    <label className="md:col-span-2 block">
-                                        <div className="text-sm sm:text-base text-gray-500 font-semibold mb-2">Email address</div>
-                                        <input
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full px-4 py-3 sm:py-4 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-theme-100 text-base sm:text-lg"
-                                        />
-                                    </label>
-                                </div>
-
-                                <div className="mt-6 flex flex-wrap gap-3">
-                                    <button
-                                        onClick={onSaveDetails}
-                                        className="px-4 sm:px-5 py-2 sm:py-3 rounded-md bg-theme-500 text-white font-semibold text-base sm:text-lg"
-                                    >
-                                        Save personal info
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setFirstName("");
-                                            setLastName("");
-                                            setEmail("");
-                                        }}
-                                        className="px-4 sm:px-5 py-2 sm:py-3 rounded-md border border-gray-200 bg-white text-base sm:text-lg"
-                                    >
-                                        Reset
-                                    </button>
-                                </div>
+                                <label className="md:col-span-2 block">
+                                    <div className="text-sm text-gray-400 font-medium mb-1.5">Email address</div>
+                                    <input
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm text-white"
+                                    />
+                                </label>
                             </div>
                         </div>
                     </TabPanel>
 
                     {/* Profile */}
                     <TabPanel value={tab} index="profile">
-                        <div className="flex flex-col lg:flex-row gap-8">
-                            {/* Form */}
-                            <div className="flex-1">
-                                <h2 className="text-xl sm:text-2xl font-semibold mb-6">Profile</h2>
-
-                                <div className="space-y-5">
-                                    <label className="block">
-                                        <div className="text-sm sm:text-base text-gray-500 font-semibold mb-2">Username</div>
-                                        <input
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                            className="w-full px-4 py-3 sm:py-4 border border-gray-200 rounded-lg bg-gray-50 text-base sm:text-lg"
-                                        />
-                                        <div className="text-xs sm:text-sm text-gray-400 font-semibold mt-2">
-                                            Visible on your public profile
-                                        </div>
-                                    </label>
-
-                                    <button
-                                        onClick={onSaveProfile}
-                                        className="px-4 sm:px-5 py-2 sm:py-3 rounded-md bg-theme-500 text-white font-semibold text-base sm:text-lg"
-                                    >
-                                        Update profile
-                                    </button>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white mb-4">Profile Settings</h3>
+                            <label className="block">
+                                <div className="text-sm text-gray-400 font-medium mb-1.5">Username</div>
+                                <input
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm text-white"
+                                />
+                                <div className="text-xs text-gray-400 mt-1">
+                                    Visible on your public profile
                                 </div>
-                            </div>
-
-                            {/* Public profile preview */}
-                            <aside className="flex justify-center lg:justify-start items-center">
-                                <div className="border border-gray-100 rounded-lg p-4 font-semibold bg-gray-50 w-full max-w-sm flex items-center gap-4">
-                                    {/* Avatar */}
-                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                                        {avatarPreview ? (
-                                            <img
-                                                src={avatarPreview}
-                                                alt="preview"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <span className="text-gray-500 text-xl font-bold">{firstName.charAt(0)}</span>
-                                        )}
-                                    </div>
-
-                                    {/* Name and username */}
-                                    <div className="flex flex-col">
-                                        <div className="font-semibold text-base sm:text-lg">
-                                            {firstName} {lastName}
-                                        </div>
-                                        <div className="text-xs sm:text-sm text-gray-400">@{lastName.charAt(0).toLowerCase()}{username}</div>
-                                    </div>
-                                </div>
-                            </aside>
-
+                            </label>
                         </div>
                     </TabPanel>
 
 
                     {/* Password */}
                     <TabPanel value={tab} index="password">
-                        <h2 className="text-xl sm:text-2xl font-semibold mb-4">Password</h2>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
+                            <div className="space-y-4">
+                                <label className="block">
+                                    <div className="text-sm text-gray-400 font-medium mb-1.5">Current password</div>
+                                    <input
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm text-white"
+                                    />
+                                </label>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <label>
-                                <div className="text-sm sm:text-base text-gray-500 font-semibold mb-2">Current password</div>
-                                <input
-                                    type="password"
-                                    value={currentPassword}
-                                    onChange={(e) => setCurrentPassword(e.target.value)}
-                                    className="w-full px-4 py-3 sm:py-4 border border-gray-200 rounded-lg bg-gray-50 text-base sm:text-lg"
-                                />
-                            </label>
+                                <label className="block">
+                                    <div className="text-sm text-gray-400 font-medium mb-1.5">New password</div>
+                                    <input
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm text-white"
+                                    />
+                                    <div className="text-xs text-gray-400 mt-1">
+                                        Your new password must be more than 8 characters.
+                                    </div>
+                                </label>
 
-                            <label>
-                                <div className="text-sm sm:text-base text-gray-500 font-semibold mb-2">New password</div>
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full px-4 py-3 sm:py-4 border border-gray-200 rounded-lg bg-gray-50 text-base sm:text-lg"
-                                />
-                                <div className="text-xs sm:text-sm text-gray-400 font-medium mt-1">
-                                    Your new password must be more than 8 characters.
-                                </div>
-                            </label>
-
-                            <label className="md:col-span-2">
-                                <div className="text-sm sm:text-base text-gray-500 font-semibold mb-2">
-                                    Confirm new password
-                                </div>
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full px-4 py-3 sm:py-4 border border-gray-200 rounded-lg bg-gray-50 text-base sm:text-lg"
-                                />
-                            </label>
-                        </div>
-
-                        <div className="mt-6 flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setCurrentPassword("");
-                                    setNewPassword("");
-                                    setConfirmPassword("");
-                                }}
-                                className="px-4 sm:px-5 py-2 sm:py-3 rounded-md border border-gray-200 font-medium bg-white text-base sm:text-lg"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={onUpdatePassword}
-                                className="px-4 sm:px-5 py-2 sm:py-3 rounded-md bg-theme-500 font-medium text-white  text-base sm:text-lg"
-                            >
-                                Update password
-                            </button>
+                                <label className="block">
+                                    <div className="text-sm text-gray-400 font-medium mb-1.5">
+                                        Confirm new password
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm text-white"
+                                    />
+                                </label>
+                            </div>
                         </div>
                     </TabPanel>
 
                     {/* Email */}
                     <TabPanel value={tab} index="email">
-                        <h2 className="text-xl sm:text-2xl font-semibold mb-4">Email preferences</h2>
-                        <label className="flex items-center justify-between mb-3">
-                            <span className="text-base sm:text-lg">Marketing emails</span>
-                            <input
-                                type="checkbox"
-                                checked={marketingEmails}
-                                onChange={(e) => setMarketingEmails(e.target.checked)}
-                            />
-                        </label>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white mb-4">Email Preferences</h3>
+                            <div className="space-y-3">
+                                <label className="flex items-center justify-between py-2">
+                                    <span className="text-sm text-gray-300">Marketing emails</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={marketingEmails}
+                                        onChange={(e) => setMarketingEmails(e.target.checked)}
+                                        className="w-4 h-4"
+                                    />
+                                </label>
 
-                        <label className="flex items-center justify-between mb-3">
-                            <span className="text-base sm:text-lg">Product updates</span>
-                            <input
-                                type="checkbox"
-                                checked={productEmails}
-                                onChange={(e) => setProductEmails(e.target.checked)}
-                            />
-                        </label>
+                                <label className="flex items-center justify-between py-2">
+                                    <span className="text-sm text-gray-300">Product updates</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={productEmails}
+                                        onChange={(e) => setProductEmails(e.target.checked)}
+                                        className="w-4 h-4"
+                                    />
+                                </label>
+                            </div>
+                        </div>
                     </TabPanel>
 
                     {/* Notifications */}
                     <TabPanel value={tab} index="notifications">
-                        <h2 className="text-xl sm:text-2xl font-semibold mb-4">Notifications</h2>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white mb-4">Notification Settings</h3>
+                            <div className="space-y-3">
+                                <label className="flex items-center justify-between py-2">
+                                    <span className="text-sm text-gray-300">Notify me about new bookings</span>
+                                    <input type="checkbox" defaultChecked className="w-4 h-4" />
+                                </label>
 
-                        <label className="flex items-center justify-between mb-3">
-                            <span className="text-base sm:text-lg">Notify me about new bookings</span>
-                            <input type="checkbox" defaultChecked />
-                        </label>
+                                <label className="flex items-center justify-between py-2">
+                                    <span className="text-sm text-gray-300">Notify me about messages</span>
+                                    <input type="checkbox" className="w-4 h-4" />
+                                </label>
 
-                        <label className="flex items-center justify-between mb-3">
-                            <span className="text-base sm:text-lg">Notify me about messages</span>
-                            <input type="checkbox" />
-                        </label>
-
-                        <label className="flex items-center justify-between mb-3">
-                            <span className="text-base sm:text-lg">System alerts</span>
-                            <input type="checkbox" />
-                        </label>
+                                <label className="flex items-center justify-between py-2">
+                                    <span className="text-sm text-gray-300">System alerts</span>
+                                    <input type="checkbox" className="w-4 h-4" />
+                                </label>
+                            </div>
+                        </div>
                     </TabPanel>
+                    </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 };
