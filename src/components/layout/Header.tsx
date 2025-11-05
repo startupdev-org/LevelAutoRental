@@ -6,12 +6,14 @@ import { Button } from '../ui/Button';
 import { LANGUAGES } from "../../constants";
 import { useTranslation } from 'react-i18next';
 import { hiddenPaths } from '../../data';
+import { useAuth } from '../../hooks/useAuth';
 
 export const Header: React.FC = () => {
 
   const { i18n, t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
 
   const shouldRenderHeader = !hiddenPaths.some(path => location.pathname.startsWith(path));
 
@@ -169,13 +171,28 @@ export const Header: React.FC = () => {
 
           {/* Right Side Actions */}
           <div className="hidden lg:flex items-center space-x-4">
-
-            <Button
-              className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-              onClick={() => navigate('/auth/login')}
-            >
-              {t('header.auth')}
-            </Button>
+            {isAuthenticated && user ? (
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className={`text-sm font-medium ${isAuthPage || (!isScrolled && !isDifferentPage) ? 'text-white' : 'text-gray-700'}`}>
+                    {user.email?.split('@')[0] || user.email}
+                  </p>
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className={`text-xs ${isAuthPage || (!isScrolled && !isDifferentPage) ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-gray-700'} transition-colors`}
+                  >
+                    Dashboard
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                onClick={() => navigate('/auth/login')}
+              >
+                {t('header.auth')}
+              </Button>
+            )}
 
             {/* Language Selector */}
             <div className="relative language-dropdown-container">
@@ -362,15 +379,34 @@ export const Header: React.FC = () => {
 
                     {/* Mobile Menu Footer */}
                     <div className="p-6 border-t border-gray-200 space-y-4">
-                      <Button
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          navigate('/auth/login');
-                        }}
-                        className="w-full bg-theme-500 hover:bg-theme-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                      >
-                        {t('header.auth')}
-                      </Button>
+                      {isAuthenticated && user ? (
+                        <div className="space-y-3">
+                          <div className="text-center pb-3 border-b border-gray-200">
+                            <p className="text-sm font-medium text-gray-700">
+                              {user.email?.split('@')[0] || user.email}
+                            </p>
+                            <button
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                navigate('/dashboard');
+                              }}
+                              className="text-xs text-gray-500 hover:text-theme-600 transition-colors mt-1"
+                            >
+                              Go to Dashboard
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            navigate('/auth/login');
+                          }}
+                          className="w-full bg-theme-500 hover:bg-theme-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                        >
+                          {t('header.auth')}
+                        </Button>
+                      )}
 
                       {/* Mobile Language Selector */}
                       <div className="space-y-2">

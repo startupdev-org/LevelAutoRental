@@ -1,0 +1,641 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Car, 
+  Calendar, 
+  CreditCard, 
+  User, 
+  LogOut, 
+  FileText,
+  Clock,
+  MapPin,
+  Mail,
+  Phone,
+  Home,
+  Settings,
+  DollarSign,
+  Check,
+  X,
+  Edit3,
+  Eye,
+  Download,
+  Star,
+  Truck
+} from 'lucide-react';
+
+interface Booking {
+  id: string;
+  carName: string;
+  carImage: string;
+  startDate: string;
+  endDate: string;
+  status: 'upcoming' | 'active' | 'completed';
+  totalPrice: number;
+  pickupLocation: string;
+}
+
+type TabType = 'overview' | 'bookings' | 'profile' | 'settings';
+
+export const UserDashboard: React.FC = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Form state
+  const [editForm, setEditForm] = useState({
+    firstName: user?.email?.split('@')[0] || '',
+    lastName: '',
+    phone: '',
+    email: user?.email || ''
+  });
+
+  // Password form
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // Settings state
+  const [notificationSettings, setNotificationSettings] = useState({
+    bookingUpdates: true,
+    promotions: false,
+    newsletter: true
+  });
+
+  // Mock bookings data
+  const mockBookings: Booking[] = [
+    {
+      id: '1',
+      carName: 'Mercedes C43 AMG',
+      carImage: '/LevelAutoRental/cars/c43/c43-1.jpg',
+      startDate: '2025-11-10',
+      endDate: '2025-11-15',
+      status: 'upcoming',
+      totalPrice: 450,
+      pickupLocation: 'Airport Terminal 1'
+    },
+    {
+      id: '2',
+      carName: 'BMW X4 M40i',
+      carImage: '/LevelAutoRental/cars/x4/x4-1.jpg',
+      startDate: '2025-10-20',
+      endDate: '2025-10-25',
+      status: 'completed',
+      totalPrice: 375,
+      pickupLocation: 'City Center'
+    }
+  ];
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const handleSaveProfile = () => {
+    setIsEditing(false);
+  };
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+  };
+
+  const handleNotificationToggle = (setting: keyof typeof notificationSettings) => {
+    setNotificationSettings(prev => ({
+      ...prev,
+      [setting]: !prev[setting]
+    }));
+  };
+
+  const getStatusColor = (status: Booking['status']) => {
+    switch (status) {
+      case 'upcoming':
+        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+      case 'active':
+        return 'bg-green-500/20 text-green-400 border border-green-500/30';
+      case 'completed':
+        return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getStatusIcon = (status: Booking['status']) => {
+    switch (status) {
+      case 'upcoming':
+        return <Clock className="w-3 h-3" />;
+      case 'active':
+        return <Truck className="w-3 h-3" />;
+      case 'completed':
+        return <Check className="w-3 h-3" />;
+      default:
+        return <FileText className="w-3 h-3" />;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const sidebarItems = [
+    { id: 'overview' as const, label: 'Overview', icon: Home },
+    { id: 'bookings' as const, label: 'My Bookings', icon: Calendar },
+    { id: 'profile' as const, label: 'Profile', icon: User },
+    { id: 'settings' as const, label: 'Settings', icon: Settings }
+  ];
+
+  // Redirect to sign in if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">Access Denied</h1>
+          <p className="text-gray-400 mb-8">Please sign in to access your dashboard.</p>
+          <button
+            onClick={() => navigate('/auth/login')}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black/10 text-white">
+      {/* Full Screen Loading Overlay */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-fixed"
+              style={{
+                backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')"
+              }}
+            />
+            <div className="absolute inset-0 bg-black/70"></div>
+            
+            <motion.div 
+              className="relative z-10 text-center"
+              initial={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            >
+              <div className="relative w-16 h-16 mx-auto mb-8">
+                <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-transparent border-t-red-600 border-r-red-600/50 rounded-full animate-spin"></div>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-white mb-2">LOADING</h2>
+              <p className="text-gray-300 text-sm">Preparing your dashboard...</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dashboard Content */}
+      {!isLoading && (
+        <section className="relative py-12 pt-32 md:pt-40 overflow-hidden min-h-screen">
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-fixed"
+              style={{
+                backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')"
+              }}
+            />
+            <div className="absolute inset-0 bg-black/80"></div>
+            
+            <div className="relative z-10 container mx-auto px-4 max-w-7xl">
+              {/* Dashboard Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+              {/* Sidebar */}
+              <motion.div
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8 }}
+                className="lg:col-span-1"
+              >
+                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                  <div className="flex items-center gap-3 mb-6 pb-6 border-b border-white/10">
+                    <div className="w-12 h-12 bg-red-600/20 rounded-full flex items-center justify-center">
+                      <User className="text-red-600" size={24} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white">{user?.email?.split('@')[0] || editForm.firstName || 'User'}</h3>
+                      <p className="text-gray-400 text-sm">{user?.email}</p>
+                    </div>
+                  </div>
+
+                  <nav className="space-y-2">
+                    {sidebarItems.map((item) => (
+                      <motion.button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-300 ${
+                          activeTab === item.id
+                            ? 'bg-red-600 text-white'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <item.icon size={18} />
+                        <span>{item.label}</span>
+                      </motion.button>
+                    ))}
+                    <div className="h-[1px] bg-white/10"></div>
+                    <motion.button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <LogOut size={18} />
+                      <span>Sign Out</span>
+                    </motion.button>
+                  </nav>
+                </div>
+              </motion.div>
+
+              {/* Main Content */}
+              <motion.div
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="lg:col-span-3"
+              >
+                <div className="space-y-6">
+                  <AnimatePresence mode="wait">
+                    {/* Overview Tab */}
+                    {activeTab === 'overview' && (
+                      <motion.div
+                        key="overview"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <h2 className="text-4xl font-bold text-red-600 mb-6">Dashboard Overview</h2>
+                        
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Calendar className="text-red-600" size={24} />
+                              <h3 className="font-semibold">Total Bookings</h3>
+                            </div>
+                            <p className="text-3xl font-bold text-red-600">{mockBookings.length}</p>
+                            <p className="text-gray-400 text-sm">Lifetime bookings</p>
+                          </div>
+                          
+                          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                            <div className="flex items-center gap-3 mb-2">
+                              <DollarSign className="text-red-600" size={24} />
+                              <h3 className="font-semibold">Total Spent</h3>
+                            </div>
+                            <p className="text-3xl font-bold text-red-600">€{mockBookings.reduce((sum, b) => sum + b.totalPrice, 0)}</p>
+                            <p className="text-gray-400 text-sm">Lifetime spending</p>
+                          </div>
+                          
+                          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Star className="text-red-600" size={24} />
+                              <h3 className="font-semibold">Loyalty Points</h3>
+                            </div>
+                            <p className="text-3xl font-bold text-red-600">150</p>
+                            <p className="text-gray-400 text-sm">Available points</p>
+                          </div>
+                        </div>
+
+                        {/* Recent Bookings */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                          <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold">Recent Bookings</h3>
+                            <button
+                              onClick={() => setActiveTab('bookings')}
+                              className="text-red-600 hover:text-red-500 transition-colors duration-300"
+                            >
+                              View All
+                            </button>
+                          </div>
+                          <div className="space-y-4">
+                            {mockBookings.slice(0, 2).map((booking) => (
+                              <div key={booking.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300">
+                                <img src={booking.carImage} alt={booking.carName} className="w-20 h-20 rounded-lg object-cover" />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-white">{booking.carName}</h4>
+                                  <p className="text-gray-400 text-sm">{formatDate(booking.startDate)}</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-bold text-red-600">€{booking.totalPrice}</div>
+                                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(booking.status)}`}>
+                                    {getStatusIcon(booking.status)}
+                                    <span className="capitalize">{booking.status}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Bookings Tab */}
+                    {activeTab === 'bookings' && (
+                      <motion.div
+                        key="bookings"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <h2 className="text-4xl font-bold text-red-600 mb-6">My Bookings</h2>
+                        
+                        {mockBookings.length > 0 ? (
+                          <div className="space-y-4">
+                            {mockBookings.map((booking) => (
+                              <div key={booking.id} className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300">
+                                <div className="flex items-center gap-4">
+                                  <img src={booking.carImage} alt={booking.carName} className="w-24 h-24 rounded-lg object-cover" />
+                                  
+                                  <div className="flex-1">
+                                    <h3 className="font-semibold text-white text-lg mb-1">{booking.carName}</h3>
+                                    <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                                      <span className="flex items-center gap-1">
+                                        <Calendar size={14} />
+                                        {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <MapPin size={14} />
+                                        {booking.pickupLocation}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(booking.status)}`}>
+                                        {getStatusIcon(booking.status)}
+                                        <span className="capitalize">{booking.status}</span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="text-right">
+                                    <div className="text-2xl font-bold text-white mb-2">€{booking.totalPrice}</div>
+                                    <div className="flex gap-2">
+                                      <button className="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
+                                        <Eye size={14} />
+                                        Details
+                                      </button>
+                                      <button className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
+                                        <Download size={14} />
+                                        Receipt
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
+                            <Calendar className="w-24 h-24 text-gray-600 mx-auto mb-4" />
+                            <h3 className="text-2xl font-bold text-white mb-4">No Bookings Yet</h3>
+                            <p className="text-gray-400 mb-8">Start exploring our premium fleet!</p>
+                            <button
+                              onClick={() => navigate('/cars')}
+                              className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg transition-all duration-300"
+                            >
+                              Browse Cars
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {/* Profile Tab */}
+                    {activeTab === 'profile' && (
+                      <motion.div
+                        key="profile"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <div className="flex justify-between items-center">
+                          <h2 className="text-4xl font-bold text-red-600">Profile Information</h2>
+                          <button
+                            onClick={() => setIsEditing(!isEditing)}
+                            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2"
+                          >
+                            <Edit3 size={16} />
+                            {isEditing ? 'Cancel' : 'Edit Profile'}
+                          </button>
+                        </div>
+
+                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">First Name</label>
+                              <input
+                                type="text"
+                                value={editForm.firstName}
+                                onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                                disabled={!isEditing}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
+                              <input
+                                type="text"
+                                value={editForm.lastName}
+                                onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                                disabled={!isEditing}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                              <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                <input
+                                  type="email"
+                                  value={editForm.email}
+                                  disabled
+                                  className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 disabled:opacity-50"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                              <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                <input
+                                  type="tel"
+                                  value={editForm.phone}
+                                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                                  disabled={!isEditing}
+                                  className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {isEditing && (
+                            <div className="flex gap-4 mt-6">
+                              <button
+                                onClick={handleSaveProfile}
+                                className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
+                              >
+                                Save Changes
+                              </button>
+                              <button
+                                onClick={() => setIsEditing(false)}
+                                className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg transition-all duration-300"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Settings Tab */}
+                    {activeTab === 'settings' && (
+                      <motion.div
+                        key="settings"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <h2 className="text-4xl font-bold text-red-600 mb-6">Account Settings</h2>
+                        
+                        {/* Password Change */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                          <h3 className="text-xl font-bold mb-4">Change Password</h3>
+                          <form onSubmit={handlePasswordChange} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
+                              <input
+                                type="password"
+                                value={passwordForm.currentPassword}
+                                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
+                                placeholder="Enter current password"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+                              <input
+                                type="password"
+                                value={passwordForm.newPassword}
+                                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
+                                placeholder="Enter new password"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
+                              <input
+                                type="password"
+                                value={passwordForm.confirmPassword}
+                                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
+                                placeholder="Confirm new password"
+                              />
+                            </div>
+                            <button 
+                              type="submit"
+                              className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
+                            >
+                              Update Password
+                            </button>
+                          </form>
+                        </div>
+
+                        {/* Notification Settings */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                          <h3 className="text-xl font-bold mb-4">Notification Settings</h3>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                              <div>
+                                <p className="font-medium">Booking Updates</p>
+                                <p className="text-gray-400 text-sm">Get notified about your bookings</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={notificationSettings.bookingUpdates}
+                                  onChange={() => handleNotificationToggle('bookingUpdates')}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                              </label>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                              <div>
+                                <p className="font-medium">Promotions</p>
+                                <p className="text-gray-400 text-sm">Receive special offers</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={notificationSettings.promotions}
+                                  onChange={() => handleNotificationToggle('promotions')}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                              </label>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                              <div>
+                                <p className="font-medium">Newsletter</p>
+                                <p className="text-gray-400 text-sm">Stay updated with news</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={notificationSettings.newsletter}
+                                  onChange={() => handleNotificationToggle('newsletter')}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
