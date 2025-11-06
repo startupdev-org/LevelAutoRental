@@ -7,7 +7,11 @@
         "reviews": "Recenzii",
         "contact": "Contactează-ne",
         "auth": "Autentificare",
-        "language": "Limbă"
+        "language": "Limbă",
+        "dashboard": "Panou de control",
+        "profile": "Profil",
+        "settings": "Setări",
+        "signOut": "Deconectare"
     },
     "languages": {
         "en": "Engleză",

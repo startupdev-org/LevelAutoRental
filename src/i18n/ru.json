@@ -8,7 +8,11 @@
         "reviews": "Отзывы",
         "contact": "Контакты",
         "auth": "Войти",
-        "language": "Язык"
+        "language": "Язык",
+        "dashboard": "Панель управления",
+        "profile": "Профиль",
+        "settings": "Настройки",
+        "signOut": "Выйти"
     },
     "languages": {
         "en": "Английский",
