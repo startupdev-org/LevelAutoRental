@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -39,6 +40,7 @@ interface Booking {
 type TabType = 'overview' | 'bookings' | 'profile' | 'settings';
 
 export const UserDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -146,10 +148,10 @@ export const UserDashboard: React.FC = () => {
   };
 
   const sidebarItems = [
-    { id: 'overview' as const, label: 'Overview', icon: Home },
-    { id: 'bookings' as const, label: 'My Bookings', icon: Calendar },
-    { id: 'profile' as const, label: 'Profile', icon: User },
-    { id: 'settings' as const, label: 'Settings', icon: Settings }
+    { id: 'overview' as const, label: t('dashboard.sidebar.overview'), icon: Home },
+    { id: 'bookings' as const, label: t('dashboard.sidebar.myBookings'), icon: Calendar },
+    { id: 'profile' as const, label: t('dashboard.sidebar.profile'), icon: User },
+    { id: 'settings' as const, label: t('dashboard.sidebar.settings'), icon: Settings }
   ];
 
   // Redirect to sign in if not authenticated
@@ -157,13 +159,13 @@ export const UserDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Access Denied</h1>
-          <p className="text-gray-400 mb-8">Please sign in to access your dashboard.</p>
+          <h1 className="text-4xl font-bold mb-4">{t('dashboard.errors.accessDenied')}</h1>
+          <p className="text-gray-400 mb-8">{t('dashboard.errors.pleaseSignIn')}</p>
           <button
             onClick={() => navigate('/auth/login')}
             className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300"
           >
-            Sign In
+            {t('dashboard.errors.signIn')}
           </button>
         </div>
       </div>
@@ -184,7 +186,7 @@ export const UserDashboard: React.FC = () => {
             <div 
               className="absolute inset-0 bg-cover bg-center bg-fixed"
               style={{
-                backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')"
+                backgroundImage: "url('/LevelAutoRental/lvl_bg.png')"
               }}
             />
             <div className="absolute inset-0 bg-black/70"></div>
@@ -200,8 +202,8 @@ export const UserDashboard: React.FC = () => {
                 <div className="absolute inset-0 border-4 border-transparent border-t-red-600 border-r-red-600/50 rounded-full animate-spin"></div>
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-2">LOADING</h2>
-              <p className="text-gray-300 text-sm">Preparing your dashboard...</p>
+              <h2 className="text-2xl font-bold text-white mb-2">{t('dashboard.loading.text')}</h2>
+              <p className="text-gray-300 text-sm">{t('dashboard.loading.preparing')}</p>
             </motion.div>
           </motion.div>
         )}
@@ -213,7 +215,7 @@ export const UserDashboard: React.FC = () => {
             <div 
               className="absolute inset-0 bg-cover bg-center bg-fixed"
               style={{
-                backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')"
+                backgroundImage: "url('/LevelAutoRental/lvl_bg.png')"
               }}
             />
             <div className="absolute inset-0 bg-black/80"></div>
@@ -264,7 +266,7 @@ export const UserDashboard: React.FC = () => {
                       whileTap={{ scale: 0.98 }}
                     >
                       <LogOut size={18} />
-                      <span>Sign Out</span>
+                      <span>{t('dashboard.sidebar.signOut')}</span>
                     </motion.button>
                   </nav>
                 </div>
@@ -278,7 +280,7 @@ export const UserDashboard: React.FC = () => {
                 className="lg:col-span-3"
               >
                 <div className="space-y-6">
-                  <AnimatePresence mode="wait">
+                  <AnimatePresence>
                     {/* Overview Tab */}
                     {activeTab === 'overview' && (
                       <motion.div
@@ -289,47 +291,47 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <h2 className="text-4xl font-bold text-red-600 mb-6">Dashboard Overview</h2>
+                        <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.overview.title')}</h2>
                         
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                             <div className="flex items-center gap-3 mb-2">
                               <Calendar className="text-red-600" size={24} />
-                              <h3 className="font-semibold">Total Bookings</h3>
+                              <h3 className="font-semibold">{t('dashboard.overview.totalBookings')}</h3>
                             </div>
                             <p className="text-3xl font-bold text-red-600">{mockBookings.length}</p>
-                            <p className="text-gray-400 text-sm">Lifetime bookings</p>
+                            <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeBookings')}</p>
                           </div>
                           
                           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                             <div className="flex items-center gap-3 mb-2">
                               <DollarSign className="text-red-600" size={24} />
-                              <h3 className="font-semibold">Total Spent</h3>
+                              <h3 className="font-semibold">{t('dashboard.overview.totalSpent')}</h3>
                             </div>
                             <p className="text-3xl font-bold text-red-600">€{mockBookings.reduce((sum, b) => sum + b.totalPrice, 0)}</p>
-                            <p className="text-gray-400 text-sm">Lifetime spending</p>
+                            <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeSpending')}</p>
                           </div>
                           
                           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                             <div className="flex items-center gap-3 mb-2">
                               <Star className="text-red-600" size={24} />
-                              <h3 className="font-semibold">Loyalty Points</h3>
+                              <h3 className="font-semibold">{t('dashboard.overview.loyaltyPoints')}</h3>
                             </div>
                             <p className="text-3xl font-bold text-red-600">150</p>
-                            <p className="text-gray-400 text-sm">Available points</p>
+                            <p className="text-gray-400 text-sm">{t('dashboard.overview.availablePoints')}</p>
                           </div>
                         </div>
 
                         {/* Recent Bookings */}
                         <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                           <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold">Recent Bookings</h3>
+                            <h3 className="text-xl font-bold">{t('dashboard.overview.recentBookings')}</h3>
                             <button
                               onClick={() => setActiveTab('bookings')}
                               className="text-red-600 hover:text-red-500 transition-colors duration-300"
                             >
-                              View All
+                              {t('dashboard.overview.viewAll')}
                             </button>
                           </div>
                           <div className="space-y-4">
@@ -344,7 +346,7 @@ export const UserDashboard: React.FC = () => {
                                   <div className="text-lg font-bold text-red-600">€{booking.totalPrice}</div>
                                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(booking.status)}`}>
                                     {getStatusIcon(booking.status)}
-                                    <span className="capitalize">{booking.status}</span>
+                                    <span className="capitalize">{t(`dashboard.status.${booking.status}`)}</span>
                                   </span>
                                 </div>
                               </div>
@@ -364,7 +366,7 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <h2 className="text-4xl font-bold text-red-600 mb-6">My Bookings</h2>
+                        <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.bookings.title')}</h2>
                         
                         {mockBookings.length > 0 ? (
                           <div className="space-y-4">
@@ -398,11 +400,11 @@ export const UserDashboard: React.FC = () => {
                                     <div className="flex gap-2">
                                       <button className="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
                                         <Eye size={14} />
-                                        Details
+                                        {t('dashboard.bookings.details')}
                                       </button>
                                       <button className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
                                         <Download size={14} />
-                                        Receipt
+                                        {t('dashboard.bookings.receipt')}
                                       </button>
                                     </div>
                                   </div>
@@ -413,13 +415,13 @@ export const UserDashboard: React.FC = () => {
                         ) : (
                           <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
                             <Calendar className="w-24 h-24 text-gray-600 mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold text-white mb-4">No Bookings Yet</h3>
-                            <p className="text-gray-400 mb-8">Start exploring our premium fleet!</p>
+                            <h3 className="text-2xl font-bold text-white mb-4">{t('dashboard.bookings.noBookings')}</h3>
+                            <p className="text-gray-400 mb-8">{t('dashboard.bookings.startExploring')}</p>
                             <button
                               onClick={() => navigate('/cars')}
                               className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg transition-all duration-300"
                             >
-                              Browse Cars
+                              {t('dashboard.bookings.browseCars')}
                             </button>
                           </div>
                         )}
@@ -437,20 +439,20 @@ export const UserDashboard: React.FC = () => {
                         className="space-y-6"
                       >
                         <div className="flex justify-between items-center">
-                          <h2 className="text-4xl font-bold text-red-600">Profile Information</h2>
+                          <h2 className="text-4xl font-bold text-red-600">{t('dashboard.profile.title')}</h2>
                           <button
                             onClick={() => setIsEditing(!isEditing)}
                             className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2"
                           >
                             <Edit3 size={16} />
-                            {isEditing ? 'Cancel' : 'Edit Profile'}
+                            {isEditing ? t('dashboard.profile.cancel') : t('dashboard.profile.editProfile')}
                           </button>
                         </div>
 
                         <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">First Name</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.firstName')}</label>
                               <input
                                 type="text"
                                 value={editForm.firstName}
@@ -461,7 +463,7 @@ export const UserDashboard: React.FC = () => {
                             </div>
                             
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.lastName')}</label>
                               <input
                                 type="text"
                                 value={editForm.lastName}
@@ -472,7 +474,7 @@ export const UserDashboard: React.FC = () => {
                             </div>
                             
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.email')}</label>
                               <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                                 <input
@@ -485,7 +487,7 @@ export const UserDashboard: React.FC = () => {
                             </div>
                             
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.phone')}</label>
                               <div className="relative">
                                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                                 <input
@@ -505,13 +507,13 @@ export const UserDashboard: React.FC = () => {
                                 onClick={handleSaveProfile}
                                 className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
                               >
-                                Save Changes
+                                {t('dashboard.profile.saveChanges')}
                               </button>
                               <button
                                 onClick={() => setIsEditing(false)}
                                 className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg transition-all duration-300"
                               >
-                                Cancel
+                                {t('dashboard.profile.cancel')}
                               </button>
                             </div>
                           )}
@@ -529,59 +531,59 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <h2 className="text-4xl font-bold text-red-600 mb-6">Account Settings</h2>
+                        <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.settings.title')}</h2>
                         
                         {/* Password Change */}
                         <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                          <h3 className="text-xl font-bold mb-4">Change Password</h3>
+                          <h3 className="text-xl font-bold mb-4">{t('dashboard.settings.changePassword')}</h3>
                           <form onSubmit={handlePasswordChange} className="space-y-4">
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.settings.currentPassword')}</label>
                               <input
                                 type="password"
                                 value={passwordForm.currentPassword}
                                 onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
-                                placeholder="Enter current password"
+                                placeholder={t('dashboard.settings.enterCurrentPassword')}
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.settings.newPassword')}</label>
                               <input
                                 type="password"
                                 value={passwordForm.newPassword}
                                 onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
-                                placeholder="Enter new password"
+                                placeholder={t('dashboard.settings.enterNewPassword')}
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.settings.confirmNewPassword')}</label>
                               <input
                                 type="password"
                                 value={passwordForm.confirmPassword}
                                 onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
-                                placeholder="Confirm new password"
+                                placeholder={t('dashboard.settings.confirmNewPasswordPlaceholder')}
                               />
                             </div>
                             <button 
                               type="submit"
                               className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
                             >
-                              Update Password
+                              {t('dashboard.settings.updatePassword')}
                             </button>
                           </form>
                         </div>
 
                         {/* Notification Settings */}
                         <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                          <h3 className="text-xl font-bold mb-4">Notification Settings</h3>
+                          <h3 className="text-xl font-bold mb-4">{t('dashboard.settings.notificationSettings')}</h3>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                               <div>
-                                <p className="font-medium">Booking Updates</p>
-                                <p className="text-gray-400 text-sm">Get notified about your bookings</p>
+                                <p className="font-medium">{t('dashboard.settings.bookingUpdates')}</p>
+                                <p className="text-gray-400 text-sm">{t('dashboard.settings.bookingUpdatesDesc')}</p>
                               </div>
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -596,8 +598,8 @@ export const UserDashboard: React.FC = () => {
                             
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                               <div>
-                                <p className="font-medium">Promotions</p>
-                                <p className="text-gray-400 text-sm">Receive special offers</p>
+                                <p className="font-medium">{t('dashboard.settings.promotions')}</p>
+                                <p className="text-gray-400 text-sm">{t('dashboard.settings.promotionsDesc')}</p>
                               </div>
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -612,8 +614,8 @@ export const UserDashboard: React.FC = () => {
                             
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                               <div>
-                                <p className="font-medium">Newsletter</p>
-                                <p className="text-gray-400 text-sm">Stay updated with news</p>
+                                <p className="font-medium">{t('dashboard.settings.newsletter')}</p>
+                                <p className="text-gray-400 text-sm">{t('dashboard.settings.newsletterDesc')}</p>
                               </div>
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input

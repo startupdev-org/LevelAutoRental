@@ -21,6 +21,7 @@ import { BiSolidHeart } from "react-icons/bi";
 
 import { cars } from '../../../data/cars';
 import { CarNotFound } from './CarNotFound';
+import { RentalRequestModal } from '../../../components/modals/RentalRequestModal';
 
 export const CarDetails: React.FC = () => {
     const { carId } = useParams();
@@ -233,17 +234,11 @@ export const CarDetails: React.FC = () => {
     const rentalCalculation = calculateRental();
     const isBookingComplete = pickupDate && returnDate && pickupTime && returnTime;
 
+    const [showRentalModal, setShowRentalModal] = useState(false);
+
     const handleBooking = () => {
         if (!isBookingComplete) return;
-        
-        navigate(`/booking/${car.id}`, {
-            state: {
-                pickupDate,
-                returnDate,
-                pickupTime,
-                returnTime
-            }
-        });
+        setShowRentalModal(true);
     };
 
     return (
@@ -1153,6 +1148,20 @@ export const CarDetails: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Rental Request Modal */}
+            {car && rentalCalculation && (
+                <RentalRequestModal
+                    isOpen={showRentalModal}
+                    onClose={() => setShowRentalModal(false)}
+                    car={car}
+                    pickupDate={pickupDate}
+                    returnDate={returnDate}
+                    pickupTime={pickupTime}
+                    returnTime={returnTime}
+                    rentalCalculation={rentalCalculation}
+                />
+            )}
         </div>
     );
 };
