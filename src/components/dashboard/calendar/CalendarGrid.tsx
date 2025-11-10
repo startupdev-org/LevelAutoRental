@@ -1,56 +1,51 @@
 import React from "react";
+import { format, isSameMonth } from "date-fns";
 import { DayCell } from "./DayCell";
-import { format, isSameMonth, startOfDay } from "date-fns";
+
+interface Order {
+    id: string | number;
+    customer: string;
+    status: string;
+    pickupDate: string;
+    returnDate: string;
+    pickupTime?: string;
+    returnTime?: string;
+    carId?: string | number;
+}
 
 interface CalendarGridProps {
     monthMatrix: Date[][];
-    eventsByDay: Map<string, any[]>;
+    eventsByDay: Map<string, Order[]>;
     currentMonth: Date;
 }
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({ monthMatrix, eventsByDay, currentMonth }) => {
-    const dayKeyOf = (d: Date | string | null) => {
-        try {
-            if (!d) return "";
-            const dt = typeof d === "string" ? new Date(d) : d;
-            return format(startOfDay(dt), "yyyy-MM-dd");
-        } catch {
-            return "";
-        }
-    };
-
-    const statusColor = (status: string) =>
-        status === "Paid"
-            ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-            : status === "Pending"
-                ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                : "bg-red-100 text-red-700 border-red-200";
-
     return (
-        <div className="grid grid-cols-7 gap-3">
-            {monthMatrix.map((week, wi) =>
-                week.map((day) => {
-                    const dayKey = dayKeyOf(day);
-                    const dayEvents = eventsByDay.get(dayKey) || [];
-                    const inMonth = isSameMonth(day, currentMonth);
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-4 sm:p-6">
+            <div className="grid grid-cols-7 gap-2 text-xs sm:text-sm text-gray-400 mb-3">
+                {["Lun", "Marti", "Miercuri", "Joi", "Vineri", "Sambata", "Duminica"].map((d) => (
+                    <div key={d} className="text-center font-medium">
+                        {d}
+                    </div>
+                ))}
+            </div>
 
-                    // Determine day color based on orders
-                    let dayColorClass = "bg-white/3 border-white/10"; // default
-                    if (dayEvents.length > 0) {
-                        // If multiple orders, just take the first one's status for coloring
-                        const status = dayEvents[0].status;
-                        dayColorClass = statusColor(status) + " border-opacity-40";
-                    }
-                    return (
-                        <DayCell
-                            key={`${wi}-${dayKey}`}
-                            day={day}
-                            events={dayEvents}
-                            currentMonth={currentMonth}
-                        />
-                    );
-                })
-            )}
+            <div className="grid grid-cols-7 gap-3">
+                {monthMatrix.map((week, wi) =>
+                    week.map((day) => {
+                        const dayKey = format(day, "yyyy-MM-dd");
+                        const dayEvents = eventsByDay.get(dayKey) || [];
+                        return (
+                            <DayCell
+                                key={`${wi}-${dayKey}`}
+                                day={day}
+                                dayEvents={dayEvents}
+                                currentMonth={currentMonth}
+                            />
+                        );
+                    })
+                )}
+            </div>
         </div>
     );
 };

@@ -1,14 +1,28 @@
 import React from "react";
-import { format, isSameMonth } from "date-fns";
+import { format, isSameMonth, startOfDay } from "date-fns";
 
-interface CalendarCellProps {
+interface Order {
+    id: string | number;
+    customer: string;
+    status: string;
+    pickupDate: string;
+    returnDate: string;
+    pickupTime?: string;
+    returnTime?: string;
+    carId?: string | number;
+}
+
+interface DayCellProps {
     day: Date;
-    events: any[];
+    dayEvents: Order[];
     currentMonth: Date;
 }
 
-export const DayCell: React.FC<CalendarCellProps> = ({ day, events, currentMonth }) => {
-    const inMonth = isSameMonth(day, currentMonth);
+export const DayCell: React.FC<DayCellProps> = ({ day, dayEvents, currentMonth }) => {
+    const dayKeyOf = (d: Date | string | null) => {
+        if (!d) return "";
+        return format(startOfDay(typeof d === "string" ? new Date(d) : d), "yyyy-MM-dd");
+    };
 
     const statusColor = (status: string) =>
         status === "Paid"
@@ -17,32 +31,41 @@ export const DayCell: React.FC<CalendarCellProps> = ({ day, events, currentMonth
                 ? "bg-yellow-100 text-yellow-700 border-yellow-200"
                 : "bg-red-100 text-red-700 border-red-200";
 
-    const dayNumberColor = (dayEvents: any[]) => {
+    const dayNumberColor = (dayEvents: Order[], inMonth: boolean) => {
         if (dayEvents.length === 0) return inMonth ? "text-white" : "text-gray-500";
+
         const status = dayEvents[0].status;
         switch (status) {
-            case "Paid": return "text-green-700 font-bold";
-            case "Pending": return "text-yellow-600 font-bold";
-            case "Cancelled": return "text-red-600 font-bold";
-            default: return "text-black font-bold";
+            case "Paid":
+                return "text-green-700 font-bold";
+            case "Pending":
+                return "text-yellow-600 font-bold";
+            case "Cancelled":
+                return "text-red-600 font-bold";
+            default:
+                return "text-black font-bold";
         }
     };
 
-    const dayKeyOf = (d: Date) => format(d, "yyyy-MM-dd");
+    const inMonth = isSameMonth(day, currentMonth);
+
+    // Determine day background
+    let dayColorClass = "bg-white/3 border-white/10";
+    if (dayEvents.length > 0) {
+        dayColorClass = statusColor(dayEvents[0].status) + " border-opacity-40";
+    }
 
     return (
-        <div className={`min-h-[110px] rounded-lg p-2 border ${events.length > 0 ? statusColor(events[0].status) + " border-opacity-40" : "bg-white/3 border-white/10"}`}>
-            <div className="flex items-start justify-between mb-2">
-                <div className={`text-sm ${dayNumberColor(dayEvents, inMonth)}`}>
-                    {format(day, "d")}
-                </div>
+        <div className={`min-h-[110px] rounded-lg p-2 border ${dayColorClass}`}>
+            <div className={`text-sm ${dayNumberColor(dayEvents, inMonth)} mb-2`}>
+                {format(day, "d")}
             </div>
 
-            <div className="space-y-1 overflow-hidden mt-1">
-                {events.map((ev, i) => {
+            <div className="space-y-1 overflow-hidden">
+                {dayEvents.map((ev, i) => {
                     const dayDate = dayKeyOf(day);
-                    const startDate = dayKeyOf(new Date(ev.pickupDate));
-                    const endDate = dayKeyOf(new Date(ev.returnDate));
+                    const startDate = dayKeyOf(ev.pickupDate);
+                    const endDate = dayKeyOf(ev.returnDate);
 
                     let borderRadius = "rounded-md";
                     if (dayDate === startDate && dayDate === endDate) borderRadius = "rounded-md";
@@ -51,8 +74,8 @@ export const DayCell: React.FC<CalendarCellProps> = ({ day, events, currentMonth
                     else borderRadius = "rounded-none";
 
                     let timeLabel = "";
-                    if (dayDate === startDate) timeLabel = ev.pickupTime;
-                    else if (dayDate === endDate) timeLabel = ev.returnTime;
+                    if (dayDate === startDate) timeLabel = ev.pickupTime || "";
+                    else if (dayDate === endDate) timeLabel = ev.returnTime || "";
 
                     return (
                         <div

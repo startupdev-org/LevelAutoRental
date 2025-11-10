@@ -17,6 +17,7 @@ import { cars } from "../../../data/cars";
 import { AnimatePresence, motion } from "framer-motion";
 import { getMonthFromDate } from "../../../utils/date";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { CalendarGrid } from "../../../components/dashboard/calendar/CalendarGrid";
 
 export const CalendarPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -347,84 +348,7 @@ export const CalendarPage: React.FC = () => {
             )}
 
             {/* Calendar */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-4 sm:p-6">
-                <div className="grid grid-cols-7 gap-2 text-xs sm:text-sm text-gray-400 mb-3">
-                    {["Lun", "Marti", "Miercuri", "Joi", "Vineri", "Sambata", "Duminica"].map((d) => (
-                        <div key={d} className="text-center font-medium">
-                            {d}
-                        </div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-7 gap-3">
-                    {monthMatrix.map((week, wi) =>
-                        week.map((day) => {
-                            const dayKey = dayKeyOf(day);
-                            const dayEvents = eventsByDay.get(dayKey) || [];
-                            const inMonth = isSameMonth(day, currentMonth);
-
-                            // Determine day color based on orders
-                            let dayColorClass = "bg-white/3 border-white/10"; // default
-                            if (dayEvents.length > 0) {
-                                // If multiple orders, just take the first one's status for coloring
-                                const status = dayEvents[0].status;
-                                dayColorClass = statusColor(status) + " border-opacity-40";
-                            }
-
-                            return (
-                                <div
-                                    key={`${wi}-${dayKey}`}
-                                    className={`min-h-[110px] rounded-lg p-2 border ${dayColorClass}`}
-                                >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className={`text-sm ${dayNumberColor(dayEvents, inMonth)}`}>
-                                            {format(day, "d")}
-                                        </div>
-                                    </div>
-
-
-                                    {/* Orders */}
-                                    <div className="space-y-1 overflow-hidden">
-                                        {dayEvents.map((ev: any, i: number) => {
-                                            const dayDate = dayKeyOf(day);
-                                            const startDate = dayKeyOf(ev.pickupDate);
-                                            const endDate = dayKeyOf(ev.returnDate);
-
-                                            let borderRadius = "rounded-md";
-                                            if (dayDate === startDate && dayDate === endDate) borderRadius = "rounded-md";
-                                            else if (dayDate === startDate) borderRadius = "rounded-l-md";
-                                            else if (dayDate === endDate) borderRadius = "rounded-r-md";
-                                            else borderRadius = "rounded-none";
-
-                                            // Determine what time to show
-                                            let timeLabel = "";
-                                            if (dayDate === startDate) timeLabel = ev.pickupTime;
-                                            else if (dayDate === endDate) timeLabel = ev.returnTime;
-
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    className={`text-m truncate px-2 py-1 border ${statusColor(ev.status)} border-opacity-40 bg-opacity-30 ${borderRadius}`}
-                                                    title={`${ev.customer}${timeLabel ? ` • ${timeLabel}` : ""}`}
-                                                >
-                                                    <div>{ev.customer}</div>
-                                                    {timeLabel && (
-                                                        <div className="text-[10px] text-black">
-                                                            {timeLabel}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                </div>
-                            );
-                        })
-                    )}
-
-
-                </div>
-            </div>
+            <CalendarGrid monthMatrix={monthMatrix} eventsByDay={eventsByDay} currentMonth={currentMonth} />
         </div>
     );
 };
