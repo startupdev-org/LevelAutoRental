@@ -264,12 +264,12 @@ export const CalendarPage: React.FC = () => {
                 </div>
 
                 {/* Month */}
+                {/* Month */}
                 <div className="flex-1 relative dropdown-container">
                     <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
                         Perioada
                     </label>
-                    {/* Month navigation */}
-                    <div className="hidden sm:flex items-center gap-2 bg-white/5 rounded-lg p-2 ml-3">
+                    <div className="flex items-center justify-between bg-white/5 rounded-lg p-2 w-full">
                         <button
                             onClick={prevMonth}
                             className="px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white"
