@@ -7,6 +7,14 @@ export const getCurrentFormattedDate = (): string => {
     });
 };
 
+export const getCurrentMonth = (): string => {
+    const now = new Date();
+    const month = now.toLocaleDateString('ro-RO', { month: 'long' });
+    return month.charAt(0).toUpperCase() + month.slice(1);
+};
+
+
+
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {
     const d1 = new Date(date1);
     const d2 = new Date(date2);
