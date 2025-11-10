@@ -6,16 +6,16 @@ import { sparkData, mainChart, orders } from '../../data/index';
 import { OrdersTable } from '../../components/dashboard/OrderTable';
 import { SalesChartCard } from '../../components/dashboard/Chart';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    LayoutDashboard, 
-    ShoppingCart, 
-    Car, 
-    CalendarDays, 
-    Users as UsersIcon, 
-    Settings as SettingsIcon, 
-    LogOut, 
+import {
+    LayoutDashboard,
+    ShoppingCart,
+    Car,
+    CalendarDays,
+    Users as UsersIcon,
+    Settings as SettingsIcon,
+    LogOut,
     Home,
-    Calendar, 
+    Calendar,
     Clock,
     ArrowUpRight,
     ArrowDownRight
@@ -24,22 +24,23 @@ import { getDateDiffInDays } from '../../utils/date';
 import Settings from '../dashboard/settings/Settings';
 import Users from '../dashboard/users/Users';
 import { CardStats } from '../../components/dashboard/CardStats';
-    
+import CalendarPage from '../dashboard/calendar/CalendarPage';
+
 // Dashboard View Component
 const DashboardView: React.FC = () => {
     // Calculate car rental status
     const getCarRentalStatus = () => {
-        const activeOrders = orders.filter(order => 
+        const activeOrders = orders.filter(order =>
             order.status === 'Paid' || order.status === 'Pending'
         );
-        
+
         const rentedCarIds = new Set(
             activeOrders.map(order => parseInt(order.carId))
         );
-        
+
         const freeCars = cars.filter(car => !rentedCarIds.has(car.id));
         const rentedCars = cars.filter(car => rentedCarIds.has(car.id));
-        
+
         return { freeCars, rentedCars };
     };
 
@@ -54,9 +55,9 @@ const DashboardView: React.FC = () => {
         >
             {/* Top stat cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <CardStats 
-                    title="Total Sales" 
-                    value="$2,114.40" 
+                <CardStats
+                    title="Total Sales"
+                    value="$2,114.40"
                     trend="up"
                     trendValue="2.4%"
                     spark={(
@@ -70,9 +71,9 @@ const DashboardView: React.FC = () => {
                         </ResponsiveContainer>
                     )}
                 />
-                <CardStats 
-                    title="Total Orders" 
-                    value={24} 
+                <CardStats
+                    title="Total Orders"
+                    value={24}
                     trend="up"
                     trendValue="8.6%"
                     spark={(
@@ -87,9 +88,9 @@ const DashboardView: React.FC = () => {
                     )}
                 />
                 <div className="hidden md:block">
-                    <CardStats 
-                        title="Avg Order Value" 
-                        value="$88.10" 
+                    <CardStats
+                        title="Avg Order Value"
+                        value="$88.10"
                         trend="up"
                         trendValue="6.0%"
                         spark={(
@@ -104,8 +105,8 @@ const DashboardView: React.FC = () => {
                         )}
                     />
                 </div>
-                <CardStats 
-                    title="Fleet Status" 
+                <CardStats
+                    title="Fleet Status"
                     value={`${freeCars.length}/${cars.length}`}
                     subtitle={
                         <div className="flex items-center gap-3 text-xs">
@@ -117,7 +118,7 @@ const DashboardView: React.FC = () => {
             </div>
 
             {/* Cars Rental Overview */}
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.15 }}
@@ -139,12 +140,12 @@ const DashboardView: React.FC = () => {
                         <div className="space-y-2 max-h-[300px] overflow-y-auto">
                             {freeCars.length > 0 ? (
                                 freeCars.map((car) => (
-                                    <div 
+                                    <div
                                         key={car.id}
                                         className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
                                     >
-                                        <img 
-                                            src={car.image} 
+                                        <img
+                                            src={car.image}
                                             alt={car.name}
                                             className="w-12 h-12 object-cover rounded-md"
                                         />
@@ -166,17 +167,17 @@ const DashboardView: React.FC = () => {
                         <div className="space-y-2 max-h-[300px] overflow-y-auto">
                             {rentedCars.length > 0 ? (
                                 rentedCars.map((car) => {
-                                    const carOrder = orders.find(order => 
-                                        parseInt(order.carId) === car.id && 
+                                    const carOrder = orders.find(order =>
+                                        parseInt(order.carId) === car.id &&
                                         (order.status === 'Paid' || order.status === 'Pending')
                                     );
                                     return (
-                                        <div 
+                                        <div
                                             key={car.id}
                                             className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
                                         >
-                                            <img 
-                                                src={car.image} 
+                                            <img
+                                                src={car.image}
                                                 alt={car.name}
                                                 className="w-12 h-12 object-cover rounded-md"
                                             />
@@ -203,7 +204,7 @@ const DashboardView: React.FC = () => {
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Sales chart */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.1 }}
@@ -213,7 +214,7 @@ const DashboardView: React.FC = () => {
                 </motion.div>
 
                 {/* Most Rented Cars */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.2 }}
@@ -229,8 +230,8 @@ const DashboardView: React.FC = () => {
                             {(() => {
                                 // Calculate rental counts and revenue per car
                                 const carStats = cars.map(car => {
-                                    const carOrders = orders.filter(order => 
-                                        parseInt(order.carId) === car.id && 
+                                    const carOrders = orders.filter(order =>
+                                        parseInt(order.carId) === car.id &&
                                         (order.status === 'Paid' || order.status === 'Pending')
                                     );
                                     const revenue = carOrders.reduce((sum, order) => sum + parseFloat(order.amount), 0);
@@ -240,8 +241,8 @@ const DashboardView: React.FC = () => {
                                         revenue: revenue
                                     };
                                 }).filter(car => car.rentals > 0)
-                                  .sort((a, b) => b.revenue - a.revenue)
-                                  .slice(0, 5);
+                                    .sort((a, b) => b.revenue - a.revenue)
+                                    .slice(0, 5);
 
                                 const maxRevenue = Math.max(...carStats.map(c => c.revenue), 1);
 
@@ -250,8 +251,8 @@ const DashboardView: React.FC = () => {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                                 <span className="text-sm font-bold text-gray-400 w-6">{index + 1}</span>
-                                                <img 
-                                                    src={car.image} 
+                                                <img
+                                                    src={car.image}
                                                     alt={car.name}
                                                     className="w-10 h-10 object-cover rounded-md"
                                                 />
@@ -263,7 +264,7 @@ const DashboardView: React.FC = () => {
                                             <span className="text-sm font-bold text-white">${car.revenue.toFixed(0)}</span>
                                         </div>
                                         <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-                                            <div 
+                                            <div
                                                 className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"
                                                 style={{ width: `${(car.revenue / maxRevenue) * 100}%` }}
                                             ></div>
@@ -289,7 +290,7 @@ const OrdersView: React.FC = () => {
             className="space-y-8"
         >
             {/* Orders Table */}
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -299,7 +300,7 @@ const OrdersView: React.FC = () => {
             </motion.div>
 
             {/* Large chart */}
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
@@ -339,7 +340,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
             {/* LEFT COLUMN: Order + Car Info */}
             <div className="space-y-6">
                 {/* Car Summary */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
@@ -359,7 +360,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                 </motion.div>
 
                 {/* Booking Details */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.1 }}
@@ -426,7 +427,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                 </motion.div>
 
                 {/* Customer Info */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.2 }}
@@ -445,7 +446,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                 </motion.div>
 
                 {/* Payment & Status */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.3 }}
@@ -458,9 +459,9 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                             <div className="text-white font-bold text-2xl">${order.amount}</div>
                         </div>
                         <div className={`px-4 py-2 rounded-lg text-sm font-semibold border backdrop-blur-xl
-                            ${order.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 
-                              order.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' : 
-                              'bg-red-500/20 text-red-300 border-red-500/50'}`}>
+                            ${order.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' :
+                                order.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' :
+                                    'bg-red-500/20 text-red-300 border-red-500/50'}`}>
                             {order.status}
                         </div>
                     </div>
@@ -468,7 +469,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
 
                 {/* Notes */}
                 {order.notes && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.4 }}
@@ -482,7 +483,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
 
             {/* RIGHT COLUMN: Actions */}
             <aside className="lg:col-start-2">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.4 }}
@@ -524,10 +525,8 @@ const CalendarView: React.FC = () => (
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-8 shadow-lg"
     >
-        <h1 className="text-2xl font-bold text-white mb-4">Calendar</h1>
-        <p className="text-gray-300">Calendar view coming soon...</p>
+        <CalendarPage />
     </motion.div>
 );
 
@@ -648,7 +647,7 @@ export const Admin: React.FC = () => {
 
             <div className="relative min-h-screen">
                 {/* Background Image - Lowest layer */}
-                <div 
+                <div
                     className="fixed inset-0 bg-cover bg-center bg-fixed"
                     style={{ backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')", zIndex: 0 }}
                 ></div>
@@ -662,9 +661,9 @@ export const Admin: React.FC = () => {
                         <div className="p-6 border-b border-white/20">
                             <div className="flex items-center space-x-3">
                                 <div className="w-10 h-10 flex items-center justify-center">
-                                    <img 
-                                        src="/LevelAutoRental/logo-LVL-white.png" 
-                                        alt="LVL Logo" 
+                                    <img
+                                        src="/LevelAutoRental/logo-LVL-white.png"
+                                        alt="LVL Logo"
                                         className="w-full h-full object-contain"
                                     />
                                 </div>
@@ -676,7 +675,7 @@ export const Admin: React.FC = () => {
                         </div>
 
                         {/* Navigation */}
-                        <nav 
+                        <nav
                             className="flex-1 p-4 space-y-2 pt-6 overflow-x-auto lg:overflow-y-auto lg:overflow-x-visible mobile-nav-scroll"
                             style={{
                                 scrollbarWidth: 'none',
@@ -691,11 +690,10 @@ export const Admin: React.FC = () => {
                                         <button
                                             key={item.id}
                                             onClick={() => handleSectionChange(item.id)}
-                                            className={`flex-shrink-0 lg:w-full flex flex-col lg:flex-row items-center justify-center lg:justify-start space-y-1 lg:space-y-0 lg:space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                                                isActive
-                                                    ? 'bg-red-500/20 text-white border border-red-500/50'
-                                                    : 'text-gray-300 hover:text-white hover:bg-white/10 border border-transparent'
-                                            }`}
+                                            className={`flex-shrink-0 lg:w-full flex flex-col lg:flex-row items-center justify-center lg:justify-start space-y-1 lg:space-y-0 lg:space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${isActive
+                                                ? 'bg-red-500/20 text-white border border-red-500/50'
+                                                : 'text-gray-300 hover:text-white hover:bg-white/10 border border-transparent'
+                                                }`}
                                         >
                                             <Icon className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-red-400' : 'text-gray-400 group-hover:text-white'}`} />
                                             <span className="text-xs lg:text-sm">{item.label}</span>
