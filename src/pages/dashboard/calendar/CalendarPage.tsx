@@ -184,6 +184,27 @@ export const CalendarPage: React.FC = () => {
                 ? "bg-yellow-100 text-yellow-700 border-yellow-200"
                 : "bg-red-100 text-red-700 border-red-200";
 
+    const dayNumberColor = (dayEvents: any[], inMonth: boolean) => {
+        if (dayEvents.length === 0) {
+            return inMonth ? "text-white" : "text-gray-500"; // default
+        }
+
+        // If there are orders, pick the first one (or you can enhance to blend colors)
+        const status = dayEvents[0].status;
+
+        switch (status) {
+            case "Paid":
+                return "text-green-700 font-bold"; // Paid rentals → green
+            case "Pending":
+                return "text-yellow-600 font-bold"; // Pending → yellow
+            case "Cancelled":
+                return "text-red-600 font-bold"; // Cancelled → red
+            default:
+                return "text-black font-bold"; // fallback
+        }
+    };
+
+
     return (
         <div className="max-w-[1200px] mx-auto">
             {/* Filters: Make + Model + Month */}
@@ -341,16 +362,25 @@ export const CalendarPage: React.FC = () => {
                             const dayEvents = eventsByDay.get(dayKey) || [];
                             const inMonth = isSameMonth(day, currentMonth);
 
+                            // Determine day color based on orders
+                            let dayColorClass = "bg-white/3 border-white/10"; // default
+                            if (dayEvents.length > 0) {
+                                // If multiple orders, just take the first one's status for coloring
+                                const status = dayEvents[0].status;
+                                dayColorClass = statusColor(status) + " border-opacity-40";
+                            }
+
                             return (
                                 <div
                                     key={`${wi}-${dayKey}`}
-                                    className={`min-h-[110px] rounded-lg p-2 border ${inMonth ? "border-white/10" : "border-transparent"} bg-white/3`}
+                                    className={`min-h-[110px] rounded-lg p-2 border ${dayColorClass}`}
                                 >
                                     <div className="flex items-start justify-between mb-2">
-                                        <div className={`text-sm font-medium ${isSameDay(day, new Date()) ? "text-purple-300" : inMonth ? "text-white" : "text-gray-500"}`}>
+                                        <div className={`text-sm ${dayNumberColor(dayEvents, inMonth)}`}>
                                             {format(day, "d")}
                                         </div>
                                     </div>
+
 
                                     {/* Orders */}
                                     <div className="space-y-1 overflow-hidden">
@@ -365,21 +395,34 @@ export const CalendarPage: React.FC = () => {
                                             else if (dayDate === endDate) borderRadius = "rounded-r-md";
                                             else borderRadius = "rounded-none";
 
+                                            // Determine what time to show
+                                            let timeLabel = "";
+                                            if (dayDate === startDate) timeLabel = ev.pickupTime;
+                                            else if (dayDate === endDate) timeLabel = ev.returnTime;
+
                                             return (
                                                 <div
                                                     key={i}
-                                                    className={`text-xs truncate px-2 py-1 border ${statusColor(ev.status)} border-opacity-40 bg-opacity-30 ${borderRadius}`}
-                                                    title={`${ev.customer} • ${ev.pickupTime} - ${ev.returnTime}`}
+                                                    className={`text-m truncate px-2 py-1 border ${statusColor(ev.status)} border-opacity-40 bg-opacity-30 ${borderRadius}`}
+                                                    title={`${ev.customer}${timeLabel ? ` • ${timeLabel}` : ""}`}
                                                 >
-                                                    {ev.customer}
+                                                    <div>{ev.customer}</div>
+                                                    {timeLabel && (
+                                                        <div className="text-[10px] text-black">
+                                                            {timeLabel}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}
                                     </div>
+
                                 </div>
                             );
                         })
                     )}
+
+
                 </div>
             </div>
         </div>
