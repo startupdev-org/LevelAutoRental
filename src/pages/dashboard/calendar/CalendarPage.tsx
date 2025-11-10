@@ -119,7 +119,7 @@ export const CalendarPage: React.FC = () => {
 
     const eventsByDay = useMemo(() => {
         const map = new Map<string, any[]>();
-        console.log('the slected car is: ', selectedCar)
+        // console.log('the slected car is: ', selectedCar)
         if (!selectedCar) return map; // if no car selected, show nothing
 
         const filteredOrders = orders.filter((o) => o.carId.toString() === selectedCar.id.toString());
