@@ -32,6 +32,9 @@ export const CalendarPage: React.FC = () => {
     const [showMakeDropdown, setShowMakeDropdown] = useState(false);
     const [showModelDropdown, setShowModelDropdown] = useState(false);
 
+    const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
+
+
     const makeToModels = useMemo(() => {
         const mapping: Record<string, string[]> = {};
         cars.forEach((car) => {
@@ -114,21 +117,6 @@ export const CalendarPage: React.FC = () => {
         }
     };
 
-    const dayKeyOf = (d: Date | string | null) => {
-        try {
-            if (!d) return "";
-            const dt = typeof d === "string" ? new Date(d) : d;
-            return format(startOfDay(dt), "yyyy-MM-dd");
-        } catch {
-            return "";
-        }
-    };
-
-    const orderMatchesCar = (o: any, c: any | null) => {
-        if (!c) return true;
-        return o.carId?.toString() === c.id?.toString();
-    };
-
     const eventsByDay = useMemo(() => {
         const map = new Map<string, any[]>();
         console.log('the slected car is: ', selectedCar)
@@ -177,34 +165,6 @@ export const CalendarPage: React.FC = () => {
 
     const prevMonth = () => setCurrentMonth((m) => subMonths(m, 1));
     const nextMonth = () => setCurrentMonth((m) => addMonths(m, 1));
-
-    const statusColor = (status: string) =>
-        status === "Paid"
-            ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-            : status === "Pending"
-                ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                : "bg-red-100 text-red-700 border-red-200";
-
-    const dayNumberColor = (dayEvents: any[], inMonth: boolean) => {
-        if (dayEvents.length === 0) {
-            return inMonth ? "text-white" : "text-gray-500"; // default
-        }
-
-        // If there are orders, pick the first one (or you can enhance to blend colors)
-        const status = dayEvents[0].status;
-
-        switch (status) {
-            case "Paid":
-                return "text-green-700 font-bold"; // Paid rentals → green
-            case "Pending":
-                return "text-yellow-600 font-bold"; // Pending → yellow
-            case "Cancelled":
-                return "text-red-600 font-bold"; // Cancelled → red
-            default:
-                return "text-black font-bold"; // fallback
-        }
-    };
-
 
     return (
         <div className="max-w-[1200px] mx-auto">
@@ -348,7 +308,14 @@ export const CalendarPage: React.FC = () => {
             )}
 
             {/* Calendar */}
-            <CalendarGrid monthMatrix={monthMatrix} eventsByDay={eventsByDay} currentMonth={currentMonth} />
+            <CalendarGrid
+                monthMatrix={monthMatrix}
+                eventsByDay={eventsByDay}
+                currentMonth={currentMonth}
+                hoveredOrderId={hoveredOrderId}
+                setHoveredOrderId={setHoveredOrderId}
+            />
+
         </div>
     );
 };

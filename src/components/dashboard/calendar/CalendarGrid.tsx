@@ -1,46 +1,34 @@
 import React from "react";
-import { format, isSameMonth } from "date-fns";
-import { DayCell } from "./DayCell";
+import { isSameMonth, format, startOfDay } from "date-fns";
+import { CalendarCell } from "./CalendarCell";
 
-interface Order {
-    id: string | number;
-    customer: string;
-    status: string;
-    pickupDate: string;
-    returnDate: string;
-    pickupTime?: string;
-    returnTime?: string;
-    carId?: string | number;
-}
-
-interface CalendarGridProps {
+interface Props {
     monthMatrix: Date[][];
-    eventsByDay: Map<string, Order[]>;
+    eventsByDay: Map<string, any[]>;
     currentMonth: Date;
+    hoveredOrderId: string | null;
+    setHoveredOrderId: (id: string | null) => void;
 }
 
-export const CalendarGrid: React.FC<CalendarGridProps> = ({ monthMatrix, eventsByDay, currentMonth }) => {
+export const CalendarGrid: React.FC<Props> = ({ monthMatrix, eventsByDay, currentMonth, hoveredOrderId, setHoveredOrderId }) => {
     return (
         <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-4 sm:p-6">
-            <div className="grid grid-cols-7 gap-2 text-xs sm:text-sm text-gray-400 mb-3">
-                {["Lun", "Marti", "Miercuri", "Joi", "Vineri", "Sambata", "Duminica"].map((d) => (
-                    <div key={d} className="text-center font-medium">
-                        {d}
-                    </div>
-                ))}
-            </div>
 
             <div className="grid grid-cols-7 gap-3">
                 {monthMatrix.map((week, wi) =>
-                    week.map((day) => {
-                        const dayKey = format(day, "yyyy-MM-dd");
+                    week.map(day => {
+                        const dayKey = format(startOfDay(day), "yyyy-MM-dd");
                         const dayEvents = eventsByDay.get(dayKey) || [];
+                        const inMonth = isSameMonth(day, currentMonth);
+
                         return (
-                            <DayCell
+                            <CalendarCell
                                 key={`${wi}-${dayKey}`}
                                 day={day}
                                 dayEvents={dayEvents}
-                                currentMonth={currentMonth}
+                                inMonth={inMonth}
+                                hoveredOrderId={hoveredOrderId}
+                                setHoveredOrderId={setHoveredOrderId}
                             />
                         );
                     })

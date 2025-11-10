@@ -16,22 +16,6 @@ export const mainChart = Array.from({ length: 30 }).map((_, i) => ({
 
 export const orders = [
     {
-        id: '8',
-        date: 'Oct 31, 2025',
-        status: 'Paid',
-        amount: '120.00',
-        customerId: 1,
-        customer: 'Customer 1',
-        customerEmail: 'customer1@example.com',
-        avatar: 'https://via.placeholder.com/40?text=Car1',
-        carId: '1',
-        pickupDate: 'Nov 01, 2025',
-        pickupTime: '10:00 AM',
-        returnDate: 'Nov 05, 2025',
-        returnTime: '04:00 PM',
-        notes: 'Customer requested GPS',
-    },
-    {
         id: '7',
         date: 'Oct 30, 2025',
         status: 'Pending',
