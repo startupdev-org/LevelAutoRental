@@ -304,24 +304,6 @@ export const CalendarPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Reset Filters Button */}
-                <div className="flex-1 realtive dropdown-container">
-                    <div className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer ${filters! ? "text-white" : "text-white/70"}`}>
-
-                        <button
-                            onClick={() => {
-                                setFilters({ make: "", model: "" });
-                                setSelectedCar(null);
-                                setCarName("");
-                            }}
-                            className="px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white"
-                        >
-                            Reset Filters
-                        </button>
-
-                    </div>
-                </div>
-
             </div>
 
             {/* Selected car badge */}
@@ -332,6 +314,7 @@ export const CalendarPage: React.FC = () => {
                     </div>
                     <button
                         onClick={() => {
+                            setFilters({ make: "", model: "" });
                             setSelectedCar(null);
                             setCarName("");
                         }}
