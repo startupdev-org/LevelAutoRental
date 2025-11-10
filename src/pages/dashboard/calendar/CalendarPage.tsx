@@ -90,7 +90,7 @@ export const CalendarPage: React.FC = () => {
                 });
 
                 setSelectedCar(matchingCars.length > 0 ? matchingCars[0] : null);
-            }
+            } else setSelectedCar(null)
 
             setFilters(newFilters);
             return newFilters;
