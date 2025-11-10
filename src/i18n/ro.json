@@ -7,7 +7,11 @@
         "reviews": "Recenzii",
         "contact": "Contactează-ne",
         "auth": "Autentificare",
-        "language": "Limbă"
+        "language": "Limbă",
+        "dashboard": "Panou de control",
+        "profile": "Profil",
+        "settings": "Setări",
+        "signOut": "Deconectare"
     },
     "languages": {
         "en": "Engleză",
@@ -554,5 +558,86 @@
         "discountApplied4": "Discount aplicat: -4% pentru 8+ zile",
         "discountApplied2": "Discount aplicat: -2% pentru 4+ zile",
         "perDay": "/zi"
+    },
+    "dashboard": {
+        "welcomeBack": "Bun venit înapoi, {{name}}!",
+        "export": "Exportă",
+        "sales": "Vânzări",
+        "orders": "Comenzi",
+        "averageOrderValue": "Valoare medie comandă",
+        "recentOrders": "Comenzi recente",
+        "seats": "locuri",
+        "paid": "Plătit",
+        "pending": "În așteptare",
+        "refunded": "Rambursat",
+        "customer": "Client {{number}}",
+        "sidebar": {
+            "overview": "Prezentare generală",
+            "myBookings": "Rezervările mele",
+            "profile": "Profil",
+            "settings": "Setări",
+            "signOut": "Deconectare"
+        },
+        "overview": {
+            "title": "Panou de control",
+            "totalBookings": "Total rezervări",
+            "lifetimeBookings": "Rezervări de-a lungul timpului",
+            "totalSpent": "Total cheltuit",
+            "lifetimeSpending": "Cheltuieli de-a lungul timpului",
+            "loyaltyPoints": "Puncte loialitate",
+            "availablePoints": "Puncte disponibile",
+            "recentBookings": "Rezervări recente",
+            "viewAll": "Vezi toate"
+        },
+        "bookings": {
+            "title": "Rezervările mele",
+            "details": "Detalii",
+            "receipt": "Chitanță",
+            "noBookings": "Nicio rezervare încă",
+            "startExploring": "Începe să explorezi flota noastră premium!",
+            "browseCars": "Răsfoiește mașinile"
+        },
+        "profile": {
+            "title": "Informații profil",
+            "editProfile": "Editează profilul",
+            "cancel": "Anulează",
+            "firstName": "Prenume",
+            "lastName": "Nume",
+            "email": "Email",
+            "phone": "Telefon",
+            "saveChanges": "Salvează modificările"
+        },
+        "settings": {
+            "title": "Setări cont",
+            "changePassword": "Schimbă parola",
+            "currentPassword": "Parolă curentă",
+            "newPassword": "Parolă nouă",
+            "confirmNewPassword": "Confirmă parola nouă",
+            "updatePassword": "Actualizează parola",
+            "notificationSettings": "Setări notificări",
+            "bookingUpdates": "Actualizări rezervări",
+            "bookingUpdatesDesc": "Primește notificări despre rezervările tale",
+            "promotions": "Promoții",
+            "promotionsDesc": "Primește oferte speciale",
+            "newsletter": "Newsletter",
+            "newsletterDesc": "Rămâi la curent cu știrile",
+            "enterCurrentPassword": "Introdu parola curentă",
+            "enterNewPassword": "Introdu parola nouă",
+            "confirmNewPasswordPlaceholder": "Confirmă parola nouă"
+        },
+        "status": {
+            "upcoming": "în așteptare",
+            "active": "activă",
+            "completed": "finalizată"
+        },
+        "errors": {
+            "accessDenied": "Acces refuzat",
+            "pleaseSignIn": "Te rugăm să te autentifici pentru a accesa panoul tău.",
+            "signIn": "Autentificare"
+        },
+        "loading": {
+            "text": "SE ÎNCARCĂ",
+            "preparing": "Pregătim panoul tău..."
+        }
     }
 }

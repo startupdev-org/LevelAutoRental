@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
-import { Mail, Lock, UserRound, Eye, EyeOff } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Mail, Lock, UserRound, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../hooks/useAuth";
 
 export const SignUp: React.FC = () => {
     const [firstName, setFirstName] = useState("");
@@ -12,12 +13,33 @@ export const SignUp: React.FC = () => {
     const [password, setPassword] = useState("");
     const [phone, setPhone] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const { t } = useTranslation();
+    const { signUp } = useAuth();
+    const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("signup", { firstName, lastName, email, phone, password });
+        setError("");
+        setLoading(true);
+
+        try {
+            const { error: signUpError } = await signUp(email, password);
+            
+            if (signUpError) {
+                setError(signUpError.message || "Failed to create account");
+                setLoading(false);
+                return;
+            }
+
+            // Successful signup - redirect to dashboard
+            navigate("/dashboard");
+        } catch (err) {
+            setError("An unexpected error occurred. Please try again.");
+            setLoading(false);
+        }
     };
 
     return (
@@ -108,6 +130,13 @@ export const SignUp: React.FC = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
+
                             {/* First + Last name */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <label className="block">
@@ -209,9 +238,17 @@ export const SignUp: React.FC = () => {
                             {/* Submit */}
                             <button
                                 type="submit"
-                                className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md"
+                                disabled={loading}
+                                className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {t("auth.register.right-part.join-us")}
+                                {loading ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Creating account...</span>
+                                    </>
+                                ) : (
+                                    t("auth.register.right-part.join-us")
+                                )}
                             </button>
                         </form>
 

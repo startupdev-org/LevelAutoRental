@@ -7,7 +7,11 @@
         "reviews": "Reviews",
         "contact": "Contact",
         "auth": "Login",
-        "language": "Language"
+        "language": "Language",
+        "dashboard": "Dashboard",
+        "profile": "Profile",
+        "settings": "Settings",
+        "signOut": "Sign Out"
     },
     "languages": {
         "en": "English",

@@ -1,17 +1,19 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe, User, LogOut, Settings, LayoutDashboard, ChevronDown } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { LANGUAGES } from "../../constants";
 import { useTranslation } from 'react-i18next';
 import { hiddenPaths } from '../../data';
+import { useAuth } from '../../hooks/useAuth';
 
 export const Header: React.FC = () => {
 
   const { i18n, t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, isAuthenticated, signOut } = useAuth();
 
   const shouldRenderHeader = !hiddenPaths.some(path => location.pathname.startsWith(path));
 
@@ -41,6 +43,7 @@ export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
   // Auto-close language dropdown after 3 seconds
@@ -86,16 +89,25 @@ export const Header: React.FC = () => {
       if (!target.closest('.language-dropdown-container')) {
         setShowLanguageDropdown(false);
       }
+      if (!target.closest('.user-dropdown-container')) {
+        setShowUserDropdown(false);
+      }
     };
 
-    if (showLanguageDropdown) {
+    if (showLanguageDropdown || showUserDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showLanguageDropdown]);
+  }, [showLanguageDropdown, showUserDropdown]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+    setShowUserDropdown(false);
+  };
 
   const navigation = [
     { name: t('header.home'), href: '/' },
@@ -169,13 +181,108 @@ export const Header: React.FC = () => {
 
           {/* Right Side Actions */}
           <div className="hidden lg:flex items-center space-x-4">
+            {isAuthenticated && user ? (
+              <div className="relative user-dropdown-container">
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-300 ${
+                    isAuthPage || (!isScrolled && !isDifferentPage)
+                      ? 'hover:bg-white/10 text-white'
+                      : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${
+                    isAuthPage || (!isScrolled && !isDifferentPage)
+                      ? 'bg-white/20 text-white'
+                      : 'bg-red-600 text-white'
+                  }`}>
+                    {(user.email?.split('@')[0] || user.email || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="text-left">
+                    <p className={`text-sm font-medium ${isAuthPage || (!isScrolled && !isDifferentPage) ? 'text-white' : 'text-gray-700'}`}>
+                      {user.email?.split('@')[0] || user.email}
+                    </p>
+                  </div>
+                  <ChevronDown 
+                    className={`w-4 h-4 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''} ${
+                      isAuthPage || (!isScrolled && !isDifferentPage) ? 'text-white' : 'text-gray-500'
+                    }`} 
+                  />
+                </button>
 
-            <Button
-              className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-              onClick={() => navigate('/auth/login')}
-            >
-              {t('header.auth')}
-            </Button>
+                {/* User Dropdown Menu */}
+                <AnimatePresence>
+                  {showUserDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 min-w-[220px] overflow-hidden"
+                    >
+                      <div className="p-4 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{user.email?.split('@')[0] || user.email}</p>
+                        <p className="text-xs text-gray-500 mt-1 truncate">{user.email}</p>
+                      </div>
+                      
+                      <div className="py-2">
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard');
+                            setShowUserDropdown(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <LayoutDashboard className="w-4 h-4" />
+                          <span>{t('header.dashboard')}</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard');
+                            setShowUserDropdown(false);
+                            // You can add a way to switch to profile tab here
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>{t('header.profile')}</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard');
+                            setShowUserDropdown(false);
+                            // You can add a way to switch to settings tab here
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span>{t('header.settings')}</span>
+                        </button>
+                      </div>
+                      
+                      <div className="border-t border-gray-100 py-2">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>{t('header.signOut')}</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <Button
+                className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                onClick={() => navigate('/auth/login')}
+              >
+                {t('header.auth')}
+              </Button>
+            )}
 
             {/* Language Selector */}
             <div className="relative language-dropdown-container">
@@ -362,15 +469,75 @@ export const Header: React.FC = () => {
 
                     {/* Mobile Menu Footer */}
                     <div className="p-6 border-t border-gray-200 space-y-4">
-                      <Button
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          navigate('/auth/login');
-                        }}
-                        className="w-full bg-theme-500 hover:bg-theme-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                      >
-                        {t('header.auth')}
-                      </Button>
+                      {isAuthenticated && user ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
+                            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-semibold text-white text-sm">
+                              {(user.email?.split('@')[0] || user.email || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-gray-900">
+                                {user.email?.split('@')[0] || user.email}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              navigate('/dashboard');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <LayoutDashboard className="w-4 h-4" />
+                            <span>{t('header.dashboard')}</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              navigate('/dashboard');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <User className="w-4 h-4" />
+                            <span>{t('header.profile')}</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              navigate('/dashboard');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <Settings className="w-4 h-4" />
+                            <span>{t('header.settings')}</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              handleLogout();
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>{t('header.signOut')}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            navigate('/auth/login');
+                          }}
+                          className="w-full bg-theme-500 hover:bg-theme-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                        >
+                          {t('header.auth')}
+                        </Button>
+                      )}
 
                       {/* Mobile Language Selector */}
                       <div className="space-y-2">
