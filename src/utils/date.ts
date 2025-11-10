@@ -7,11 +7,11 @@ export const getCurrentFormattedDate = (): string => {
     });
 };
 
-export const getCurrentMonth = (): string => {
-    const now = new Date();
-    const month = now.toLocaleDateString('ro-RO', { month: 'long' });
+export const getMonthFromDate = (date: Date): string => {
+    const month = date.toLocaleDateString('ro-RO', { month: 'long' });
     return month.charAt(0).toUpperCase() + month.slice(1);
 };
+
 
 
 

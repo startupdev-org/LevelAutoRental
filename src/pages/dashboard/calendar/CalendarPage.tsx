@@ -15,7 +15,8 @@ import {
 import { orders } from "../../../data/index";
 import { cars } from "../../../data/cars";
 import { AnimatePresence, motion } from "framer-motion";
-import { getCurrentFormattedDate, getCurrentMonth } from "../../../utils/date";
+import { getMonthFromDate } from "../../../utils/date";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 export const CalendarPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -56,24 +57,45 @@ export const CalendarPage: React.FC = () => {
         return [...new Set(makes)];
     }, []);
 
-    const handleFilterChange = (key: string, value: string) => {
+    const handleFilterChange = (key: "make" | "model", value: string) => {
         setFilters((prev) => {
-            const newFilters = { ...prev, [key]: value };
+            let newFilters = { ...prev, [key]: value };
 
-            if (key === "make") {
-                const newMake = value;
-                if (newMake && prev.model) {
-                    const validModels = makeToModels[newMake] || [];
-                    const currentModelValid = validModels.some(
-                        (model) => model.toLowerCase() === prev.model.toLowerCase()
-                    );
-                    if (!currentModelValid) newFilters.model = "";
-                } else if (!newMake) newFilters.model = "";
+            // 1. Validate make
+            if (key === "make" && value) {
+                const validModels = makeToModels[value] || [];
+                if (prev.model && !validModels.includes(prev.model)) {
+                    newFilters.model = "";
+                } else newFilters.make = value
+            } else if (key === "model" && value && newFilters.make) {
+                const validModels = makeToModels[newFilters.make] || [];
+                if (!validModels.includes(value)) {
+                    newFilters.model = "";
+                } else newFilters.model = value
             }
 
+            // 3. Find first car matching the filters
+            // console.log('the filters are: ', newFilters)
+            if (newFilters.make !== "" && newFilters.model !== "") {
+                const matchingCars = cars.filter((car) => {
+                    const parts = car.name.split(" ");
+                    const make = parts[0].includes("-") ? parts[0].split("-")[0] : parts[0];
+                    const model = parts.slice(1).join(" ");
+
+                    const matchesMake = newFilters.make ? make === newFilters.make : true;
+                    const matchesModel = newFilters.model ? model === newFilters.model : true;
+
+                    return matchesMake && matchesModel;
+                });
+
+                setSelectedCar(matchingCars.length > 0 ? matchingCars[0] : null);
+            }
+
+            setFilters(newFilters);
             return newFilters;
         });
     };
+
 
     const closeAllDropdowns = () => {
         setShowMakeDropdown(false);
@@ -108,15 +130,30 @@ export const CalendarPage: React.FC = () => {
 
     const eventsByDay = useMemo(() => {
         const map = new Map<string, any[]>();
-        orders.forEach((o) => {
-            if (!orderMatchesCar(o, selectedCar)) return;
-            const key = dayKeyOf(o.pickupDate);
-            if (!key) return;
-            if (!map.has(key)) map.set(key, []);
-            map.get(key)!.push(o);
+        console.log('the slected car is: ', selectedCar)
+        if (!selectedCar) return map; // if no car selected, show nothing
+
+        const filteredOrders = orders.filter((o) => o.carId.toString() === selectedCar.id.toString());
+
+        filteredOrders.forEach((o) => {
+            const start = new Date(o.pickupDate);
+            const end = new Date(o.returnDate);
+            let day = startOfDay(start);
+            const lastDay = startOfDay(end);
+
+            while (day <= lastDay) {
+                const key = format(day, "yyyy-MM-dd");
+                if (!map.has(key)) map.set(key, []);
+                map.get(key)!.push(o);
+                day = addDays(day, 1);
+            }
         });
+
+        console.log('Orders for slected car: ', map)
+
         return map;
     }, [selectedCar]);
+
 
     const monthMatrix = useMemo(() => {
         const monthStart = startOfMonth(currentMonth);
@@ -149,11 +186,11 @@ export const CalendarPage: React.FC = () => {
 
     return (
         <div className="max-w-[1200px] mx-auto">
-            {/* Filters: Make + Model */}
+            {/* Filters: Make + Model + Month */}
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
                 {/* Make */}
                 <div className="flex-1 relative dropdown-container">
-                    <label className="text-[11px] font-semibold mb-2 block uppercase tracking-widest text-white/80">
+                    <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
                         Marca
                     </label>
                     <div
@@ -199,7 +236,7 @@ export const CalendarPage: React.FC = () => {
 
                 {/* Model */}
                 <div className="flex-1 relative dropdown-container">
-                    <label className="text-[11px] font-semibold mb-2 block uppercase tracking-widest text-white/80">
+                    <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
                         Model
                     </label>
                     <div
@@ -246,7 +283,7 @@ export const CalendarPage: React.FC = () => {
 
                 {/* Month */}
                 <div className="flex-1 relative dropdown-container">
-                    <label className="text-[11px] font-semibold mb-2 block uppercase tracking-widest text-white/80">
+                    <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
                         Perioada
                     </label>
                     {/* Month navigation */}
@@ -255,15 +292,33 @@ export const CalendarPage: React.FC = () => {
                             onClick={prevMonth}
                             className="px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white"
                         >
-                            ←
+                            <ArrowLeft size={16} />
                         </button>
-                        <div className="px-3 text-sm text-gray-200 font-medium">{getCurrentMonth()}</div>
+                        <div className="px-3 text-sm text-gray-200 font-medium">{getMonthFromDate(currentMonth)}</div>
                         <button
                             onClick={nextMonth}
                             className="px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white"
                         >
-                            →
+                            <ArrowRight size={16} />
                         </button>
+                    </div>
+                </div>
+
+                {/* Reset Filters Button */}
+                <div className="flex-1 realtive dropdown-container">
+                    <div className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer ${filters! ? "text-white" : "text-white/70"}`}>
+
+                        <button
+                            onClick={() => {
+                                setFilters({ make: "", model: "" });
+                                setSelectedCar(null);
+                                setCarName("");
+                            }}
+                            className="px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white"
+                        >
+                            Reset Filters
+                        </button>
+
                     </div>
                 </div>
 
@@ -302,32 +357,41 @@ export const CalendarPage: React.FC = () => {
                             const dayKey = dayKeyOf(day);
                             const dayEvents = eventsByDay.get(dayKey) || [];
                             const inMonth = isSameMonth(day, currentMonth);
+
                             return (
                                 <div
                                     key={`${wi}-${dayKey}`}
-                                    className={`min-h-[110px] rounded-lg p-2 border ${inMonth ? "border-white/10" : "border-transparent"
-                                        } bg-white/3`}
+                                    className={`min-h-[110px] rounded-lg p-2 border ${inMonth ? "border-white/10" : "border-transparent"} bg-white/3`}
                                 >
                                     <div className="flex items-start justify-between mb-2">
-                                        <div
-                                            className={`text-sm font-medium ${isSameDay(day, new Date()) ? "text-purple-300" : inMonth ? "text-white" : "text-gray-500"
-                                                }`}
-                                        >
+                                        <div className={`text-sm font-medium ${isSameDay(day, new Date()) ? "text-purple-300" : inMonth ? "text-white" : "text-gray-500"}`}>
                                             {format(day, "d")}
                                         </div>
                                     </div>
-                                    <div className="space-y-2 overflow-hidden">
-                                        {dayEvents.slice(0, 3).map((ev: any, i: number) => (
-                                            <div
-                                                key={i}
-                                                className={`text-xs truncate px-2 py-1 rounded-md border ${statusColor(ev.status)} border-opacity-40`}
-                                                title={`${ev.customer} • ${ev.amount}`}
-                                            >
-                                                <div className="font-semibold">{ev.customer}</div>
-                                                <div className="text-[11px] text-gray-600">{ev.pickupTime} - {ev.returnTime}</div>
-                                            </div>
-                                        ))}
-                                        {dayEvents.length > 3 && <div className="text-xs text-gray-300 mt-1">+{dayEvents.length - 3} more...</div>}
+
+                                    {/* Orders */}
+                                    <div className="space-y-1 overflow-hidden">
+                                        {dayEvents.map((ev: any, i: number) => {
+                                            const dayDate = dayKeyOf(day);
+                                            const startDate = dayKeyOf(ev.pickupDate);
+                                            const endDate = dayKeyOf(ev.returnDate);
+
+                                            let borderRadius = "rounded-md";
+                                            if (dayDate === startDate && dayDate === endDate) borderRadius = "rounded-md";
+                                            else if (dayDate === startDate) borderRadius = "rounded-l-md";
+                                            else if (dayDate === endDate) borderRadius = "rounded-r-md";
+                                            else borderRadius = "rounded-none";
+
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={`text-xs truncate px-2 py-1 border ${statusColor(ev.status)} border-opacity-40 bg-opacity-30 ${borderRadius}`}
+                                                    title={`${ev.customer} • ${ev.pickupTime} - ${ev.returnTime}`}
+                                                >
+                                                    {ev.customer}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );
