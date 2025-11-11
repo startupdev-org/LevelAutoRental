@@ -25,7 +25,8 @@ import {
   Star,
   Truck
 } from 'lucide-react';
-import { UserDashboardSidebar } from '../../components/dashboard/user-dashboard/Sidebar';
+import { UserDashboardSidebar } from '../../components/dashboard/UserDashboardSidebar';
+import CalendarPage from './calendar/CalendarPage';
 
 interface Booking {
   id: string;
@@ -38,7 +39,7 @@ interface Booking {
   pickupLocation: string;
 }
 
-export type TabType = 'overview' | 'bookings' | 'profile' | 'settings';
+export type TabType = 'overview' | 'bookings' | 'profile' | 'settings' | 'calendar' | 'cars';
 
 
 export const UserDashboard: React.FC = () => {
@@ -490,6 +491,24 @@ export const UserDashboard: React.FC = () => {
                       </motion.div>
                     )}
 
+                    {/* Calendar Tab */}
+                    {activeTab === 'calendar' && (
+                      <motion.div
+                        key="calendar"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <div className="flex justify-between items-center">
+                          <h2 className="text-4xl font-bold text-red-600">Car's Calendar</h2>
+                        </div>
+
+                        <CalendarPage viewMode='user' />
+                      </motion.div>
+                    )}
+
                     {/* Settings Tab */}
                     {activeTab === 'settings' && (
                       <motion.div
@@ -605,8 +624,8 @@ export const UserDashboard: React.FC = () => {
               </motion.div>
             </div>
           </div>
-        </section>
+        </section >
       )}
-    </div>
+    </div >
   );
 };

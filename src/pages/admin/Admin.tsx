@@ -2117,7 +2117,7 @@ const CalendarView: React.FC = () => (
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
     >
-        <CalendarPage />
+        <CalendarPage viewMode='admin' />
     </motion.div>
 );
 

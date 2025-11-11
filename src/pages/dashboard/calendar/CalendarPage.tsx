@@ -19,11 +19,22 @@ import { getMonthFromDate } from "../../../utils/date";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { CalendarGrid } from "../../../components/dashboard/calendar/CalendarGrid";
 
-export const CalendarPage: React.FC = () => {
+interface Props {
+    viewMode: string | null;
+}
+
+export const CalendarPage: React.FC<Props> = ({ viewMode }) => {
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     const [carName, setCarName] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedCar, setSelectedCar] = useState<any | null>(null);
+
+    const [selectedDay, setSelectedDay] = useState<string | null>(null); // track selected day
+
+    const [rangeStart, setRangeStart] = useState<string | null>(null);
+    const [rangeEnd, setRangeEnd] = useState<string | null>(null);
+
+
 
     const [filters, setFilters] = useState({
         make: "",
@@ -60,6 +71,23 @@ export const CalendarPage: React.FC = () => {
         });
         return [...new Set(makes)];
     }, []);
+
+    const handleSelectDay = (day: string) => {
+        if (!rangeStart || (rangeStart && rangeEnd)) {
+            // Start a new range
+            setRangeStart(day);
+            setRangeEnd(null);
+        } else if (rangeStart && !rangeEnd) {
+            // Complete the range
+            if (day < rangeStart) {
+                setRangeEnd(rangeStart);
+                setRangeStart(day);
+            } else {
+                setRangeEnd(day);
+            }
+        }
+    };
+
 
     const handleFilterChange = (key: "make" | "model", value: string) => {
         setFilters((prev) => {
@@ -314,7 +342,12 @@ export const CalendarPage: React.FC = () => {
                 currentMonth={currentMonth}
                 hoveredOrderId={hoveredOrderId}
                 setHoveredOrderId={setHoveredOrderId}
+                viewMode={viewMode}
+                rangeStart={rangeStart}
+                rangeEnd={rangeEnd}
+                onSelectDay={handleSelectDay}
             />
+
 
         </div>
     );
