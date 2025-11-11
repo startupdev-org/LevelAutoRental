@@ -32,7 +32,7 @@ end note
 Admin -> ReqService: PATCH /borrow-requests/{requestId}\nBody:\n{\n  satatus: "APPROVE" | "REJECT",\n  reason?: "decision reason"\n}
 
 alt APPROVED
-    ReqService -> DB: UPDATE BorrowRequests SET status='APPROVED' WHERE requestId={requestId}
+    ReqService -> DB: UPDATE request status to 'APPROVED'
     note right of DB
     **BorrowRequests (after update):**
     | requestId | userId | carId | startDate | startTime | endDate | endTime | status |
@@ -40,7 +40,7 @@ alt APPROVED
     | R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00AM | APPROVED |
     end note
 
-    ReqService -> DB: INSERT INTO Rentals
+    ReqService -> DB: INSERT the new rental order INTO Rentals Table
     note right of DB
     **Rentals (after insert):**
     | rentalId | requestId | userId | carId | startDate | startTime | endDate | endTime | status |
@@ -50,7 +50,7 @@ alt APPROVED
 
     
 else REJECTED
-    ReqService -> DB: UPDATE BorrowRequests SET status='REJECTED' WHERE requestId={requestId}
+    ReqService -> DB: UPDATE request status to 'REJECTED'
     note right of DB
     **BorrowRequests (after update):**
     | requestId | userId | carId | startDate | startTime | endDate | endTime | status |
