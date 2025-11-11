@@ -1,0 +1,25 @@
+@startuml
+title Add a New Car (Admin Flow)
+
+actor Admin
+participant "Car Service" as CarService
+database DB
+
+== Admin adds a new car ==
+
+Admin -> CarService: AddCar(make, model, year, vin, color, km, dailyPrice)
+note right: Admin provides all car details
+CarService -> DB: INSERT INTO cars(...)
+DB --> CarService: carId
+CarService --> Admin: success response { carId, message }
+
+== Result ==
+note over DB
+New car record created:
+- carId
+- make, model, year
+- vin, color, km
+- dailyPrice
+- status = "AVAILABLE"
+end note
+@enduml
