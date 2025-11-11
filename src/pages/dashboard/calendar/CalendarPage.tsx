@@ -121,7 +121,13 @@ export const CalendarPage: React.FC<Props> = ({ viewMode }) => {
                 });
 
                 setSelectedCar(matchingCars.length > 0 ? matchingCars[0] : null);
-            } else setSelectedCar(null)
+                setRangeStart(null);
+                setRangeEnd(null);
+            } else {
+                setSelectedCar(null);
+                setRangeStart(null);
+                setRangeEnd(null);
+            }
 
             setFilters(newFilters);
             return newFilters;
@@ -341,6 +347,8 @@ export const CalendarPage: React.FC<Props> = ({ viewMode }) => {
                             setFilters({ make: "", model: "" });
                             setSelectedCar(null);
                             setCarName("");
+                            setRangeStart(null);
+                            setRangeEnd(null);
                         }}
                         className="text-sm text-gray-300 hover:text-white"
                     >
