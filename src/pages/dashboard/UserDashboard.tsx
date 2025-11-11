@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Car, 
-  Calendar, 
-  CreditCard, 
-  User, 
-  LogOut, 
+import {
+  Car,
+  Calendar,
+  CreditCard,
+  User,
+  LogOut,
   FileText,
   Clock,
   MapPin,
@@ -25,6 +25,7 @@ import {
   Star,
   Truck
 } from 'lucide-react';
+import { UserDashboardSidebar } from '../../components/dashboard/user-dashboard/Sidebar';
 
 interface Booking {
   id: string;
@@ -37,7 +38,8 @@ interface Booking {
   pickupLocation: string;
 }
 
-type TabType = 'overview' | 'bookings' | 'profile' | 'settings';
+export type TabType = 'overview' | 'bookings' | 'profile' | 'settings';
+
 
 export const UserDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -177,21 +179,21 @@ export const UserDashboard: React.FC = () => {
       {/* Full Screen Loading Overlay */}
       <AnimatePresence>
         {isLoading && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center bg-fixed"
               style={{
                 backgroundImage: "url('/LevelAutoRental/lvl_bg.png')"
               }}
             />
             <div className="absolute inset-0 bg-black/70"></div>
-            
-            <motion.div 
+
+            <motion.div
               className="relative z-10 text-center"
               initial={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -201,7 +203,7 @@ export const UserDashboard: React.FC = () => {
                 <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
                 <div className="absolute inset-0 border-4 border-transparent border-t-red-600 border-r-red-600/50 rounded-full animate-spin"></div>
               </div>
-              
+
               <h2 className="text-2xl font-bold text-white mb-2">{t('dashboard.loading.text')}</h2>
               <p className="text-gray-300 text-sm">{t('dashboard.loading.preparing')}</p>
             </motion.div>
@@ -212,16 +214,18 @@ export const UserDashboard: React.FC = () => {
       {/* Dashboard Content */}
       {!isLoading && (
         <section className="relative py-12 pt-32 md:pt-40 overflow-hidden min-h-screen">
-            <div 
-              className="absolute inset-0 bg-cover bg-center bg-fixed"
-              style={{
-                backgroundImage: "url('/LevelAutoRental/lvl_bg.png')"
-              }}
-            />
-            <div className="absolute inset-0 bg-black/80"></div>
-            
-            <div className="relative z-10 container mx-auto px-4 max-w-7xl">
-              {/* Dashboard Grid */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-fixed"
+            style={{
+              backgroundImage: "url('/LevelAutoRental/lvl_bg.png')"
+            }}
+          />
+          <div className="absolute inset-0 bg-black/80"></div>
+
+          <div className="relative z-10 container mx-auto px-4 max-w-7xl">
+            {/* Dashboard Grid */}
+
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
               {/* Sidebar */}
               <motion.div
@@ -230,46 +234,11 @@ export const UserDashboard: React.FC = () => {
                 transition={{ duration: 0.8 }}
                 className="lg:col-span-1"
               >
-                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-6 pb-6 border-b border-white/10">
-                    <div className="w-12 h-12 bg-red-600/20 rounded-full flex items-center justify-center">
-                      <User className="text-red-600" size={24} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white">{user?.email?.split('@')[0] || editForm.firstName || 'User'}</h3>
-                      <p className="text-gray-400 text-sm">{user?.email}</p>
-                    </div>
-                  </div>
-
-                  <nav className="space-y-2">
-                    {sidebarItems.map((item) => (
-                      <motion.button
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-300 ${
-                          activeTab === item.id
-                            ? 'bg-red-600 text-white'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <item.icon size={18} />
-                        <span>{item.label}</span>
-                      </motion.button>
-                    ))}
-                    <div className="h-[1px] bg-white/10"></div>
-                    <motion.button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <LogOut size={18} />
-                      <span>{t('dashboard.sidebar.signOut')}</span>
-                    </motion.button>
-                  </nav>
-                </div>
+                <UserDashboardSidebar
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  onLogout={handleLogout}
+                />
               </motion.div>
 
               {/* Main Content */}
@@ -292,7 +261,7 @@ export const UserDashboard: React.FC = () => {
                         className="space-y-6"
                       >
                         <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.overview.title')}</h2>
-                        
+
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
@@ -303,7 +272,7 @@ export const UserDashboard: React.FC = () => {
                             <p className="text-3xl font-bold text-red-600">{mockBookings.length}</p>
                             <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeBookings')}</p>
                           </div>
-                          
+
                           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                             <div className="flex items-center gap-3 mb-2">
                               <DollarSign className="text-red-600" size={24} />
@@ -312,7 +281,7 @@ export const UserDashboard: React.FC = () => {
                             <p className="text-3xl font-bold text-red-600">€{mockBookings.reduce((sum, b) => sum + b.totalPrice, 0)}</p>
                             <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeSpending')}</p>
                           </div>
-                          
+
                           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                             <div className="flex items-center gap-3 mb-2">
                               <Star className="text-red-600" size={24} />
@@ -367,14 +336,14 @@ export const UserDashboard: React.FC = () => {
                         className="space-y-6"
                       >
                         <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.bookings.title')}</h2>
-                        
+
                         {mockBookings.length > 0 ? (
                           <div className="space-y-4">
                             {mockBookings.map((booking) => (
                               <div key={booking.id} className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300">
                                 <div className="flex items-center gap-4">
                                   <img src={booking.carImage} alt={booking.carName} className="w-24 h-24 rounded-lg object-cover" />
-                                  
+
                                   <div className="flex-1">
                                     <h3 className="font-semibold text-white text-lg mb-1">{booking.carName}</h3>
                                     <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
@@ -394,7 +363,7 @@ export const UserDashboard: React.FC = () => {
                                       </span>
                                     </div>
                                   </div>
-                                  
+
                                   <div className="text-right">
                                     <div className="text-2xl font-bold text-white mb-2">€{booking.totalPrice}</div>
                                     <div className="flex gap-2">
@@ -456,23 +425,23 @@ export const UserDashboard: React.FC = () => {
                               <input
                                 type="text"
                                 value={editForm.firstName}
-                                onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
                                 disabled={!isEditing}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                               />
                             </div>
-                            
+
                             <div>
                               <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.lastName')}</label>
                               <input
                                 type="text"
                                 value={editForm.lastName}
-                                onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
                                 disabled={!isEditing}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                               />
                             </div>
-                            
+
                             <div>
                               <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.email')}</label>
                               <div className="relative">
@@ -485,7 +454,7 @@ export const UserDashboard: React.FC = () => {
                                 />
                               </div>
                             </div>
-                            
+
                             <div>
                               <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.phone')}</label>
                               <div className="relative">
@@ -493,14 +462,14 @@ export const UserDashboard: React.FC = () => {
                                 <input
                                   type="tel"
                                   value={editForm.phone}
-                                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                                   disabled={!isEditing}
                                   className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                                 />
                               </div>
                             </div>
                           </div>
-                          
+
                           {isEditing && (
                             <div className="flex gap-4 mt-6">
                               <button
@@ -532,7 +501,7 @@ export const UserDashboard: React.FC = () => {
                         className="space-y-6"
                       >
                         <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.settings.title')}</h2>
-                        
+
                         {/* Password Change */}
                         <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                           <h3 className="text-xl font-bold mb-4">{t('dashboard.settings.changePassword')}</h3>
@@ -542,7 +511,7 @@ export const UserDashboard: React.FC = () => {
                               <input
                                 type="password"
                                 value={passwordForm.currentPassword}
-                                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
                                 placeholder={t('dashboard.settings.enterCurrentPassword')}
                               />
@@ -552,7 +521,7 @@ export const UserDashboard: React.FC = () => {
                               <input
                                 type="password"
                                 value={passwordForm.newPassword}
-                                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
                                 placeholder={t('dashboard.settings.enterNewPassword')}
                               />
@@ -562,12 +531,12 @@ export const UserDashboard: React.FC = () => {
                               <input
                                 type="password"
                                 value={passwordForm.confirmPassword}
-                                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
                                 placeholder={t('dashboard.settings.confirmNewPasswordPlaceholder')}
                               />
                             </div>
-                            <button 
+                            <button
                               type="submit"
                               className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
                             >
@@ -595,7 +564,7 @@ export const UserDashboard: React.FC = () => {
                                 <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                               </label>
                             </div>
-                            
+
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                               <div>
                                 <p className="font-medium">{t('dashboard.settings.promotions')}</p>
@@ -611,7 +580,7 @@ export const UserDashboard: React.FC = () => {
                                 <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                               </label>
                             </div>
-                            
+
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                               <div>
                                 <p className="font-medium">{t('dashboard.settings.newsletter')}</p>
