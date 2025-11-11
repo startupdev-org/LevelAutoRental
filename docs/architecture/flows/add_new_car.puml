@@ -1,25 +1,41 @@
 @startuml
-title Add a New Car (Admin Flow)
+title Add New Car Flow (Admin ↔ Car Service ↔ Database)
 
 actor Admin
 participant "Car Service" as CarService
-database DB
+database DB as "Database\n(Cars Table)"
 
-== Admin adds a new car ==
+== Step 1: Admin submits new car details ==
+Admin -> CarService: POST /cars\nBody:\n{\n  brand: "Tesla",\n  model: "Model 3",\n  year: 2024,\n  plateNumber: "MD-AB1234",\n  pricePerDay: 90,\n  status: "AVAILABLE"\n}
 
-Admin -> CarService: AddCar(make, model, year, vin, color, km, dailyPrice)
-note right: Admin provides all car details
-CarService -> DB: INSERT INTO cars(...)
-DB --> CarService: carId
-CarService --> Admin: success response { carId, message }
+note right of CarService
+Validations performed:
+• Unique plate number  
+• Required fields (brand, model, year, etc.)  
+• Valid year range  
+• Numeric price value
+end note
 
-== Result ==
+== Step 2: Save to database ==
+CarService -> DB: INSERT INTO Cars (brand, model, year, plateNumber, pricePerDay, status)
+
+note right of DB
+**Cars (after insert):**
+| carId | brand | model | year | plateNumber | pricePerDay | status |
+|-------|--------|--------|------|--------------|--------------|---------|
+| C457 | Tesla | Model 3 | 2024 | MD-AB1234 | 90 | AVAILABLE |
+end note
+
+DB --> CarService: Returns carId = C457
+
+== Step 3: Confirmation ==
+CarService --> Admin: 201 Created\nBody:\n{\n  carId: "C457",\n  message: "Car added successfully"\n}
+
+== Step 4: Final Database State ==
 note over DB
-New car record created:
-- carId
-- make, model, year
-- vin, color, km
-- dailyPrice
-- status = "AVAILABLE"
+**Cars Table**
+| carId | brand | model | year | plateNumber | pricePerDay | status |
+|-------|--------|--------|------|--------------|--------------|---------|
+| C457 | Tesla | Model 3 | 2024 | MD-AB1234 | 90 | AVAILABLE |
 end note
 @enduml
