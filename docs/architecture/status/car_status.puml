@@ -1,0 +1,38 @@
+@startuml
+title Car Status Lifecycle (Detailed Version)
+
+
+
+== USER BORROWING PROCESS ==
+
+AVAILABLE --> BORROWED : Borrow request approved & rental started
+note left of BORROWED
+Triggered by:
+• Car marked as "in use"
+end note
+
+BORROWED --> AVAILABLE : Car returned and inspected
+note right of AVAILABLE
+Triggered by:
+• User returns the car  
+• Car becomes available again
+end note
+
+== CAR MAINTENANCE PROCESS ==
+
+AVAILABLE --> MAINTENANCE : Sent for service or repair
+note right of MAINTENANCE
+Triggered by:
+• Admin schedules maintenance  
+• Automatic flag after inspection failure
+end note
+
+MAINTENANCE --> AVAILABLE : Maintenance completed and approved
+note right of AVAILABLE
+Triggered by:
+• Mechanic/admin confirms maintenance done  
+• Car passes post-maintenance inspection  
+• Car becomes available for new rentals
+end note
+
+@enduml

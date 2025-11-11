@@ -1,0 +1,18 @@
+@startuml
+title Borrow Request Lifecycle
+
+PENDING --> APPROVED : Admin approves
+note right of PENDING
+Triggered by:
+• Admin approves the request 
+end note
+
+PENDING --> REJECTED : Admin rejects
+note left of REJECTED
+Triggered by:
+• Admin rejects the request 
+end note
+
+@enduml
+
+
