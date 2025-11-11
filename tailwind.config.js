@@ -127,7 +127,7 @@ module.exports = {
       },
       backgroundPosition: {
         'hero-mobile': 'center -100px',
-        'hero-desktop': 'center -350px',
+        'hero-desktop': 'center -420px',
         'loader-mobile': 'center center',
         'loader-desktop': 'center center',
         'howto-mobile': 'center center',

@@ -17,8 +17,6 @@ export const Header: React.FC = () => {
 
   const shouldRenderHeader = !hiddenPaths.some(path => location.pathname.startsWith(path));
 
-  if (!shouldRenderHeader) return null;
-
   // page where the sidebar will always be on scroll
   const shouldHeaderBeActive = () => {
     if (location.pathname === '/booking') {
@@ -143,6 +141,8 @@ export const Header: React.FC = () => {
       }, 0);
     }
   };
+
+  if (!shouldRenderHeader) return null;
 
   return (
     <header
