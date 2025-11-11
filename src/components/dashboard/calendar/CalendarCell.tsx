@@ -46,7 +46,7 @@ export const CalendarCell: React.FC<Props> = ({
             onClick={onSelect}  // use the passed range selection function
             onMouseEnter={() => {
                 if (viewMode === "user" && !dayEvents.length) {
-                    console.log(`Available day hovered: ${format(day, "yyyy-MM-dd")}`);
+                    // console.log(`Available day hovered: ${format(day, "yyyy-MM-dd")}`);
                 }
             }}
         >

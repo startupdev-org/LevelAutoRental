@@ -128,6 +128,20 @@ export const CalendarPage: React.FC<Props> = ({ viewMode }) => {
         });
     };
 
+    // log when range is stable (both start and end selected)
+    useEffect(() => {
+        if (rangeStart && rangeEnd && selectedCar) {
+            console.log(
+                "✅ Selected borrow range: ", {
+                carId: selectedCar.id,
+                carName: selectedCar.name,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd
+            });
+        }
+    }, [rangeStart, rangeEnd, selectedCar]);
+
+
 
     const closeAllDropdowns = () => {
         setShowMakeDropdown(false);
