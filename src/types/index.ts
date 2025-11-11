@@ -2,7 +2,7 @@ export interface Car {
   id: number;
   year: number;
   name: string;
-  category: 'economy' | 'compact' | 'midsize' | 'fullsize' | 'suv' | 'luxury';
+  category: 'suv' | 'sports' | 'luxury';
   image: string;
   photoGallery?: string[]; // Optional array of photo URLs for gallery
   pricePerDay: number;
