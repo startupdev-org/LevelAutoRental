@@ -40,7 +40,7 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
             transition={{ duration: 0.8 }}
             className="lg:col-span-1 xl:col-span-1.5"
         >
-            <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 w-full max-w-[300px] mx-auto">
+            <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 border border-white/10 w-full max-w-[300px] mx-auto">
                 {/* User Info */}
                 <div className="flex items-center gap-4 mb-8 pb-6 border-b border-white/10">
                     <div className="w-14 h-14 bg-red-600/20 rounded-full flex items-center justify-center">
@@ -50,7 +50,7 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
                         <h3 className="font-semibold text-white text-base truncate">
                             {user?.email?.split('@')[0] || 'User'}
                         </h3>
-                        <p className="text-gray-400 text-sm truncate">{user?.email}</p>
+                        <p className="text-gray-400 text-sm">{user?.email}</p>
                     </div>
                 </div>
 

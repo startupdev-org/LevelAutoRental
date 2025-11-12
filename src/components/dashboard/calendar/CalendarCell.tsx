@@ -13,7 +13,6 @@ interface Props {
     onSelect?: () => void;
 }
 
-
 export const CalendarCell: React.FC<Props> = ({
     day,
     dayEvents,
@@ -28,6 +27,13 @@ export const CalendarCell: React.FC<Props> = ({
     const isOrderDay = dayEvents.length > 0;
     const isAvailable = !isOrderDay;
 
+    // Only allow selecting available days for users
+    const handleSelect = () => {
+        if (viewMode === "user" && isAvailable && onSelect) {
+            onSelect();
+        }
+    };
+
     return (
         <motion.div
             layout
@@ -38,15 +44,15 @@ export const CalendarCell: React.FC<Props> = ({
                         ? viewMode === "user"
                             ? "#af3e3eff" // red for borrowed
                             : "rgba(255,255,255,0.05)"
-                        : isInRange
+                        : viewMode === "user" && isInRange
                             ? "#57db88ff" // green for selected range
                             : "rgba(255,255,255,0.1)", // available
             }}
             className={`min-h-[110px] rounded-lg p-2 border relative transition-colors cursor-pointer`}
-            onClick={onSelect}  // use the passed range selection function
+            onClick={handleSelect}  // user-only selection
             onMouseEnter={() => {
-                if (viewMode === "user" && !dayEvents.length) {
-                    // console.log(`Available day hovered: ${format(day, "yyyy-MM-dd")}`);
+                if (viewMode === "user" && isAvailable) {
+                    // console.log(`Available day hovered: ${dayDate}`);
                 }
             }}
         >

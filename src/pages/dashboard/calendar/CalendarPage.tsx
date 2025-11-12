@@ -358,17 +358,33 @@ export const CalendarPage: React.FC<Props> = ({ viewMode }) => {
             )}
 
             {/* Calendar */}
-            <CalendarGrid
-                monthMatrix={monthMatrix}
-                eventsByDay={eventsByDay}
-                currentMonth={currentMonth}
-                hoveredOrderId={hoveredOrderId}
-                setHoveredOrderId={setHoveredOrderId}
-                viewMode={viewMode}
-                rangeStart={rangeStart}
-                rangeEnd={rangeEnd}
-                onSelectDay={handleSelectDay}
-            />
+            {/* Calendar or prompt */}
+            {selectedCar ? (
+                <CalendarGrid
+                    monthMatrix={monthMatrix}
+                    eventsByDay={eventsByDay}
+                    currentMonth={currentMonth}
+                    hoveredOrderId={hoveredOrderId}
+                    setHoveredOrderId={setHoveredOrderId}
+                    viewMode={viewMode}
+                    rangeStart={rangeStart}
+                    rangeEnd={rangeEnd}
+                    onSelectDay={handleSelectDay}
+                />
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col items-center justify-center py-16 text-center bg-white/5 rounded-xl border border-white/10 text-white/70"
+                >
+                    <p className="text-3xl font-bold mb-2">Selectează o mașină</p>
+                    <p className="text-lg text-gray-400">
+                        Alege o marcă și un model pentru a vedea disponibilitatea în calendar.
+                    </p>
+                </motion.div>
+            )}
+
 
 
         </div>
