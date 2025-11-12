@@ -1,6 +1,7 @@
 import { User } from '../types/index'
 
-export const hiddenPaths = ['/admin'];
+
+export const hiddenPaths = ['/admin', '/dashboard'];
 
 export const sparkData = Array.from({ length: 12 }).map((_, i) => ({
     x: i,

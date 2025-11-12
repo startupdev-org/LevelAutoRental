@@ -50,12 +50,12 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                 order.id.toLowerCase().includes(searchLower)
             );
         });
-        
+
         // Then sort
         if (sortBy) {
             filtered.sort((a, b) => {
                 let diff = 0;
-                
+
                 if (sortBy === 'date') {
                     diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
                 } else if (sortBy === 'customer') {
@@ -70,16 +70,16 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                     };
                     diff = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
                 }
-                
+
                 return sortOrder === 'asc' ? diff : -diff;
             });
         } else {
             // Default: sort by date (newest first)
-            filtered.sort((a, b) => 
+            filtered.sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
         }
-        
+
         return filtered;
     }, [orders, searchQuery, sortBy, sortOrder]);
 
@@ -172,7 +172,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
             <div className="px-6 py-4 border-b border-white/10">
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
+                        <div>
                             <h2 className="text-xl font-bold text-white">{title}</h2>
                         </div>
                         <button
@@ -202,76 +202,72 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                         </div>
                         {/* Sort Controls */}
                         <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
-                        <button
-                            onClick={() => handleSort('date')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                                sortBy === 'date'
-                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                            }`}
-                        >
-                            Date
-                            {sortBy === 'date' && (
-                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                            )}
-                            {sortBy !== 'date' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                        </button>
-                        <button
-                            onClick={() => handleSort('customer')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                                sortBy === 'customer'
-                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                            }`}
-                        >
-                            Customer
-                            {sortBy === 'customer' && (
-                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                            )}
-                            {sortBy !== 'customer' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                        </button>
-                        <button
-                            onClick={() => handleSort('amount')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                                sortBy === 'amount'
-                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                            }`}
-                        >
-                            Amount
-                            {sortBy === 'amount' && (
-                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                            )}
-                            {sortBy !== 'amount' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                        </button>
-                        <button
-                            onClick={() => handleSort('status')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                                sortBy === 'status'
-                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                            }`}
-                        >
-                            Status
-                            {sortBy === 'status' && (
-                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                            )}
-                            {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                        </button>
-                        {sortBy && (
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
                             <button
-                                onClick={() => {
-                                    setSortBy(null);
-                                    setSortOrder('desc');
-                                }}
-                                className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+                                onClick={() => handleSort('date')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'date'
+                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
                             >
-                                Clear Sort
+                                Date
+                                {sortBy === 'date' && (
+                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                )}
+                                {sortBy !== 'date' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
                             </button>
-                        )}
+                            <button
+                                onClick={() => handleSort('customer')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'customer'
+                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                            >
+                                Customer
+                                {sortBy === 'customer' && (
+                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                )}
+                                {sortBy !== 'customer' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                            <button
+                                onClick={() => handleSort('amount')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'amount'
+                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                            >
+                                Amount
+                                {sortBy === 'amount' && (
+                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                )}
+                                {sortBy !== 'amount' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                            <button
+                                onClick={() => handleSort('status')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'status'
+                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                            >
+                                Status
+                                {sortBy === 'status' && (
+                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                )}
+                                {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                            {sortBy && (
+                                <button
+                                    onClick={() => {
+                                        setSortBy(null);
+                                        setSortOrder('desc');
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+                                >
+                                    Clear Sort
+                                </button>
+                            )}
+                        </div>
                     </div>
-                </div>
                 </div>
             </div>
 
@@ -347,7 +343,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                                         </span>
                                     </td>
                                     <td className="px-6 py-3">
-                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 shadow-md">
                                                 {getInitials(order.customerName)}
                                             </div>
@@ -370,11 +366,11 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                                                     <CarIcon className="w-4 h-4 text-gray-400" />
                                                 </div>
                                             )}
-                                        <div>
+                                            <div>
                                                 <p className="text-white font-semibold text-sm">{order.carName}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
+                                    </td>
                                     <td className="px-6 py-3">
                                         {getStatusBadge(order.status)}
                                     </td>
@@ -384,8 +380,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
                             ))
                         )}
                     </tbody>

@@ -19,11 +19,22 @@ import { getMonthFromDate } from "../../../utils/date";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { CalendarGrid } from "../../../components/dashboard/calendar/CalendarGrid";
 
-export const CalendarPage: React.FC = () => {
+interface Props {
+    viewMode: string | null;
+}
+
+export const CalendarPage: React.FC<Props> = ({ viewMode }) => {
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     const [carName, setCarName] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedCar, setSelectedCar] = useState<any | null>(null);
+
+    const [selectedDay, setSelectedDay] = useState<string | null>(null); // track selected day
+
+    const [rangeStart, setRangeStart] = useState<string | null>(null);
+    const [rangeEnd, setRangeEnd] = useState<string | null>(null);
+
+
 
     const [filters, setFilters] = useState({
         make: "",
@@ -61,6 +72,23 @@ export const CalendarPage: React.FC = () => {
         return [...new Set(makes)];
     }, []);
 
+    const handleSelectDay = (day: string) => {
+        if (!rangeStart || (rangeStart && rangeEnd)) {
+            // Start a new range
+            setRangeStart(day);
+            setRangeEnd(null);
+        } else if (rangeStart && !rangeEnd) {
+            // Complete the range
+            if (day < rangeStart) {
+                setRangeEnd(rangeStart);
+                setRangeStart(day);
+            } else {
+                setRangeEnd(day);
+            }
+        }
+    };
+
+
     const handleFilterChange = (key: "make" | "model", value: string) => {
         setFilters((prev) => {
             let newFilters = { ...prev, [key]: value };
@@ -93,12 +121,32 @@ export const CalendarPage: React.FC = () => {
                 });
 
                 setSelectedCar(matchingCars.length > 0 ? matchingCars[0] : null);
-            } else setSelectedCar(null)
+                setRangeStart(null);
+                setRangeEnd(null);
+            } else {
+                setSelectedCar(null);
+                setRangeStart(null);
+                setRangeEnd(null);
+            }
 
             setFilters(newFilters);
             return newFilters;
         });
     };
+
+    // log when range is stable (both start and end selected)
+    // useEffect(() => {
+    //     if (rangeStart && rangeEnd && selectedCar) {
+    //         console.log(
+    //             "✅ Selected borrow range: ", {
+    //             carId: selectedCar.id,
+    //             carName: selectedCar.name,
+    //             rangeStart: rangeStart,
+    //             rangeEnd: rangeEnd
+    //         });
+    //     }
+    // }, [rangeStart, rangeEnd, selectedCar]);
+
 
 
     const closeAllDropdowns = () => {
@@ -285,36 +333,111 @@ export const CalendarPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
-
             </div>
 
-            {/* Selected car badge */}
+            {/* Selected car badge + Borrow button inline */}
             {selectedCar && (
-                <div className="mb-4 flex items-center gap-3">
-                    <div className="px-3 py-1 rounded-full bg-white/5 text-white text-sm font-medium">
-                        Calendar for: {selectedCar.name}
+                <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className="px-3 py-1 rounded-full bg-white/5 text-white text-sm font-medium">
+                            Calendar for: {selectedCar.name}
+                        </div>
+                        <button
+                            onClick={() => {
+                                setFilters({ make: "", model: "" });
+                                setSelectedCar(null);
+                                setCarName("");
+                                setRangeStart(null);
+                                setRangeEnd(null);
+                            }}
+                            className="text-sm text-gray-300 hover:text-white"
+                        >
+                            Clear
+                        </button>
                     </div>
-                    <button
-                        onClick={() => {
-                            setFilters({ make: "", model: "" });
-                            setSelectedCar(null);
-                            setCarName("");
-                        }}
-                        className="text-sm text-gray-300 hover:text-white"
-                    >
-                        Clear
-                    </button>
+
+                    {/* ✅ Borrow button visible only when range complete */}
+                    {rangeStart && rangeEnd && (() => {
+                        // Convert range to timestamps for easier comparison
+                        const start = new Date(rangeStart).getTime();
+                        const end = new Date(rangeEnd).getTime();
+
+                        console.log('Events by day: ', eventsByDay)
+
+                        // Check if any booked day overlaps the selected range
+                        const hasConflict = Array.from(eventsByDay.keys()).some((day) => {
+                            const dayTime = new Date(day).getTime();
+                            return dayTime >= start && dayTime <= end;
+                        });
+
+
+                        if (hasConflict) {
+                            return (
+                                <motion.button
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.25 }}
+                                    disabled
+                                    className="px-5 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md shadow-red-500/20 cursor-not-allowed"
+                                >
+                                    Interval gresit - va rugam selectati un alt interval
+                                </motion.button>
+                            );
+                        }
+
+                        // borrow button
+                        return (
+                            <motion.button
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.25 }}
+                                onClick={() => {
+                                    console.log("✅ Selected borrow range:", {
+                                        carId: selectedCar.id,
+                                        carName: selectedCar.name,
+                                        rangeStart: rangeStart,
+                                        rangeEnd: rangeEnd
+                                    });
+                                }}
+                                className="px-5 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-lg shadow-md shadow-green-500/20 transition-all"
+                            >
+                                Inchiriati (${format(new Date(rangeStart), "MMM d")} - ${format(new Date(rangeEnd), "MMM d")})
+                            </motion.button>
+                        );
+                    })()}
+
                 </div>
             )}
 
             {/* Calendar */}
-            <CalendarGrid
-                monthMatrix={monthMatrix}
-                eventsByDay={eventsByDay}
-                currentMonth={currentMonth}
-                hoveredOrderId={hoveredOrderId}
-                setHoveredOrderId={setHoveredOrderId}
-            />
+            {/* Calendar or prompt */}
+            {selectedCar ? (
+                <CalendarGrid
+                    monthMatrix={monthMatrix}
+                    eventsByDay={eventsByDay}
+                    currentMonth={currentMonth}
+                    hoveredOrderId={hoveredOrderId}
+                    setHoveredOrderId={setHoveredOrderId}
+                    viewMode={viewMode}
+                    rangeStart={rangeStart}
+                    rangeEnd={rangeEnd}
+                    onSelectDay={handleSelectDay}
+                />
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col items-center justify-center py-16 text-center bg-white/5 rounded-xl border border-white/10 text-white/70"
+                >
+                    <p className="text-3xl font-bold mb-2">Selectează o mașină</p>
+                    <p className="text-lg text-gray-400">
+                        Alege o marcă și un model pentru a vedea disponibilitatea în calendar.
+                    </p>
+                </motion.div>
+            )}
+
+
 
         </div>
     );

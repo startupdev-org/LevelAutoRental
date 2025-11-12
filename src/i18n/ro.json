@@ -572,9 +572,10 @@
         "refunded": "Rambursat",
         "customer": "Client {{number}}",
         "sidebar": {
-            "overview": "Prezentare generală",
+            "overview": "Acasa",
             "myBookings": "Rezervările mele",
             "profile": "Profil",
+            "calendar": "Calendar",
             "settings": "Setări",
             "signOut": "Deconectare"
         },

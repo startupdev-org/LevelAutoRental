@@ -45,13 +45,13 @@ const RouterWrapper = () => {
         <Route path="/auth/signup" element={<SignUp />} />
         <Route path="/auth/forgot" element={<ForgotPassword />} />
 
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <UserDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
 
         <Route path="/admin" element={<Admin />} />
