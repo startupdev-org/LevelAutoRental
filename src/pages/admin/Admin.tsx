@@ -45,6 +45,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES } from '../../constants';
 import { generateContractFromOrder } from '../../lib/contract';
+import { OrderDisplay } from '../../lib/orders';
 
 import { OrdersViewSection } from '../dashboard/orders/OrdersViewSection';
 
@@ -316,7 +317,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     const navigate = useNavigate();
     const [ordersList, setOrdersList] = useState<OrderDisplay[]>([]);
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
-    
+
     useEffect(() => {
         const loadOrders = async () => {
             try {
@@ -338,7 +339,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     useEffect(() => {
         if (!order || !car) {
             if (ordersList.length > 0) {
-                navigate('/admin?section=orders');
+            navigate('/admin?section=orders');
             }
         } else {
             setSelectedImage(car.image);
@@ -697,10 +698,10 @@ const CarsView: React.FC = () => {
     }
 
     return (
-        <motion.div
+    <motion.div
             initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
             className="space-y-6"
         >
             {/* Cars Table Card */}
@@ -742,9 +743,9 @@ const CarsView: React.FC = () => {
                                 <button
                                     onClick={() => handleSort('price')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'price'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
                                 >
                                     Price
                                     {sortBy === 'price' && (
@@ -755,9 +756,9 @@ const CarsView: React.FC = () => {
                                 <button
                                     onClick={() => handleSort('year')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'year'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
                                 >
                                     Year
                                     {sortBy === 'year' && (
@@ -768,9 +769,9 @@ const CarsView: React.FC = () => {
                                 <button
                                     onClick={() => handleSort('status')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'status'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
                                 >
                                     Status
                                     {sortBy === 'status' && (
@@ -810,7 +811,7 @@ const CarsView: React.FC = () => {
                                         onClick={() => handleSort('price')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        Price/Day
+                                    Price/Day
                                         {sortBy === 'price' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -836,7 +837,7 @@ const CarsView: React.FC = () => {
                                         onClick={() => handleSort('status')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        Status
+                                    Status
                                         {sortBy === 'status' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -857,8 +858,8 @@ const CarsView: React.FC = () => {
                                         (order.status === 'Paid' || order.status === 'Pending')
                                     );
                                     return (
-                                        <tr
-                                            key={car.id}
+                                        <tr 
+                                            key={car.id} 
                                             className="hover:bg-white/5 transition-colors cursor-pointer"
                                             onClick={() => handleEditCar(car)}
                                         >
@@ -885,11 +886,11 @@ const CarsView: React.FC = () => {
                                             <td className="px-6 py-4">
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isRented
-                                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        : car.availability
+                                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                            : car.availability
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                        }`}
+                                                    }`}
                                                 >
                                                     {isRented ? 'Rented' : car.availability ? 'Reserved' : 'Available'}
                                                 </span>
@@ -941,8 +942,8 @@ const CarsView: React.FC = () => {
                     />
                 )}
             </AnimatePresence>
-        </motion.div>
-    );
+    </motion.div>
+);
 };
 
 // Car Details/Edit View Component
@@ -977,7 +978,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
             //     .from('car-images')
             //     .getPublicUrl(data.path);
             // setFormData(prev => ({ ...prev, image: publicUrl }));
-
+            
             // Temporary: Create object URL for preview
             const objectUrl = URL.createObjectURL(file);
             setFormData(prev => ({ ...prev, image: objectUrl }));
@@ -1006,7 +1007,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
             //     ...prev,
             //     photoGallery: [...(prev.photoGallery || []), publicUrl]
             // }));
-
+            
             // Temporary: Create object URL for preview
             const objectUrl = URL.createObjectURL(file);
             setFormData(prev => ({
@@ -1063,7 +1064,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                     {/* Basic Information */}
                     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
                         <h3 className="text-lg font-bold text-white mb-4">Basic Information</h3>
-
+                        
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
                             <input
@@ -1126,7 +1127,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                     {/* Specifications */}
                     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
                         <h3 className="text-lg font-bold text-white mb-4">Specifications</h3>
-
+                        
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Body Type</label>
                             <select
@@ -1183,18 +1184,18 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 {/* Images */}
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
                     <h3 className="text-lg font-bold text-white mb-4">Images</h3>
-
+                    
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Main Image</label>
                         <div className="flex gap-2 mb-2">
-                            <input
-                                type="text"
-                                value={formData.image || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
+                        <input
+                            type="text"
+                            value={formData.image || ''}
+                            onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
                                 placeholder="Image URL or upload file"
                                 className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50"
-                                required
-                            />
+                            required
+                        />
                             <label className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <Upload className="w-4 h-4" />
                                 <span className="text-sm font-medium">Upload</span>
@@ -1311,28 +1312,28 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 </div>
 
                 {/* Status & Ratings */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Status & Ratings</h3>
+                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
+                        <h3 className="text-lg font-bold text-white mb-4">Status & Ratings</h3>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="5"
-                                value={formData.rating || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Reviews Count</label>
-                            <input
-                                type="number"
-                                value={formData.reviews || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, reviews: parseInt(e.target.value) }))}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="5"
+                                    value={formData.rating || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Reviews Count</label>
+                                <input
+                                    type="number"
+                                    value={formData.reviews || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, reviews: parseInt(e.target.value) }))}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
                         </div>
@@ -1395,7 +1396,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
             }
         } else {
             // Editing existing car
-            onSave(formData);
+        onSave(formData);
             onClose();
         }
     };
@@ -1420,7 +1421,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
             //     .from('car-images')
             //     .getPublicUrl(data.path);
             // setFormData(prev => ({ ...prev, image: publicUrl }));
-
+            
             // Temporary: Create object URL for preview
             const objectUrl = URL.createObjectURL(file);
             setFormData(prev => ({ ...prev, image: objectUrl }));
@@ -1595,26 +1596,26 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                     <div className="p-6 text-center space-y-4">
                         <div className="text-green-400 mb-4">
                             <CheckCircle className="w-16 h-16 mx-auto" />
-                        </div>
+                    </div>
                         <h3 className="text-xl font-bold text-white">Car Added Successfully!</h3>
                         <p className="text-gray-300">You can now add more details in the edit section.</p>
                         <div className="flex gap-4 justify-center pt-4">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
-                            >
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
+                        >
                                 Close
-                            </button>
-                            <button
+                        </button>
+                        <button
                                 type="button"
                                 onClick={handleContinue}
-                                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
-                            >
+                            className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
+                        >
                                 Continue
                                 <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
+                        </button>
+                    </div>
                     </div>
                 )}
             </motion.div>
@@ -1830,50 +1831,50 @@ export const Admin: React.FC = () => {
                                         </button>
                                         {/* Mobile Language Selector */}
                                         <div className="relative language-dropdown-container">
-                                            <button
-                                                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                                                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
-                                            >
-                                                <span
-                                                    className={`fi ${currentLanguage === 'en'
-                                                        ? 'fi-gb'
-                                                        : currentLanguage === 'ru'
-                                                            ? 'fi-ru'
-                                                            : 'fi-ro'
-                                                        } w-5 h-4 rounded-sm`}
-                                                ></span>
-                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                            <AnimatePresence>
-                                                {showLanguageDropdown && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                        transition={{ duration: 0.2, ease: "easeOut" }}
-                                                        className="absolute top-full right-0 mt-2 border border-white/20 rounded-lg shadow-lg z-[9999] min-w-[140px]"
-                                                        style={{ backgroundColor: '#1F1F20' }}
-                                                    >
-                                                        {LANGUAGES.map(({ code, iconClass }) => (
-                                                            <button
-                                                                key={code}
-                                                                onClick={() => {
-                                                                    i18n.changeLanguage(code);
-                                                                    setCurrentLanguage(code);
-                                                                    setShowLanguageDropdown(false);
-                                                                    localStorage.setItem("selectedLanguage", code);
-                                                                }}
-                                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/20 transition-colors"
-                                                            >
-                                                                <span className={iconClass}></span>
-                                                                <span>{t(`languages.${code}`)}</span>
-                                                            </button>
-                                                        ))}
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
+                                        <button
+                                            onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                                            className="flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
+                                        >
+                                            <span
+                                                className={`fi ${currentLanguage === 'en'
+                                                    ? 'fi-gb'
+                                                    : currentLanguage === 'ru'
+                                                        ? 'fi-ru'
+                                                        : 'fi-ro'
+                                                    } w-5 h-4 rounded-sm`}
+                                            ></span>
+                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        <AnimatePresence>
+                                            {showLanguageDropdown && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                    transition={{ duration: 0.2, ease: "easeOut" }}
+                                                    className="absolute top-full right-0 mt-2 border border-white/20 rounded-lg shadow-lg z-[9999] min-w-[140px]"
+                                                    style={{ backgroundColor: '#1F1F20' }}
+                                                >
+                                                    {LANGUAGES.map(({ code, iconClass }) => (
+                                                        <button
+                                                            key={code}
+                                                            onClick={() => {
+                                                                i18n.changeLanguage(code);
+                                                                setCurrentLanguage(code);
+                                                                setShowLanguageDropdown(false);
+                                                                localStorage.setItem("selectedLanguage", code);
+                                                            }}
+                                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/20 transition-colors"
+                                                        >
+                                                            <span className={iconClass}></span>
+                                                            <span>{t(`languages.${code}`)}</span>
+                                                        </button>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                         </div>
                                     </div>
                                 </div>
@@ -1969,50 +1970,50 @@ export const Admin: React.FC = () => {
                                     </button>
                                     {/* Desktop Language Selector */}
                                     <div className="hidden lg:block relative language-dropdown-container z-[100]">
-                                        <button
-                                            onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                                            className="flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
-                                        >
-                                            <span
-                                                className={`fi ${currentLanguage === 'en'
-                                                    ? 'fi-gb'
-                                                    : currentLanguage === 'ru'
-                                                        ? 'fi-ru'
-                                                        : 'fi-ro'
-                                                    } w-5 h-4 rounded-sm`}
-                                            ></span>
-                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        <AnimatePresence>
-                                            {showLanguageDropdown && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                    transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute top-full right-0 mt-2 border border-white/20 rounded-lg shadow-lg z-[9999] min-w-[160px]"
-                                                    style={{ zIndex: 9999, backgroundColor: '#1F1F20' }}
-                                                >
-                                                    {LANGUAGES.map(({ code, iconClass }) => (
-                                                        <button
-                                                            key={code}
-                                                            onClick={() => {
-                                                                i18n.changeLanguage(code);
-                                                                setCurrentLanguage(code);
-                                                                setShowLanguageDropdown(false);
-                                                                localStorage.setItem("selectedLanguage", code);
-                                                            }}
-                                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/20 transition-colors"
-                                                        >
-                                                            <span className={iconClass}></span>
-                                                            <span>{t(`languages.${code}`)}</span>
-                                                        </button>
-                                                    ))}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
+                                    <button
+                                        onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                                        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
+                                    >
+                                        <span
+                                            className={`fi ${currentLanguage === 'en'
+                                                ? 'fi-gb'
+                                                : currentLanguage === 'ru'
+                                                    ? 'fi-ru'
+                                                    : 'fi-ro'
+                                                } w-5 h-4 rounded-sm`}
+                                        ></span>
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <AnimatePresence>
+                                        {showLanguageDropdown && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                                className="absolute top-full right-0 mt-2 border border-white/20 rounded-lg shadow-lg z-[9999] min-w-[160px]"
+                                                style={{ zIndex: 9999, backgroundColor: '#1F1F20' }}
+                                            >
+                                                {LANGUAGES.map(({ code, iconClass }) => (
+                                                    <button
+                                                        key={code}
+                                                        onClick={() => {
+                                                            i18n.changeLanguage(code);
+                                                            setCurrentLanguage(code);
+                                                            setShowLanguageDropdown(false);
+                                                            localStorage.setItem("selectedLanguage", code);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/20 transition-colors"
+                                                    >
+                                                        <span className={iconClass}></span>
+                                                        <span>{t(`languages.${code}`)}</span>
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                     </div>
                                 </div>
                             </div>
@@ -2020,14 +2021,14 @@ export const Admin: React.FC = () => {
 
                         {/* Content Area */}
                         <div className="flex-1 overflow-y-auto p-4 lg:p-8 relative z-0">
-                            <motion.div
-                                key={section}
+                                <motion.div
+                                    key={section}
                                 initial={{ opacity: 1 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0 }}
-                            >
-                                {renderContent()}
-                            </motion.div>
+                                >
+                                    {renderContent()}
+                                </motion.div>
                         </div>
                     </div>
                 </div>
