@@ -254,7 +254,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                                <Download className="w-4 h-4" />
+                                        <Download className="w-4 h-4" />
                                                 Download Contract PDF
                                             </>
                                         )}
