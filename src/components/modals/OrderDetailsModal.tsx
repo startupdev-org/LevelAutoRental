@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car, DollarSign, User, Mail, Download, FileText, Phone } from 'lucide-react';
+import { X, Calendar, Clock, Car, DollarSign, User, Mail, Download, FileText, Phone, Loader2 } from 'lucide-react';
 import { OrderDisplay } from '../../lib/orders';
 import { format } from 'date-fns';
 import { cars } from '../../data/cars';
+import { generateContractFromOrder } from '../../lib/contract';
 
 interface OrderDetailsModalProps {
     isOpen: boolean;
@@ -19,6 +20,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     order,
     orderNumber,
 }) => {
+    const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+
     if (!order) return null;
 
     const car = cars.find(c => c.id.toString() === order.carId);
@@ -60,61 +63,37 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         return name.substring(0, 2).toUpperCase();
     };
 
-    const downloadContract = () => {
-        // Generate contract content
-        const contractContent = `
-RENTAL CONTRACT
-Level Auto Rental
+    const downloadContract = async () => {
+        if (!car) {
+            alert('Car information not found. Cannot generate contract.');
+            return;
+        }
 
-Order Number: ${orderNumber ? `#${orderNumber.toString().padStart(4, '0')}` : `#${order.id.slice(0, 8)}`}
-Order ID: ${order.id}
-Type: ${order.type.toUpperCase()}
-Date: ${formatDate(order.createdAt)}
+        console.log('Starting contract generation...', { order, car, orderNumber });
+        setIsGeneratingContract(true);
+        try {
+            const contractNumber = orderNumber 
+                ? `CT-${orderNumber.toString().padStart(4, '0')}-${new Date().getFullYear()}`
+                : undefined;
 
-CUSTOMER INFORMATION
-Name: ${order.customerName}
-Email: ${order.customerEmail}
-Customer ID: ${order.userId}
-
-VEHICLE INFORMATION
-Vehicle: ${order.carName}
-Vehicle ID: ${order.carId}
-${car ? `Year: ${car.year} | Seats: ${car.seats} | Transmission: ${car.transmission}` : ''}
-
-RENTAL PERIOD
-Pickup Date: ${formatDate(order.startDate)} at ${order.startTime}
-Return Date: ${formatDate(order.endDate)} at ${order.endTime}
-Duration: ${days} day(s)
-
-FINANCIAL DETAILS
-${order.amount > 0 ? `Total Amount: ${order.amount.toFixed(2)} MDL` : 'Amount: Pending calculation'}
-Price per Day: ${car ? `${car.pricePerDay} MDL` : 'N/A'}
-
-STATUS
-Current Status: ${order.status}
-
-TERMS AND CONDITIONS
-1. The vehicle must be returned in the same condition as received.
-2. Any damages will be charged to the customer.
-3. Late returns may incur additional fees.
-4. Fuel must be returned at the same level as pickup.
-5. All traffic violations are the responsibility of the renter.
-
-This contract is generated automatically and is legally binding.
-
-Generated on: ${new Date().toLocaleString()}
-        `.trim();
-
-        // Create blob and download
-        const blob = new Blob([contractContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `rental-contract-${order.id}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+            await generateContractFromOrder(
+                order,
+                car,
+                contractNumber,
+                {
+                    customerPhone: order.customerPhone,
+                    // Additional data can be added here if available
+                    // customerAddress, customerIdNumber, etc.
+                }
+            );
+            console.log('Contract generation completed successfully');
+        } catch (error) {
+            console.error('Error generating contract:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Failed to generate contract: ${errorMessage}\n\nPlease check the browser console for more details.`);
+        } finally {
+            setIsGeneratingContract(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -265,11 +244,24 @@ Generated on: ${new Date().toLocaleString()}
                                     </h3>
                                     <button
                                         onClick={downloadContract}
-                                        className="w-full px-4 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-sm font-semibold"
+                                        disabled={isGeneratingContract || !car}
+                                        className="w-full px-4 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <Download className="w-4 h-4" />
-                                        Download Contract
+                                        {isGeneratingContract ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Generating Contract...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Download className="w-4 h-4" />
+                                                Download Contract PDF
+                                            </>
+                                        )}
                                     </button>
+                                    <p className="text-xs text-gray-400 mt-2 text-center">
+                                        Generates a complete Romanian rental contract with all annexes
+                                    </p>
                                 </div>
                             </div>
                     </motion.div>

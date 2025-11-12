@@ -32,7 +32,10 @@ import {
     CheckCircle,
     ArrowRight,
     Car as CarIcon,
-    RefreshCw
+    RefreshCw,
+    Download,
+    Loader2,
+    FileText
 } from 'lucide-react';
 import { getDateDiffInDays } from '../../utils/date';
 import Settings from '../dashboard/settings/Settings';
@@ -44,6 +47,7 @@ import { Car as CarType } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES } from '../../constants';
+import { generateContractFromOrder } from '../../lib/contract';
 
 // Dashboard View Component
 const DashboardView: React.FC = () => {
@@ -857,18 +861,64 @@ const OrdersView: React.FC = () => {
 // Order Details View Component
 const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     const navigate = useNavigate();
-    const order = orders.find((o) => o.id === orderId);
-    const car = order ? cars[Math.floor(Math.random() * 5)] : null;
+    const [ordersList, setOrdersList] = useState<OrderDisplay[]>([]);
+    const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+    
+    useEffect(() => {
+        const loadOrders = async () => {
+            try {
+                const { fetchRentalsOnly } = await import('../../lib/orders');
+                const data = await fetchRentalsOnly(cars);
+                const rentalsOnly = data.filter(order => order.type === 'rental');
+                setOrdersList(rentalsOnly);
+            } catch (error) {
+                console.error('Failed to load orders:', error);
+            }
+        };
+        loadOrders();
+    }, []);
+
+    const order = ordersList.find((o) => o.id === orderId);
+    const car = order ? cars.find(c => c.id.toString() === order.carId) : null;
     const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image);
 
     useEffect(() => {
         if (!order || !car) {
-            navigate('/admin?section=orders');
+            if (ordersList.length > 0) {
+                navigate('/admin?section=orders');
+            }
         } else {
             setSelectedImage(car.image);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }, [orderId, order, car, navigate]);
+    }, [orderId, order, car, navigate, ordersList.length]);
+
+    const handleDownloadContract = async () => {
+        if (!order || !car) {
+            alert('Order or car information not found. Cannot generate contract.');
+            return;
+        }
+
+        console.log('Starting contract generation...', { order, car });
+        setIsGeneratingContract(true);
+        try {
+            await generateContractFromOrder(
+                order,
+                car,
+                undefined,
+                {
+                    customerPhone: order.customerPhone || '',
+                } as any
+            );
+            console.log('Contract generation completed successfully');
+        } catch (error) {
+            console.error('Error generating contract:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Failed to generate contract: ${errorMessage}\n\nPlease check the browser console for more details.`);
+        } finally {
+            setIsGeneratingContract(false);
+        }
+    };
 
     if (!order || !car) return null;
 
@@ -914,28 +964,28 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Pickup</p>
-                                <span className="text-white text-sm font-medium">{order.pickupDate}</span>
+                                <span className="text-white text-sm font-medium">{new Date(order.startDate).toLocaleDateString()}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{order.pickupTime || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{order.startTime || '--:--'}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Return</p>
-                                <span className="text-white text-sm font-medium">{order.returnDate}</span>
+                                <span className="text-white text-sm font-medium">{new Date(order.endDate).toLocaleDateString()}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{order.returnTime || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{order.endTime || '--:--'}</span>
                             </div>
                         </div>
                     </div>
@@ -943,11 +993,11 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                         <div>
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Rental Days</p>
-                            <span className="text-white text-lg font-bold">{getDateDiffInDays(order.pickupDate, order.returnDate)}</span>
+                            <span className="text-white text-lg font-bold">{getDateDiffInDays(order.startDate, order.endDate)}</span>
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Price</p>
-                            <span className="text-white text-lg font-bold">{getDateDiffInDays(order.pickupDate, order.returnDate) * car.pricePerDay} MDL</span>
+                            <span className="text-white text-lg font-bold">{order.amount > 0 ? `${order.amount} MDL` : `${getDateDiffInDays(order.startDate, order.endDate) * car.pricePerDay} MDL`}</span>
                         </div>
                     </div>
 
@@ -981,8 +1031,11 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                             C
                         </div>
                         <div>
-                            <div className="text-white font-semibold">{order.customer}</div>
+                            <div className="text-white font-semibold">{order.customerName}</div>
                             <div className="text-gray-300 text-sm">{order.customerEmail}</div>
+                            {order.customerPhone && (
+                                <div className="text-gray-300 text-sm mt-1">{order.customerPhone}</div>
+                            )}
                         </div>
                     </div>
                 </motion.div>
@@ -1009,18 +1062,6 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                     </div>
                 </motion.div>
 
-                {/* Notes */}
-                {order.notes && (
-                    <motion.div
-                        initial={{ opacity: 1, y: 0 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.4 }}
-                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
-                    >
-                        <h2 className="text-xl font-bold text-white mb-4">Notes</h2>
-                        <p className="text-gray-300 text-sm leading-relaxed">{order.notes}</p>
-                    </motion.div>
-                )}
             </div>
 
             {/* RIGHT COLUMN: Actions */}
@@ -1031,6 +1072,24 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                     transition={{ duration: 0.4 }}
                     className="sticky top-24 space-y-3"
                 >
+                    <button
+                        onClick={handleDownloadContract}
+                        disabled={isGeneratingContract}
+                        className="w-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isGeneratingContract ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Download className="w-4 h-4" />
+                                <FileText className="w-4 h-4" />
+                                Download Contract
+                            </>
+                        )}
+                    </button>
                     <button
                         className="w-full bg-white/10 backdrop-blur-xl hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg"
                         onClick={() => navigate(`/admin?section=orders&orderId=${order.id}&edit=true`)}
