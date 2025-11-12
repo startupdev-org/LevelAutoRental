@@ -223,11 +223,14 @@ export const UserDashboard: React.FC = () => {
           />
           <div className="absolute inset-0 bg-black/80"></div>
 
+
+          {/* Dashboard box */}
           <div className="relative z-10 container mx-auto px-4 max-w-7xl">
+
+
             {/* Dashboard Grid */}
-
-
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
               {/* Sidebar */}
               <motion.div
                 initial={{ x: -50, opacity: 0 }}
@@ -247,7 +250,7 @@ export const UserDashboard: React.FC = () => {
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="lg:col-span-3"
+                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 shadow-lg lg:col-span-3"
               >
                 <div className="space-y-6">
                   <AnimatePresence>
@@ -261,7 +264,9 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.overview.title')}</h2>
+                        <div>
+                          <h2 className="text-4xl font-bold text-white">{t('dashboard.overview.title')}</h2>
+                        </div>
 
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -502,7 +507,7 @@ export const UserDashboard: React.FC = () => {
                         className="space-y-6"
                       >
                         <div className="flex justify-between items-center">
-                          <h2 className="text-4xl font-bold text-red-600">Car's Calendar</h2>
+                          <h2 className="text-4xl font-bold text-white">Car Calendar</h2>
                         </div>
 
                         <CalendarPage viewMode='user' />
