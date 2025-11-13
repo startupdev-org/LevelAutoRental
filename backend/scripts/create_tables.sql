@@ -101,3 +101,10 @@ CREATE TABLE IF NOT EXISTS "Features" (
     "feature" VARCHAR(255) NOT NULL,
     FOREIGN KEY ("car_id") REFERENCES "Cars"("id") ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS "Rental_Features" (
+    "id" SERIAL PRIMARY KEY,
+    "rental_id" INTEGER NOT NULL,
+    "feature" VARCHAR(255) NOT NULL,
+    FOREIGN KEY ("rental_id") REFERENCES "Rentals"("id") ON DELETE CASCADE
+);
