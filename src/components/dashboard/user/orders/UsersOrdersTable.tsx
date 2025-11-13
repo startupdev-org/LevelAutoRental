@@ -177,7 +177,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                         </div>
                         <button
                             onClick={handleAddOrder}
-                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                            className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                         >
                             <Plus className="w-4 h-4" />
                             Make a new request

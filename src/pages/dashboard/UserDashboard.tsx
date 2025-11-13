@@ -324,10 +324,11 @@ export const UserDashboard: React.FC = () => {
                       >
                         <h2 className="text-4xl font-bold text-white">{t('dashboard.bookings.title')}</h2>
 
+                        {/* Current Borrowed Cars */}
                         {orders.length > 0 ? (
                           <div className="space-y-4">
                             {orders
-                              .filter((order) => order.status === 'active') // doar comenzile în uz
+                              .filter((order) => order.status.toLowerCase() === 'active') // doar comenzile în uz
                               .map((order) => (
                                 <div
                                   key={order.id}
@@ -343,27 +344,33 @@ export const UserDashboard: React.FC = () => {
 
                                     <div className="flex-1">
                                       {/* Car name */}
-                                      <h3 className="font-semibold text-white text-lg mb-2">carName</h3>
+                                      <h3 className="font-semibold text-white text-lg mb-2">car_name</h3>
 
                                       {/* Dates & pickup location */}
-                                      <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                                      <div className="flex items-center gap-4 text-sm font-semibold text-gray-400 mb-2">
                                         <span className="flex items-center gap-1">
                                           <Calendar size={14} />
-                                          {formatDate(order.pickupDate)} - {formatDate(order.returnDate)}
+                                          {formatDate(order.pickupDate)} {order.pickupTime} - {formatDate(order.returnDate)} {order.returnTime}
                                         </span>
                                       </div>
 
+                                      {/* Total amount */}
+                                      <div className="text-sm font-semibold text-gray-300 mb-2">
+                                        <span className="font-semibold">Total:</span> {order.total_amount} MDL
+                                      </div>
+
                                       {/* Status */}
-                                      <div className="flex items-center gap-2 mb-2">
+                                      {/* <div className="flex items-center gap-2 mb-2">
                                         <span
-                                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(
+                                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-semibold ${getStatusColor(
                                             order.status
                                           )}`}
                                         >
                                           {getStatusIcon(order.status)}
                                           <span className="capitalize">{order.status}</span>
                                         </span>
-                                      </div>
+                                      </div> */}
+
                                     </div>
 
                                     {/* Actions */}
@@ -386,7 +393,6 @@ export const UserDashboard: React.FC = () => {
                                   </div>
                                 </div>
                               ))}
-
                           </div>
                         ) : (
                           <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
@@ -402,8 +408,8 @@ export const UserDashboard: React.FC = () => {
                           </div>
                         )}
 
-                        <UserOrdersTable title={'Istoricul rezervarilor'} />
 
+                        <UserOrdersTable title={'Istoricul rezervarilor'} />
 
                       </motion.div>
                     )}
