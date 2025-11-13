@@ -676,9 +676,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION V: PREȚUL CONTRACTULUI
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionVCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionVCheck.y;
+    currentPage = sectionVCheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -735,9 +736,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION VI: DREPTURILE, OBLIGAȚIILE ȘI RĂSPUNDEREA LOCATARULUI
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionVICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionVICheck.y;
+    currentPage = sectionVICheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -840,9 +842,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION VII: OBLIGAȚIILE LOCATORULUI
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionVIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionVIICheck.y;
+    currentPage = sectionVIICheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -865,9 +868,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION VIII: REPARAȚII ȘI ACCIDENTE MECANICE
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionVIIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionVIIICheck.y;
+    currentPage = sectionVIIICheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -897,9 +901,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION IX: RETURNAREA AUTOVEHICULUI
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionIXCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionIXCheck.y;
+    currentPage = sectionIXCheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -927,9 +932,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION X: ASIGURARE
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionXCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionXCheck.y;
+    currentPage = sectionXCheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -950,9 +956,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION XI: EVENIMENTE NEACOPERITE DE ASIGURARE
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionXICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionXICheck.y;
+    currentPage = sectionXICheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -1015,9 +1022,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION XII: ÎNCĂLCAREA REGULAMENTULUI CIRCULAȚIEI RUTIERE
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionXIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionXIICheck.y;
+    currentPage = sectionXIICheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -1043,9 +1051,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION XIII: ÎNCETAREA CONTRACTULUI
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionXIIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionXIIICheck.y;
+    currentPage = sectionXIIICheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -1065,9 +1074,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION XIV: REZERVĂRI / ACHITĂRI
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionXIVCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionXIVCheck.y;
+    currentPage = sectionXIVCheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -1088,9 +1098,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION XV: CLAUZA DE PENALITATE ÎN CAZUL REFUZULUI DE A RETURNA AUTOVEHICULUL
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionXVCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionXVCheck.y;
+    currentPage = sectionXVCheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -1118,9 +1129,10 @@ export const generateContractPDF = async (data: ContractData) => {
     // ============================================
     // SECTION XVI: CONFIDENȚIALITATEA
     // ============================================
-    currentPage++;
-    doc.addPage();
-    y = margin;
+    // Check page break before starting new section
+    const sectionXVICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
+    y = sectionXVICheck.y;
+    currentPage = sectionXVICheck.currentPage;
     
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
