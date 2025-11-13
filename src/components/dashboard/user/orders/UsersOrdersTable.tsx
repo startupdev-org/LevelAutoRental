@@ -217,19 +217,6 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                                 {sortBy !== 'date' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
                             </button>
                             <button
-                                onClick={() => handleSort('customer')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'customer'
-                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                    }`}
-                            >
-                                Customer
-                                {sortBy === 'customer' && (
-                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                )}
-                                {sortBy !== 'customer' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                            </button>
-                            <button
                                 onClick={() => handleSort('amount')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'amount'
                                     ? 'bg-red-500/20 text-red-300 border-red-500/50'

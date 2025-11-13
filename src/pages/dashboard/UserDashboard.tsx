@@ -23,11 +23,12 @@ import {
   Eye,
   Download,
   Star,
-  Truck
+  Truck,
+  Plus
 } from 'lucide-react';
 import { UserDashboardSidebar } from '../../components/dashboard/sidebar/UserDashboardSidebar';
 import CalendarPage from './calendar/CalendarPage';
-import { UserOrdersTable } from '../../components/dashboard/user/orders/OrdersTable';
+import { UserOrdersTable } from '../../components/dashboard/user/orders/UsersOrdersTable';
 
 import { orders } from '../../data/index'
 
@@ -367,14 +368,20 @@ export const UserDashboard: React.FC = () => {
 
                                     {/* Actions */}
                                     <div className="text-right flex flex-col gap-2">
-                                      <button className="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
-                                        <Eye size={14} />
-                                        {t('dashboard.bookings.details')}
-                                      </button>
-                                      <button className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
-                                        <Download size={14} />
-                                        {t('dashboard.bookings.receipt')}
-                                      </button>
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <button
+                                          className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                                        >
+                                          <Plus className="w-4 h-4" />
+                                          {t('dashboard.bookings.details')}
+                                        </button>
+                                        <button
+                                          className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                                        >
+                                          <Download size={14} />
+                                          {t('dashboard.bookings.receipt')}
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
