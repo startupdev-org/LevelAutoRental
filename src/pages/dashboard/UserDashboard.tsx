@@ -23,10 +23,14 @@ import {
   Eye,
   Download,
   Star,
-  Truck
+  Truck,
+  Plus
 } from 'lucide-react';
-import { UserDashboardSidebar } from '../../components/dashboard/UserDashboardSidebar';
+import { UserDashboardSidebar } from '../../components/dashboard/sidebar/UserDashboardSidebar';
 import CalendarPage from './calendar/CalendarPage';
+import { UserOrdersTable } from '../../components/dashboard/user/orders/UsersOrdersTable';
+
+import { orders } from '../../data/index'
 
 interface Booking {
   id: string;
@@ -34,7 +38,7 @@ interface Booking {
   carImage: string;
   startDate: string;
   endDate: string;
-  status: 'upcoming' | 'active' | 'completed';
+  status: string;
   totalPrice: number;
   pickupLocation: string;
 }
@@ -72,29 +76,6 @@ export const UserDashboard: React.FC = () => {
     newsletter: true
   });
 
-  // Mock bookings data
-  const mockBookings: Booking[] = [
-    {
-      id: '1',
-      carName: 'Mercedes C43 AMG',
-      carImage: '/LevelAutoRental/cars/c43/c43-1.jpg',
-      startDate: '2025-11-10',
-      endDate: '2025-11-15',
-      status: 'upcoming',
-      totalPrice: 450,
-      pickupLocation: 'Airport Terminal 1'
-    },
-    {
-      id: '2',
-      carName: 'BMW X4 M40i',
-      carImage: '/LevelAutoRental/cars/x4/x4-1.jpg',
-      startDate: '2025-10-20',
-      endDate: '2025-10-25',
-      status: 'completed',
-      totalPrice: 375,
-      pickupLocation: 'City Center'
-    }
-  ];
 
   const handleLogout = async () => {
     await signOut();
@@ -131,7 +112,7 @@ export const UserDashboard: React.FC = () => {
 
   const getStatusIcon = (status: Booking['status']) => {
     switch (status) {
-      case 'upcoming':
+      case 'Pending':
         return <Clock className="w-3 h-3" />;
       case 'active':
         return <Truck className="w-3 h-3" />;
@@ -275,7 +256,7 @@ export const UserDashboard: React.FC = () => {
                               <Calendar className="text-red-600" size={24} />
                               <h3 className="font-semibold">{t('dashboard.overview.totalBookings')}</h3>
                             </div>
-                            <p className="text-3xl font-bold text-red-600">{mockBookings.length}</p>
+                            <p className="text-3xl font-bold text-red-600">{orders.length}</p>
                             <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeBookings')}</p>
                           </div>
 
@@ -284,7 +265,7 @@ export const UserDashboard: React.FC = () => {
                               <DollarSign className="text-red-600" size={24} />
                               <h3 className="font-semibold">{t('dashboard.overview.totalSpent')}</h3>
                             </div>
-                            <p className="text-3xl font-bold text-red-600">€{mockBookings.reduce((sum, b) => sum + b.totalPrice, 0)}</p>
+                            {/* <p className="text-3xl font-bold text-red-600">€{orders.reduce((sum, b) => sum + b.totalPrice, 0)}</p> */}
                             <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeSpending')}</p>
                           </div>
 
@@ -310,15 +291,15 @@ export const UserDashboard: React.FC = () => {
                             </button>
                           </div>
                           <div className="space-y-4">
-                            {mockBookings.slice(0, 2).map((booking) => (
+                            {orders.slice(0, 2).map((booking) => (
                               <div key={booking.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300">
-                                <img src={booking.carImage} alt={booking.carName} className="w-20 h-20 rounded-lg object-cover" />
+                                <img src={booking.carId} alt={booking.carId} className="w-20 h-20 rounded-lg object-cover" />
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-white">{booking.carName}</h4>
-                                  <p className="text-gray-400 text-sm">{formatDate(booking.startDate)}</p>
+                                  {/* <h4 className="font-semibold text-white">{booking.carName}</h4> */}
+                                  {/* <p className="text-gray-400 text-sm">{formatDate(booking.startDate)}</p> */}
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-lg font-bold text-red-600">€{booking.totalPrice}</div>
+                                  {/* <div className="text-lg font-bold text-red-600">€{booking.totalPrice}</div> */}
                                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(booking.status)}`}>
                                     {getStatusIcon(booking.status)}
                                     <span className="capitalize">{t(`dashboard.status.${booking.status}`)}</span>
@@ -341,51 +322,77 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.bookings.title')}</h2>
+                        <h2 className="text-4xl font-bold text-white">{t('dashboard.bookings.title')}</h2>
 
-                        {mockBookings.length > 0 ? (
+                        {/* Current Borrowed Cars */}
+                        {orders.length > 0 ? (
                           <div className="space-y-4">
-                            {mockBookings.map((booking) => (
-                              <div key={booking.id} className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300">
-                                <div className="flex items-center gap-4">
-                                  <img src={booking.carImage} alt={booking.carName} className="w-24 h-24 rounded-lg object-cover" />
+                            {orders
+                              .filter((order) => order.status.toLowerCase() === 'active') // doar comenzile în uz
+                              .map((order) => (
+                                <div
+                                  key={order.id}
+                                  className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300"
+                                >
+                                  <div className="flex items-center gap-4">
+                                    {/* Optional car image */}
+                                    <img
+                                      src={order.avatar}
+                                      alt={order.carId}
+                                      className="w-24 h-24 rounded-lg object-cover"
+                                    />
 
-                                  <div className="flex-1">
-                                    <h3 className="font-semibold text-white text-lg mb-1">{booking.carName}</h3>
-                                    <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                                      <span className="flex items-center gap-1">
-                                        <Calendar size={14} />
-                                        {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                        <MapPin size={14} />
-                                        {booking.pickupLocation}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(booking.status)}`}>
-                                        {getStatusIcon(booking.status)}
-                                        <span className="capitalize">{booking.status}</span>
-                                      </span>
-                                    </div>
-                                  </div>
+                                    <div className="flex-1">
+                                      {/* Car name */}
+                                      <h3 className="font-semibold text-white text-lg mb-2">car_name</h3>
 
-                                  <div className="text-right">
-                                    <div className="text-2xl font-bold text-white mb-2">€{booking.totalPrice}</div>
-                                    <div className="flex gap-2">
-                                      <button className="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
-                                        <Eye size={14} />
-                                        {t('dashboard.bookings.details')}
-                                      </button>
-                                      <button className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
-                                        <Download size={14} />
-                                        {t('dashboard.bookings.receipt')}
-                                      </button>
+                                      {/* Dates & pickup location */}
+                                      <div className="flex items-center gap-4 text-sm font-semibold text-gray-400 mb-2">
+                                        <span className="flex items-center gap-1">
+                                          <Calendar size={14} />
+                                          {formatDate(order.pickupDate)} {order.pickupTime} - {formatDate(order.returnDate)} {order.returnTime}
+                                        </span>
+                                      </div>
+
+                                      {/* Total amount */}
+                                      <div className="text-sm font-semibold text-gray-300 mb-2">
+                                        <span className="font-semibold">Total:</span> {order.total_amount} MDL
+                                      </div>
+
+                                      {/* Status */}
+                                      {/* <div className="flex items-center gap-2 mb-2">
+                                        <span
+                                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-semibold ${getStatusColor(
+                                            order.status
+                                          )}`}
+                                        >
+                                          {getStatusIcon(order.status)}
+                                          <span className="capitalize">{order.status}</span>
+                                        </span>
+                                      </div> */}
+
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="text-right flex flex-col gap-2">
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <button
+                                          className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                                        >
+                                          <Plus className="w-4 h-4" />
+                                          {t('dashboard.bookings.details')}
+                                        </button>
+                                        <button
+                                          className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                                        >
+                                          <Download size={14} />
+                                          {t('dashboard.bookings.receipt')}
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         ) : (
                           <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
@@ -400,6 +407,10 @@ export const UserDashboard: React.FC = () => {
                             </button>
                           </div>
                         )}
+
+
+                        <UserOrdersTable title={'Istoricul rezervarilor'} />
+
                       </motion.div>
                     )}
 
@@ -414,7 +425,7 @@ export const UserDashboard: React.FC = () => {
                         className="space-y-6"
                       >
                         <div className="flex justify-between items-center">
-                          <h2 className="text-4xl font-bold text-red-600">{t('dashboard.profile.title')}</h2>
+                          <h2 className="text-4xl font-bold text-white">{t('dashboard.profile.title')}</h2>
                           <button
                             onClick={() => setIsEditing(!isEditing)}
                             className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2"
@@ -524,7 +535,7 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <h2 className="text-4xl font-bold text-red-600 mb-6">{t('dashboard.settings.title')}</h2>
+                        <h2 className="text-4xl font-bold text-white">{t('dashboard.settings.title')}</h2>
 
                         {/* Password Change */}
                         <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">

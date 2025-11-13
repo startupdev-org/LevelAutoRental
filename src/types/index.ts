@@ -62,3 +62,19 @@ export interface User {
   email: string;
   role: string;
 };
+
+export interface Orders {
+  id: number,
+  carId: string,
+  userId: string,
+  avatar: string,
+  pickupDate: string,
+  returnDate: string,
+  pickupTime: string,
+  returnTime: string,
+
+  total_amount: string,
+
+
+  status: string
+}

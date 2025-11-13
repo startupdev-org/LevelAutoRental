@@ -2,8 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { User, LogOut, Home, Calendar, Settings, Car } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../hooks/useAuth';
-import { TabType } from '../../pages/dashboard/UserDashboard';
+import { useAuth } from '../../../hooks/useAuth';
+import { TabType } from '../../../pages/dashboard/UserDashboard';
 
 interface SidebarItem {
     id: TabType;
