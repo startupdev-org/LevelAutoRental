@@ -396,6 +396,7 @@ export const OrdersViewSection: React.FC = () => {
     }, [orders]);
 
     const handleOrderClick = (order: OrderDisplay, orderNum: number) => {
+        console.log('handling order click for order: ', order)
         setSelectedOrder(order);
         setOrderNumber(orderNum);
         setIsModalOpen(true);

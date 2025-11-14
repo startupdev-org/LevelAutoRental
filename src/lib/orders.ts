@@ -50,22 +50,19 @@ export interface Rental {
 }
 
 export interface OrderDisplay {
-  id: string;
-  type: 'request' | 'rental';
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  carName: string;
-  carImage: string;
-  startDate: string;
-  startTime: string;
-  endDate: string;
-  endTime: string;
-  status: string;
-  amount: number;
-  createdAt: string;
-  carId: string;
-  userId: string;
+  id: number,
+  carId: string,
+  userId: string,
+  avatar: string,
+  pickupDate: string,
+  returnDate: string,
+  pickupTime: string,
+  returnTime: string,
+
+  total_amount: string,
+
+
+  status: string
 }
 
 /**
@@ -133,7 +130,7 @@ export async function fetchRentals(): Promise<Rental[]> {
  */
 async function fetchUserProfiles(userIds: string[]): Promise<Map<string, { email: string; firstName?: string; lastName?: string; phone?: string }>> {
   const profileMap = new Map<string, { email: string; firstName?: string; lastName?: string; phone?: string }>();
-  
+
   if (userIds.length === 0) return profileMap;
 
   try {
@@ -186,14 +183,14 @@ function generateMockOrders(cars: Car[]): OrderDisplay[] {
     const daysAgo = i * 2;
     const createdDate = new Date(now);
     createdDate.setDate(createdDate.getDate() - daysAgo);
-    
+
     const startDate = new Date(now);
     startDate.setDate(startDate.getDate() + (i + 1) * 3);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + (i % 3) + 2);
 
     const statuses: ('PENDING' | 'APPROVED' | 'REJECTED')[] = ['PENDING', 'APPROVED', 'REJECTED', 'PENDING', 'APPROVED'];
-    
+
     mockOrders.push({
       id: `req-${Date.now()}-${i}`,
       type: 'request',
@@ -220,7 +217,7 @@ function generateMockOrders(cars: Car[]): OrderDisplay[] {
     const daysAgo = i * 1.5;
     const createdDate = new Date(now);
     createdDate.setDate(createdDate.getDate() - Math.floor(daysAgo));
-    
+
     const startDate = new Date(now);
     startDate.setDate(startDate.getDate() - (i % 4));
     const endDate = new Date(startDate);
@@ -230,7 +227,7 @@ function generateMockOrders(cars: Car[]): OrderDisplay[] {
     const amount = car.pricePerDay * days;
 
     const statuses: ('ACTIVE' | 'COMPLETED' | 'CANCELLED')[] = ['ACTIVE', 'COMPLETED', 'ACTIVE', 'COMPLETED', 'COMPLETED', 'ACTIVE', 'COMPLETED', 'CANCELLED'];
-    
+
     mockOrders.push({
       id: `rental-${Date.now()}-${i}`,
       type: 'rental',
@@ -251,7 +248,7 @@ function generateMockOrders(cars: Car[]): OrderDisplay[] {
   }
 
   // Sort by creation date (newest first)
-  return mockOrders.sort((a, b) => 
+  return mockOrders.sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
@@ -285,12 +282,12 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       const phone = profile?.phone || '';
       const firstName = profile?.firstName || '';
       const lastName = profile?.lastName || '';
-      const userName = (firstName && lastName) 
+      const userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
-        ? `${firstName}${lastName}`
-        : (email ? email.split('@')[0] : '')
-        || `User ${rental.user_id.slice(0, 8)}`;
+          ? `${firstName}${lastName}`
+          : (email ? email.split('@')[0] : '')
+          || `User ${rental.user_id.slice(0, 8)}`;
 
       // Calculate amount based on days and car price
       const startDate = new Date(rental.start_date);
@@ -319,7 +316,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
     });
 
     // Sort by creation date (newest first)
-    return orders.sort((a, b) => 
+    return orders.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } catch (error) {
@@ -354,7 +351,7 @@ function generateMockRentals(cars: Car[]): OrderDisplay[] {
     const daysAgo = i * 1.5;
     const createdDate = new Date(now);
     createdDate.setDate(createdDate.getDate() - Math.floor(daysAgo));
-    
+
     const startDate = new Date(now);
     startDate.setDate(startDate.getDate() - (i % 4));
     const endDate = new Date(startDate);
@@ -364,7 +361,7 @@ function generateMockRentals(cars: Car[]): OrderDisplay[] {
     const amount = car.pricePerDay * days;
 
     const statuses: ('ACTIVE' | 'COMPLETED' | 'CANCELLED')[] = ['ACTIVE', 'COMPLETED', 'ACTIVE', 'COMPLETED', 'COMPLETED', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'ACTIVE', 'COMPLETED'];
-    
+
     mockOrders.push({
       id: `rental-${Date.now()}-${i}`,
       type: 'rental',
@@ -386,7 +383,7 @@ function generateMockRentals(cars: Car[]): OrderDisplay[] {
   }
 
   // Sort by creation date (newest first)
-  return mockOrders.sort((a, b) => 
+  return mockOrders.sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
@@ -423,12 +420,12 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       const email = profile?.email || request.user?.email || '';
       const firstName = profile?.firstName || '';
       const lastName = profile?.lastName || '';
-      const userName = (firstName && lastName) 
+      const userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
-        ? `${firstName}${lastName}`
-        : (email ? email.split('@')[0] : '')
-        || `User ${request.user_id.slice(0, 8)}`;
+          ? `${firstName}${lastName}`
+          : (email ? email.split('@')[0] : '')
+          || `User ${request.user_id.slice(0, 8)}`;
 
       orders.push({
         id: request.id,
@@ -456,12 +453,12 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       const email = profile?.email || rental.user?.email || '';
       const firstName = profile?.firstName || '';
       const lastName = profile?.lastName || '';
-      const userName = (firstName && lastName) 
+      const userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
-        ? `${firstName}${lastName}`
-        : (email ? email.split('@')[0] : '')
-        || `User ${rental.user_id.slice(0, 8)}`;
+          ? `${firstName}${lastName}`
+          : (email ? email.split('@')[0] : '')
+          || `User ${rental.user_id.slice(0, 8)}`;
 
       // Calculate amount based on days and car price
       const startDate = new Date(rental.start_date);
@@ -489,7 +486,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
     });
 
     // Sort by creation date (newest first)
-    return orders.sort((a, b) => 
+    return orders.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } catch (error) {

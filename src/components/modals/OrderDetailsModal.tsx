@@ -25,8 +25,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     if (!order) return null;
 
     const car = cars.find(c => c.id.toString() === order.carId);
-    const startDate = new Date(order.startDate);
-    const endDate = new Date(order.endDate);
+    const startDate = new Date(order.pickupDate);
+    const endDate = new Date(order.returnDate);
     const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
 
     const formatDate = (dateString: string) => {
@@ -72,7 +72,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         console.log('Starting contract generation...', { order, car, orderNumber });
         setIsGeneratingContract(true);
         try {
-            const contractNumber = orderNumber 
+            const contractNumber = orderNumber
                 ? `CT-${orderNumber.toString().padStart(4, '0')}-${new Date().getFullYear()}`
                 : undefined;
 
@@ -81,7 +81,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 car,
                 contractNumber,
                 {
-                    customerPhone: order.customerPhone,
+                    // customerPhone: order.customerPhone,
                     // Additional data can be added here if available
                     // customerAddress, customerIdNumber, etc.
                 }
@@ -118,152 +118,153 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     >
                         {/* Header */}
                         <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Order Details</h2>
-                                    <p className="text-gray-400 text-sm mt-1">
-                                        Order #{orderNumber ? orderNumber.toString().padStart(4, '0') : 'N/A'}
-                                    </p>
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">Order Details</h2>
+                                <p className="text-gray-400 text-sm mt-1">
+                                    Order #{orderNumber ? orderNumber.toString().padStart(4, '0') : 'N/A'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-white" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-6">
+                            {/* Customer Information */}
+                            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <User className="w-5 h-5" />
+                                    Customer Information
+                                </h3>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+                                        {/* {getInitials(order.customerName)} */}
+                                        C
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-white font-semibold text-lg">customer_name</p>
+                                        {/* {order.customerEmail && (
+                                            <div className="flex items-center gap-2 mt-2 text-gray-300">
+                                                <Mail className="w-4 h-4" />
+                                                <span className="text-sm">{order.customerEmail}</span>
+                                            </div>
+                                        )} */}
+                                        {/* {order.customerPhone && (
+                                            <a
+                                                href={`tel:${order.customerPhone.replace(/\s/g, '')}`}
+                                                className="flex items-center gap-2 mt-2 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                                            >
+                                                <Phone className="w-4 h-4" />
+                                                <span className="text-sm">{order.customerPhone}</span>
+                                            </a>
+                                        )} */}
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-white" />
-                                </button>
                             </div>
 
-                            {/* Content */}
-                            <div className="p-6 space-y-6">
-                                {/* Customer Information */}
-                                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <User className="w-5 h-5" />
-                                        Customer Information
+                            {/* Rental Period */}
+                            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <Calendar className="w-5 h-5" />
+                                        Rental Period
                                     </h3>
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                                            {getInitials(order.customerName)}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-white font-semibold text-lg">{order.customerName}</p>
-                                            {order.customerEmail && (
-                                                <div className="flex items-center gap-2 mt-2 text-gray-300">
-                                                    <Mail className="w-4 h-4" />
-                                                    <span className="text-sm">{order.customerEmail}</span>
-                                                </div>
-                                            )}
-                                            {order.customerPhone && (
-                                                <a
-                                                    href={`tel:${order.customerPhone.replace(/\s/g, '')}`}
-                                                    className="flex items-center gap-2 mt-2 text-gray-300 hover:text-white transition-colors cursor-pointer"
-                                                >
-                                                    <Phone className="w-4 h-4" />
-                                                    <span className="text-sm">{order.customerPhone}</span>
-                                                </a>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Rental Period */}
-                                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                            <Calendar className="w-5 h-5" />
-                                            Rental Period
-                                        </h3>
-                                        <div className="flex items-center gap-2">
-                                            {order.carImage && (
-                                                <img
-                                                    src={order.carImage}
-                                                    alt={order.carName}
-                                                    className="w-12 h-8 object-cover rounded-md border border-white/10"
-                                                />
-                                            )}
-                                            <span className="text-white font-semibold text-sm">{order.carName}</span>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                            <p className="text-gray-400 text-sm mb-2">Pickup</p>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Calendar className="w-4 h-4 text-gray-400" />
-                                                <span className="text-white font-semibold">{formatDate(order.startDate)}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="w-4 h-4 text-gray-400" />
-                                                <span className="text-gray-300">{order.startTime}</span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                            <p className="text-gray-400 text-sm mb-2">Return</p>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Calendar className="w-4 h-4 text-gray-400" />
-                                                <span className="text-white font-semibold">{formatDate(order.endDate)}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="w-4 h-4 text-gray-400" />
-                                                <span className="text-gray-300">{order.endTime}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 pt-4 border-t border-white/10">
-                                        <p className="text-gray-400 text-sm">Duration: <span className="text-white font-semibold">{days} day(s)</span></p>
-                                    </div>
-                                </div>
-
-                                {/* Financial Details */}
-                                {order.amount > 0 && (
-                                    <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                            <DollarSign className="w-5 h-5" />
-                                            Financial Details
-                                        </h3>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-300">Price per Day</span>
-                                                <span className="text-white font-semibold">{car ? `${car.pricePerDay} MDL` : 'N/A'}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-300">Rental Days</span>
-                                                <span className="text-white font-semibold">{days}</span>
-                                            </div>
-                                            <div className="pt-2 border-t border-white/10 flex justify-between items-center">
-                                                <span className="text-white font-semibold text-lg">Total Amount</span>
-                                                <span className="text-emerald-400 font-bold text-xl">{order.amount.toFixed(2)} MDL</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Contract Download */}
-                                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <FileText className="w-5 h-5" />
-                                        Contract
-                                    </h3>
-                                    <button
-                                        onClick={downloadContract}
-                                        disabled={isGeneratingContract || !car}
-                                        className="w-full px-4 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isGeneratingContract ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                Generating Contract...
-                                            </>
-                                        ) : (
-                                            <>
-                                        <Download className="w-4 h-4" />
-                                                Download Contract PDF
-                                            </>
+                                    <div className="flex items-center gap-2">
+                                        {order.avatar && (
+                                            <img
+                                                src={order.avatar}
+                                                // alt={order.carName}
+                                                className="w-12 h-8 object-cover rounded-md border border-white/10"
+                                            />
                                         )}
-                                    </button>
-                                    <p className="text-xs text-gray-400 mt-2 text-center">
-                                        Generates a complete Romanian rental contract with all annexes
-                                    </p>
+                                        <span className="text-white font-semibold text-sm">car_name</span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                                        <p className="text-gray-400 text-sm mb-2">Pickup</p>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Calendar className="w-4 h-4 text-gray-400" />
+                                            <span className="text-white font-semibold">{formatDate(order.pickupDate)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-gray-400" />
+                                            <span className="text-gray-300">{order.pickupTime}</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                                        <p className="text-gray-400 text-sm mb-2">Return</p>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Calendar className="w-4 h-4 text-gray-400" />
+                                            <span className="text-white font-semibold">{formatDate(order.returnDate)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-gray-400" />
+                                            <span className="text-gray-300">{order.returnTime}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-white/10">
+                                    <p className="text-gray-400 text-sm">Duration: <span className="text-white font-semibold">{days} day(s)</span></p>
                                 </div>
                             </div>
+
+                            {/* Financial Details */}
+                            {(
+                                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                        <DollarSign className="w-5 h-5" />
+                                        Financial Details
+                                    </h3>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-300">Price per Day</span>
+                                            <span className="text-white font-semibold">{car ? `${car.pricePerDay} MDL` : 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-300">Rental Days</span>
+                                            <span className="text-white font-semibold">{days}</span>
+                                        </div>
+                                        <div className="pt-2 border-t border-white/10 flex justify-between items-center">
+                                            <span className="text-white font-semibold text-lg">Total Amount</span>
+                                            <span className="text-emerald-400 font-bold text-xl">{order.total_amount} MDL</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Contract Download */}
+                            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <FileText className="w-5 h-5" />
+                                    Contract
+                                </h3>
+                                <button
+                                    onClick={downloadContract}
+                                    disabled={isGeneratingContract || !car}
+                                    className="w-full px-4 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isGeneratingContract ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Generating Contract...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download className="w-4 h-4" />
+                                            Download Contract PDF
+                                        </>
+                                    )}
+                                </button>
+                                <p className="text-xs text-gray-400 mt-2 text-center">
+                                    Generates a complete Romanian rental contract with all annexes
+                                </p>
+                            </div>
+                        </div>
                     </motion.div>
                 </motion.div>
             )}

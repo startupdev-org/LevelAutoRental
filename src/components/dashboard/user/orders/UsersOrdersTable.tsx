@@ -6,8 +6,8 @@ import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, A
 
 type OrdersTableProps = {
     title: string;
-    onOrderClick?: (order: OrderDisplay, orderNumber: number) => void;
-    onAddOrder?: () => void;
+    onOrderClick: (order: OrderDisplay, orderNumber: number) => void;
+    onAddOrder: () => void;
 };
 
 export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder }) => {
@@ -306,7 +306,10 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                                 <tr
                                     key={order.id}
                                     className="hover:bg-white/5 transition-colors cursor-pointer"
-                                    onClick={() => handleOrderClick(order)}
+                                    onClick={() => {
+                                        console.log('should open the model for order: ', order)
+                                        handleOrderClick(order)
+                                    }}
                                 >
                                     <td className="px-6 py-3">
                                         <div className="flex items-center gap-3">
