@@ -313,6 +313,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                                 >
                                     <td className="px-6 py-3">
                                         <div className="flex items-center gap-3">
+                                            {/* TODO: needs to be fixed for the production  */}
                                             {order.carImage ? (
                                                 <img
                                                     src={order.carImage}
@@ -333,11 +334,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                                         {getStatusBadge(order.status)}
                                     </td>
                                     <td className="px-6 py-3 text-white font-semibold text-sm">
-                                        {order.amount > 0 ? (
-                                            `${order.amount.toFixed(2)} MDL`
-                                        ) : (
-                                            <span className="text-gray-400">—</span>
-                                        )}
+                                        999.99 MDL
                                     </td>
                                 </tr>
                             ))
