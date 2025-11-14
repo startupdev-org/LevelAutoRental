@@ -1,28 +1,30 @@
 export interface Car {
   id: number;
+  make: string;
+  model: string;
   year: number;
-  name: string;
-  category: 'suv' | 'sports' | 'luxury';
-  image: string;
-  photoGallery?: string[]; // Optional array of photo URLs for gallery
-  pricePerDay: number;
-  seats: number;
-  transmission: 'Automatic' | 'Manual';
-  body: 'Coupe' | 'Sedan' | 'SUV',
-  fuelType: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol';
-  features: string[];
-  rating: number;
-  reviews: number;
-  availability?: string; // Optional property to show when car is free for rent
-  mileage?: number; // Mileage in kilometers
-  fuelConsumption?: number; // Fuel consumption (L/100km)
-  drivetrain?: string; // Drivetrain type (FWD, RWD, 4WD, AWD)
-  time?: string; // Time specification
-  power?: string; // Engine power (e.g., "300 HP")
-  acceleration?: string; // 0-100 km/h acceleration (e.g., "5.2s")
-  description?: string; // Short description
-  longDescription?: string; // Detailed description
+  price_per_day: number;
+  category?: 'suv' | 'sports' | 'luxury'; // optional if nullable in DB
+  image_url?: string;
+  photo_gallery?: string[]; // optional array of URLs
+  seats?: number;
+  transmission?: 'Automatic' | 'Manual';
+  body?: 'Coupe' | 'Sedan' | 'SUV';
+  fuel_type?: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol';
+  features?: string[];
+  rating?: number;
+  reviews?: number;
+  availability?: string; // optional
+  mileage?: number;
+  fuel_consumption?: number;
+  drivetrain?: string; // FWD, RWD, 4WD, AWD
+  time?: string;
+  power?: string; // e.g., "300 HP"
+  acceleration?: string; // e.g., "5.2s"
+  description?: string;
+  long_description?: string;
 }
+
 
 export interface BookingForm {
   pickupLocation: string;

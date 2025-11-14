@@ -28,6 +28,7 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
     const sidebarItems: SidebarItem[] = [
         { id: 'overview', label: t('dashboard.sidebar.overview'), icon: Home },
         { id: 'bookings', label: t('dashboard.sidebar.myBookings'), icon: Car },
+        { id: 'cars', label: t('dashboard.sidebar.cars'), icon: Car },
         { id: 'calendar', label: t('dashboard.sidebar.calendar'), icon: Calendar },
         { id: 'profile', label: t('dashboard.sidebar.profile'), icon: User },
         { id: 'settings', label: t('dashboard.sidebar.settings'), icon: Settings },
