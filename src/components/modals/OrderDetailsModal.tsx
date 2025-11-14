@@ -142,18 +142,19 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                 </h3>
                                 <div className="flex items-start gap-4">
                                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                                        {/* {getInitials(order.customerName)} */}
-                                        C
+                                        {order.customerName ? getInitials(order.customerName) : 'C'}
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-white font-semibold text-lg">customer_name</p>
-                                        {/* {order.customerEmail && (
+                                        <p className="text-white font-semibold text-lg">
+                                            {order.customerName || 'Unknown Customer'}
+                                        </p>
+                                        {order.customerEmail && (
                                             <div className="flex items-center gap-2 mt-2 text-gray-300">
                                                 <Mail className="w-4 h-4" />
                                                 <span className="text-sm">{order.customerEmail}</span>
                                             </div>
-                                        )} */}
-                                        {/* {order.customerPhone && (
+                                        )}
+                                        {order.customerPhone && (
                                             <a
                                                 href={`tel:${order.customerPhone.replace(/\s/g, '')}`}
                                                 className="flex items-center gap-2 mt-2 text-gray-300 hover:text-white transition-colors cursor-pointer"
@@ -161,7 +162,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <Phone className="w-4 h-4" />
                                                 <span className="text-sm">{order.customerPhone}</span>
                                             </a>
-                                        )} */}
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -177,11 +178,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         {order.avatar && (
                                             <img
                                                 src={order.avatar}
-                                                // alt={order.carName}
+                                                alt={order.carName || car?.name || 'Car'}
                                                 className="w-12 h-8 object-cover rounded-md border border-white/10"
                                             />
                                         )}
-                                        <span className="text-white font-semibold text-sm">car_name</span>
+                                        <span className="text-white font-semibold text-sm">
+                                            {order.carName || car?.name || 'Unknown Car'}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
