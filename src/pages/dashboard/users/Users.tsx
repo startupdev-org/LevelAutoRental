@@ -1,27 +1,180 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { User } from "../../../types";
 import { users as usersData } from "../../../data/index";
-import { ArrowLeft, ArrowRight, Mail, Car, User as UserIcon } from "lucide-react";
+import { 
+    ArrowLeft, 
+    ArrowRight, 
+    Mail, 
+    Car, 
+    User as UserIcon, 
+    Search,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    Plus,
+    X,
+    Save,
+    Filter,
+    Phone,
+    DollarSign
+} from "lucide-react";
 import { orders } from "../../../data";
+import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import { OrderDisplay } from "../../../lib/orders";
+import { cars } from "../../../data/cars";
+import { useNavigate } from "react-router-dom";
 
 export const userBorrowHistory = (user: User) => {
-    return orders.filter(order => order.customerId === user.id);
+    return orders.filter(order => order.userId === user.id.toString());
 };
 
 export const UsersPage: React.FC = () => {
-    const [users] = useState<User[]>(usersData);
+    const navigate = useNavigate();
+    const [users, setUsers] = useState<User[]>([]);
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const pageSize = 5;
+    const [filterRole, setFilterRole] = useState<string>("all");
+    const [sortBy, setSortBy] = useState<'name' | 'email' | 'role' | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [userOrders, setUserOrders] = useState<OrderDisplay[]>([]);
+    const pageSize = 10;
 
-    // Filtered users
-    const filteredUsers = users.filter(
-        (u) =>
+    // Load users from orders
+    useEffect(() => {
+        const loadUsersAndOrders = async () => {
+            try {
+                const { fetchRentalsOnly } = await import('../../../lib/orders');
+                const data = await fetchRentalsOnly(cars);
+                const rentals = data.filter(order => order.type === 'rental');
+                setUserOrders(rentals);
+                
+                // Extract unique users from orders
+                const userMap = new Map<string, User>();
+                
+                rentals.forEach((order) => {
+                    if (!order.customerName || !order.customerEmail) return;
+                    
+                    // Use email as unique identifier
+                    const email = order.customerEmail.toLowerCase();
+                    
+                    if (!userMap.has(email)) {
+                        // Parse name
+                        const nameParts = order.customerName.trim().split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        
+                        // Generate username from email
+                        const username = email.split('@')[0];
+                        
+                        userMap.set(email, {
+                            id: userMap.size + 1,
+                            firstName: firstName,
+                            lastName: lastName,
+                            email: order.customerEmail,
+                            phone: order.customerPhone || undefined,
+                            role: userMap.size === 0 ? 'Admin' : 'User', // First user is Admin (Victorin)
+                        });
+                    }
+                });
+                
+                // Convert map to array and ensure Victorin is Admin
+                const extractedUsers = Array.from(userMap.values());
+                if (extractedUsers.length > 0) {
+                    // Find Victorin and set as Admin, others as User
+                    extractedUsers.forEach((user, index) => {
+                        if (user.firstName.toLowerCase() === 'victorin' || 
+                            user.email.toLowerCase().includes('victorin')) {
+                            user.role = 'Admin';
+                        } else {
+                            user.role = 'User';
+                        }
+                    });
+                    
+                    // Ensure only one Admin
+                    const adminIndex = extractedUsers.findIndex(u => 
+                        u.firstName.toLowerCase() === 'victorin' || 
+                        u.email.toLowerCase().includes('victorin')
+                    );
+                    if (adminIndex > 0) {
+                        extractedUsers.forEach((user, index) => {
+                            if (index !== adminIndex) {
+                                user.role = 'User';
+                            }
+                        });
+                    }
+                }
+                
+                setUsers(extractedUsers);
+            } catch (error) {
+                console.error('Failed to load users and orders:', error);
+                // Fallback to default users on error
+                setUsers(usersData);
+            }
+        };
+        loadUsersAndOrders();
+    }, []);
+
+    // Get user order count
+    const getUserOrderCount = (userId: number): number => {
+        const user = users.find(u => u.id === userId);
+        if (!user) return 0;
+        
+        return userOrders.filter(order => {
+            // Match by email (most reliable) or customer name
+            return order.customerEmail?.toLowerCase() === user.email.toLowerCase() ||
+                   order.customerName?.toLowerCase() === `${user.firstName} ${user.lastName}`.toLowerCase();
+        }).length;
+    };
+
+    // Get user total spent
+    const getUserTotalSpent = (userId: number): number => {
+        const user = users.find(u => u.id === userId);
+        if (!user) return 0;
+        
+        return userOrders
+            .filter(order => {
+                // Match by email (most reliable) or customer name
+                return order.customerEmail?.toLowerCase() === user.email.toLowerCase() ||
+                       order.customerName?.toLowerCase() === `${user.firstName} ${user.lastName}`.toLowerCase();
+            })
+            .reduce((sum, order) => sum + (order.amount || 0), 0);
+    };
+
+    // Filtered and sorted users
+    const filteredUsers = useMemo(() => {
+        let filtered = users.filter(
+            (u) => {
+                const matchesSearch = 
             u.firstName.toLowerCase().includes(search.toLowerCase()) ||
             u.lastName.toLowerCase().includes(search.toLowerCase()) ||
-            u.username.toLowerCase().includes(search.toLowerCase())
-    );
+                    (u.phone && u.phone.toLowerCase().includes(search.toLowerCase())) ||
+                    u.email.toLowerCase().includes(search.toLowerCase());
+                const matchesRole = filterRole === 'all' || u.role.trim().toLowerCase() === filterRole.toLowerCase();
+                return matchesSearch && matchesRole;
+            }
+        );
+
+        // Sort based on selected field
+        filtered.sort((a, b) => {
+            if (sortBy === 'name') {
+                const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+                const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+                const diff = nameA.localeCompare(nameB);
+                return sortOrder === 'asc' ? diff : -diff;
+            } else if (sortBy === 'email') {
+                const diff = a.email.toLowerCase().localeCompare(b.email.toLowerCase());
+                return sortOrder === 'asc' ? diff : -diff;
+            } else if (sortBy === 'role') {
+                const diff = a.role.trim().toLowerCase().localeCompare(b.role.trim().toLowerCase());
+                return sortOrder === 'asc' ? diff : -diff;
+            }
+            return 0;
+        });
+
+        return filtered;
+    }, [users, search, filterRole, sortBy, sortOrder, userOrders]);
 
     const totalPages = Math.ceil(filteredUsers.length / pageSize);
 
@@ -35,14 +188,50 @@ export const UsersPage: React.FC = () => {
         setCurrentPage(page);
     };
 
+    const handleSort = (field: 'name' | 'email' | 'role') => {
+        if (sortBy === field) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(field);
+            setSortOrder('asc');
+        }
+    };
+
+    const handleDeleteUser = (userId: number) => {
+        if (window.confirm('Are you sure you want to delete this user?')) {
+            setUsers(prev => prev.filter(u => u.id !== userId));
+            if (selectedUser?.id === userId) {
+                setSelectedUser(null);
+            }
+        }
+    };
+
+    // Get user orders for selected user
+    const selectedUserOrders = selectedUser 
+        ? userOrders.filter(order => {
+            // Match by email (most reliable) or customer name
+            return order.customerEmail?.toLowerCase() === selectedUser.email.toLowerCase() ||
+                   order.customerName?.toLowerCase() === `${selectedUser.firstName} ${selectedUser.lastName}`.toLowerCase();
+        })
+        : [];
+
     return (
         <div className="space-y-6">
             {/* Users Table Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                        <div className="flex items-center justify-between gap-4">
+                <div className="px-6 py-4 border-b border-white/10">
+                    <div className="flex flex-col gap-4">
+                        {/* Title Row */}
+                        <div>
+                            <h2 className="text-xl font-bold text-white">All Users</h2>
+                        </div>
+                        {/* Search and Filter Row */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            {/* Search */}
+                            <div className="flex-1 max-w-md">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
                                 type="text"
                                 placeholder="Search users..."
@@ -51,11 +240,79 @@ export const UsersPage: React.FC = () => {
                                     setSearch(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="flex-1 max-w-md px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
-                            />
-                            <button className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap">
-                                + Add User
+                                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
+                                    />
+                                </div>
+                            </div>
+                            {/* Filter and Sort Controls */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-4 h-4 text-gray-400" />
+                                    <select
+                                        value={filterRole}
+                                        onChange={(e) => {
+                                            setFilterRole(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                                    >
+                                        <option value="all">All Roles</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="user">User</option>
+                                    </select>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
+                                <button
+                                    onClick={() => handleSort('name')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'name'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                    Name
+                                    {sortBy === 'name' && (
+                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                    )}
+                                    {sortBy !== 'name' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                                </button>
+                                <button
+                                    onClick={() => handleSort('email')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'email'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                    Email
+                                    {sortBy === 'email' && (
+                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                    )}
+                                    {sortBy !== 'email' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                                </button>
+                                <button
+                                    onClick={() => handleSort('role')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'role'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                    Role
+                                    {sortBy === 'role' && (
+                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                    )}
+                                    {sortBy !== 'role' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                                </button>
+                                {sortBy && (
+                                    <button
+                                        onClick={() => {
+                                            setSortBy(null);
+                                            setSortOrder('asc');
+                                        }}
+                                        className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        Clear
                             </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -65,14 +322,59 @@ export const UsersPage: React.FC = () => {
                     <table className="w-full">
                         <thead>
                             <tr className="bg-white/5 border-b border-white/10">
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">User</th>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</th>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Role</th>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
+                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <button
+                                        onClick={() => handleSort('name')}
+                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                    >
+                                        User
+                                        {sortBy === 'name' ? (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                        ) : (
+                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                        )}
+                                    </button>
+                                </th>
+                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <button
+                                        onClick={() => handleSort('email')}
+                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                    >
+                                        Email
+                                        {sortBy === 'email' ? (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                        ) : (
+                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                        )}
+                                    </button>
+                                </th>
+                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Phone
+                                </th>
+                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <button
+                                        onClick={() => handleSort('role')}
+                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                    >
+                                        Role
+                                        {sortBy === 'role' ? (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                        ) : (
+                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                        )}
+                                    </button>
+                                </th>
+                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Rentals
+                                </th>
+                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Total Spent
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedUsers.map((user) => (
+                            {paginatedUsers.map((user) => {
+                                return (
                                 <tr
                                     key={user.id}
                                     className={`border-b border-white/10 hover:bg-white/5 transition cursor-pointer ${selectedUser?.id === user.id ? "bg-white/5" : ""}`}
@@ -85,26 +387,44 @@ export const UsersPage: React.FC = () => {
                                             </div>
                                             <div className="flex flex-col min-w-0">
                                                 <span className="font-semibold text-white text-sm truncate">{user.firstName} {user.lastName}</span>
-                                                <span className="text-gray-400 text-xs truncate">@{user.username}</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-gray-300 text-sm">{user.email}</td>
+                                    <td className="px-6 py-4 text-gray-300 text-sm">
+                                        {user.phone ? (
+                                            <a
+                                                href={`tel:${user.phone.replace(/\s/g, '')}`}
+                                                className="hover:text-white transition-colors"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {user.phone}
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-400">N/A</span>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4">
-                                        <span className="px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-xl bg-blue-500/20 text-blue-300 border-blue-500/50">
+                                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-xl ${
+                                                user.role.trim().toLowerCase() === 'admin' 
+                                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                                                    : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                            }`}>
                                             {user.role}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <button className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
-                                            View Details →
-                                        </button>
+                                    <td className="px-6 py-4 text-gray-300 text-sm">
+                                        {getUserOrderCount(user.id)}
+                                    </td>
+                                    <td className="px-6 py-4 text-white font-semibold text-sm">
+                                        {getUserTotalSpent(user.id).toFixed(2)} MDL
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                             {paginatedUsers.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400 text-sm">
+                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-400 text-sm">
                                         No users found.
                                     </td>
                                 </tr>
@@ -142,71 +462,226 @@ export const UsersPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Selected User Details */}
-            {selectedUser && (
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-white/10">
-                        <h3 className="text-lg font-semibold text-white">User Details</h3>
+            {/* User Details Modal */}
+            <UserDetailsModal
+                isOpen={selectedUser !== null}
+                onClose={() => setSelectedUser(null)}
+                user={selectedUser}
+                userOrders={selectedUserOrders}
+            />
+
+        </div>
+    );
+};
+
+// User Details Modal Component
+interface UserDetailsModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    user: User | null;
+    userOrders: OrderDisplay[];
+}
+
+const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, user, userOrders }) => {
+    const navigate = useNavigate();
+    if (!isOpen || !user) return null;
+
+    const formatDate = (dateString: string | undefined) => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return dateString;
+            }
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        } catch {
+            return dateString || 'N/A';
+        }
+    };
+
+
+    return createPortal(
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-2 md:p-4"
+                    onClick={onClose}
+                    style={{ zIndex: 10000 }}
+                >
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-5xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto"
+                    >
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
+                            <h2 className="text-2xl font-bold text-white">User Details</h2>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-white" />
+                            </button>
                     </div>
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                        {/* Content */}
+                    <div className="p-4 md:p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 md:gap-6">
                             {/* User Info */}
-                            <div className="space-y-4">
+                                <div className="space-y-6">
+                                    {/* User Profile */}
                                 <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                                        {selectedUser.firstName.charAt(0)}
+                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
+                                            {user.firstName.charAt(0)}
                                     </div>
                                     <div>
-                                        <h4 className="text-xl font-bold text-white">{selectedUser.firstName} {selectedUser.lastName}</h4>
-                                        <p className="text-gray-400">@{selectedUser.username}</p>
+                                            <h3 className="text-2xl font-bold text-white">{user.firstName} {user.lastName}</h3>
+                                            {user.phone ? (
+                                                <a
+                                                    href={`tel:${user.phone.replace(/\s/g, '')}`}
+                                                    className="text-gray-400 hover:text-white transition-colors"
+                                                >
+                                                    {user.phone}
+                                                </a>
+                                            ) : (
+                                                <p className="text-gray-400">N/A</p>
+                                            )}
+                                        </div>
                                     </div>
+
+                                    {/* User Information */}
+                                    <div className="space-y-4">
+                                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <Mail className="h-5 w-5 text-gray-400" />
+                                                <p className="text-xs text-gray-400 uppercase tracking-wide">Email</p>
+                                            </div>
+                                            <p className="text-white font-medium">{user.email}</p>
+                                        </div>
+
+                                        {user.phone && (
+                                            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Phone className="h-5 w-5 text-gray-400" />
+                                                    <p className="text-xs text-gray-400 uppercase tracking-wide">Phone</p>
+                                                </div>
+                                                <a
+                                                    href={`tel:${user.phone.replace(/\s/g, '')}`}
+                                                    className="text-white font-medium hover:text-gray-300 transition-colors"
+                                                >
+                                                    {user.phone}
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <UserIcon className="h-5 w-5 text-gray-400" />
+                                                <p className="text-xs text-gray-400 uppercase tracking-wide">Role</p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-lg text-sm font-semibold border backdrop-blur-sm ${
+                                                user.role.trim().toLowerCase() === 'admin'
+                                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                                                    : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                            }`}>
+                                                {user.role}
+                                            </span>
                                 </div>
-                                <div className="space-y-3 pt-4">
-                                    <div className="flex items-center gap-3 text-gray-300">
-                                        <Mail className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm">{selectedUser.email}</span>
                                     </div>
-                                    <div className="flex items-center gap-3 text-gray-300">
-                                        <UserIcon className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm">Role: <span className="font-semibold text-white">{selectedUser.role}</span></span>
+
+                                    {/* Statistics */}
+                                    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <DollarSign className="h-5 w-5 text-gray-400" />
+                                            <p className="text-xs text-gray-400 uppercase tracking-wide">Total Spent</p>
                                     </div>
+                                        <p className="text-3xl font-bold text-white">
+                                            {userOrders.reduce((sum, order) => sum + (order.amount || 0), 0).toFixed(2)} MDL
+                                        </p>
                                 </div>
                             </div>
 
-                            {/* Borrow History */}
-                            {userBorrowHistory(selectedUser).length > 0 && (
+                                {/* Rental History */}
                                 <div>
-                                    <div className="flex items-center gap-2 mb-3">
+                                    <div className="flex items-center gap-2 mb-4">
                                         <Car className="h-5 w-5 text-gray-400" />
-                                        <h5 className="font-semibold text-white">Rental History</h5>
+                                        <h4 className="text-lg font-bold text-white">Rental History</h4>
+                                        <span className="text-sm text-gray-400">({userOrders.length})</span>
                                     </div>
-                                    <div className="overflow-x-auto rounded-lg border border-white/20 bg-white/5">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-white/5">
-                                                <tr>
-                                                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-400">Date</th>
-                                                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-400">Status</th>
-                                                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-400">Amount</th>
+
+                                    {userOrders.length > 0 ? (
+                                        <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                                            <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                                        <table className="w-full text-sm" style={{ minWidth: '100%' }}>
+                                                    <thead className="bg-white/5 sticky top-0">
+                                                        <tr>
+                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Car</th>
+                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Dates</th>
+                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Amount</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {userBorrowHistory(selectedUser).map((order) => (
+                                                        {userOrders.slice(0, 5).map((order) => {
+                                                            const car = cars.find(c => c.id.toString() === order.carId);
+                                                            return (
                                                     <tr key={order.id} className="border-t border-white/10 hover:bg-white/5 transition">
-                                                        <td className="px-4 py-2 text-gray-300">{order.date}</td>
-                                                        <td className="px-4 py-2 text-gray-300">{order.status}</td>
-                                                        <td className="px-4 py-2 text-gray-300">${order.amount}</td>
+                                                                    <td className="px-3 md:px-4 py-2 md:py-3 text-white font-medium whitespace-nowrap">
+                                                                        {car?.name || order.carName || 'N/A'}
+                                                                    </td>
+                                                                    <td className="px-3 md:px-4 py-2 md:py-3 text-gray-300">
+                                                                        <div className="flex flex-col md:flex-row md:gap-2 gap-0.5">
+                                                                            <span className="whitespace-nowrap">{formatDate(order.pickupDate || order.startDate)}</span>
+                                                                            <span className="hidden md:inline whitespace-nowrap">→</span>
+                                                                            <span className="whitespace-nowrap">{formatDate(order.returnDate || order.endDate)}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-3 md:px-4 py-2 md:py-3 text-white font-semibold whitespace-nowrap">
+                                                                        {order.amount?.toFixed(2) || '0.00'} MDL
+                                                                    </td>
                                                     </tr>
-                                                ))}
+                                                            );
+                                                        })}
                                             </tbody>
                                         </table>
                                     </div>
+                                    {userOrders.length > 0 && (
+                                        <div className="p-4 border-t border-white/10">
+                                            <button
+                                                onClick={() => {
+                                                    onClose();
+                                                    navigate(`/admin?section=orders&search=${encodeURIComponent(`${user?.firstName} ${user?.lastName}`)}`);
+                                                }}
+                                                className="w-full px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 hover:text-blue-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                                            >
+                                                View {user.firstName} {user.lastName} Past Rentals
+                                                <ArrowRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                    ) : (
+                                        <div className="bg-white/5 rounded-lg p-12 border border-white/10 text-center">
+                                            <Car className="w-16 h-16 text-gray-400 mx-auto mb-4 opacity-50" />
+                                            <p className="text-gray-400">No rental history found</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
+                    </motion.div>
+                </motion.div>
             )}
-        </div>
+        </AnimatePresence>,
+        document.body
     );
 };
 
