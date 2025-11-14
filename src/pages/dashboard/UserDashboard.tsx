@@ -28,10 +28,11 @@ import {
 } from 'lucide-react';
 import { UserDashboardSidebar } from '../../components/dashboard/sidebar/UserDashboardSidebar';
 import CalendarPage from './calendar/CalendarPage';
-import { UserOrdersTable } from '../../components/dashboard/user/orders/UsersOrdersTable';
 
 import { orders } from '../../data/index'
-import { UserOrdersSection } from './users/orders/UserOrdersSection';
+import { UserOrdersSection } from './user/orders/UserOrdersSection';
+
+import { CarsView } from './user/cars/UserCarPage'
 
 interface Booking {
   id: string;
@@ -135,6 +136,7 @@ export const UserDashboard: React.FC = () => {
   const sidebarItems = [
     { id: 'overview' as const, label: t('dashboard.sidebar.overview'), icon: Home },
     { id: 'bookings' as const, label: t('dashboard.sidebar.myBookings'), icon: Calendar },
+    { id: 'cars' as const, label: t('dashboard.sidebar.cars'), icon: Car },
     { id: 'profile' as const, label: t('dashboard.sidebar.profile'), icon: User },
     { id: 'settings' as const, label: t('dashboard.sidebar.settings'), icon: Settings }
   ];
@@ -236,6 +238,7 @@ export const UserDashboard: React.FC = () => {
               >
                 <div className="space-y-6">
                   <AnimatePresence>
+
                     {/* Overview Tab */}
                     {activeTab === 'overview' && (
                       <motion.div
@@ -417,6 +420,22 @@ export const UserDashboard: React.FC = () => {
                             </div>
                           )}
                         </div>
+                      </motion.div>
+                    )}
+
+                    {/* Cars Tab */}
+                    {activeTab === 'cars' && (
+                      <motion.div
+                        key="cars"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+
+                        <CarsView />
+
                       </motion.div>
                     )}
 
