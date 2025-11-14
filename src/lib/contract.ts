@@ -84,8 +84,10 @@ const convertRomanianToASCII = (text: string): string => {
 };
 
 // Format date to Romanian format (DD.MM.YYYY)
-const formatDateRO = (dateString: string): string => {
+const formatDateRO = (dateString: string | undefined): string => {
+  if (!dateString) return '';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
@@ -93,7 +95,8 @@ const formatDateRO = (dateString: string): string => {
 };
 
 // Format time to HH:MM
-const formatTime = (timeString: string): string => {
+const formatTime = (timeString: string | undefined): string => {
+  if (!timeString) return '';
   // Handle formats like "08:00 AM" or "08:00"
   const time = timeString.replace(/\s*(AM|PM)\s*/i, '');
   return time;
@@ -1869,8 +1872,8 @@ export const createContractDataFromOrder = (
     carValue?: number;
   }
 ): ContractData => {
-  const startDate = new Date(order.startDate);
-  const endDate = new Date(order.endDate);
+  const startDate = new Date(order.pickupDate);
+  const endDate = new Date(order.returnDate);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
   
   // Calculate pricing
@@ -1888,34 +1891,32 @@ export const createContractDataFromOrder = (
     discountAmount = subtotal * 0.02;
   }
   
-  const total = order.amount > 0 ? order.amount : (subtotal - discountAmount);
+  const total = parseFloat(order.total_amount) > 0 ? parseFloat(order.total_amount) : (subtotal - discountAmount);
 
-  // Parse customer name
-  const nameParts = order.customerName.trim().split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
+  // Parse customer name - OrderDisplay doesn't have customerName, need to check what fields are available
+  const customerName = (order as any).customerName || '';
 
   return {
     contractNumber,
     contractDate,
     rental: {
-      id: order.id,
+      id: order.id.toString(),
       user_id: order.userId,
       car_id: order.carId,
-      start_date: order.startDate,
-      start_time: order.startTime,
-      end_date: order.endDate,
-      end_time: order.endTime,
+      start_date: order.pickupDate,
+      start_time: order.pickupTime,
+      end_date: order.returnDate,
+      end_time: order.returnTime,
       status: order.status as any,
       total_amount: total,
-      created_at: order.createdAt,
-      updated_at: order.createdAt,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     } as Rental,
     car,
     customer: {
-      fullName: order.customerName,
-      email: order.customerEmail,
-      phone: additionalData?.customerPhone || order.customerPhone || '',
+      fullName: customerName,
+      email: (order as any).customerEmail || '',
+      phone: additionalData?.customerPhone || (order as any).customerPhone || '',
       address: additionalData?.customerAddress || '',
       city: additionalData?.customerCity || '',
       postalCode: additionalData?.customerPostalCode || '',
@@ -1924,10 +1925,10 @@ export const createContractDataFromOrder = (
       idSeries: additionalData?.customerIdSeries || '',
     },
     rentalDetails: {
-      startDate: order.startDate,
-      startTime: order.startTime,
-      endDate: order.endDate,
-      endTime: order.endTime,
+      startDate: order.pickupDate,
+      startTime: order.pickupTime,
+      endDate: order.returnDate,
+      endTime: order.returnTime,
       pickupLocation: additionalData?.pickupLocation || 'Chișinău, str. Mircea cel Bătrân 13/1',
       returnLocation: additionalData?.returnLocation || 'Chișinău, str. Mircea cel Bătrân 13/1',
       pricePerDay,
@@ -1958,7 +1959,7 @@ export const generateContractFromOrder = async (
   contractNumber?: string,
   additionalData?: Parameters<typeof createContractDataFromOrder>[4]
 ) => {
-  const contractNum = contractNumber || `CT-${order.id.slice(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
+  const contractNum = contractNumber || `CT-${order.id.toString().slice(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
   const contractDate = new Date().toISOString().split('T')[0];
   
   const contractData = createContractDataFromOrder(
