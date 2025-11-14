@@ -60,7 +60,7 @@ export interface User {
   avatar?: string;
   firstName: string;
   lastName: string;
-  username: string;
+  phone?: string;
   email: string;
   role: string;
 };

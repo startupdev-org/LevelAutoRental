@@ -8,12 +8,13 @@ type OrdersTableProps = {
     title: string;
     onOrderClick?: (order: OrderDisplay, orderNumber: number) => void;
     onAddOrder?: () => void;
+    initialSearch?: string;
 };
 
-export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder }) => {
+export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder, initialSearch }) => {
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(initialSearch || '');
     const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [currentPage, setCurrentPage] = useState(1);
@@ -36,6 +37,13 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
 
         loadOrders();
     }, []);
+
+    // Update search query when initialSearch prop changes
+    useEffect(() => {
+        if (initialSearch !== undefined) {
+            setSearchQuery(initialSearch);
+        }
+    }, [initialSearch]);
 
     // Filter and sort orders
     const filteredAndSortedOrders = useMemo(() => {

@@ -7,6 +7,7 @@ import { SalesChartCard } from '../../../components/dashboard/Chart';
 import { motion } from 'framer-motion';
 import { Save, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 
 
 // Order Form Modal Component
@@ -258,6 +259,8 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
 
 
 export const OrdersViewSection: React.FC = () => {
+    const [searchParams] = useSearchParams();
+    const initialSearch = searchParams.get('search') || '';
     const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -416,7 +419,7 @@ export const OrdersViewSection: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
                 >
-                    <OrdersTable title="All Orders" onOrderClick={handleOrderClick} onAddOrder={() => setShowAddOrderModal(true)} />
+                    <OrdersTable title="All Orders" onOrderClick={handleOrderClick} onAddOrder={() => setShowAddOrderModal(true)} initialSearch={initialSearch} />
                 </motion.div>
 
                 {/* Charts Grid */}

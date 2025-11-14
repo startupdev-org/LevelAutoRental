@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { getDateDiffInDays } from '../../utils/date';
 import Settings from '../dashboard/settings/Settings';
-import Users from '../dashboard/user/Users';
+import Users from '../dashboard/users/Users';
 import { LuPencil } from 'react-icons/lu';
 import { CardStats } from '../../components/dashboard/CardStats';
 import CalendarPage from '../dashboard/calendar/CalendarPage';
