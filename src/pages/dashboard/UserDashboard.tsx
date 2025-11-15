@@ -33,6 +33,7 @@ import { orders } from '../../data/index'
 import { UserOrdersSection } from './user/orders/UserOrdersSection';
 
 import { CarsView } from './user/cars/UserCarPage'
+import ProfileTab from './profile/UserProfile';
 
 interface Booking {
   id: string;
@@ -132,14 +133,6 @@ export const UserDashboard: React.FC = () => {
       day: 'numeric'
     });
   };
-
-  const sidebarItems = [
-    { id: 'overview' as const, label: t('dashboard.sidebar.overview'), icon: Home },
-    { id: 'bookings' as const, label: t('dashboard.sidebar.myBookings'), icon: Calendar },
-    { id: 'cars' as const, label: t('dashboard.sidebar.cars'), icon: Car },
-    { id: 'profile' as const, label: t('dashboard.sidebar.profile'), icon: User },
-    { id: 'settings' as const, label: t('dashboard.sidebar.settings'), icon: Settings }
-  ];
 
   // Redirect to sign in if not authenticated
   if (!user) {
@@ -340,86 +333,15 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <div className="flex justify-between items-center">
-                          <h2 className="text-4xl font-bold text-white">{t('dashboard.profile.title')}</h2>
-                          <button
-                            onClick={() => setIsEditing(!isEditing)}
-                            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2"
-                          >
-                            <Edit3 size={16} />
-                            {isEditing ? t('dashboard.profile.cancel') : t('dashboard.profile.editProfile')}
-                          </button>
-                        </div>
-
-                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.firstName')}</label>
-                              <input
-                                type="text"
-                                value={editForm.firstName}
-                                onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
-                                disabled={!isEditing}
-                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.lastName')}</label>
-                              <input
-                                type="text"
-                                value={editForm.lastName}
-                                onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                                disabled={!isEditing}
-                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.email')}</label>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                <input
-                                  type="email"
-                                  value={editForm.email}
-                                  disabled
-                                  className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 disabled:opacity-50"
-                                />
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.phone')}</label>
-                              <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                <input
-                                  type="tel"
-                                  value={editForm.phone}
-                                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                  disabled={!isEditing}
-                                  className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {isEditing && (
-                            <div className="flex gap-4 mt-6">
-                              <button
-                                onClick={handleSaveProfile}
-                                className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
-                              >
-                                {t('dashboard.profile.saveChanges')}
-                              </button>
-                              <button
-                                onClick={() => setIsEditing(false)}
-                                className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg transition-all duration-300"
-                              >
-                                {t('dashboard.profile.cancel')}
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <ProfileTab
+                          activeTab={activeTab}
+                          isEditing={isEditing}
+                          setIsEditing={setIsEditing}
+                          editForm={editForm}
+                          setEditForm={setEditForm}
+                          handleSaveProfile={handleSaveProfile}
+                          t={t}
+                        />
                       </motion.div>
                     )}
 
