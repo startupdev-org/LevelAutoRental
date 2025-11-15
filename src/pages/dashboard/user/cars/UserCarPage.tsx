@@ -5,18 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
     X,
-    Save,
     ArrowUpDown,
     ArrowUp,
     ArrowDown,
-    Upload,
-    CheckCircle,
-    ArrowRight,
     Car as CarIcon,
 } from 'lucide-react';
 import { Car, Car as CarType } from '../../../../types';
 
-import { fetchCars } from "../../../../lib/db/cars";
+import { fetchCars, fetchImages, fetchMainImages } from "../../../../lib/db/cars";
 
 
 // Cars Management View Component
@@ -31,28 +27,42 @@ export const CarsView: React.FC = () => {
     const [editingCar, setEditingCar] = useState<CarType | null>(null);
     const [cars, setCars] = useState<CarType[]>([]);
 
+    const [imageURL, setImageURL] = useState('');
+    const [imagesURLs, setImagesURLs] = useState([]);
+    const [mainImagesURLs, setMainImagesURLs] = useState<string[]>([]);
+
+
     async function handleFetchCars() {
         const cars = await fetchCars();
         setCars(cars);
     }
 
+    async function handleFetchMainImages() {
+        const mainImagesURLs = await fetchMainImages();
+        // console.log('main images: ', mainImagesURLs)
+        setMainImagesURLs(mainImagesURLs)
+    }
+
+    async function handelFetchImage() {
+        const result = await fetchImages();
+        // console.log('image URLs: ', result)
+        // console.log('result.url: ', result.publicUrl)
+        // setImageURL(result);
+    }
+
     useEffect(() => {
         console.log('fetching data')
-        handleFetchCars()
+        handleFetchCars();
+        handelFetchImage();
+        handleFetchMainImages();
     }, []);
 
-    // Get car status for sorting
     const getCarStatus = (car: CarType): number => {
-        return 1;
-        // const isRented = orders.some(order =>
-        //     parseInt(order.carId) === car.id &&
-        //     (order.status === 'Paid' || order.status === 'Pending')
-        // );
-        // // 0 = Available, 1 = Reserved, 2 = Rented (lower number = higher priority)
-        // if (isRented) return 2;
-        // if (car.availability) return 1;
-        // return 0;
+        if (car.status === 'available') return 0;
+        else return 1; // Reserved
+        return 0; // Available
     };
+
 
     // Filter and sort cars
     const filteredCars = useMemo(() => {
@@ -83,7 +93,7 @@ export const CarsView: React.FC = () => {
                 const diff = statusA - statusB;
                 return sortOrder === "asc" ? diff : -diff;
             } else {
-                // Default: sort by status (availability)
+                // Default: sort by status (status)
                 const statusA = getCarStatus(a);
                 const statusB = getCarStatus(b);
                 return statusA - statusB;
@@ -112,8 +122,8 @@ export const CarsView: React.FC = () => {
     };
     // const handleSaveCar = (carData: Partial<CarType>): number | void => {
     //     if (editingCar) {
-    //         // Update existing car - don't modify availability, it's managed by the system
-    //         const { availability, ...dataToUpdate } = carData;
+    //         // Update existing car - don't modify status, it's managed by the system
+    //         const { status, ...dataToUpdate } = carData;
     //         setCars(prev => prev.map(c => c.id === editingCar.id ? { ...c, ...dataToUpdate } as CarType : c));
     //         setShowAddModal(false);
     //         setEditingCar(null);
@@ -137,7 +147,7 @@ export const CarsView: React.FC = () => {
     //             features: carData.features || [],
     //             rating: carData.rating || 0,
     //             reviews: carData.reviews || 0,
-    //             availability: 'Available', // Set to "Available" by default for new cars
+    //             status: 'Available', // Set to "Available" by default for new cars
     //             mileage: carData.mileage,
     //             fuelConsumption: carData.fuelConsumption,
     //             power: carData.power,
@@ -158,6 +168,30 @@ export const CarsView: React.FC = () => {
             return <CarDetailsEditView car={car} onCancel={() => setSearchParams({ section: 'cars' })} />;
         }
     }
+
+    // Helper to get the image for a specific car
+    function toKebabCase(str: string) {
+        return str.trim().replace(/\s+/g, '-').toLowerCase();
+    }
+
+
+    function getCarImageMap(cars: Car[], mainImagesURLs: string[]): Record<string, string> {
+        const map: Record<string, string> = {};
+
+        cars.forEach(car => {
+            const folderName = toKebabCase(`${car.make} ${car.model}`);
+            const imageUrl = mainImagesURLs.find(url => url.includes(folderName)) || '/placeholder.jpg';
+            map[folderName] = imageUrl;
+        });
+
+        return map;
+    }
+
+    const carImageMap = getCarImageMap(cars, mainImagesURLs);
+
+    // console.log('car:url: ', getCarImageMap(cars, mainImagesURLs))
+
+
 
     return (
         <motion.div
@@ -259,7 +293,7 @@ export const CarsView: React.FC = () => {
                                     Car
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Category
+                                    Transmission
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                     <button
@@ -302,13 +336,9 @@ export const CarsView: React.FC = () => {
                                 </th>
                             </tr>
                         </thead>
-                        {/* <tbody className="divide-y divide-white/10">
+                        <tbody className="divide-y divide-white/10">
                             {filteredCars.length > 0 ? (
                                 filteredCars.map((car) => {
-                                    const isRented = orders.some(order =>
-                                        parseInt(order.carId) === car.id &&
-                                        (order.status === 'Paid' || order.status === 'Pending')
-                                    );
                                     return (
                                         <tr
                                             key={car.id}
@@ -317,34 +347,36 @@ export const CarsView: React.FC = () => {
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
+
                                                     <img
-                                                        src={car.image}
-                                                        alt={car.name}
+                                                        src={carImageMap[toKebabCase(`${car.make} ${car.model}`)]}
+                                                        alt={`${car.make}-${car.model}`.toLowerCase()}
+
                                                         className="w-12 h-12 object-cover rounded-md border border-white/10"
                                                     />
                                                     <div>
-                                                        <p className="text-white font-semibold">{car.name}</p>
+                                                        <p className="text-white font-semibold">{car.make} {car.model}</p>
                                                         <p className="text-gray-400 text-xs">{car.body} · {car.seats} seats</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="px-2 py-1 text-xs font-semibold bg-white/10 text-gray-300 rounded capitalize">
-                                                    {car.category}
+                                                    {car.transmission}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-white font-semibold">{car.pricePerDay} MDL</td>
+                                            <td className="px-6 py-4 text-white font-semibold">{car.price_per_day} MDL</td>
                                             <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                             <td className="px-6 py-4">
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isRented
+                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${car.status
                                                         ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        : car.availability
+                                                        : car.status
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                                         }`}
                                                 >
-                                                    {isRented ? 'Rented' : car.availability ? 'Reserved' : 'Available'}
+                                                    {car.status ? 'Rented' : car.status ? 'Reserved' : 'Available'}
                                                 </span>
                                             </td>
                                         </tr>
@@ -357,7 +389,7 @@ export const CarsView: React.FC = () => {
                                     </td>
                                 </tr>
                             )}
-                        </tbody> */}
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -395,64 +427,6 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
         e.preventDefault();
     };
 
-    // Placeholder function for uploading main image to Supabase
-    const handleMainImageUpload = async (file: File) => {
-        setUploadingMainImage(true);
-        try {
-            // TODO: Implement Supabase storage upload
-            // const { data, error } = await supabase.storage
-            //     .from('car-images')
-            //     .upload(`main/${Date.now()}-${file.name}`, file);
-            // if (error) throw error;
-            // const { data: { publicUrl } } = supabase.storage
-            //     .from('car-images')
-            //     .getPublicUrl(data.path);
-            // setFormData(prev => ({ ...prev, image: publicUrl }));
-
-            // Temporary: Create object URL for preview
-            const objectUrl = URL.createObjectURL(file);
-            setFormData(prev => ({ ...prev, image: objectUrl }));
-            alert('Image upload will be implemented with Supabase storage');
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            alert('Error uploading image. Please try again.');
-        } finally {
-            setUploadingMainImage(false);
-        }
-    };
-
-    // Placeholder function for uploading gallery image to Supabase
-    const handleGalleryImageUpload = async (file: File) => {
-        setUploadingGalleryImage(true);
-        try {
-            // TODO: Implement Supabase storage upload
-            // const { data, error } = await supabase.storage
-            //     .from('car-images')
-            //     .upload(`gallery/${Date.now()}-${file.name}`, file);
-            // if (error) throw error;
-            // const { data: { publicUrl } } = supabase.storage
-            //     .from('car-images')
-            //     .getPublicUrl(data.path);
-            // setFormData(prev => ({
-            //     ...prev,
-            //     photoGallery: [...(prev.photoGallery || []), publicUrl]
-            // }));
-
-            // Temporary: Create object URL for preview
-            const objectUrl = URL.createObjectURL(file);
-            setFormData(prev => ({
-                ...prev,
-                photoGallery: [...(prev.photoGallery || []), objectUrl]
-            }));
-            alert('Image upload will be implemented with Supabase storage');
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            alert('Error uploading image. Please try again.');
-        } finally {
-            setUploadingGalleryImage(false);
-        }
-    };
-
     return (
         <div className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -465,8 +439,8 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
                             <input
                                 type="text"
-                                value={formData.name || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                value={formData.make + formData.model || ''}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
                             />
@@ -478,7 +452,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                                 <input
                                     type="number"
                                     value={formData.year || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                                    readOnly
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                     required
                                 />
@@ -488,7 +462,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                                 <input
                                     type="number"
                                     value={formData.seats || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, seats: parseInt(e.target.value) }))}
+                                    readOnly
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                     required
                                 />
@@ -497,15 +471,11 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
-                            <select
+                            <input
                                 value={formData.category || 'luxury'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as CarType['category'] }))}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            >
-                                <option value="suv">SUV</option>
-                                <option value="sports">Sports</option>
-                                <option value="luxury">Luxury</option>
-                            </select>
+                            />
                         </div>
 
                         <div>
@@ -513,7 +483,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <input
                                 type="number"
                                 value={formData.price_per_day || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, pricePerDay: parseFloat(e.target.value) }))}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
                             />
@@ -526,42 +496,29 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Body Type</label>
-                            <select
+                            <input
                                 value={formData.body || 'Sedan'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value as CarType['body'] }))}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            >
-                                <option value="Coupe">Coupe</option>
-                                <option value="Sedan">Sedan</option>
-                                <option value="SUV">SUV</option>
-                            </select>
+                            />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Transmission</label>
-                            <select
+                            <input
                                 value={formData.transmission || 'Automatic'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, transmission: e.target.value as CarType['transmission'] }))}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            >
-                                <option value="Automatic">Automatic</option>
-                                <option value="Manual">Manual</option>
-                            </select>
+                            />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Fuel Type</label>
-                            <select
+                            <input
                                 value={formData.fuel_type || 'gasoline'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, fuelType: e.target.value as Car['fuel_type'] }))}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            >
-                                <option value="gasoline">Gasoline</option>
-                                <option value="diesel">Diesel</option>
-                                <option value="hybrid">Hybrid</option>
-                                <option value="electric">Electric</option>
-                                <option value="petrol">Petrol</option>
-                            </select>
+                            />
                         </div>
 
                         <div>
@@ -569,7 +526,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <input
                                 type="text"
                                 value={formData.drivetrain || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, drivetrain: e.target.value }))}
+                                readOnly
                                 placeholder="e.g., AWD, RWD, FWD"
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
@@ -621,7 +578,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                                 min="0"
                                 max="5"
                                 value={formData.rating || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
                         </div>
@@ -630,7 +587,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <input
                                 type="number"
                                 value={formData.reviews || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, reviews: parseInt(e.target.value) }))}
+                                readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
                         </div>

@@ -14,7 +14,7 @@ export interface Car {
   features?: string[];
   rating?: number;
   reviews?: number;
-  availability?: string; // optional
+  status?: string; // optional
   mileage?: number;
   fuel_consumption?: number;
   drivetrain?: string; // FWD, RWD, 4WD, AWD
