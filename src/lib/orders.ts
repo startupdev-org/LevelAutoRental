@@ -390,6 +390,101 @@ function generateMockRentals(cars: Car[]): OrderDisplay[] {
     });
   }
 
+  // Add specific overlapping rentals to demonstrate pickup/return on same day
+  const overlapDate = new Date(now);
+  overlapDate.setDate(overlapDate.getDate() + 3); // 3 days from now
+  const overlapDateStr = overlapDate.toISOString().split('T')[0];
+
+  // Rental 1: Returns on overlap date at 10:00
+  const rental1Start = new Date(overlapDate);
+  rental1Start.setDate(rental1Start.getDate() - 5);
+  mockOrders.push({
+    id: `rental-overlap-1`,
+    type: 'rental',
+    customerName: 'Vasile Moraru',
+    customerEmail: 'vasile.moraru@example.com',
+    customerPhone: '+373 111 222 333',
+    carName: cars[0]?.name || 'BMW 320',
+    avatar: cars[0]?.image || '',
+    pickupDate: rental1Start.toISOString().split('T')[0],
+    pickupTime: '09:00',
+    returnDate: overlapDateStr,
+    returnTime: '10:00',
+    status: 'ACTIVE',
+    total_amount: (cars[0]?.pricePerDay * 5 || 500).toString(),
+    amount: cars[0]?.pricePerDay * 5 || 500,
+    createdAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    carId: cars[0]?.id.toString() || '1',
+    userId: 'user-overlap-1',
+  });
+
+  // Rental 2: Picks up on overlap date at 11:00 (same car as rental 1 returns)
+  const rental2End = new Date(overlapDate);
+  rental2End.setDate(rental2End.getDate() + 4);
+  mockOrders.push({
+    id: `rental-overlap-2`,
+    type: 'rental',
+    customerName: 'Diana Cretu',
+    customerEmail: 'diana.cretu@example.com',
+    customerPhone: '+373 444 555 666',
+    carName: cars[0]?.name || 'BMW 320',
+    avatar: cars[0]?.image || '',
+    pickupDate: overlapDateStr,
+    pickupTime: '11:00',
+    returnDate: rental2End.toISOString().split('T')[0],
+    returnTime: '18:00',
+    status: 'ACTIVE',
+    total_amount: (cars[0]?.pricePerDay * 4 || 400).toString(),
+    amount: cars[0]?.pricePerDay * 4 || 400,
+    createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    carId: cars[0]?.id.toString() || '1',
+    userId: 'user-overlap-2',
+  });
+
+  // Rental 3: Different car returning on overlap date
+  mockOrders.push({
+    id: `rental-overlap-3`,
+    type: 'rental',
+    customerName: 'Sergiu Popa',
+    customerEmail: 'sergiu.popa@example.com',
+    customerPhone: '+373 777 888 999',
+    carName: cars[1]?.name || 'Mercedes CLS',
+    avatar: cars[1]?.image || '',
+    pickupDate: rental1Start.toISOString().split('T')[0],
+    pickupTime: '14:00',
+    returnDate: overlapDateStr,
+    returnTime: '15:00',
+    status: 'ACTIVE',
+    total_amount: (cars[1]?.pricePerDay * 5 || 600).toString(),
+    amount: cars[1]?.pricePerDay * 5 || 600,
+    createdAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    carId: cars[1]?.id.toString() || '2',
+    userId: 'user-overlap-3',
+  });
+
+  // Rental 4: Different car picking up on overlap date
+  const rental4End = new Date(overlapDate);
+  rental4End.setDate(rental4End.getDate() + 6);
+  mockOrders.push({
+    id: `rental-overlap-4`,
+    type: 'rental',
+    customerName: 'Cristina Rusu',
+    customerEmail: 'cristina.rusu@example.com',
+    customerPhone: '+373 000 111 222',
+    carName: cars[2]?.name || 'Audi A4',
+    avatar: cars[2]?.image || '',
+    pickupDate: overlapDateStr,
+    pickupTime: '13:00',
+    returnDate: rental4End.toISOString().split('T')[0],
+    returnTime: '17:00',
+    status: 'Pending',
+    total_amount: (cars[2]?.pricePerDay * 6 || 540).toString(),
+    amount: cars[2]?.pricePerDay * 6 || 540,
+    createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    carId: cars[2]?.id.toString() || '3',
+    userId: 'user-overlap-4',
+  });
+
   // Sort by creation date (newest first)
   return mockOrders.sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

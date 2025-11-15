@@ -1624,15 +1624,31 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
     );
 };
 
-const CalendarView: React.FC = () => (
-    <motion.div
-        initial={{ opacity: 1 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-    >
-        <CalendarPage viewMode='admin' />
-    </motion.div>
-);
+const CalendarView: React.FC = () => {
+    return (
+        <motion.div
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="space-y-6"
+        >
+            {/* Calendar Card */}
+            <motion.div
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden"
+            >
+                <div className="px-6 py-4 border-b border-white/10">
+                    <h2 className="text-xl font-bold text-white">Booking Calendar</h2>
+                </div>
+                <div className="p-6">
+                    <CalendarPage viewMode='admin' />
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
 
 const UsersView: React.FC = () => (
     <motion.div
