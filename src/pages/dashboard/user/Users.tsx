@@ -18,8 +18,8 @@ export const UsersPage: React.FC = () => {
     // Filtered users
     const filteredUsers = users.filter(
         (u) =>
-            u.firstName.toLowerCase().includes(search.toLowerCase()) ||
-            u.lastName.toLowerCase().includes(search.toLowerCase()) ||
+            u.first_name.toLowerCase().includes(search.toLowerCase()) ||
+            u.last_name.toLowerCase().includes(search.toLowerCase()) ||
             u.username.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -81,10 +81,10 @@ export const UsersPage: React.FC = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
-                                                {user.firstName.charAt(0)}
+                                                {user.first_name.charAt(0)}
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="font-semibold text-white text-sm truncate">{user.firstName} {user.lastName}</span>
+                                                <span className="font-semibold text-white text-sm truncate">{user.first_name} {user.last_name}</span>
                                                 <span className="text-gray-400 text-xs truncate">@{user.username}</span>
                                             </div>
                                         </div>
@@ -154,10 +154,10 @@ export const UsersPage: React.FC = () => {
                             <div className="space-y-4">
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                                        {selectedUser.firstName.charAt(0)}
+                                        {selectedUser.first_name.charAt(0)}
                                     </div>
                                     <div>
-                                        <h4 className="text-xl font-bold text-white">{selectedUser.firstName} {selectedUser.lastName}</h4>
+                                        <h4 className="text-xl font-bold text-white">{selectedUser.first_name} {selectedUser.last_name}</h4>
                                         <p className="text-gray-400">@{selectedUser.username}</p>
                                     </div>
                                 </div>

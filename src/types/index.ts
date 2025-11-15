@@ -56,11 +56,11 @@ export interface Feature {
 }
 
 export interface User {
-  id: number;
+  id: string;
   avatar?: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
   email: string;
   role: string;
 };
