@@ -19,3 +19,13 @@ ALTER COLUMN "user_id" TYPE TEXT USING "user_id"::TEXT;
 
 ALTER TABLE "BorrowRequest" 
 ALTER COLUMN "user_id" TYPE TEXT USING "user_id"::TEXT;
+
+
+-- get the supabase user & it's profile
+SELECT *
+FROM "Profiles" p
+JOIN auth.Users u ON u.id = CAST(p.id AS uuid)
+
+SELECT *
+FROM auth.Users
+
