@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,8 +22,7 @@ export const CarsView: React.FC = () => {
     const [filterCategory, setFilterCategory] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [editingCar, setEditingCar] = useState<CarType | null>(null);
+    const [viewingCar, setViewingCarDetials] = useState<CarType | null>(null);
     const [cars, setCars] = useState<CarType[]>([]);
 
     const [imageURL, setImageURL] = useState('');
@@ -58,7 +56,7 @@ export const CarsView: React.FC = () => {
     }, []);
 
     const getCarStatus = (car: CarType): number => {
-        if (car.status === 'available') return 0;
+        if (car.status !== 'available') return 1;
         else return 1; // Reserved
         return 0; // Available
     };
@@ -116,56 +114,16 @@ export const CarsView: React.FC = () => {
 
 
 
-    const handleEditCar = (car: CarType) => {
-        setEditingCar(car);
+    const handleViewCarDetails = (car: CarType) => {
+        setViewingCarDetials(car);
         setSearchParams({ section: 'cars', carId: car.id.toString() });
     };
-    // const handleSaveCar = (carData: Partial<CarType>): number | void => {
-    //     if (editingCar) {
-    //         // Update existing car - don't modify status, it's managed by the system
-    //         const { status, ...dataToUpdate } = carData;
-    //         setCars(prev => prev.map(c => c.id === editingCar.id ? { ...c, ...dataToUpdate } as CarType : c));
-    //         setShowAddModal(false);
-    //         setEditingCar(null);
-    //         setSearchParams({ section: 'cars' });
-    //     } else {
-    //         // Add new car
-    //         const newId = Math.max(...cars.map(c => c.id), 0) + 1;
-    //         const newCar: CarType = {
-    //             id: newId,
-    //             name: carData.name || '',
-    //             category: carData.category || 'luxury',
-    //             image: carData.image || '',
-    //             photoGallery: carData.photoGallery || [],
-    //             pricePerDay: carData.pricePerDay || 0,
-    //             year: carData.year || new Date().getFullYear(),
-    //             seats: carData.seats || 5,
-    //             transmission: carData.transmission || 'Automatic',
-    //             body: carData.body || 'Sedan',
-    //             fuelType: carData.fuelType || 'gasoline',
-    //             drivetrain: carData.drivetrain || '',
-    //             features: carData.features || [],
-    //             rating: carData.rating || 0,
-    //             reviews: carData.reviews || 0,
-    //             status: 'Available', // Set to "Available" by default for new cars
-    //             mileage: carData.mileage,
-    //             fuelConsumption: carData.fuelConsumption,
-    //             power: carData.power,
-    //             acceleration: carData.acceleration,
-    //             description: carData.description,
-    //             longDescription: carData.longDescription,
-    //         };
-    //         setCars(prev => [...prev, newCar]);
-    //         // Don't close modal or reset - let the modal handle the success state
-    //         return newId;
-    //     }
-    // };
 
-    // If carId is in URL, show car details/edit view
+    // If carId is in URL, show car details
     if (carId) {
         const car = cars.find(c => c.id.toString() === carId);
         if (car) {
-            return <CarDetailsEditView car={car} onCancel={() => setSearchParams({ section: 'cars' })} />;
+            return <CarDetailsView car={car} onCancel={() => setSearchParams({ section: 'cars' })} />;
         }
     }
 
@@ -190,8 +148,6 @@ export const CarsView: React.FC = () => {
     const carImageMap = getCarImageMap(cars, mainImagesURLs);
 
     // console.log('car:url: ', getCarImageMap(cars, mainImagesURLs))
-
-
 
     return (
         <motion.div
@@ -343,7 +299,7 @@ export const CarsView: React.FC = () => {
                                         <tr
                                             key={car.id}
                                             className="hover:bg-white/5 transition-colors cursor-pointer"
-                                            onClick={() => handleEditCar(car)}
+                                            onClick={() => handleViewCarDetails(car)}
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -369,15 +325,21 @@ export const CarsView: React.FC = () => {
                                             <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                             <td className="px-6 py-4">
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${car.status
+                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${car.status === 'BORROWED'
                                                         ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        : car.status
+                                                        : car.status === 'MAINTENANCE'
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                        }`}
+                                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' // AVAILABLE
+                                                        }
+                                                    `}
                                                 >
-                                                    {car.status ? 'Rented' : car.status ? 'Reserved' : 'Available'}
+                                                    {car.status === 'BORROWED'
+                                                        ? 'Borrowed'
+                                                        : car.status === 'MAINTENANCE'
+                                                            ? 'Maintenance'
+                                                            : 'Available'}
                                                 </span>
+
                                             </td>
                                         </tr>
                                     );
@@ -393,19 +355,6 @@ export const CarsView: React.FC = () => {
                     </table>
                 </div>
             </div>
-
-            {/* Add/Edit Car Modal */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <CarFormModal
-                        car={editingCar}
-                        onClose={() => {
-                            setShowAddModal(false);
-                            setEditingCar(null);
-                        }}
-                    />
-                )}
-            </AnimatePresence>
         </motion.div>
     );
 };
@@ -416,13 +365,7 @@ interface CarDetailsEditViewProps {
     onCancel: () => void;
 }
 
-const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }) => {
-    const [formData, setFormData] = useState<Partial<CarType>>(car);
-    const [newFeature, setNewFeature] = useState('');
-    const [newGalleryImage, setNewGalleryImage] = useState('');
-    const [uploadingMainImage, setUploadingMainImage] = useState(false);
-    const [uploadingGalleryImage, setUploadingGalleryImage] = useState(false);
-
+const CarDetailsView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel: onExit }) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
     };
@@ -439,7 +382,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
                             <input
                                 type="text"
-                                value={formData.make + formData.model || ''}
+                                value={(car.make || '') + (car.model || '')}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
@@ -451,7 +394,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Year</label>
                                 <input
                                     type="number"
-                                    value={formData.year || ''}
+                                    value={car.year || ''}
                                     readOnly
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                     required
@@ -461,7 +404,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Seats</label>
                                 <input
                                     type="number"
-                                    value={formData.seats || ''}
+                                    value={car.seats || ''}
                                     readOnly
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                     required
@@ -472,7 +415,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
                             <input
-                                value={formData.category || 'luxury'}
+                                value={car.category || 'luxury'}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
@@ -482,7 +425,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <label className="block text-sm font-medium text-gray-300 mb-2">Price Per Day (MDL)</label>
                             <input
                                 type="number"
-                                value={formData.price_per_day || ''}
+                                value={car.price_per_day || ''}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
@@ -497,7 +440,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Body Type</label>
                             <input
-                                value={formData.body || 'Sedan'}
+                                value={car.body || 'Sedan'}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
@@ -506,7 +449,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Transmission</label>
                             <input
-                                value={formData.transmission || 'Automatic'}
+                                value={car.transmission || 'Automatic'}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
@@ -515,7 +458,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Fuel Type</label>
                             <input
-                                value={formData.fuel_type || 'gasoline'}
+                                value={car.fuel_type || 'gasoline'}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
@@ -525,7 +468,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <label className="block text-sm font-medium text-gray-300 mb-2">Drivetrain</label>
                             <input
                                 type="text"
-                                value={formData.drivetrain || ''}
+                                value={car.drivetrain || ''}
                                 readOnly
                                 placeholder="e.g., AWD, RWD, FWD"
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
@@ -540,8 +483,8 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
 
                     {/* <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Main Image</label>
-                        {formData.image && (
-                            <img src={formData.image} alt="Preview" className="mt-2 w-32 h-20 object-cover rounded-lg border border-white/10" />
+                        {car.image && (
+                            <img src={car.image} alt="Preview" className="mt-2 w-32 h-20 object-cover rounded-lg border border-white/10" />
                         )}
                     </div> */}
 
@@ -554,7 +497,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
                     <h3 className="text-lg font-bold text-white mb-4">Features</h3>
                     <div className="flex flex-wrap gap-2">
-                        {formData.features?.map((feature, index) => (
+                        {car.features?.map((feature, index) => (
                             <span
                                 key={index}
                                 className="flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
@@ -577,7 +520,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                                 step="0.1"
                                 min="0"
                                 max="5"
-                                value={formData.rating || ''}
+                                value={car.rating || ''}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
@@ -586,7 +529,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                             <label className="block text-sm font-medium text-gray-300 mb-2">Reviews Count</label>
                             <input
                                 type="number"
-                                value={formData.reviews || ''}
+                                value={car.reviews || ''}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
@@ -598,7 +541,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                 <div className="flex gap-4 justify-end">
                     <button
                         type="button"
-                        onClick={onCancel}
+                        onClick={onExit}
                         className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
                     >
                         Exit
@@ -606,97 +549,5 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel }
                 </div>
             </form>
         </div>
-    );
-};
-
-// Car Form Modal Component
-interface CarFormModalProps {
-    car: CarType | null;
-    onClose: () => void;
-}
-
-const CarFormModal: React.FC<CarFormModalProps> = ({ car, onClose }) => {
-    const [, setSearchParams] = useSearchParams();
-    const [formData, setFormData] = useState<Partial<CarType>>(
-        car || {
-            make: '',
-            model: '',
-            category: 'luxury',
-            price_per_day: 0,
-            year: new Date().getFullYear(),
-            seats: 5,
-        }
-    );
-    const [uploadingMainImage, setUploadingMainImage] = useState(false);
-    const [carAdded, setCarAdded] = useState(false);
-    const [newCarId, setNewCarId] = useState<number | null>(null);
-
-    const handleContinue = () => {
-        if (newCarId) {
-            setSearchParams({ section: 'cars', carId: newCarId.toString() });
-            onClose();
-        }
-    };
-
-    // Placeholder function for uploading main image to Supabase
-    const handleMainImageUpload = async (file: File) => {
-        setUploadingMainImage(true);
-        try {
-            // TODO: Implement Supabase storage upload
-            // const { data, error } = await supabase.storage
-            //     .from('car-images')
-            //     .upload(`main/${Date.now()}-${file.name}`, file);
-            // if (error) throw error;
-            // const { data: { publicUrl } } = supabase.storage
-            //     .from('car-images')
-            //     .getPublicUrl(data.path);
-            // setFormData(prev => ({ ...prev, image: publicUrl }));
-
-            // Temporary: Create object URL for preview
-            const objectUrl = URL.createObjectURL(file);
-            setFormData(prev => ({ ...prev, image: objectUrl }));
-            alert('Image upload will be implemented with Supabase storage');
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            alert('Error uploading image. Please try again.');
-        } finally {
-            setUploadingMainImage(false);
-        }
-    };
-
-    return createPortal(
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-            onClick={onClose}
-            style={{ zIndex: 10000 }}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            >
-                {/* Header */}
-                <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
-                    <div>
-                        <h2 className="text-2xl font-bold text-white">Add New Car</h2>
-                        <p className="text-gray-400 text-sm mt-1">
-                            Create a new vehicle entry in the fleet
-                        </p>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                    >
-                        <X className="w-5 h-5 text-white" />
-                    </button>
-                </div>
-            </motion.div>
-        </motion.div>,
-        document.body
     );
 };
