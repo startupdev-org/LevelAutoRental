@@ -1644,15 +1644,6 @@ const UsersView: React.FC = () => (
     </motion.div>
 );
 
-const SettingsView: React.FC = () => (
-    <motion.div
-        initial={{ opacity: 1 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-    >
-        <Settings />
-    </motion.div>
-);
 
 export const Admin: React.FC = () => {
     const navigate = useNavigate();
@@ -1666,6 +1657,7 @@ export const Admin: React.FC = () => {
     const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
     // Close language dropdown when clicking outside
     useEffect(() => {
@@ -1691,7 +1683,6 @@ export const Admin: React.FC = () => {
         { id: 'calendar', label: 'Calendar', icon: CalendarDays },
         { id: 'orders', label: 'Orders', icon: ShoppingCart },
         { id: 'users', label: 'Users', icon: UsersIcon },
-        { id: 'settings', label: 'Settings', icon: SettingsIcon },
     ];
 
     const handleSectionChange = (sectionId: string) => {
@@ -1743,8 +1734,6 @@ export const Admin: React.FC = () => {
                 return 'View and manage bookings calendar';
             case 'users':
                 return 'Manage user accounts and permissions';
-            case 'settings':
-                return 'Configure your admin preferences';
             default:
                 return '';
         }
@@ -1766,8 +1755,6 @@ export const Admin: React.FC = () => {
                 return <CalendarView key={refreshKey} />;
             case 'users':
                 return <UsersView key={refreshKey} />;
-            case 'settings':
-                return <SettingsView key={refreshKey} />;
             default:
                 return <DashboardView key={refreshKey} />;
         }
@@ -1818,7 +1805,7 @@ export const Admin: React.FC = () => {
                                         <h1 className="text-lg font-bold text-white">Admin Panel</h1>
                                         <p className="text-xs text-gray-300">Level Auto Rental</p>
                                     </div>
-                                    {/* Mobile Refresh and Language Selector */}
+                                    {/* Mobile Refresh and Settings */}
                                     <div className="lg:hidden flex items-center gap-2">
                                         {/* Mobile Refresh Button */}
                                         <button
@@ -1829,53 +1816,14 @@ export const Admin: React.FC = () => {
                                         >
                                             <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
                                         </button>
-                                        {/* Mobile Language Selector */}
-                                        <div className="relative language-dropdown-container">
-                                            <button
-                                                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                                                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
-                                            >
-                                                <span
-                                                    className={`fi ${currentLanguage === 'en'
-                                                        ? 'fi-gb'
-                                                        : currentLanguage === 'ru'
-                                                            ? 'fi-ru'
-                                                            : 'fi-ro'
-                                                        } w-5 h-4 rounded-sm`}
-                                                ></span>
-                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                            <AnimatePresence>
-                                                {showLanguageDropdown && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                        transition={{ duration: 0.2, ease: "easeOut" }}
-                                                        className="absolute top-full right-0 mt-2 border border-white/20 rounded-lg shadow-lg z-[9999] min-w-[140px]"
-                                                        style={{ backgroundColor: '#1F1F20' }}
-                                                    >
-                                                        {LANGUAGES.map(({ code, iconClass }) => (
-                                                            <button
-                                                                key={code}
-                                                                onClick={() => {
-                                                                    i18n.changeLanguage(code);
-                                                                    setCurrentLanguage(code);
-                                                                    setShowLanguageDropdown(false);
-                                                                    localStorage.setItem("selectedLanguage", code);
-                                                                }}
-                                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/20 transition-colors"
-                                                            >
-                                                                <span className={iconClass}></span>
-                                                                <span>{t(`languages.${code}`)}</span>
-                                                            </button>
-                                                        ))}
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
+                                        {/* Mobile Settings Button */}
+                                        <button
+                                            onClick={() => setIsSettingsModalOpen(true)}
+                                            className="flex items-center px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
+                                            title="Settings"
+                                        >
+                                            <SettingsIcon className="w-4 h-4 text-white" />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1922,6 +1870,13 @@ export const Admin: React.FC = () => {
                                         <p className="text-sm font-semibold text-white truncate">Victorin</p>
                                         <p className="text-xs text-gray-300 truncate">admin@lvl.com</p>
                                     </div>
+                                    <button
+                                        onClick={() => setIsSettingsModalOpen(true)}
+                                        className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                                        aria-label="Settings"
+                                    >
+                                        <SettingsIcon className="w-4 h-4 text-gray-300 hover:text-white" />
+                                    </button>
                                 </div>
 
                                 {/* Back Button */}
@@ -1968,53 +1923,6 @@ export const Admin: React.FC = () => {
                                     >
                                         <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
                                     </button>
-                                    {/* Desktop Language Selector */}
-                                    <div className="hidden lg:block relative language-dropdown-container z-[100]">
-                                        <button
-                                            onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                                            className="flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
-                                        >
-                                            <span
-                                                className={`fi ${currentLanguage === 'en'
-                                                    ? 'fi-gb'
-                                                    : currentLanguage === 'ru'
-                                                        ? 'fi-ru'
-                                                        : 'fi-ro'
-                                                    } w-5 h-4 rounded-sm`}
-                                            ></span>
-                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        <AnimatePresence>
-                                            {showLanguageDropdown && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                    transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute top-full right-0 mt-2 border border-white/20 rounded-lg shadow-lg z-[9999] min-w-[160px]"
-                                                    style={{ zIndex: 9999, backgroundColor: '#1F1F20' }}
-                                                >
-                                                    {LANGUAGES.map(({ code, iconClass }) => (
-                                                        <button
-                                                            key={code}
-                                                            onClick={() => {
-                                                                i18n.changeLanguage(code);
-                                                                setCurrentLanguage(code);
-                                                                setShowLanguageDropdown(false);
-                                                                localStorage.setItem("selectedLanguage", code);
-                                                            }}
-                                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/20 transition-colors"
-                                                        >
-                                                            <span className={iconClass}></span>
-                                                            <span>{t(`languages.${code}`)}</span>
-                                                        </button>
-                                                    ))}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2033,6 +1941,47 @@ export const Admin: React.FC = () => {
                     </div>
                 </div>
             </div>
+            {/* Settings Modal */}
+            {isSettingsModalOpen && createPortal(
+                <motion.div
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 1 }}
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                    onClick={() => setIsSettingsModalOpen(false)}
+                    style={{ zIndex: 10000 }}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+                    >
+                        {/* Header */}
+                        <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">Settings</h2>
+                                <p className="text-gray-400 text-sm mt-1">
+                                    Manage your account settings and preferences
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setIsSettingsModalOpen(false)}
+                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-white" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6">
+                            <Settings />
+                        </div>
+                    </motion.div>
+                </motion.div>,
+                document.body
+            )}
         </>
     );
 };

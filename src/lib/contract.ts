@@ -368,13 +368,13 @@ export const generateContractPDF = async (data: ContractData) => {
 
     // Vehicle details table
     const vehicleInfo = [
-      ['MARCA:', convertRomanianToASCII(data.car.name.split(' ')[0] || data.car.name)],
-      ['MODEL:', convertRomanianToASCII(data.car.name.split(' ').slice(1).join(' ') || '')],
+      ['MARCA:', convertRomanianToASCII(data.car.make || '')],
+      ['MODEL:', convertRomanianToASCII(data.car.model || '')],
       ['CULOARE:', ''],
       [convertRomanianToASCII('NR. DE INMATRICULARE:'), data.vehicleDetails?.registrationNumber || ''],
       ['NR/KM LA BORD:', data.vehicleDetails?.mileage?.toString() || ''],
       ['AN FABRICATIE:', data.car.year.toString()],
-      ['COMBUSTIBIL:', convertRomanianToASCII(data.car.fuelType === 'gasoline' ? 'Benzina' : data.car.fuelType === 'diesel' ? 'Motorina' : data.car.fuelType)]
+      ['COMBUSTIBIL:', convertRomanianToASCII(data.car.fuel_type === 'gasoline' ? 'Benzina' : data.car.fuel_type === 'diesel' ? 'Motorina' : data.car.fuel_type || '')]
     ];
 
     // Check if we need a new page before adding table
@@ -1877,7 +1877,7 @@ export const createContractDataFromOrder = (
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
   
   // Calculate pricing
-  const pricePerDay = car.pricePerDay;
+  const pricePerDay = car.price_per_day;
   const subtotal = pricePerDay * days;
   let discount = 0;
   let discountAmount = 0;
