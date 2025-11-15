@@ -5,6 +5,7 @@ import { Mail, Lock, UserRound, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
+import { createUser } from "../../lib/db/auth/auth";
 
 export const SignUp: React.FC = () => {
     const [firstName, setFirstName] = useState("");
@@ -25,29 +26,44 @@ export const SignUp: React.FC = () => {
         setError("");
         setLoading(true);
 
+
         try {
-            const { error: signUpError } = await signUp(email, password);
-            
-            if (signUpError) {
-                setError(signUpError.message || "Failed to create account");
+            const { data, error: signUpError } = await signUp(email, password);
+
+            // verify the signUp and the id
+            if (signUpError || !data?.user?.id) {
+                setError(signUpError?.message || "Failed to create account");
                 setLoading(false);
                 return;
             }
 
-            // Successful signup - redirect to dashboard
+            const id = data.user.id;
+
+            // Insert profile into your 'profiles' table
+            await createUser({
+                id,
+                first_name: firstName,
+                last_name: lastName,
+                phone_number: phone,
+                email,
+                role: "USER",
+            });
+
+            // Redirect to dashboard
             navigate("/dashboard");
         } catch (err) {
             setError("An unexpected error occurred. Please try again.");
+        } finally {
             setLoading(false);
         }
     };
 
     return (
-        <section 
+        <section
             className="min-h-[calc(100vh+150px)] md:min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-10 md:py-12 relative"
         >
             {/* Mobile Background */}
-            <div 
+            <div
                 className="absolute inset-0 md:hidden"
                 style={{
                     backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
@@ -57,7 +73,7 @@ export const SignUp: React.FC = () => {
                 }}
             />
             {/* Desktop Background */}
-            <div 
+            <div
                 className="hidden md:block absolute inset-0"
                 style={{
                     backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
@@ -67,17 +83,17 @@ export const SignUp: React.FC = () => {
                 }}
             />
             {/* Desktop overlay - darker */}
-            <div 
+            <div
                 className="hidden md:block absolute inset-0"
-                style={{ 
-                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))'
                 }}
             />
             {/* Mobile-specific overlay */}
-            <div 
+            <div
                 className="absolute inset-0 md:hidden"
-                style={{ 
-                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))'
                 }}
             />
             <motion.div
@@ -85,8 +101,8 @@ export const SignUp: React.FC = () => {
                 initial="initial"
                 animate="animate"
                 className="w-full max-w-6xl bg-white rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 relative z-10"
-                style={{ 
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+                style={{
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
                 }}
             >
                 {/* Left - Image */}
@@ -98,10 +114,10 @@ export const SignUp: React.FC = () => {
                     }}
                 >
                     <div className="absolute inset-0 bg-black/70" />
-                    <div 
+                    <div
                         className="absolute inset-0"
-                        style={{ 
-                            background: 'linear-gradient(315deg, rgba(220, 38, 38, 0.3), rgba(0, 0, 0, 0.4))' 
+                        style={{
+                            background: 'linear-gradient(315deg, rgba(220, 38, 38, 0.3), rgba(0, 0, 0, 0.4))'
                         }}
                     />
                     <div className="relative z-10 h-full flex flex-col items-start justify-center p-10 text-white">

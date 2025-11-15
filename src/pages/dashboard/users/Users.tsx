@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { User } from "../../../types";
 import { users as usersData } from "../../../data/index";
-import { 
-    ArrowLeft, 
-    ArrowRight, 
-    Mail, 
-    Car, 
-    User as UserIcon, 
+import {
+    ArrowLeft,
+    ArrowRight,
+    Mail,
+    Car,
+    User as UserIcon,
     Search,
     ArrowUpDown,
     ArrowUp,
@@ -42,49 +42,49 @@ export const UsersPage: React.FC = () => {
                 const data = await fetchRentalsOnly(cars);
                 const rentals = data.filter(order => order.type === 'rental');
                 setUserOrders(rentals);
-                
+
                 // Extract unique users from orders
                 const userMap = new Map<string, User>();
-                
+
                 rentals.forEach((order) => {
                     if (!order.customerName || !order.customerEmail) return;
-                    
+
                     // Use email as unique identifier
                     const email = order.customerEmail.toLowerCase();
-                    
+
                     if (!userMap.has(email)) {
                         // Parse name
                         const nameParts = order.customerName.trim().split(' ');
                         const firstName = nameParts[0] || '';
                         const lastName = nameParts.slice(1).join(' ') || '';
-                        
+
                         userMap.set(email, {
                             id: userMap.size + 1,
-                            firstName: firstName,
-                            lastName: lastName,
+                            first_name: firstName,
+                            last_name: lastName,
                             email: order.customerEmail,
-                            phone: order.customerPhone || undefined,
+                            phone_number: order.customerPhone || undefined,
                             role: userMap.size === 0 ? 'Admin' : 'User', // First user is Admin (Victorin)
                         });
                     }
                 });
-                
+
                 // Convert map to array and ensure Victorin is Admin
                 const extractedUsers = Array.from(userMap.values());
                 if (extractedUsers.length > 0) {
                     // Find Victorin and set as Admin, others as User
                     extractedUsers.forEach((user, index) => {
-                        if (user.firstName.toLowerCase() === 'victorin' || 
+                        if (user.first_name.toLowerCase() === 'victorin' ||
                             user.email.toLowerCase().includes('victorin')) {
                             user.role = 'Admin';
                         } else {
                             user.role = 'User';
                         }
                     });
-                    
+
                     // Ensure only one Admin
-                    const adminIndex = extractedUsers.findIndex(u => 
-                        u.firstName.toLowerCase() === 'victorin' || 
+                    const adminIndex = extractedUsers.findIndex(u =>
+                        u.first_name.toLowerCase() === 'victorin' ||
                         u.email.toLowerCase().includes('victorin')
                     );
                     if (adminIndex > 0) {
@@ -95,7 +95,7 @@ export const UsersPage: React.FC = () => {
                         });
                     }
                 }
-                
+
                 setUsers(extractedUsers);
             } catch (error) {
                 console.error('Failed to load users and orders:', error);
@@ -110,11 +110,11 @@ export const UsersPage: React.FC = () => {
     const getUserOrderCount = (userId: number): number => {
         const user = users.find(u => u.id === userId);
         if (!user) return 0;
-        
+
         return userOrders.filter(order => {
             // Match by email (most reliable) or customer name
             return order.customerEmail?.toLowerCase() === user.email.toLowerCase() ||
-                   order.customerName?.toLowerCase() === `${user.firstName} ${user.lastName}`.toLowerCase();
+                order.customerName?.toLowerCase() === `${user.first_name} ${user.last_name}`.toLowerCase();
         }).length;
     };
 
@@ -122,12 +122,12 @@ export const UsersPage: React.FC = () => {
     const getUserTotalSpent = (userId: number): number => {
         const user = users.find(u => u.id === userId);
         if (!user) return 0;
-        
+
         return userOrders
             .filter(order => {
                 // Match by email (most reliable) or customer name
                 return order.customerEmail?.toLowerCase() === user.email.toLowerCase() ||
-                       order.customerName?.toLowerCase() === `${user.firstName} ${user.lastName}`.toLowerCase();
+                    order.customerName?.toLowerCase() === `${user.first_name} ${user.last_name}`.toLowerCase();
             })
             .reduce((sum, order) => sum + (order.amount || 0), 0);
     };
@@ -136,11 +136,11 @@ export const UsersPage: React.FC = () => {
     const filteredUsers = useMemo(() => {
         let filtered = users.filter(
             (u) => {
-                const matchesSearch = 
-            u.firstName.toLowerCase().includes(search.toLowerCase()) ||
-            u.lastName.toLowerCase().includes(search.toLowerCase()) ||
-                    (u.phone && u.phone.toLowerCase().includes(search.toLowerCase())) ||
-            u.email.toLowerCase().includes(search.toLowerCase());
+                const matchesSearch =
+                    u.first_name.toLowerCase().includes(search.toLowerCase()) ||
+                    u.last_name.toLowerCase().includes(search.toLowerCase()) ||
+                    (u.phone_number && u.phone_number.toLowerCase().includes(search.toLowerCase())) ||
+                    u.email.toLowerCase().includes(search.toLowerCase());
                 const matchesRole = filterRole === 'all' || u.role.toLowerCase() === filterRole.toLowerCase();
                 return matchesSearch && matchesRole;
             }
@@ -153,8 +153,8 @@ export const UsersPage: React.FC = () => {
 
                 switch (sortBy) {
                     case 'name':
-                        aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
-                        bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
+                        aValue = `${a.first_name} ${a.last_name}`.toLowerCase();
+                        bValue = `${b.first_name} ${b.last_name}`.toLowerCase();
                         break;
                     case 'email':
                         aValue = a.email.toLowerCase();
@@ -197,11 +197,11 @@ export const UsersPage: React.FC = () => {
     };
 
     // Get user orders for selected user
-    const selectedUserOrders = selectedUser 
+    const selectedUserOrders = selectedUser
         ? userOrders.filter(order => {
             // Match by email (most reliable) or customer name
             return order.customerEmail?.toLowerCase() === selectedUser.email.toLowerCase() ||
-                   order.customerName?.toLowerCase() === `${selectedUser.firstName} ${selectedUser.lastName}`.toLowerCase();
+                order.customerName?.toLowerCase() === `${selectedUser.first_name} ${selectedUser.last_name}`.toLowerCase();
         })
         : [];
 
@@ -303,51 +303,50 @@ export const UsersPage: React.FC = () => {
                         <tbody>
                             {paginatedUsers.map((user) => {
                                 return (
-                                <tr
-                                    key={user.id}
-                                    className={`border-b border-white/10 hover:bg-white/5 transition cursor-pointer ${selectedUser?.id === user.id ? "bg-white/5" : ""}`}
-                                    onClick={() => setSelectedUser(user)}
-                                >
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
-                                                {user.firstName.charAt(0)}
+                                    <tr
+                                        key={user.id}
+                                        className={`border-b border-white/10 hover:bg-white/5 transition cursor-pointer ${selectedUser?.id === user.id ? "bg-white/5" : ""}`}
+                                        onClick={() => setSelectedUser(user)}
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
+                                                    {user.first_name.charAt(0)}
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="font-semibold text-white text-sm truncate">{user.first_name} {user.last_name}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="font-semibold text-white text-sm truncate">{user.firstName} {user.lastName}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-300 text-sm">{user.email}</td>
-                                    <td className="px-6 py-4 text-gray-300 text-sm">
-                                        {user.phone ? (
-                                            <a
-                                                href={`tel:${user.phone.replace(/\s/g, '')}`}
-                                                className="hover:text-white transition-colors"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                {user.phone}
-                                            </a>
-                                        ) : (
-                                            <span className="text-gray-400">N/A</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-xl ${
-                                                user.role.trim().toLowerCase() === 'admin' 
-                                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
-                                                    : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
-                                            }`}>
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-300 text-sm">
-                                        {getUserOrderCount(user.id)}
-                                    </td>
-                                    <td className="px-6 py-4 text-white font-semibold text-sm">
-                                        {getUserTotalSpent(user.id).toFixed(2)} MDL
-                                    </td>
-                                </tr>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-300 text-sm">{user.email}</td>
+                                        <td className="px-6 py-4 text-gray-300 text-sm">
+                                            {user.phone_number ? (
+                                                <a
+                                                    href={`tel:${user.phone_number.replace(/\s/g, '')}`}
+                                                    className="hover:text-white transition-colors"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {user.phone_number}
+                                                </a>
+                                            ) : (
+                                                <span className="text-gray-400">N/A</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-xl ${user.role.trim().toLowerCase() === 'admin'
+                                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                                                : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                }`}>
+                                                {user.role}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-300 text-sm">
+                                            {getUserOrderCount(user.id)}
+                                        </td>
+                                        <td className="px-6 py-4 text-white font-semibold text-sm">
+                                            {getUserTotalSpent(user.id).toFixed(2)} MDL
+                                        </td>
+                                    </tr>
                                 );
                             })}
                             {paginatedUsers.length === 0 && (
@@ -459,26 +458,26 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                             >
                                 <X className="w-5 h-5 text-white" />
                             </button>
-                    </div>
+                        </div>
 
                         {/* Content */}
-                    <div className="p-4 md:p-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 md:gap-6">
-                            {/* User Info */}
+                        <div className="p-4 md:p-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 md:gap-6">
+                                {/* User Info */}
                                 <div className="space-y-6">
                                     {/* User Profile */}
-                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-4">
                                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
-                                            {user.firstName.charAt(0)}
-                                    </div>
-                                    <div>
-                                            <h3 className="text-2xl font-bold text-white">{user.firstName} {user.lastName}</h3>
-                                            {user.phone ? (
+                                            {user.first_name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white">{user.first_name} {user.last_name}</h3>
+                                            {user.phone_number ? (
                                                 <a
-                                                    href={`tel:${user.phone.replace(/\s/g, '')}`}
+                                                    href={`tel:${user.phone_number.replace(/\s/g, '')}`}
                                                     className="text-gray-400 hover:text-white transition-colors"
                                                 >
-                                                    {user.phone}
+                                                    {user.phone_number}
                                                 </a>
                                             ) : (
                                                 <p className="text-gray-400">N/A</p>
@@ -496,17 +495,17 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                             <p className="text-white font-medium">{user.email}</p>
                                         </div>
 
-                                        {user.phone && (
+                                        {user.phone_number && (
                                             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                                                 <div className="flex items-center gap-3 mb-3">
                                                     <Phone className="h-5 w-5 text-gray-400" />
                                                     <p className="text-xs text-gray-400 uppercase tracking-wide">Phone</p>
                                                 </div>
                                                 <a
-                                                    href={`tel:${user.phone.replace(/\s/g, '')}`}
+                                                    href={`tel:${user.phone_number.replace(/\s/g, '')}`}
                                                     className="text-white font-medium hover:text-gray-300 transition-colors"
                                                 >
-                                                    {user.phone}
+                                                    {user.phone_number}
                                                 </a>
                                             </div>
                                         )}
@@ -516,14 +515,13 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                                 <UserIcon className="h-5 w-5 text-gray-400" />
                                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Role</p>
                                             </div>
-                                            <span className={`px-3 py-1 rounded-lg text-sm font-semibold border backdrop-blur-sm ${
-                                                user.role.trim().toLowerCase() === 'admin'
-                                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
-                                                    : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
-                                            }`}>
+                                            <span className={`px-3 py-1 rounded-lg text-sm font-semibold border backdrop-blur-sm ${user.role.trim().toLowerCase() === 'admin'
+                                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                                                : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                }`}>
                                                 {user.role}
                                             </span>
-                                </div>
+                                        </div>
                                     </div>
 
                                     {/* Statistics */}
@@ -531,12 +529,12 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                         <div className="flex items-center gap-3 mb-3">
                                             <DollarSign className="h-5 w-5 text-gray-400" />
                                             <p className="text-xs text-gray-400 uppercase tracking-wide">Total Spent</p>
-                                    </div>
+                                        </div>
                                         <p className="text-3xl font-bold text-white">
                                             {userOrders.reduce((sum, order) => sum + (order.amount || 0), 0).toFixed(2)} MDL
                                         </p>
+                                    </div>
                                 </div>
-                            </div>
 
                                 {/* Rental History */}
                                 <div>
@@ -549,19 +547,19 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                     {userOrders.length > 0 ? (
                                         <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
                                             <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                                        <table className="w-full text-sm" style={{ minWidth: '100%' }}>
+                                                <table className="w-full text-sm" style={{ minWidth: '100%' }}>
                                                     <thead className="bg-white/5 sticky top-0">
                                                         <tr>
                                                             <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Car</th>
                                                             <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Dates</th>
                                                             <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Amount</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
                                                         {userOrders.slice(0, 5).map((order) => {
                                                             const car = cars.find(c => c.id.toString() === order.carId);
                                                             return (
-                                                    <tr key={order.id} className="border-t border-white/10 hover:bg-white/5 transition">
+                                                                <tr key={order.id} className="border-t border-white/10 hover:bg-white/5 transition">
                                                                     <td className="px-3 md:px-4 py-2 md:py-3 text-white font-medium whitespace-nowrap">
                                                                         {car?.name || order.carName || 'N/A'}
                                                                     </td>
@@ -575,36 +573,36 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                                                     <td className="px-3 md:px-4 py-2 md:py-3 text-white font-semibold whitespace-nowrap">
                                                                         {order.amount?.toFixed(2) || '0.00'} MDL
                                                                     </td>
-                                                    </tr>
+                                                                </tr>
                                                             );
                                                         })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    {userOrders.length > 0 && (
-                                        <div className="p-4 border-t border-white/10">
-                                            <button
-                                                onClick={() => {
-                                                    onClose();
-                                                    navigate(`/admin?section=orders&search=${encodeURIComponent(`${user?.firstName} ${user?.lastName}`)}`);
-                                                }}
-                                                className="w-full px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 hover:text-blue-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
-                                            >
-                                                View {user.firstName} {user.lastName} Past Rentals
-                                                <ArrowRight className="w-4 h-4" />
-                                            </button>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            {userOrders.length > 0 && (
+                                                <div className="p-4 border-t border-white/10">
+                                                    <button
+                                                        onClick={() => {
+                                                            onClose();
+                                                            navigate(`/admin?section=orders&search=${encodeURIComponent(`${user?.first_name} ${user?.last_name}`)}`);
+                                                        }}
+                                                        className="w-full px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 hover:text-blue-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        View {user.first_name} {user.last_name} Past Rentals
+                                                        <ArrowRight className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
                                     ) : (
                                         <div className="bg-white/5 rounded-lg p-12 border border-white/10 text-center">
                                             <Car className="w-16 h-16 text-gray-400 mx-auto mb-4 opacity-50" />
                                             <p className="text-gray-400">No rental history found</p>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </div>
-                    </div>
-                </div>
                     </motion.div>
                 </motion.div>
             )}

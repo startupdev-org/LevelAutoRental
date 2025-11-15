@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // Get environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
 
 // Validate environment variables
 if (!supabaseUrl) {
@@ -21,6 +22,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
+
+// Create and export Supabase Admin client
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey!);
 
 // Database types (you can generate these later with Supabase CLI)
 export type Database = {

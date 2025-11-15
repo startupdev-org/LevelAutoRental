@@ -44,7 +44,11 @@ export function useAuth() {
       email,
       password,
     });
-    return { data, error };
+
+    if (error) return { error };
+
+    const userId = data.user?.id; // user id (uuid)
+    return { userId, data };
   };
 
   const signOut = async () => {
