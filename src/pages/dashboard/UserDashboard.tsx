@@ -335,11 +335,6 @@ export const UserDashboard: React.FC = () => {
                       >
                         <ProfileTab
                           activeTab={activeTab}
-                          isEditing={isEditing}
-                          setIsEditing={setIsEditing}
-                          editForm={editForm}
-                          setEditForm={setEditForm}
-                          handleSaveProfile={handleSaveProfile}
                           t={t}
                         />
                       </motion.div>

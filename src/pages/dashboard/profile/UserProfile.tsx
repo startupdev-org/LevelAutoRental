@@ -1,53 +1,78 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Edit3, Mail, Phone } from 'lucide-react';
+import { getProfile, updateProfile } from '../../../lib/db/profile';
 import { User } from '../../../types';
-import { getProfile } from '../../../lib/db/profile';
 
 interface ProfileTabProps {
     activeTab: string;
-    isEditing: boolean;
-    setIsEditing: (val: boolean) => void;
-    editForm: {
-        firstName: string;
-        lastName: string;
-        email: string;
-        phone: string;
-    };
-    setEditForm: React.Dispatch<
-        React.SetStateAction<{
-            firstName: string;
-            lastName: string;
-            email: string;
-            phone: string;
-        }>
-    >;
-    handleSaveProfile: () => void;
     t: (key: string) => string;
 }
 
-const ProfileTab: React.FC<ProfileTabProps> = ({
-    activeTab,
-    isEditing,
-    setIsEditing,
-    editForm,
-    setEditForm,
-    handleSaveProfile,
-    t,
-}) => {
-
+const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({
+        firstName: '',
+        lastName: '',
+        phone: '',
+    });
+    const [loading, setLoading] = useState(false);
 
+    // Fetch profile
     async function handleGetProfile() {
-        const profile = await getProfile(); // rename to avoid shadowing
-        setUser(profile);
-        // console.log('the profile is: ', profile)
+        const profile = await getProfile();
+        if (profile) {
+            setUser(profile);
+            setEditForm({
+                firstName: profile.first_name,
+                lastName: profile.last_name,
+                phone: profile.phone_number || '',
+            });
+        }
     }
 
-
     useEffect(() => {
-        handleGetProfile()
+        handleGetProfile();
     }, []);
+
+    // Save profile
+    const handleSaveProfile = async () => {
+        if (!user) return;
+
+        setLoading(true);
+        // const result = await updateProfile({
+        //     id: user.id,
+        //     first_name: editForm.firstName,
+        //     last_name: editForm.lastName,
+        //     phone_number: editForm.phone,
+        // });
+
+        const result = await updateProfile({
+            id: user.id,
+            first_name: editForm.firstName,
+            last_name: editForm.lastName,
+            phone_number: editForm.phone
+        })
+
+
+        if (result.success && result.data) {
+            setUser(result.data[0]); // update state with new profile
+            setIsEditing(false);
+        } else {
+            alert('Failed to update profile: ' + result.error);
+        }
+        setLoading(false);
+    };
+
+    const resetProfileInfo = () => {
+        setEditForm({
+            firstName: user?.first_name || '',
+            lastName: user?.last_name || '',
+            phone: user?.phone_number || '',
+        });
+        setIsEditing(false)
+    }
 
     if (activeTab !== 'profile') return null;
 
@@ -77,9 +102,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
                         <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.firstName')}</label>
                         <input
                             type="text"
-                            value={user?.first_name}
-                            onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
-                            disabled={!isEditing}
+                            value={editForm.firstName}
+                            onChange={(e) => {
+                                const value = e.target.value.replace(/[0-9]/g, '');
+                                setEditForm({ ...editForm, firstName: value });
+                            }}
+                            disabled={!isEditing || loading}
                             className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                         />
                     </div>
@@ -88,9 +116,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
                         <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.lastName')}</label>
                         <input
                             type="text"
-                            value={user?.last_name}
-                            onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                            disabled={!isEditing}
+                            value={editForm.lastName}
+                            onChange={(e) => {
+                                const value = e.target.value.replace(/[0-9]/g, '');
+                                setEditForm({ ...editForm, lastName: value });
+                            }}
+                            disabled={!isEditing || loading}
                             className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                         />
                     </div>
@@ -101,7 +132,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                             <input
                                 type="email"
-                                value={user?.email}
+                                value={user?.email || ''}
                                 disabled
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 disabled:opacity-50"
                             />
@@ -114,9 +145,13 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
                             <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                             <input
                                 type="tel"
-                                value={user?.phone_number}
-                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                disabled={!isEditing}
+                                value={editForm.phone}
+                                onChange={(e) => {
+                                    // remove any letters
+                                    const value = e.target.value.replace(/[^0-9+]/g, '');
+                                    setEditForm({ ...editForm, phone: value });
+                                }}
+                                disabled={!isEditing || loading}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                             />
                         </div>
@@ -127,12 +162,15 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
                     <div className="flex gap-4 mt-6">
                         <button
                             onClick={handleSaveProfile}
+                            disabled={loading}
                             className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
                         >
-                            {t('dashboard.profile.saveChanges')}
+                            {loading ? t('dashboard.profile.saving') : t('dashboard.profile.saveChanges')}
                         </button>
+
                         <button
-                            onClick={() => setIsEditing(false)}
+                            onClick={() => resetProfileInfo()}
+                            disabled={loading}
                             className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg transition-all duration-300"
                         >
                             {t('dashboard.profile.cancel')}

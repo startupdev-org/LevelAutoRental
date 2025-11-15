@@ -44,13 +44,15 @@ export async function getProfile(): Promise<User | null> {
     }
 }
 
-export async function updateProfile(user: UserProfileUpdate) {
+export async function updateProfile(user: Partial<User>) {
     try {
         // Only include fields that are provided
-        const updateData: Partial<UserProfileUpdate> = {};
+        const updateData: Partial<User> = {};
         if (user.first_name) updateData.first_name = user.first_name;
         if (user.last_name) updateData.last_name = user.last_name;
         if (user.phone_number) updateData.phone_number = user.phone_number;
+
+        // console.log('The data to update: ', updateData)
 
         const { data, error } = await supabase
             .from('Profiles')
