@@ -14,8 +14,8 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>(null);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
 
@@ -74,10 +74,16 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                 return sortOrder === 'asc' ? diff : -diff;
             });
         } else {
-            // Default: sort by date (newest first)
-            filtered.sort((a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
+            // Default: sort by status ascending
+            const statusOrder: Record<string, number> = {
+                'ACTIVE': 1,
+                'COMPLETED': 2,
+                'CANCELLED': 3,
+            };
+            filtered.sort((a, b) => {
+                const diff = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+                return diff;
+            });
         }
 
         return filtered;

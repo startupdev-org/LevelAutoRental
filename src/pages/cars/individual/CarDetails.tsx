@@ -5,7 +5,6 @@ import {
     Star, 
     Calendar, 
     ChevronRight,
-    Car,
     Gauge,
     UserRound,
     Zap,
@@ -18,6 +17,7 @@ import {
     Clock
 } from 'lucide-react';
 import { BiSolidHeart } from "react-icons/bi";
+import { LiaCarSideSolid } from 'react-icons/lia';
 
 import { cars } from '../../../data/cars';
 import { CarNotFound } from './CarNotFound';
@@ -195,7 +195,7 @@ export const CarDetails: React.FC = () => {
         return <CarNotFound />
     }
 
-    // Calculate rental duration and price
+    // Calculate rental duration and price (same system as Calculator.tsx)
     const calculateRental = () => {
         if (!pickupDate || !returnDate || !pickupTime || !returnTime) {
             return null;
@@ -210,23 +210,34 @@ export const CarDetails: React.FC = () => {
         const days = Math.floor(diffHours / 24);
         const hours = diffHours % 24;
 
-        // Calculate price per day with discounts
-        let pricePerDay = car.pricePerDay;
-        if (days >= 8) {
-            pricePerDay = car.pricePerDay * 0.96; // -4% discount
-        } else if (days >= 4) {
-            pricePerDay = car.pricePerDay * 0.98; // -2% discount
+        // Use same calculation system as Calculator.tsx
+        const rentalDays = days; // Use full days for discount calculation
+        const totalDays = days + (hours / 24); // Use total days for final calculation
+        
+        // Base price calculation (same as Calculator.tsx)
+        let basePrice = 0;
+        
+        if (rentalDays >= 8) {
+            basePrice = car.pricePerDay * 0.96 * rentalDays; // -4% discount
+        } else if (rentalDays >= 4) {
+            basePrice = car.pricePerDay * 0.98 * rentalDays; // -2% discount
+        } else {
+            basePrice = car.pricePerDay * rentalDays;
         }
-
-        // Calculate total: days * pricePerDay + (hours / 24) * pricePerDay
-        const daysPrice = days * pricePerDay;
-        const hoursPrice = (hours / 24) * pricePerDay;
-        const totalPrice = Math.round(daysPrice + hoursPrice);
+        
+        // Add hours portion if there are extra hours
+        if (hours > 0) {
+            const hoursPrice = (hours / 24) * car.pricePerDay;
+            basePrice += hoursPrice;
+        }
+        
+        const totalPrice = Math.round(basePrice);
+        const pricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : car.pricePerDay;
 
         return {
             days,
             hours,
-            pricePerDay: Math.round(pricePerDay),
+            pricePerDay: pricePerDay,
             totalPrice
         };
     };
@@ -430,7 +441,7 @@ export const CarDetails: React.FC = () => {
                                 {/* Delivery Option */}
                                 <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
                                     <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                                        <Car className="w-5 h-5 text-theme-500" />
+                                        <LiaCarSideSolid className="w-5 h-5 text-theme-500" />
                                         Preluarea automobilului la adresa convenabilă pentru dvs./dumneavoastră
                                     </h3>
                                     <p className="text-gray-600 text-sm">Costul se calculează separat și depinde de locul livrării</p>
@@ -439,7 +450,7 @@ export const CarDetails: React.FC = () => {
                                 {/* Return Option */}
                                 <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
                                     <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                                        <Car className="w-5 h-5 text-theme-500" />
+                                        <LiaCarSideSolid className="w-5 h-5 text-theme-500" />
                                         Returnarea mașinii la adresa convenabilă pentru dumneavoastră
                                     </h3>
                                     <p className="text-gray-600 text-sm">Prețul se negociază separat și depinde de locul returnării</p>

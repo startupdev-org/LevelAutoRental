@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car, DollarSign, User, Mail, Download, FileText, Phone, Loader2 } from 'lucide-react';
+import { X, Calendar, Clock, Car, DollarSign, User, Mail, Download, FileText, Phone, Loader2, XCircle, RefreshCw } from 'lucide-react';
 import { OrderDisplay } from '../../lib/orders';
 import { format } from 'date-fns';
 import { cars } from '../../data/cars';
@@ -12,6 +12,9 @@ interface OrderDetailsModalProps {
     onClose: () => void;
     order: OrderDisplay | null;
     orderNumber?: number;
+    onCancel?: (order: OrderDisplay) => void;
+    onRedo?: (order: OrderDisplay) => void;
+    isProcessing?: boolean;
 }
 
 export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
@@ -19,6 +22,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     onClose,
     order,
     orderNumber,
+    onCancel,
+    onRedo,
+    isProcessing = false,
 }) => {
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
 
@@ -267,6 +273,63 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                     Generates a complete Romanian rental contract with all annexes
                                 </p>
                             </div>
+
+                            {/* Action Buttons */}
+                            {order && (onCancel || onRedo) && (
+                                <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                                    <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Actions</h3>
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                        {order.status !== 'CANCELLED' && onCancel && (
+                                            <button
+                                                onClick={() => {
+                                                    if (order && window.confirm(`Are you sure you want to cancel this order?`)) {
+                                                        onCancel(order);
+                                                        onClose();
+                                                    }
+                                                }}
+                                                disabled={isProcessing}
+                                                className="flex-1 px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isProcessing ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <span>Processing...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <XCircle className="w-4 h-4" />
+                                                        <span>Cancel Order</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                        {order.status === 'CANCELLED' && onRedo && (
+                                            <button
+                                                onClick={() => {
+                                                    if (order && window.confirm(`Are you sure you want to restore this cancelled order?`)) {
+                                                        onRedo(order);
+                                                        onClose();
+                                                    }
+                                                }}
+                                                disabled={isProcessing}
+                                                className="flex-1 px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isProcessing ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <span>Processing...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <RefreshCw className="w-4 h-4" />
+                                                        <span>Redo Order</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 </motion.div>
