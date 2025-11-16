@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { cars } from '../../../data/cars';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
 import { OrderDetailsModal } from '../../../components/modals/OrderDetailsModal';
-import { OrderDisplay } from '../../../lib/orders';
+import { OrderDisplay, cancelRentalOrder, redoRentalOrder, fetchRentalsOnly } from '../../../lib/orders';
 import { SalesChartCard } from '../../../components/dashboard/Chart';
 import { motion } from 'framer-motion';
 import { Save, X } from 'lucide-react';
@@ -266,23 +266,60 @@ export const OrdersViewSection: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showAddOrderModal, setShowAddOrderModal] = useState(false);
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
+    const [processingOrder, setProcessingOrder] = useState<string | null>(null);
+    const [showCancelled, setShowCancelled] = useState(false);
 
     // console.log('Order View Section is being rendered')
 
-    useEffect(() => {
-        const loadOrders = async () => {
-            try {
-                const { fetchRentalsOnly } = await import('../../../lib/orders');
-                const data = await fetchRentalsOnly(cars);
-                const rentalsOnly = data.filter(order => order.type === 'rental');
-                setOrders(rentalsOnly);
-            } catch (error) {
-                console.error('Failed to load orders:', error);
-            }
-        };
+    const loadOrders = async () => {
+        try {
+            const data = await fetchRentalsOnly(cars);
+            const rentalsOnly = data.filter(order => order.type === 'rental');
+            setOrders(rentalsOnly);
+        } catch (error) {
+            console.error('Failed to load orders:', error);
+        }
+    };
 
+    useEffect(() => {
         loadOrders();
     }, []);
+
+    const handleCancelOrder = async (order: OrderDisplay) => {
+        setProcessingOrder(order.id.toString());
+        try {
+            const result = await cancelRentalOrder(order.id.toString());
+            if (result.success) {
+                alert('Order cancelled successfully!');
+                await loadOrders();
+            } else {
+                alert(`Failed to cancel order: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error cancelling order:', error);
+            alert('An error occurred while cancelling the order.');
+        } finally {
+            setProcessingOrder(null);
+        }
+    };
+
+    const handleRedoOrder = async (order: OrderDisplay) => {
+        setProcessingOrder(order.id.toString());
+        try {
+            const result = await redoRentalOrder(order.id.toString());
+            if (result.success) {
+                alert('Order restored successfully!');
+                await loadOrders();
+            } else {
+                alert(`Failed to restore order: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error restoring order:', error);
+            alert('An error occurred while restoring the order.');
+        } finally {
+            setProcessingOrder(null);
+        }
+    };
 
     // Calculate revenue statistics from orders
     const revenueStats = useMemo(() => {
@@ -419,7 +456,14 @@ export const OrdersViewSection: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
                 >
-                    <OrdersTable title="All Orders" onOrderClick={handleOrderClick} onAddOrder={() => setShowAddOrderModal(true)} initialSearch={initialSearch} />
+                    <OrdersTable 
+                        title="All Orders" 
+                        onOrderClick={handleOrderClick} 
+                        onAddOrder={() => setShowAddOrderModal(true)} 
+                        initialSearch={initialSearch}
+                        showCancelled={showCancelled}
+                        onToggleShowCancelled={() => setShowCancelled(!showCancelled)}
+                    />
                 </motion.div>
 
                 {/* Charts Grid */}
@@ -540,6 +584,9 @@ export const OrdersViewSection: React.FC = () => {
                 }}
                 order={selectedOrder}
                 orderNumber={orderNumber}
+                onCancel={handleCancelOrder}
+                onRedo={handleRedoOrder}
+                isProcessing={processingOrder === selectedOrder?.id.toString()}
             />
 
             {/* Add Order Modal */}

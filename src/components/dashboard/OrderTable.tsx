@@ -9,14 +9,16 @@ type OrdersTableProps = {
     onOrderClick?: (order: OrderDisplay, orderNumber: number) => void;
     onAddOrder?: () => void;
     initialSearch?: string;
+    showCancelled?: boolean;
+    onToggleShowCancelled?: () => void;
 };
 
-export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder, initialSearch }) => {
+export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder, initialSearch, showCancelled = false, onToggleShowCancelled }) => {
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState(initialSearch || '');
-    const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>(null);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
 
@@ -50,13 +52,22 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
         // First filter by search query
         let filtered = orders.filter(order => {
             const searchLower = searchQuery.toLowerCase();
-            return (
+            const matchesSearch = (
                 order.customerName.toLowerCase().includes(searchLower) ||
                 order.customerPhone?.toLowerCase().includes(searchLower) ||
                 order.customerEmail?.toLowerCase().includes(searchLower) ||
                 order.carName.toLowerCase().includes(searchLower) ||
                 order.id.toLowerCase().includes(searchLower)
             );
+            
+            // Filter by cancelled status
+            // When showCancelled is true, only show cancelled orders
+            // When showCancelled is false, hide cancelled orders
+            const matchesCancelledFilter = showCancelled 
+                ? order.status === 'CANCELLED'
+                : order.status !== 'CANCELLED';
+            
+            return matchesSearch && matchesCancelledFilter;
         });
 
         // Then sort
@@ -82,14 +93,20 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                 return sortOrder === 'asc' ? diff : -diff;
             });
         } else {
-            // Default: sort by date (newest first)
-            filtered.sort((a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
+            // Default: sort by status ascending
+            const statusOrder: Record<string, number> = {
+                'ACTIVE': 1,
+                'COMPLETED': 2,
+                'CANCELLED': 3,
+            };
+            filtered.sort((a, b) => {
+                const diff = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+                return diff;
+            });
         }
 
         return filtered;
-    }, [orders, searchQuery, sortBy, sortOrder]);
+    }, [orders, searchQuery, sortBy, sortOrder, showCancelled]);
 
     const totalPages = Math.ceil(filteredAndSortedOrders.length / pageSize);
 
@@ -183,13 +200,27 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                         <div>
                             <h2 className="text-xl font-bold text-white">{title}</h2>
                         </div>
-                        <button
-                            onClick={handleAddOrder}
-                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Order
-                        </button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {onToggleShowCancelled && (
+                                <button
+                                    onClick={onToggleShowCancelled}
+                                    className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${
+                                        showCancelled
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                    {showCancelled ? 'Hide Cancelled' : 'Show Cancelled'}
+                                </button>
+                            )}
+                            <button
+                                onClick={handleAddOrder}
+                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Order
+                            </button>
+                        </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         {/* Search */}

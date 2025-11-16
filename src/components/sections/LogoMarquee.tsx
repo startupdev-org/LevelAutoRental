@@ -14,12 +14,20 @@ export const LogoMarquee: React.FC = () => {
     { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW", filter: "bmw" },
   ];
 
+  const getLogoSizeClass = (alt: string): string => {
+    const altLower = alt.toLowerCase();
+    if (altLower === 'audi' || altLower === 'hyundai') {
+      return 'h-12 md:h-16';
+    }
+    return 'h-16 md:h-24';
+  };
+
   const handleLogoClick = (filter: string) => {
     navigate(`/cars?make=${filter}`);
   };
 
   return (
-    <section className="py-16 mt-32 lg:mt-20 w-full">
+    <section className="lg:py-16 py-0 mt-[360px] lg:mt-20 w-full">
       <div className="w-full">
         <div className="marquee">
           <ul className="marquee__content">
@@ -29,7 +37,7 @@ export const LogoMarquee: React.FC = () => {
                   src={logo.src}
                   alt={logo.alt}
                   onClick={() => handleLogoClick(logo.filter)}
-                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
+                  className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
                 />
               </li>
             ))}
@@ -42,7 +50,7 @@ export const LogoMarquee: React.FC = () => {
                   src={logo.src}
                   alt={logo.alt}
                   onClick={() => handleLogoClick(logo.filter)}
-                  className="h-16 md:h-24 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
+                  className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
                 />
               </li>
             ))}

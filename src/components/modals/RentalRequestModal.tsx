@@ -33,14 +33,41 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     returnTime,
     rentalCalculation
 }) => {
+    // Country codes for phone selector
+    const COUNTRY_CODES = [
+        { code: '+373', flag: '🇲🇩', country: 'Moldova' },
+        { code: '+40', flag: '🇷🇴', country: 'Romania' },
+        { code: '+380', flag: '🇺🇦', country: 'Ukraine' },
+        { code: '+7', flag: '🇷🇺', country: 'Russia' },
+        { code: '+1', flag: '🇺🇸', country: 'USA' },
+        { code: '+44', flag: '🇬🇧', country: 'UK' },
+        { code: '+49', flag: '🇩🇪', country: 'Germany' },
+        { code: '+33', flag: '🇫🇷', country: 'France' },
+        { code: '+39', flag: '🇮🇹', country: 'Italy' },
+        { code: '+34', flag: '🇪🇸', country: 'Spain' },
+        { code: '+32', flag: '🇧🇪', country: 'Belgium' },
+        { code: '+31', flag: '🇳🇱', country: 'Netherlands' },
+        { code: '+41', flag: '🇨🇭', country: 'Switzerland' },
+        { code: '+43', flag: '🇦🇹', country: 'Austria' },
+        { code: '+48', flag: '🇵🇱', country: 'Poland' },
+        { code: '+420', flag: '🇨🇿', country: 'Czech Republic' },
+        { code: '+36', flag: '🇭🇺', country: 'Hungary' },
+        { code: '+359', flag: '🇧🇬', country: 'Bulgaria' },
+        { code: '+30', flag: '🇬🇷', country: 'Greece' },
+        { code: '+90', flag: '🇹🇷', country: 'Turkey' },
+    ];
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        birthDate: '',
+        age: '',
         phone: '',
         email: '',
         comment: ''
     });
+
+    const [selectedCountryCode, setSelectedCountryCode] = useState(COUNTRY_CODES[0]);
+    const [showCountryCodeDropdown, setShowCountryCodeDropdown] = useState(false);
 
     const [options, setOptions] = useState({
         pickupAtAddress: false,
@@ -63,57 +90,68 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         return `${day}.${month}.${year}`;
     };
 
-    // Calculate base price with discount (same logic as Calculator page)
+    // Calculate base price with discount (same logic as Calculator page and Admin)
     const calculateBasePrice = () => {
         if (!rentalCalculation) return 0;
         const pricePerDay = car.pricePerDay;
-        const rentalDays = rentalCalculation.days;
-        const totalDays = rentalDays + (rentalCalculation.hours / 24);
+        const rentalDays = rentalCalculation.days; // Use full days for discount calculation
+        const totalDays = rentalDays + (rentalCalculation.hours / 24); // Use total days for final calculation
         
-        // Apply discount based on days (same as Calculator)
+        // Base price calculation (same as Calculator.tsx and Admin)
+        let basePrice = 0;
+        
         if (rentalDays >= 8) {
-            return pricePerDay * 0.96 * totalDays; // -4% discount
+            basePrice = pricePerDay * 0.96 * rentalDays; // -4% discount
         } else if (rentalDays >= 4) {
-            return pricePerDay * 0.98 * totalDays; // -2% discount
+            basePrice = pricePerDay * 0.98 * rentalDays; // -2% discount
+        } else {
+            basePrice = pricePerDay * rentalDays;
         }
-        return pricePerDay * totalDays;
+        
+        // Add hours portion if there are extra hours
+        if (rentalCalculation.hours > 0) {
+            const hoursPrice = (rentalCalculation.hours / 24) * pricePerDay;
+            basePrice += hoursPrice;
+        }
+        
+        return basePrice;
     };
 
     const calculateTotalCost = () => {
         if (!rentalCalculation) return 0;
 
-        // Use the same calculation logic as Calculator page
+        // Use the same calculation logic as Calculator page and Admin
         const basePrice = calculateBasePrice();
         const baseCarPrice = car.pricePerDay;
-        const totalDays = rentalCalculation.days + (rentalCalculation.hours / 24);
+        const rentalDays = rentalCalculation.days; // Use full days for additional costs calculation
         let additionalCost = 0;
 
-        // Percentage-based options (calculated as percentage of base car price * days, like Calculator)
+        // Percentage-based options (calculated as percentage of base car price * days, like Calculator and Admin)
         if (options.unlimitedKm) {
-            additionalCost += baseCarPrice * totalDays * 0.5; // 50% of daily rate
+            additionalCost += baseCarPrice * rentalDays * 0.5; // 50% of daily rate
         }
         if (options.speedLimitIncrease) {
-            additionalCost += baseCarPrice * totalDays * 0.2; // 20% of daily rate
+            additionalCost += baseCarPrice * rentalDays * 0.2; // 20% of daily rate
         }
         if (options.tireInsurance) {
-            additionalCost += baseCarPrice * totalDays * 0.2; // 20% of daily rate
+            additionalCost += baseCarPrice * rentalDays * 0.2; // 20% of daily rate
         }
 
-        // Fixed daily costs (same as Calculator)
+        // Fixed daily costs (same as Calculator and Admin)
         if (options.personalDriver) {
-            additionalCost += 800 * rentalCalculation.days;
+            additionalCost += 800 * rentalDays;
         }
         if (options.priorityService) {
-            additionalCost += 1000 * rentalCalculation.days;
+            additionalCost += 1000 * rentalDays;
         }
         if (options.childSeat) {
-            additionalCost += 100 * rentalCalculation.days;
+            additionalCost += 100 * rentalDays;
         }
         if (options.simCard) {
-            additionalCost += 100 * rentalCalculation.days;
+            additionalCost += 100 * rentalDays;
         }
         if (options.roadsideAssistance) {
-            additionalCost += 500 * rentalCalculation.days;
+            additionalCost += 500 * rentalDays;
         }
 
         // Pickup/return at address costs are calculated separately (not included in base)
@@ -124,6 +162,40 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     const basePrice = calculateBasePrice();
     const totalCost = calculateTotalCost();
+    
+    // Calculate additional costs separately for display
+    const baseCarPrice = car.pricePerDay;
+    const rentalDays = rentalCalculation?.days || 0;
+    let additionalCosts = 0;
+    
+    // Percentage-based options (calculated as percentage of base car price * days)
+    if (options.unlimitedKm) {
+        additionalCosts += baseCarPrice * rentalDays * 0.5; // 50%
+    }
+    if (options.speedLimitIncrease) {
+        additionalCosts += baseCarPrice * rentalDays * 0.2; // 20%
+    }
+    if (options.tireInsurance) {
+        additionalCosts += baseCarPrice * rentalDays * 0.2; // 20%
+    }
+    
+    // Fixed daily costs
+    if (options.personalDriver) {
+        additionalCosts += 800 * rentalDays;
+    }
+    if (options.priorityService) {
+        additionalCosts += 1000 * rentalDays;
+    }
+    if (options.childSeat) {
+        additionalCosts += 100 * rentalDays;
+    }
+    if (options.simCard) {
+        additionalCosts += 100 * rentalDays;
+    }
+    if (options.roadsideAssistance) {
+        additionalCosts += 500 * rentalDays;
+    }
+    
     const pricePerDay = rentalCalculation ? Math.round(totalCost / (rentalCalculation.days + (rentalCalculation.hours / 24))) : 0;
     
     // Calculate discount info
@@ -147,10 +219,15 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // Include country code in phone number
+        const fullPhoneNumber = `${selectedCountryCode.code} ${formData.phone}`.trim();
         console.log('Rental request submitted:', {
             car,
             dates: { pickupDate, returnDate, pickupTime, returnTime },
-            formData,
+            formData: {
+                ...formData,
+                phone: fullPhoneNumber
+            },
             options,
             totalCost
         });
@@ -159,13 +236,31 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         onClose();
     };
 
+    // Close country code dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.country-code-dropdown-container')) {
+                setShowCountryCodeDropdown(false);
+            }
+        };
+
+        if (showCountryCodeDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showCountryCodeDropdown]);
+
     // Reset form when modal closes
     useEffect(() => {
         if (!isOpen) {
             setFormData({
                 firstName: '',
                 lastName: '',
-                birthDate: '',
+                age: '',
                 phone: '',
                 email: '',
                 comment: ''
@@ -226,8 +321,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             </div>
 
                             {/* Content */}
-                            <div className="overflow-y-auto max-h-[calc(95vh-320px)] md:max-h-[calc(92vh-240px)]">
-                                <form onSubmit={handleSubmit} className="px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8 pb-32">
+                            <div className="overflow-y-auto max-h-[calc(95vh-200px)] md:max-h-[calc(92vh-200px)]">
+                                <form onSubmit={handleSubmit} className="px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
                                     {/* Rental Period */}
                                     <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
                                         <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2 md:gap-3">
@@ -308,12 +403,14 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Data nașterii</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Vârstă</label>
                                                 <input
-                                                    type="text"
-                                                    value={formData.birthDate}
-                                                    onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                                                    placeholder="__.__.____"
+                                                    type="number"
+                                                    value={formData.age}
+                                                    onChange={(e) => handleInputChange('age', e.target.value)}
+                                                    placeholder="18"
+                                                    min="18"
+                                                    max="100"
                                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors hover:border-gray-400"
                                                     required
                                                 />
@@ -321,8 +418,37 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">Telefon</label>
                                                 <div className="relative">
-                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-sm text-gray-600 font-medium">
-                                                        🇲🇩 +373
+                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 country-code-dropdown-container">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowCountryCodeDropdown(!showCountryCodeDropdown)}
+                                                            className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm font-medium px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                                                        >
+                                                            <span>{selectedCountryCode.flag}</span>
+                                                            <span>{selectedCountryCode.code}</span>
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </button>
+                                                        {showCountryCodeDropdown && (
+                                                            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50 min-w-[200px]">
+                                                                {COUNTRY_CODES.map((country) => (
+                                                                    <button
+                                                                        key={country.code}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setSelectedCountryCode(country);
+                                                                            setShowCountryCodeDropdown(false);
+                                                                        }}
+                                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                                                    >
+                                                                        <span>{country.flag}</span>
+                                                                        <span className="flex-1 text-left">{country.country}</span>
+                                                                        <span className="text-gray-500">{country.code}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <input
                                                         type="tel"
@@ -739,49 +865,124 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             placeholder="Adăugați un comentariu (opțional)"
                                         />
                                     </div>
-                                </form>
-                            </div>
 
-                            {/* Sticky Footer with Cost Summary */}
-                            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 md:px-8 py-4 md:py-5 rounded-b-3xl shadow-lg">
-                                {/* Cost Summary */}
-                                <div className="bg-gray-50 rounded-lg p-4 md:p-5 border border-gray-200 mb-3 md:mb-4">
-                                    <div className="space-y-1.5 md:space-y-2 mb-2 md:mb-3">
-                                        <div className="flex justify-between items-center gap-2">
-                                            <span className="text-xs md:text-sm text-gray-600">Preț pentru {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
-                                                {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
-                                            </span>
-                                            <span className="text-xs md:text-sm text-gray-900 whitespace-nowrap">{pricePerDay.toLocaleString('ro-RO')} MDL/zi</span>
-                                        </div>
-                                        {discountPercentage > 0 && (
-                                            <div className="flex justify-between items-center text-green-600">
-                                                <span className="text-xs md:text-sm font-medium">Reducere</span>
-                                                <span className="text-xs md:text-sm font-bold">
-                                                    -{discountPercentage}%
-                                                </span>
+                                    {/* Price Summary */}
+                                    <div className="bg-gray-50 rounded-lg p-4 md:p-5 border border-gray-200 mt-6">
+                                        <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">Detalii preț</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-600">Preț pe zi</span>
+                                                <span className="text-gray-900 font-medium">{car.pricePerDay.toLocaleString('ro-RO')} MDL</span>
                                             </div>
-                                        )}
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-600">Număr zile</span>
+                                                <span className="text-gray-900 font-medium">{rentalCalculation.days}</span>
+                                            </div>
+                                            {discountPercentage > 0 && (
+                                                <div className="flex items-center justify-between text-sm text-green-600">
+                                                    <span>Reducere</span>
+                                                    <span className="font-medium">-{discountPercentage}%</span>
+                                                </div>
+                                            )}
+                                            <div className="pt-2 border-t border-gray-200">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-gray-900 font-medium">Preț de bază</span>
+                                                    <span className="text-gray-900 font-medium">{Math.round(basePrice).toLocaleString('ro-RO')} MDL</span>
+                                                </div>
+                                            </div>
+                                            
+                                            {additionalCosts > 0 && (
+                                                <>
+                                                    <div className="pt-3 border-t border-gray-200">
+                                                        <h4 className="text-sm font-bold text-gray-900 mb-3">Servicii suplimentare</h4>
+                                                        <div className="space-y-2 text-sm">
+                                                            {options.unlimitedKm && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Kilometraj nelimitat</span>
+                                                                    <span className="text-gray-900 font-medium">
+                                                                        {Math.round(car.pricePerDay * rentalCalculation.days * 0.5).toLocaleString('ro-RO')} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {options.speedLimitIncrease && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Creșterea limitei de viteză</span>
+                                                                    <span className="text-gray-900 font-medium">
+                                                                        {Math.round(car.pricePerDay * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {options.tireInsurance && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Asigurare anvelope & parbriz</span>
+                                                                    <span className="text-gray-900 font-medium">
+                                                                        {Math.round(car.pricePerDay * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {options.personalDriver && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Șofer personal</span>
+                                                                    <span className="text-gray-900 font-medium">{800 * rentalCalculation.days} MDL</span>
+                                                                </div>
+                                                            )}
+                                                            {options.priorityService && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Priority Service</span>
+                                                                    <span className="text-gray-900 font-medium">{1000 * rentalCalculation.days} MDL</span>
+                                                                </div>
+                                                            )}
+                                                            {options.childSeat && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Scaun auto pentru copii</span>
+                                                                    <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                </div>
+                                                            )}
+                                                            {options.simCard && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Cartelă SIM cu internet</span>
+                                                                    <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                </div>
+                                                            )}
+                                                            {options.roadsideAssistance && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Asistență rutieră</span>
+                                                                    <span className="text-gray-900 font-medium">{500 * rentalCalculation.days} MDL</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="pt-2 border-t border-gray-200">
+                                                                <div className="flex justify-between font-medium">
+                                                                    <span className="text-gray-900">Total servicii</span>
+                                                                    <span className="text-gray-900">{Math.round(additionalCosts).toLocaleString('ro-RO')} MDL</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                            
+                                            <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
+                                                <span className="text-gray-900 font-bold text-lg">Total</span>
+                                                <span className="text-gray-900 font-bold text-xl">{totalCost.toLocaleString('ro-RO')} MDL</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center pt-2 md:pt-3 border-t border-gray-200">
-                                        <span className="text-sm md:text-base font-bold text-gray-900">Total</span>
-                                        <span className="text-xl md:text-2xl font-bold text-gray-900">{totalCost.toLocaleString('ro-RO')} MDL</span>
-                                    </div>
-                                </div>
 
-                                {/* Submit Button */}
-                                <div className="flex flex-col gap-1.5 md:gap-2">
-                                    <button
-                                        type="submit"
-                                        onClick={handleSubmit}
-                                        style={{ backgroundColor: '#F4A6A6' }}
-                                        className="w-full font-semibold text-sm md:text-base py-3 md:py-3 px-4 md:px-6 rounded-xl transition-all hover:bg-[#F29999] text-white"
-                                    >
-                                        Trimite cererea
-                                    </button>
-                                    <p className="text-[10px] md:text-xs text-center text-gray-500 leading-relaxed">
-                                        Făcând clic pe butonul «Trimite cererea», sunteți de acord cu termenii de utilizare și politica de confidențialitate
-                                    </p>
-                                </div>
+                                    {/* Submit Button */}
+                                    <div className="flex flex-col gap-1.5 md:gap-2 mt-6">
+                                        <button
+                                            type="submit"
+                                            onClick={handleSubmit}
+                                            style={{ backgroundColor: '#F4A6A6' }}
+                                            className="w-full font-semibold text-sm md:text-base py-3 md:py-3 px-4 md:px-6 rounded-xl transition-all hover:bg-[#F29999] text-white"
+                                        >
+                                            Trimite cererea
+                                        </button>
+                                        <p className="text-[10px] md:text-xs text-center text-gray-500 leading-relaxed">
+                                            Făcând clic pe butonul «Trimite cererea», sunteți de acord cu termenii de utilizare și politica de confidențialitate
+                                        </p>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </motion.div>
