@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
-import { cars } from '../../data/cars';
 import { sparkData, mainChart, orders } from '../../data/index';
+import { fetchCars, fetchCarById, createCar, updateCar, deleteCar } from '../../lib/cars';
 import { SalesChartCard } from '../../components/dashboard/Chart';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -33,7 +33,11 @@ import {
     FileText,
     Check,
     Car,
-    Edit
+    Edit,
+    AlertCircle,
+    ChevronLeft,
+    ChevronRight,
+    X as XIcon
 } from 'lucide-react';
 import { LiaCarSideSolid } from 'react-icons/lia';
 import { getDateDiffInDays } from '../../utils/date';
@@ -61,26 +65,55 @@ import {
     cancelRentalOrder,
     redoRentalOrder
 } from '../../lib/orders';
+import { NotificationToaster, useNotification } from '../../components/ui/NotificationToaster';
+import { supabaseAdmin } from '../../lib/supabase';
 
 // Dashboard View Component
 const DashboardView: React.FC = () => {
-    // Calculate car rental status
+    const [cars, setCars] = useState<CarType[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                setCars(fetchedCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadCars();
+    }, []);
+
+    // Calculate car rental status (based on database status field)
     const getCarRentalStatus = () => {
-        const activeOrders = orders.filter(order =>
-            order.status === 'Paid' || order.status === 'Pending'
-        );
-
-        const rentedCarIds = new Set(
-            activeOrders.map(order => parseInt(order.carId))
-        );
-
-        const freeCars = cars.filter(car => !rentedCarIds.has(car.id));
-        const rentedCars = cars.filter(car => rentedCarIds.has(car.id));
+        const freeCars = cars.filter(car => {
+            const carStatus = car.status?.toLowerCase() || 'available';
+            return carStatus === 'available';
+        });
+        const rentedCars = cars.filter(car => {
+            const carStatus = car.status?.toLowerCase() || 'available';
+            return carStatus === 'rented';
+        });
 
         return { freeCars, rentedCars };
     };
 
     const { freeCars, rentedCars } = getCarRentalStatus();
+
+    if (loading) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center h-64"
+            >
+                <Loader2 className="w-8 h-8 animate-spin text-white" />
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -334,8 +367,22 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     const [ordersList, setOrdersList] = useState<OrderDisplay[]>([]);
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [cars, setCars] = useState<CarType[]>([]);
+
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                setCars(fetchedCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
+    }, []);
 
     const loadOrders = async () => {
+        if (cars.length === 0) return;
         try {
             const { fetchRentalsOnly } = await import('../../lib/orders');
             const data = await fetchRentalsOnly(cars);
@@ -347,8 +394,10 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     };
 
     useEffect(() => {
-        loadOrders();
-    }, []);
+        if (cars.length > 0) {
+            loadOrders();
+        }
+    }, [cars]);
 
     const handleCancelOrder = async () => {
         const order = ordersList.find((o) => o.id === orderId);
@@ -519,7 +568,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Price</p>
-                            <span className="text-white text-lg font-bold">{order.amount > 0 ? `${order.amount} MDL` : `${getDateDiffInDays(order.startDate, order.endDate) * car.pricePerDay} MDL`}</span>
+                            <span className="text-white text-lg font-bold">{order.amount > 0 ? `${order.amount} MDL` : `${getDateDiffInDays(order.startDate, order.endDate) * car.price_per_day} MDL`}</span>
                         </div>
                     </div>
 
@@ -672,23 +721,42 @@ const CarsView: React.FC = () => {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingCar, setEditingCar] = useState<CarType | null>(null);
-    const [localCars, setLocalCars] = useState<CarType[]>(cars);
+    const [localCars, setLocalCars] = useState<CarType[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { showSuccess, showError } = useNotification();
 
-    // Get car status for sorting
+    // Fetch cars from Supabase
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                setLoading(true);
+                const fetchedCars = await fetchCars();
+                setLocalCars(fetchedCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadCars();
+    }, []);
+
+    // Get car status for sorting (based on database status field)
     const getCarStatus = (car: CarType): number => {
-        const isRented = orders.some(order =>
-            parseInt(order.carId) === car.id &&
-            (order.status === 'Paid' || order.status === 'Pending')
-        );
+        const carStatus = car.status?.toLowerCase() || 'available';
         // 0 = Available, 1 = Reserved, 2 = Rented (lower number = higher priority)
-        if (isRented) return 2;
-        if (car.availability) return 1;
+        if (carStatus === 'rented') return 2;
+        if (carStatus === 'reserved') return 1;
         return 0;
     };
 
     // Filter and sort cars
     const filteredCars = useMemo(() => {
         let filtered = localCars.filter(car => {
+            // Hide cars with deleted status
+            const carStatus = car.status?.toLowerCase() || '';
+            if (carStatus === 'deleted') return false;
+            
             const carName = (car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || '';
             const matchesSearch = carName.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesCategory = filterCategory === 'all' || car.category === filterCategory;
@@ -699,7 +767,7 @@ const CarsView: React.FC = () => {
         filtered.sort((a, b) => {
             if (sortBy === 'price') {
                 // Sort by price only
-                const diff = a.pricePerDay - b.pricePerDay;
+                const diff = a.price_per_day - b.price_per_day;
                 return sortOrder === 'asc' ? diff : -diff;
             } else if (sortBy === 'year') {
                 // Sort by year only
@@ -743,59 +811,127 @@ const CarsView: React.FC = () => {
         setSearchParams({ section: 'cars', carId: car.id.toString() });
     };
 
-    const handleDeleteCar = (carId: number) => {
+    const handleDeleteCar = async (carId: number) => {
         if (window.confirm('Are you sure you want to delete this car?')) {
-            setLocalCars(prev => prev.filter(c => c.id !== carId));
+            try {
+                // Soft delete: update status to 'deleted' instead of actually deleting
+                await updateCar(carId, { status: 'deleted' });
+                // Reload cars to get updated list (deleted cars will be filtered out)
+                const fetchedCars = await fetchCars();
+                setLocalCars(fetchedCars);
+                showSuccess('Car deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting car:', error);
+                showError('Failed to delete car. Please try again.');
+            }
         }
     };
 
-    const handleSaveCar = (carData: Partial<CarType>): number | void => {
-        if (editingCar) {
-            // Update existing car - don't modify availability, it's managed by the system
-            const { availability, ...dataToUpdate } = carData;
-            setLocalCars(prev => prev.map(c => c.id === editingCar.id ? { ...c, ...dataToUpdate } as CarType : c));
-            setShowAddModal(false);
-            setEditingCar(null);
-            setSearchParams({ section: 'cars' });
-        } else {
-            // Add new car
-            const newId = Math.max(...localCars.map(c => c.id), 0) + 1;
-            const newCar: CarType = {
-                id: newId,
-                name: carData.name || '',
-                category: carData.category || 'luxury',
-                image: (carData as any).image || carData.image_url || '',
-                photo_gallery: (carData as any).photoGallery || carData.photo_gallery || [],
-                price_per_day: (carData as any).pricePerDay || carData.price_per_day || 0,
-                year: carData.year || new Date().getFullYear(),
-                seats: carData.seats || 5,
-                transmission: carData.transmission || 'Automatic',
-                body: carData.body || 'Sedan',
-                fuelType: carData.fuelType || 'gasoline',
-                drivetrain: carData.drivetrain || '',
-                features: carData.features || [],
-                rating: carData.rating || 0,
-                reviews: carData.reviews || 0,
-                availability: 'Available', // Set to "Available" by default for new cars
-                mileage: carData.mileage,
-                fuelConsumption: carData.fuelConsumption,
-                power: carData.power,
-                acceleration: carData.acceleration,
-                description: carData.description,
-                longDescription: carData.longDescription,
-            };
-            setLocalCars(prev => [...prev, newCar]);
-            // Don't close modal or reset - let the modal handle the success state
-            return newId;
+    const handleSaveCar = async (carData: Partial<CarType>): Promise<number | void> => {
+        try {
+            if (editingCar) {
+                // Update existing car - map form fields to database fields
+                const updateData: Partial<CarType> = {
+                    ...carData,
+                    name: (carData as any).name,
+                    image_url: (carData as any).image || carData.image_url,
+                    photo_gallery: (carData as any).photoGallery || carData.photo_gallery,
+                    price_per_day: (carData as any).pricePerDay || carData.price_per_day,
+                    fuel_type: (carData as any).fuelType || carData.fuel_type,
+                };
+                const updatedCar = await updateCar(editingCar.id, updateData);
+                if (updatedCar) {
+                    setLocalCars(prev => prev.map(c => c.id === editingCar.id ? updatedCar : c));
+                    setShowAddModal(false);
+                    setEditingCar(null);
+                    // Success notification will be shown by the component
+                }
+            } else {
+                // Add new car - map form fields to database fields
+                // Ensure make and model are provided (required fields)
+                const make = (carData as any).make || (carData as any).name?.split(' ')[0] || '';
+                const model = (carData as any).model || (carData as any).name?.split(' ').slice(1).join(' ') || '';
+                
+                if (!make || !model) {
+                    throw new Error('Make and Model are required fields');
+                }
+
+                const newCar = await createCar({
+                    ...carData,
+                    name: (carData as any).name,
+                    make: make,
+                    model: model,
+                    image_url: (carData as any).image || carData.image_url,
+                    photo_gallery: (carData as any).photoGallery || carData.photo_gallery,
+                    price_per_day: (carData as any).pricePerDay || carData.price_per_day,
+                    fuel_type: (carData as any).fuelType || carData.fuel_type,
+                    status: 'available',
+                });
+                if (newCar) {
+                    setLocalCars(prev => [...prev, newCar]);
+                    // Success notification will be shown by the component
+                    return newCar.id;
+                }
+            }
+        } catch (error) {
+            console.error('Error saving car:', error);
+            // Error notification will be shown by the component
+            throw error; // Re-throw to let the component handle it
         }
     };
+
+    // Set editingCar when carId is in URL and car is found
+    useEffect(() => {
+        if (carId) {
+            const car = localCars.find(c => c.id.toString() === carId);
+            if (car && (!editingCar || editingCar.id !== car.id)) {
+                setEditingCar(car);
+            }
+        } else {
+            // Clear editingCar when no carId in URL
+            if (editingCar) {
+                setEditingCar(null);
+            }
+        }
+    }, [carId, localCars]);
 
     // If carId is in URL, show car details/edit view
     if (carId) {
         const car = localCars.find(c => c.id.toString() === carId);
         if (car) {
-            return <CarDetailsEditView car={car} onSave={handleSaveCar} onCancel={() => setSearchParams({ section: 'cars' })} />;
+            return (
+                <CarDetailsEditView 
+                    car={car} 
+                    onSave={async (carData) => {
+                        try {
+                            await handleSaveCar(carData);
+                            // Reload cars after update
+                            const fetchedCars = await fetchCars();
+                            setLocalCars(fetchedCars);
+                            // Navigation will be handled by onCancel in CarDetailsEditView
+                        } catch (error) {
+                            // Error is already handled in handleSaveCar
+                        }
+                    }} 
+                    onCancel={() => setSearchParams({ section: 'cars' })} 
+                />
+            );
+        } else if (!loading) {
+            // Car not found, go back to cars list
+            setSearchParams({ section: 'cars' });
         }
+    }
+
+    if (loading) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center h-64"
+            >
+                <Loader2 className="w-8 h-8 animate-spin text-white" />
+            </motion.div>
+        );
     }
 
     return (
@@ -805,6 +941,7 @@ const CarsView: React.FC = () => {
             transition={{ duration: 0.4 }}
             className="space-y-6"
         >
+
             {/* Cars Table Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
                 {/* Header */}
@@ -954,10 +1091,10 @@ const CarsView: React.FC = () => {
                         <tbody className="divide-y divide-white/10">
                             {filteredCars.length > 0 ? (
                                 filteredCars.map((car) => {
-                                    const isRented = orders.some(order =>
-                                        parseInt(order.carId) === car.id &&
-                                        (order.status === 'Paid' || order.status === 'Pending')
-                                    );
+                                    // Use database status field
+                                    const carStatus = car.status?.toLowerCase() || 'available';
+                                    const isRented = carStatus === 'rented';
+                                    const isReserved = carStatus === 'reserved';
                                     return (
                                         <tr
                                             key={car.id}
@@ -982,18 +1119,18 @@ const CarsView: React.FC = () => {
                                                     {car.category}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-white font-semibold">{(car as any).pricePerDay || car.price_per_day} MDL</td>
+                                            <td className="px-6 py-4 text-white font-semibold">{car.price_per_day} MDL</td>
                                             <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                             <td className="px-6 py-4">
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isRented
                                                         ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        : car.availability
+                                                        : isReserved
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                                         }`}
                                                 >
-                                                    {isRented ? 'Rented' : car.availability ? 'Reserved' : 'Available'}
+                                                    {carStatus === 'rented' ? 'Rented' : carStatus === 'reserved' ? 'Reserved' : 'Available'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
@@ -1035,7 +1172,17 @@ const CarsView: React.FC = () => {
                 {showAddModal && (
                     <CarFormModal
                         car={editingCar}
-                        onSave={handleSaveCar}
+                        onSave={async (carData) => {
+                            try {
+                                const result = await handleSaveCar(carData);
+                                // Reload cars after save
+                                const fetchedCars = await fetchCars();
+                                setLocalCars(fetchedCars);
+                                return result;
+                            } catch (error) {
+                                throw error;
+                            }
+                        }}
                         onClose={() => {
                             setShowAddModal(false);
                             setEditingCar(null);
@@ -1050,75 +1197,156 @@ const CarsView: React.FC = () => {
 // Car Details/Edit View Component
 interface CarDetailsEditViewProps {
     car: CarType;
-    onSave: (carData: Partial<CarType>) => void;
+    onSave: (carData: Partial<CarType>) => Promise<void>;
     onCancel: () => void;
 }
 
 const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, onCancel }) => {
     const [formData, setFormData] = useState<Partial<CarType>>(car);
+    const [loading, setLoading] = useState(false);
+    const { showSuccess, showError } = useNotification();
     const [newFeature, setNewFeature] = useState('');
-    const [newGalleryImage, setNewGalleryImage] = useState('');
     const [uploadingMainImage, setUploadingMainImage] = useState(false);
     const [uploadingGalleryImage, setUploadingGalleryImage] = useState(false);
+    const [showImageGallery, setShowImageGallery] = useState(false);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Fetch fresh car data when component mounts
+    useEffect(() => {
+        const loadCar = async () => {
+            try {
+                const fetchedCar = await fetchCarById(car.id);
+                if (fetchedCar) {
+                    // Ensure name field is included
+                    setFormData({
+                        ...fetchedCar,
+                        name: fetchedCar.name || '',
+                    } as any);
+                }
+            } catch (error) {
+                console.error('Error loading car:', error);
+            }
+        };
+        loadCar();
+    }, [car.id]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        setLoading(true);
+        try {
+            // Map form data to database fields
+            const carDataToSave: Partial<CarType> = {
+                ...formData,
+                name: (formData as any).name,
+                image_url: (formData as any).image || formData.image_url,
+                photo_gallery: (formData as any).photoGallery || formData.photo_gallery,
+                price_per_day: (formData as any).pricePerDay || formData.price_per_day,
+                fuel_type: (formData as any).fuelType || formData.fuel_type,
+            };
+            await onSave(carDataToSave);
+            // Show success notification
+            showSuccess('Car saved successfully!');
+            // Close the edit view after a short delay to show the notification
+            setTimeout(() => {
+                onCancel();
+            }, 500);
+        } catch (error) {
+            console.error('Error saving car:', error);
+            showError('Failed to save car. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Placeholder function for uploading main image to Supabase
+    // Helper function to create folder name from car name
+    const createFolderName = (carName: string): string => {
+        return carName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    };
+
+    // Function for uploading main image to Supabase storage
     const handleMainImageUpload = async (file: File) => {
         setUploadingMainImage(true);
         try {
-            // TODO: Implement Supabase storage upload
-            // const { data, error } = await supabase.storage
-            //     .from('car-images')
-            //     .upload(`main/${Date.now()}-${file.name}`, file);
-            // if (error) throw error;
-            // const { data: { publicUrl } } = supabase.storage
-            //     .from('car-images')
-            //     .getPublicUrl(data.path);
-            // setFormData(prev => ({ ...prev, image: publicUrl }));
+            const carName = (formData as any).name || car.name || 'car';
+            const folderName = createFolderName(carName);
+            const fileName = `${folderName}-main.jpg`;
+            const filePath = `${folderName}/${fileName}`;
 
-            // Temporary: Create object URL for preview
-            const objectUrl = URL.createObjectURL(file);
-            setFormData(prev => ({ ...prev, image: objectUrl }));
-            alert('Image upload will be implemented with Supabase storage');
+            // Upload to Supabase storage
+            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+                .from('cars')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: true // Replace if exists
+                });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('cars')
+                .getPublicUrl(filePath);
+
+            // Update form data with the public URL
+            setFormData(prev => ({ 
+                ...prev, 
+                image: publicUrl,
+                image_url: publicUrl
+            }));
+
+            showSuccess('Image uploaded successfully!');
         } catch (error) {
             console.error('Error uploading image:', error);
-            alert('Error uploading image. Please try again.');
+            showError('Failed to upload image. Please try again.');
         } finally {
             setUploadingMainImage(false);
         }
     };
 
-    // Placeholder function for uploading gallery image to Supabase
+    // Function for uploading gallery image to Supabase storage
     const handleGalleryImageUpload = async (file: File) => {
         setUploadingGalleryImage(true);
         try {
-            // TODO: Implement Supabase storage upload
-            // const { data, error } = await supabase.storage
-            //     .from('car-images')
-            //     .upload(`gallery/${Date.now()}-${file.name}`, file);
-            // if (error) throw error;
-            // const { data: { publicUrl } } = supabase.storage
-            //     .from('car-images')
-            //     .getPublicUrl(data.path);
-            // setFormData(prev => ({
-            //     ...prev,
-            //     photoGallery: [...(prev.photoGallery || []), publicUrl]
-            // }));
+            const carName = (formData as any).name || car.name || 'car';
+            const folderName = createFolderName(carName);
+            const timestamp = Date.now();
+            const fileName = `${folderName}-${timestamp}.jpg`;
+            const filePath = `${folderName}/${fileName}`;
 
-            // Temporary: Create object URL for preview
-            const objectUrl = URL.createObjectURL(file);
+            // Upload to Supabase storage
+            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+                .from('cars')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('cars')
+                .getPublicUrl(filePath);
+
+            // Update form data with the public URL
+            const currentGallery = (formData as any).photoGallery || formData.photo_gallery || [];
             setFormData(prev => ({
                 ...prev,
-                photo_gallery: [...((prev as any).photoGallery || prev.photo_gallery || []), objectUrl]
+                photoGallery: [...currentGallery, publicUrl],
+                photo_gallery: [...currentGallery, publicUrl]
             }));
-            alert('Image upload will be implemented with Supabase storage');
+
+            showSuccess('Gallery image uploaded successfully!');
         } catch (error) {
             console.error('Error uploading image:', error);
-            alert('Error uploading image. Please try again.');
+            showError('Failed to upload image. Please try again.');
         } finally {
             setUploadingGalleryImage(false);
         }
@@ -1141,16 +1369,6 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
         }));
     };
 
-    const addGalleryImage = () => {
-        if (newGalleryImage.trim()) {
-            setFormData(prev => ({
-                ...prev,
-                photo_gallery: [...((prev as any).photoGallery || prev.photo_gallery || []), newGalleryImage.trim()]
-            }));
-            setNewGalleryImage('');
-        }
-    };
-
     const removeGalleryImage = (index: number) => {
         setFormData(prev => ({
             ...prev,
@@ -1160,6 +1378,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 
     return (
         <div className="space-y-6">
+
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Basic Information */}
@@ -1170,12 +1389,11 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
                             <input
                                 type="text"
-                                value={(formData as any).name || ''}
-                                onChange={(e) => setFormData(prev => {
-                                    const updated = { ...prev };
-                                    (updated as any).name = e.target.value;
-                                    return updated;
-                                })}
+                                value={(formData as any).name || car.name || ''}
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
+                                    name: e.target.value
+                                } as any))}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
                             />
@@ -1221,8 +1439,12 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <label className="block text-sm font-medium text-gray-300 mb-2">Price Per Day (MDL)</label>
                             <input
                                 type="number"
-                                value={formData.pricePerDay || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, pricePerDay: parseFloat(e.target.value) }))}
+                                value={(formData as any).pricePerDay || formData.price_per_day || ''}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    pricePerDay: parseFloat(e.target.value),
+                                    price_per_day: parseFloat(e.target.value)
+                                }))}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
                             />
@@ -1261,8 +1483,12 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Fuel Type</label>
                             <select
-                                value={formData.fuelType || 'gasoline'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, fuelType: e.target.value as CarType['fuelType'] }))}
+                                value={(formData as any).fuelType || formData.fuel_type || 'gasoline'}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    fuelType: e.target.value as CarType['fuel_type'],
+                                    fuel_type: e.target.value as CarType['fuel_type']
+                                }))}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             >
                                 <option value="gasoline">Gasoline</option>
@@ -1292,18 +1518,10 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Main Image</label>
-                        <div className="flex gap-2 mb-2">
-                            <input
-                                type="text"
-                                value={formData.image || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                                placeholder="Image URL or upload file"
-                                className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50"
-                                required
-                            />
-                            <label className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <div>
+                            <label className="inline-block px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-2">
                                 <Upload className="w-4 h-4" />
-                                <span className="text-sm font-medium">Upload</span>
+                                <span className="text-sm font-medium">Upload Image</span>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -1315,36 +1533,29 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     disabled={uploadingMainImage}
                                 />
                             </label>
+                            {uploadingMainImage && (
+                                <p className="text-xs text-gray-400 mb-2">Uploading image...</p>
+                            )}
+                            {(formData.image_url || (formData as any).image) && (
+                                <div className="mt-2 inline-block relative group cursor-pointer" onClick={() => {
+                                    setSelectedImageIndex(0);
+                                    setShowImageGallery(true);
+                                }}>
+                                    <img src={formData.image_url || (formData as any).image} alt="Preview" className="h-20 object-contain rounded-lg border border-white/10" />
+                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1 rounded-b-lg">
+                                        Main Photo
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        {uploadingMainImage && (
-                            <p className="text-xs text-gray-400 mb-2">Uploading image...</p>
-                        )}
-                        {formData.image && (
-                            <img src={formData.image} alt="Preview" className="mt-2 w-32 h-20 object-cover rounded-lg border border-white/10" />
-                        )}
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
                         <div className="flex gap-2 mb-2">
-                            <input
-                                type="text"
-                                value={newGalleryImage}
-                                onChange={(e) => setNewGalleryImage(e.target.value)}
-                                placeholder="Image URL or upload file"
-                                className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50"
-                            />
-                            <button
-                                type="button"
-                                onClick={addGalleryImage}
-                                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
-                                disabled={!newGalleryImage.trim()}
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
                             <label className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <Upload className="w-4 h-4" />
-                                <span className="text-sm font-medium">Upload</span>
+                                <span className="text-sm font-medium">Upload Image</span>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -1356,24 +1567,37 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     disabled={uploadingGalleryImage}
                                 />
                             </label>
+                            {uploadingGalleryImage && (
+                                <p className="text-xs text-gray-400 flex items-center">Uploading...</p>
+                            )}
                         </div>
-                        {uploadingGalleryImage && (
-                            <p className="text-xs text-gray-400 mb-2">Uploading image...</p>
+                        {((formData as any).photoGallery || formData.photo_gallery || []).length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {((formData as any).photoGallery || formData.photo_gallery || []).map((url: string, index: number) => (
+                                    <div key={index} className="relative group inline-block">
+                                        <img 
+                                            src={url} 
+                                            alt={`Gallery ${index + 1}`} 
+                                            className="h-20 object-contain rounded-lg border border-white/10 bg-white/5 cursor-pointer hover:opacity-80 transition-opacity" 
+                                            onClick={() => {
+                                                setSelectedImageIndex(index + 1);
+                                                setShowImageGallery(true);
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeGalleryImage(index);
+                                            }}
+                                            className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         )}
-                        <div className="flex flex-wrap gap-2">
-                            {((formData as any).photoGallery || formData.photo_gallery || []).map((url: string, index: number) => (
-                                <div key={index} className="relative group">
-                                    <img src={url} alt={`Gallery ${index + 1}`} className="w-24 h-16 object-cover rounded-lg border border-white/10" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeGalleryImage(index)}
-                                        className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <X className="w-3 h-3 text-white" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
                     </div>
                 </div>
 
@@ -1456,13 +1680,144 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                     </button>
                     <button
                         type="submit"
-                        className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
+                        disabled={loading}
+                        className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Save className="w-4 h-4" />
-                        Save Changes
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                Save Changes
+                            </>
+                        )}
                     </button>
                 </div>
             </form>
+
+            {/* Image Gallery Modal */}
+            {showImageGallery && createPortal(
+                <AnimatePresence>
+                    {showImageGallery && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black z-[99999] flex items-center justify-center"
+                            style={{ top: 0, left: 0, right: 0, bottom: 0, position: 'fixed' }}
+                            onClick={() => setShowImageGallery(false)}
+                        >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full h-full flex flex-col"
+                        >
+                            {/* Header Bar */}
+                            <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-3">
+                                <div className="flex items-center gap-3">
+                                    {(() => {
+                                        const allImages = [
+                                            formData.image_url || (formData as any).image,
+                                            ...((formData as any).photoGallery || formData.photo_gallery || [])
+                                        ].filter(Boolean);
+                                        
+                                        if (allImages.length <= 1) return null;
+                                        
+                                        return (
+                                            <span className="text-white/70 text-sm font-medium">
+                                                {selectedImageIndex + 1} of {allImages.length}
+                                            </span>
+                                        );
+                                    })()}
+                                    {selectedImageIndex === 0 && (
+                                        <span className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-full">
+                                            Main Photo
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => setShowImageGallery(false)}
+                                    className="p-2 hover:bg-white/10 text-white/80 hover:text-white rounded-lg transition-colors"
+                                >
+                                    <XIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Main Image Display */}
+                            <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+                                {(() => {
+                                    const allImages = [
+                                        formData.image_url || (formData as any).image,
+                                        ...((formData as any).photoGallery || formData.photo_gallery || [])
+                                    ].filter(Boolean);
+                                    const currentImage = allImages[selectedImageIndex];
+                                    
+                                    return currentImage ? (
+                                        <div className="w-full h-full max-w-full max-h-[75vh] flex items-center justify-center">
+                                            <img 
+                                                src={currentImage} 
+                                                alt={`Image ${selectedImageIndex + 1}`}
+                                                className="max-w-full max-h-[75vh] object-contain rounded-xl"
+                                            />
+                                        </div>
+                                    ) : null;
+                                })()}
+
+                            </div>
+
+                            {/* Photo Grid */}
+                            {(() => {
+                                const allImages = [
+                                    formData.image_url || (formData as any).image,
+                                    ...((formData as any).photoGallery || formData.photo_gallery || [])
+                                ].filter(Boolean);
+                                
+                                if (allImages.length <= 1) return null;
+
+                                return (
+                                    <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/40 backdrop-blur-md">
+                                        <div className="px-6 py-4">
+                                            <div className="grid grid-cols-6 gap-3 max-w-4xl mx-auto">
+                                                {allImages.map((url: string, index: number) => (
+                                                    <button
+                                                        key={index}
+                                                        onClick={() => setSelectedImageIndex(index)}
+                                                        className={`relative transition-all ${
+                                                            selectedImageIndex === index 
+                                                                ? 'opacity-100' 
+                                                                : 'opacity-50 hover:opacity-80'
+                                                        }`}
+                                                    >
+                                                        <img 
+                                                            src={url} 
+                                                            alt={`Thumbnail ${index + 1}`}
+                                                            className={`w-full h-20 object-cover rounded-lg transition-all ${
+                                                                selectedImageIndex === index 
+                                                                    ? 'border-2 border-white' 
+                                                                    : 'border border-white/20'
+                                                            }`}
+                                                        />
+                                                        {index === 0 && (
+                                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white/20"></div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </motion.div>
+                    </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 };
@@ -1470,7 +1825,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 // Car Form Modal Component
 interface CarFormModalProps {
     car: CarType | null;
-    onSave: (carData: Partial<CarType>) => number | void;
+    onSave: (carData: Partial<CarType>) => Promise<number | void>;
     onClose: () => void;
 }
 
@@ -1489,20 +1844,35 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
     const [uploadingMainImage, setUploadingMainImage] = useState(false);
     const [carAdded, setCarAdded] = useState(false);
     const [newCarId, setNewCarId] = useState<number | null>(null);
+    const [loading, setLoading] = useState(false);
+    const { showSuccess, showError } = useNotification();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!car) {
-            // Adding new car
-            const carId = onSave(formData);
-            if (typeof carId === 'number') {
-                setNewCarId(carId);
-                setCarAdded(true);
+        setLoading(true);
+        try {
+            if (!car) {
+                // Adding new car
+                const carId = await onSave(formData);
+                if (typeof carId === 'number') {
+                    setNewCarId(carId);
+                    setCarAdded(true);
+                    showSuccess('Car created successfully!');
+                    // Don't auto-close - let user click Continue or Close
+                }
+            } else {
+                // Editing existing car
+                await onSave(formData);
+                showSuccess('Car updated successfully!');
+                setTimeout(() => {
+                    onClose();
+                }, 500);
             }
-        } else {
-            // Editing existing car
-            onSave(formData);
-            onClose();
+        } catch (error) {
+            console.error('Error saving car:', error);
+            showError('Failed to save car. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -1513,27 +1883,51 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
         }
     };
 
-    // Placeholder function for uploading main image to Supabase
+    // Helper function to create folder name from car name
+    const createFolderName = (carName: string): string => {
+        return carName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    };
+
+    // Function for uploading main image to Supabase storage
     const handleMainImageUpload = async (file: File) => {
         setUploadingMainImage(true);
         try {
-            // TODO: Implement Supabase storage upload
-            // const { data, error } = await supabase.storage
-            //     .from('car-images')
-            //     .upload(`main/${Date.now()}-${file.name}`, file);
-            // if (error) throw error;
-            // const { data: { publicUrl } } = supabase.storage
-            //     .from('car-images')
-            //     .getPublicUrl(data.path);
-            // setFormData(prev => ({ ...prev, image: publicUrl }));
+            const carName = (formData as any).name || 'car';
+            const folderName = createFolderName(carName);
+            const fileName = `${folderName}-main.jpg`;
+            const filePath = `${folderName}/${fileName}`;
 
-            // Temporary: Create object URL for preview
-            const objectUrl = URL.createObjectURL(file);
-            setFormData(prev => ({ ...prev, image: objectUrl }));
-            alert('Image upload will be implemented with Supabase storage');
+            // Upload to Supabase storage
+            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+                .from('cars')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: true // Replace if exists
+                });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('cars')
+                .getPublicUrl(filePath);
+
+            // Update form data with the public URL
+            setFormData(prev => ({ 
+                ...prev, 
+                image: publicUrl,
+                image_url: publicUrl
+            }));
+
+            showSuccess('Image uploaded successfully!');
         } catch (error) {
             console.error('Error uploading image:', error);
-            alert('Error uploading image. Please try again.');
+            showError('Failed to upload image. Please try again.');
         } finally {
             setUploadingMainImage(false);
         }
@@ -1596,6 +1990,36 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 </div>
 
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Make *</label>
+                                    <input
+                                        type="text"
+                                        value={(formData as any).make || ''}
+                                        onChange={(e) => setFormData(prev => {
+                                            const updated = { ...prev };
+                                            (updated as any).make = e.target.value;
+                                            return updated;
+                                        })}
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Model *</label>
+                                    <input
+                                        type="text"
+                                        value={(formData as any).model || ''}
+                                        onChange={(e) => setFormData(prev => {
+                                            const updated = { ...prev };
+                                            (updated as any).model = e.target.value;
+                                            return updated;
+                                        })}
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-2">Category *</label>
                                     <select
                                         value={formData.category || 'luxury'}
@@ -1650,35 +2074,27 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 Main Image
                             </h3>
                             <div>
-                                <div className="flex gap-2 mb-2">
+                                <label className="inline-block px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-2">
+                                    <Upload className="w-4 h-4" />
+                                    <span className="text-sm font-medium">Upload Image</span>
                                     <input
-                                        type="text"
-                                        value={formData.image || ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                                        placeholder="Image URL or upload file"
-                                        className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50"
-                                        required
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleMainImageUpload(file);
+                                        }}
+                                        className="hidden"
+                                        disabled={uploadingMainImage}
                                     />
-                                    <label className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <Upload className="w-4 h-4" />
-                                        <span className="text-sm font-medium">Upload</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) handleMainImageUpload(file);
-                                            }}
-                                            className="hidden"
-                                            disabled={uploadingMainImage}
-                                        />
-                                    </label>
-                                </div>
+                                </label>
                                 {uploadingMainImage && (
                                     <p className="text-xs text-gray-400 mb-2">Uploading image...</p>
                                 )}
                                 {((formData as any).image || formData.image_url) && (
-                                    <img src={(formData as any).image || formData.image_url || ''} alt="Preview" className="mt-2 w-32 h-20 object-cover rounded-lg border border-white/10" />
+                                    <div className="mt-2 inline-block">
+                                        <img src={(formData as any).image || formData.image_url || ''} alt="Preview" className="h-20 object-contain rounded-lg border border-white/10" />
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -1694,10 +2110,20 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
+                                disabled={loading}
+                                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Save className="w-4 h-4" />
-                                Add Car
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-4 h-4" />
+                                        Add Car
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>
@@ -1776,6 +2202,7 @@ const RequestsView: React.FC = () => {
     const requestId = searchParams.get('requestId');
     const [requests, setRequests] = useState<OrderDisplay[]>([]);
     const [loading, setLoading] = useState(true);
+    const [cars, setCars] = useState<CarType[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'pickup' | 'return' | 'amount' | 'status' | null>('pickup');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -1788,17 +2215,33 @@ const RequestsView: React.FC = () => {
     const [editingRequest, setEditingRequest] = useState<OrderDisplay | null>(null);
 
     useEffect(() => {
-        loadRequests();
-        
-        // Process status transitions on mount
-        processStatusTransitions(cars).then(() => {
-            // Reload requests after processing to reflect changes
-            loadRequests();
-        });
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                setCars(fetchedCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
     }, []);
+
+    useEffect(() => {
+        if (cars.length > 0) {
+            loadRequests();
+            
+            // Process status transitions on mount
+            processStatusTransitions(cars).then(() => {
+                // Reload requests after processing to reflect changes
+                loadRequests();
+            });
+        }
+    }, [cars]);
 
     // Periodically check and process status transitions (every 60 seconds)
     useEffect(() => {
+        if (cars.length === 0) return;
+        
         const interval = setInterval(async () => {
             const result = await processStatusTransitions(cars);
             if (result.success && (result.executed > 0 || result.completed > 0)) {
@@ -1808,7 +2251,7 @@ const RequestsView: React.FC = () => {
         }, 60000); // Check every 60 seconds
 
         return () => clearInterval(interval);
-    }, []);
+    }, [cars]);
 
     useEffect(() => {
         // Reload requests when requestId changes to ensure we have the latest data
@@ -1966,16 +2409,16 @@ const RequestsView: React.FC = () => {
         let basePrice = 0;
         
         if (rentalDays >= 8) {
-            basePrice = car.pricePerDay * 0.96 * rentalDays;
+            basePrice = car.price_per_day * 0.96 * rentalDays;
         } else if (rentalDays >= 4) {
-            basePrice = car.pricePerDay * 0.98 * rentalDays;
+            basePrice = car.price_per_day * 0.98 * rentalDays;
         } else {
-            basePrice = car.pricePerDay * rentalDays;
+            basePrice = car.price_per_day * rentalDays;
         }
         
         // Add hours portion
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * car.pricePerDay;
+            const hoursPrice = (hours / 24) * car.price_per_day;
             basePrice += hoursPrice;
         }
         
@@ -1996,7 +2439,7 @@ const RequestsView: React.FC = () => {
         }
         
         let additionalCosts = 0;
-        const baseCarPrice = car.pricePerDay;
+        const baseCarPrice = car.price_per_day;
         
         // Percentage-based options
         if (parsedOptions.unlimitedKm) {
@@ -2087,7 +2530,7 @@ const RequestsView: React.FC = () => {
     if (requestId) {
         const request = requests.find(r => r.id.toString() === requestId);
         if (request) {
-            return <RequestDetailsView request={request} onBack={() => setSearchParams({ section: 'requests' })} onAccept={handleAccept} onReject={handleReject} onUndoReject={handleUndoReject} />;
+            return <RequestDetailsView request={request} onBack={() => setSearchParams({ section: 'requests' })} onAccept={handleAccept} onReject={handleReject} onUndoReject={handleUndoReject} cars={cars} />;
         }
     }
 
@@ -2323,6 +2766,7 @@ const RequestsView: React.FC = () => {
             {/* Add Rental Modal */}
             {showAddRentalModal && (
                 <CreateRentalModal
+                    cars={cars}
                     onSave={async (rentalData) => {
                         try {
                             const result = await createRentalManually(
@@ -2355,6 +2799,7 @@ const RequestsView: React.FC = () => {
             {/* Request Details Modal */}
             {showRequestDetailsModal && selectedRequest && (
                 <RequestDetailsModal
+                    cars={cars}
                     request={selectedRequest}
                     onClose={() => {
                         setShowRequestDetailsModal(false);
@@ -2371,6 +2816,7 @@ const RequestsView: React.FC = () => {
             {/* Edit Request Modal */}
             {showEditModal && editingRequest && (
                 <EditRequestModal
+                    cars={cars}
                     request={editingRequest}
                     onSave={async (updatedData) => {
                         try {
@@ -2407,9 +2853,10 @@ interface RequestDetailsModalProps {
     onUndoReject?: (request: OrderDisplay) => void;
     onEdit?: (request: OrderDisplay) => void;
     isProcessing?: boolean;
+    cars: CarType[];
 }
 
-const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onEdit, isProcessing = false }) => {
+const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onEdit, isProcessing = false, cars }) => {
     const car = cars.find(c => c.id.toString() === request.carId);
     if (!car) return null;
 
@@ -2472,17 +2919,17 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     
     if (rentalDays >= 8) {
         discountPercent = 4;
-        basePrice = car.pricePerDay * 0.96 * rentalDays; // -4%
+        basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
     } else if (rentalDays >= 4) {
         discountPercent = 2;
-        basePrice = car.pricePerDay * 0.98 * rentalDays; // -2%
+        basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
     } else {
-        basePrice = car.pricePerDay * rentalDays;
+        basePrice = car.price_per_day * rentalDays;
     }
     
     // Add hours portion (hours are charged at full price, no discount)
     if (hours > 0) {
-        const hoursPrice = (hours / 24) * car.pricePerDay;
+        const hoursPrice = (hours / 24) * car.price_per_day;
         basePrice += hoursPrice;
     }
     
@@ -2503,7 +2950,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     }
     
     let additionalCosts = 0;
-    const baseCarPrice = car.pricePerDay;
+    const baseCarPrice = car.price_per_day;
     
     // Percentage-based options (calculated as percentage of base car price * totalDays)
     // These should be calculated on the total rental period (days + hours)
@@ -2536,7 +2983,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     
     // Total price = base price + additional costs
     const totalPrice = basePrice + additionalCosts;
-    const pricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : car.pricePerDay;
+    const pricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : car.price_per_day;
 
     // Get customer information - prefer separate fields, fallback to parsing name
     const firstName = request.customerFirstName || request.customerName?.split(' ')[0] || '';
@@ -2771,7 +3218,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                         <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-300">Preț pe zi</span>
-                                <span className="text-white font-medium">{car.pricePerDay} MDL</span>
+                                <span className="text-white font-medium">{car.price_per_day} MDL</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-300">Număr zile</span>
@@ -2970,15 +3417,16 @@ interface RequestDetailsViewProps {
     onReject: (request: OrderDisplay) => void;
     onUndoReject?: (request: OrderDisplay) => void;
     onEdit?: (request: OrderDisplay) => void;
+    cars: CarType[];
 }
 
-const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onEdit }) => {
+const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onEdit, cars }) => {
     const car = cars.find(c => c.id.toString() === request.carId);
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image);
+    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image_url);
 
     useEffect(() => {
         if (car) {
-            setSelectedImage(car.image);
+            setSelectedImage(car.image_url);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [car]);
@@ -3180,6 +3628,7 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
 interface CreateRentalModalProps {
     onSave: (rentalData: Partial<OrderDisplay>) => void;
     onClose: () => void;
+    cars: CarType[];
 }
 
 // Country codes for phone selector
@@ -3206,7 +3655,7 @@ const COUNTRY_CODES = [
     { code: '+90', flag: '🇹🇷', country: 'Turkey' },
 ];
 
-const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose }) => {
+const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, cars }) => {
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
@@ -3343,22 +3792,22 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose }
         let basePrice = 0;
         
         if (rentalDays >= 8) {
-            basePrice = selectedCar.pricePerDay * 0.96 * rentalDays; // -4% discount
+            basePrice = selectedCar.price_per_day * 0.96 * rentalDays; // -4% discount
         } else if (rentalDays >= 4) {
-            basePrice = selectedCar.pricePerDay * 0.98 * rentalDays; // -2% discount
+            basePrice = selectedCar.price_per_day * 0.98 * rentalDays; // -2% discount
         } else {
-            basePrice = selectedCar.pricePerDay * rentalDays;
+            basePrice = selectedCar.price_per_day * rentalDays;
         }
         
         // Add hours portion
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * selectedCar.pricePerDay;
+            const hoursPrice = (hours / 24) * selectedCar.price_per_day;
             basePrice += hoursPrice;
         }
         
         // Calculate additional costs from options
         let additionalCosts = 0;
-        const baseCarPrice = selectedCar.pricePerDay;
+        const baseCarPrice = selectedCar.price_per_day;
         
         // Percentage-based options (calculated on totalDays)
         if (options.unlimitedKm) {
@@ -3619,7 +4068,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose }
                                 <option value="">Select a car</option>
                                 {cars.map(car => (
                                     <option key={car.id} value={car.id.toString()}>
-                                        {(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'} - {((car as any)?.pricePerDay || car.price_per_day || 0)} MDL/day
+                                        {(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'} - {car.price_per_day || 0} MDL/day
                                     </option>
                                 ))}
                             </select>
@@ -4248,21 +4697,21 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose }
                                 
                                 if (rentalDays >= 8) {
                                     discountPercent = 4;
-                                    basePrice = selectedCar.pricePerDay * 0.96 * rentalDays;
+                                    basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
                                 } else if (rentalDays >= 4) {
                                     discountPercent = 2;
-                                    basePrice = selectedCar.pricePerDay * 0.98 * rentalDays;
+                                    basePrice = selectedCar.price_per_day * 0.98 * rentalDays;
                                 } else {
-                                    basePrice = selectedCar.pricePerDay * rentalDays;
+                                    basePrice = selectedCar.price_per_day * rentalDays;
                                 }
                                 
                                 if (hours > 0) {
-                                    const hoursPrice = (hours / 24) * selectedCar.pricePerDay;
+                                    const hoursPrice = (hours / 24) * selectedCar.price_per_day;
                                     basePrice += hoursPrice;
                                 }
                                 
                                 let additionalCosts = 0;
-                                const baseCarPrice = selectedCar.pricePerDay;
+                                const baseCarPrice = selectedCar.price_per_day;
                                 
                                 if (options.unlimitedKm) {
                                     additionalCosts += baseCarPrice * totalDays * 0.5;
@@ -4295,7 +4744,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose }
                                     <>
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-300">Preț pe zi</span>
-                                            <span className="text-white font-medium">{selectedCar.pricePerDay.toLocaleString()} MDL</span>
+                                            <span className="text-white font-medium">{selectedCar.price_per_day.toLocaleString()} MDL</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-300">Număr zile</span>
@@ -4437,9 +4886,10 @@ interface EditRequestModalProps {
         options?: any;
     }) => void;
     onClose: () => void;
+    cars: CarType[];
 }
 
-const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, onClose }) => {
+const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, onClose, cars }) => {
     // Parse existing request data
     const parsePhoneNumber = (phone: string | undefined): { code: string; number: string } => {
         if (!phone) return { code: '+373', number: '' };
@@ -4646,19 +5096,19 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         
         let basePrice = 0;
         if (rentalDays >= 8) {
-            basePrice = (selectedCar as any).pricePerDay * 0.96 * rentalDays;
+            basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
         } else if (rentalDays >= 4) {
-            basePrice = (selectedCar as any).pricePerDay * 0.98 * rentalDays;
+            basePrice = selectedCar.price_per_day * 0.98 * rentalDays;
         } else {
-            basePrice = (selectedCar as any).pricePerDay * rentalDays;
+            basePrice = selectedCar.price_per_day * rentalDays;
         }
         
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * (selectedCar as any).pricePerDay;
+            const hoursPrice = (hours / 24) * selectedCar.price_per_day;
             basePrice += hoursPrice;
         }
         
-        const baseCarPrice = (selectedCar as any).pricePerDay;
+        const baseCarPrice = selectedCar.price_per_day;
         let additionalCosts = 0;
         
         if (options.unlimitedKm) {
@@ -5457,21 +5907,21 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                 
                                 if (rentalDays >= 8) {
                                     discountPercent = 4;
-                                    basePrice = (selectedCar as any).pricePerDay * 0.96 * rentalDays;
+                                    basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
                                 } else if (rentalDays >= 4) {
                                     discountPercent = 2;
-                                    basePrice = (selectedCar as any).pricePerDay * 0.98 * rentalDays;
+                                    basePrice = selectedCar.price_per_day * 0.98 * rentalDays;
                                 } else {
-                                    basePrice = (selectedCar as any).pricePerDay * rentalDays;
+                                    basePrice = selectedCar.price_per_day * rentalDays;
                                 }
                                 
                                 if (hours > 0) {
-                                    const hoursPrice = (hours / 24) * (selectedCar as any).pricePerDay;
+                                    const hoursPrice = (hours / 24) * selectedCar.price_per_day;
                                     basePrice += hoursPrice;
                                 }
                                 
                                 let additionalCosts = 0;
-                                const baseCarPrice = (selectedCar as any).pricePerDay;
+                                const baseCarPrice = selectedCar.price_per_day;
                                 
                                 if (options.unlimitedKm) {
                                     additionalCosts += baseCarPrice * totalDays * 0.5;
@@ -5504,7 +5954,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <>
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-300">Preț pe zi</span>
-                                            <span className="text-white font-medium">{(selectedCar as any).pricePerDay.toLocaleString()} MDL</span>
+                                            <span className="text-white font-medium">{selectedCar.price_per_day.toLocaleString()} MDL</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-300">Număr zile</span>
@@ -5642,6 +6092,20 @@ export const Admin: React.FC = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [totalRequests, setTotalRequests] = useState<number>(0);
+    const [cars, setCars] = useState<CarType[]>([]);
+
+    // Fetch cars at top level
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                setCars(fetchedCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
+    }, []);
 
     // Close language dropdown when clicking outside
     useEffect(() => {
@@ -5663,6 +6127,7 @@ export const Admin: React.FC = () => {
 
     // Fetch total requests count
     useEffect(() => {
+        if (cars.length === 0) return;
         const loadRequestsCount = async () => {
             try {
                 const data = await fetchBorrowRequestsForDisplay(cars);
@@ -5675,7 +6140,7 @@ export const Admin: React.FC = () => {
         // Refresh count periodically or when section changes
         const interval = setInterval(loadRequestsCount, 30000); // Refresh every 30 seconds
         return () => clearInterval(interval);
-    }, [refreshKey]);
+    }, [refreshKey, cars]);
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -5775,6 +6240,7 @@ export const Admin: React.FC = () => {
 
     return (
         <>
+            <NotificationToaster />
             <style>{`
                 * {
                     scrollbar-width: none !important;
