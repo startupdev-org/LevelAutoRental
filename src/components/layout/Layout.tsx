@@ -47,17 +47,27 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Show loader during page transitions - overlays on top with high z-index */}
       {showLoader && <Loader isTransitioning={isPageTransitioning} />}
       
+      {/* Skip to content link for accessibility */}
+      <a
+        href="#main-content"
+        className="absolute left-[-9999px] w-1 h-1 focus:left-4 focus:top-4 focus:z-[100] focus:w-auto focus:h-auto focus:px-4 focus:py-2 focus:bg-theme-500 focus:text-white focus:rounded-lg focus:font-semibold focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-theme-500 focus:ring-offset-2"
+      >
+        Skip to content
+      </a>
+      
       {/* Content is always rendered */}
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
         <AnimatePresence {...({ mode: "wait" } as any)} initial={false}>
           <motion.main
+            id="main-content"
             key={location.pathname}
             variants={pageTransition}
             initial="initial"
             animate="animate"
             exit="exit"
             className="flex-1"
+            tabIndex={-1}
           >
             {children}
           </motion.main>

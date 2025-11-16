@@ -235,6 +235,29 @@ export const Cars: React.FC = () => {
     return [...new Set(makes)];
   }, []);
 
+  // Get car make logo path
+  const getMakeLogo = (make: string): string | null => {
+    const makeLower = make.toLowerCase();
+    const logoMap: { [key: string]: string } = {
+      'mercedes': '/LevelAutoRental/logos/merc.svg',
+      'mercedes-benz': '/LevelAutoRental/logos/merc.svg',
+      'bmw': '/LevelAutoRental/logos/bmw.webp',
+      'audi': '/LevelAutoRental/logos/audi.png',
+      'hyundai': '/LevelAutoRental/logos/hyundai.png',
+      'maserati': '/LevelAutoRental/logos/maserati.png',
+    };
+    return logoMap[makeLower] || null;
+  };
+
+  // Get logo size class based on make
+  const getLogoSizeClass = (make: string): string => {
+    const makeLower = make.toLowerCase();
+    if (makeLower === 'audi' || makeLower === 'maserati') {
+      return 'w-6 h-6';
+    }
+    return 'w-4 h-4';
+  };
+
   // Map makes to their available models
   const makeToModels = useMemo(() => {
     const mapping: Record<string, string[]> = {};
@@ -622,10 +645,23 @@ export const Cars: React.FC = () => {
                     </label>
                     <div className="relative overflow-visible">
                       <div
-                        className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.make ? 'text-white' : 'text-white/70'}`}
+                        className={`text-base font-medium cursor-pointer transition-colors pr-8 flex items-center gap-2 ${filters.make ? 'text-white' : 'text-white/70'}`}
                         onClick={() => openDropdown('make')}
                       >
-                        {filters.make || 'Selectează marca'}
+                        {filters.make && (() => {
+                          const logoPath = getMakeLogo(filters.make.toLowerCase());
+                          return logoPath ? (
+                            <img 
+                              src={logoPath} 
+                              alt={filters.make}
+                              className={`${getLogoSizeClass(filters.make)} object-contain brightness-0 invert`}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : null;
+                        })()}
+                        <span>{filters.make || 'Selectează marca'}</span>
                       </div>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
                         <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -645,27 +681,35 @@ export const Cars: React.FC = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="py-1">
-                              <div
-                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                onClick={() => {
-                                  handleFilterChange('make', '');
-                                  closeAllDropdowns();
-                                }}
-                              >
-                                Selectează marca
-                              </div>
-                              {uniqueMakes.map((make) => (
-                                <div
-                                  key={make}
-                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                  onClick={() => {
-                                    handleFilterChange('make', make);
-                                    closeAllDropdowns();
-                                  }}
-                                >
-                                  {make}
-                                </div>
-                              ))}
+                              {uniqueMakes.map((make, index) => {
+                                const logoPath = getMakeLogo(make.toLowerCase());
+                                const isFirst = index === 0;
+                                const isLast = index === uniqueMakes.length - 1;
+                                return (
+                                  <div
+                                    key={make}
+                                    className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                    onClick={() => {
+                                      handleFilterChange('make', make);
+                                      closeAllDropdowns();
+                                    }}
+                                  >
+                                    <div className="w-6 flex items-center justify-start flex-shrink-0">
+                                      {logoPath && (
+                                        <img 
+                                          src={logoPath} 
+                                          alt={make}
+                                          className={`${getLogoSizeClass(make)} object-contain`}
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
+                                      )}
+                                    </div>
+                                    <span>{make}</span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </motion.div>
                         )}
@@ -683,7 +727,7 @@ export const Cars: React.FC = () => {
                         className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : filters.model ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
                         onClick={() => filters.make && openDropdown('model')}
                       >
-                        {!filters.make ? 'Selectează marca' : (filters.model || 'Orice')}
+                        {!filters.make ? 'Selectează marca' : (filters.model || 'Selectează modelul')}
                       </div>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
                         <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -703,28 +747,23 @@ export const Cars: React.FC = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="py-1">
-                              <div
-                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === '' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                onClick={() => {
-                                  handleFilterChange('model', '');
-                                  closeAllDropdowns();
-                                }}
-                              >
-                                Orice
-                              </div>
                               {availableModels.length > 0 ? (
-                                availableModels.map((model) => (
-                                  <div
-                                    key={model}
-                                    className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                    onClick={() => {
-                                      handleFilterChange('model', model);
-                                      closeAllDropdowns();
-                                    }}
-                                  >
-                                    {model}
-                                  </div>
-                                ))
+                                availableModels.map((model, index) => {
+                                  const isFirst = index === 0;
+                                  const isLast = index === availableModels.length - 1;
+                                  return (
+                                    <div
+                                      key={model}
+                                      className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                      onClick={() => {
+                                        handleFilterChange('model', model);
+                                        closeAllDropdowns();
+                                      }}
+                                    >
+                                      {model}
+                                    </div>
+                                  );
+                                })
                               ) : (
                                 <div className="px-4 py-2 text-sm text-gray-500">
                                   Nu sunt modele disponibile

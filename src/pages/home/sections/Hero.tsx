@@ -22,23 +22,83 @@ export const Hero: React.FC = () => {
   });
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showDateCalendar, setShowDateCalendar] = useState(false);
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   // Get unique makes
   const uniqueMakes = useMemo(() => {
-    const makes = cars.map(car => car.name.split(' ')[0]);
+    const makes = cars.map(car => {
+      const parts = car.name.split(' ');
+      const firstPart = parts[0];
+      // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
+      return firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
+    });
     return Array.from(new Set(makes));
   }, []);
+
+  // Map makes to their available models
+  const makeToModels = useMemo(() => {
+    const mapping: Record<string, string[]> = {};
+    cars.forEach(car => {
+      const parts = car.name.split(' ');
+      const firstPart = parts[0];
+      // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
+      const make = firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
+      const model = parts.slice(1).join(' '); // Rest is the model
+
+      if (!mapping[make]) {
+        mapping[make] = [];
+      }
+      if (model && !mapping[make].includes(model)) {
+        mapping[make].push(model);
+      }
+    });
+    return mapping;
+  }, []);
+
+  // Get available models for selected make
+  const availableModels = useMemo(() => {
+    if (!bookingForm.make) return [];
+    return makeToModels[bookingForm.make] || [];
+  }, [bookingForm.make, makeToModels]);
+
+  // Get car make logo path
+  const getMakeLogo = (make: string): string | null => {
+    const makeLower = make.toLowerCase();
+    const logoMap: { [key: string]: string } = {
+      'mercedes': '/LevelAutoRental/logos/merc.svg',
+      'mercedes-benz': '/LevelAutoRental/logos/merc.svg',
+      'bmw': '/LevelAutoRental/logos/bmw.webp',
+      'audi': '/LevelAutoRental/logos/audi.png',
+      'hyundai': '/LevelAutoRental/logos/hyundai.png',
+      'maserati': '/LevelAutoRental/logos/maserati.png',
+    };
+    return logoMap[makeLower] || null;
+  };
+
+  // Get logo size class based on make
+  const getLogoSizeClass = (make: string): string => {
+    const makeLower = make.toLowerCase();
+    if (makeLower === 'audi' || makeLower === 'maserati') {
+      return 'w-6 h-6';
+    }
+    return 'w-4 h-4';
+  };
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
     setShowLocationDropdown(false);
     setShowDateCalendar(false);
+    setShowMakeDropdown(false);
+    setShowModelDropdown(false);
   };
 
   // Handle opening a specific dropdown and closing others
-  const openDropdown = (dropdownType: 'location' | 'date') => {
+  const openDropdown = (dropdownType: 'location' | 'date' | 'make' | 'model') => {
     if ((dropdownType === 'location' && showLocationDropdown) ||
-        (dropdownType === 'date' && showDateCalendar)) {
+        (dropdownType === 'date' && showDateCalendar) ||
+        (dropdownType === 'make' && showMakeDropdown) ||
+        (dropdownType === 'model' && showModelDropdown)) {
       closeAllDropdowns();
       return;
     }
@@ -48,6 +108,10 @@ export const Hero: React.FC = () => {
       setShowLocationDropdown(true);
     } else if (dropdownType === 'date') {
       setShowDateCalendar(true);
+    } else if (dropdownType === 'make') {
+      setShowMakeDropdown(true);
+    } else if (dropdownType === 'model') {
+      setShowModelDropdown(true);
     }
   };
 
@@ -63,15 +127,36 @@ export const Hero: React.FC = () => {
     };
 
     // Only add listener if any dropdown is open
-    if (showLocationDropdown || showDateCalendar) {
+    if (showLocationDropdown || showDateCalendar || showMakeDropdown || showModelDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showLocationDropdown, showDateCalendar]);
+  }, [showLocationDropdown, showDateCalendar, showMakeDropdown, showModelDropdown]);
 
   const handleFilterChange = (key: string, value: string | { startDate: string; endDate: string }) => {
-    setBookingForm(prev => ({ ...prev, [key]: value }));
+    setBookingForm(prev => {
+      const newForm = { ...prev, [key]: value };
+      
+      // If make is being changed, reset model if it's not valid for the new make
+      if (key === 'make') {
+        const newMake = value as string;
+        if (newMake && prev.model) {
+          const validModels = makeToModels[newMake] || [];
+          const currentModelValid = validModels.some(model =>
+            model.toLowerCase() === prev.model.toLowerCase()
+          );
+          if (!currentModelValid) {
+            newForm.model = '';
+          }
+        } else if (!newMake) {
+          // If make is cleared, also clear model
+          newForm.model = '';
+        }
+      }
+      
+      return newForm;
+    });
   };
 
   const handleDateSelect = (selectedDate: string) => {
@@ -224,41 +309,136 @@ export const Hero: React.FC = () => {
             {/* Mobile Layout - Stack vertically */}
             <div className="flex flex-col md:hidden space-y-4 p-4">
               {/* Make */}
-              <div className="w-full">
+              <div className="w-full dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   Marca
                 </label>
-                <div className="relative">
-                  <select
-                    value={bookingForm.make}
-                    onChange={(e) => handleFilterChange('make', e.target.value)}
-                    className="w-full text-sm font-medium text-gray-900 bg-transparent border border-gray-200 rounded-xl py-3 px-4 appearance-none cursor-pointer focus:ring-0"
+                <div className="relative overflow-visible">
+                  <div
+                    className="w-full text-sm font-medium text-gray-900 bg-transparent border border-gray-200 rounded-xl py-3 px-4 cursor-pointer flex items-center gap-2"
+                    onClick={() => openDropdown('make')}
                   >
-                    <option value="">Selectează marca</option>
-                    {uniqueMakes.map((make) => (
-                      <option key={make} value={make}>{make}</option>
-                    ))}
-                  </select>
+                    {bookingForm.make && (() => {
+                      const logoPath = getMakeLogo(bookingForm.make.toLowerCase());
+                      return logoPath ? (
+                        <img 
+                          src={logoPath} 
+                          alt={bookingForm.make}
+                          className={`${getLogoSizeClass(bookingForm.make)} object-contain`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    <span className="flex-1">{bookingForm.make || 'Selectează marca'}</span>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+
+                  {/* Make Dropdown */}
+                  <AnimatePresence>
+                    {showMakeDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="py-1">
+                          {uniqueMakes.map((make, index) => {
+                            const logoPath = getMakeLogo(make.toLowerCase());
+                            const isFirst = index === 0;
+                            const isLast = index === uniqueMakes.length - 1;
+                            return (
+                              <div
+                                key={make}
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('make', make);
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                <div className="w-6 flex items-center justify-start flex-shrink-0">
+                                  {logoPath && (
+                                    <img 
+                                      src={logoPath} 
+                                      alt={make}
+                                      className={`${getLogoSizeClass(make)} object-contain`}
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                                <span>{make}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
               {/* Model */}
-              <div className="w-full">
+              <div className="w-full dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   Model
                 </label>
-                <div className="relative">
-                  <select
-                    value={bookingForm.model}
-                    onChange={(e) => handleFilterChange('model', e.target.value)}
-                    className="w-full text-sm font-medium text-gray-900 bg-transparent border border-gray-200 rounded-xl py-3 px-4 appearance-none cursor-pointer focus:ring-0"
+                <div className="relative overflow-visible">
+                  <div
+                    className={`w-full text-sm font-medium text-gray-900 bg-transparent border border-gray-200 rounded-xl py-3 px-4 cursor-pointer flex items-center gap-2 ${!bookingForm.make ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => bookingForm.make && openDropdown('model')}
                   >
-                    <option value="">Orice</option>
-                    <option value="AMG C43">AMG C43</option>
-                    <option value="GLE">GLE</option>
-                    <option value="CLS">CLS</option>
-                    <option value="Ghibli">Ghibli</option>
-                  </select>
+                    <span className="flex-1">{!bookingForm.make ? 'Selectează marca' : (bookingForm.model || 'Selectează modelul')}</span>
+                    <svg className={`w-4 h-4 text-gray-400 ${!bookingForm.make ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+
+                  {/* Model Dropdown */}
+                  <AnimatePresence>
+                    {showModelDropdown && bookingForm.make && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="py-1">
+                          {availableModels.length > 0 ? (
+                            availableModels.map((model, index) => {
+                              const isFirst = index === 0;
+                              const isLast = index === availableModels.length - 1;
+                              return (
+                                <div
+                                  key={model}
+                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                  onClick={() => {
+                                    handleFilterChange('model', model);
+                                    closeAllDropdowns();
+                                  }}
+                                >
+                                  {model}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                              Nu sunt modele disponibile
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -283,12 +463,12 @@ export const Hero: React.FC = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[200px]"
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="py-1">
                           <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-t-2xl"
                             onClick={() => {
                               handleFilterChange('location', 'Chisinau Airport');
                               closeAllDropdowns();
@@ -297,7 +477,7 @@ export const Hero: React.FC = () => {
                             Chisinau Airport
                           </div>
                           <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-b-2xl"
                             onClick={() => {
                               handleFilterChange('location', 'Chisinau');
                               closeAllDropdowns();
@@ -333,11 +513,11 @@ export const Hero: React.FC = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[280px]"
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Instruction Message */}
-                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                           <p className="text-xs text-gray-600">
                             {!bookingForm.dateRange.startDate 
                               ? 'Selectează data de început' 
@@ -357,7 +537,7 @@ export const Hero: React.FC = () => {
                                 dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
                               }));
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
                           >
                             <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -376,7 +556,7 @@ export const Hero: React.FC = () => {
                                 dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
                               }));
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
                           >
                             <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -404,15 +584,13 @@ export const Hero: React.FC = () => {
                             return (
                               <div
                                 key={index}
-                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                  day ? 'text-gray-700' : 'text-gray-300'
-                                } ${
-                                  isSelected
-                                    ? 'bg-gray-900 text-white hover:bg-gray-800 font-medium'
+                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
+                                  } ${isSelected
+                                    ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
                                     : isInRange
-                                    ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                    : 'hover:bg-gray-100'
-                                }`}
+                                      ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                      : 'hover:bg-gray-100'
+                                  }`}
                                 onClick={() => {
                                   handleDateSelect(day);
                                 }}
@@ -443,26 +621,81 @@ export const Hero: React.FC = () => {
             {/* Desktop Layout - Horizontal flex */}
             <div className="hidden md:flex">
               {/* Make */}
-              <div className="flex-1 px-6 py-5">
+              <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   Marca
                 </label>
-                <div className="relative">
-                  <select
-                    value={bookingForm.make}
-                    onChange={(e) => handleFilterChange('make', e.target.value)}
-                    className="w-full text-sm text-gray-500 bg-transparent border-none outline-none appearance-none cursor-pointer hover:text-gray-700 transition-colors pr-8"
+                <div className="relative overflow-visible">
+                  <div
+                    className="w-full text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer hover:text-gray-700 transition-colors pr-8 flex items-center gap-2"
+                    onClick={() => openDropdown('make')}
                   >
-                    <option value="">Selectează marca</option>
-                    {uniqueMakes.map((make) => (
-                      <option key={make} value={make}>{make}</option>
-                    ))}
-                  </select>
+                    {bookingForm.make && (() => {
+                      const logoPath = getMakeLogo(bookingForm.make.toLowerCase());
+                      return logoPath ? (
+                        <img 
+                          src={logoPath} 
+                          alt={bookingForm.make}
+                          className={`${getLogoSizeClass(bookingForm.make)} object-contain`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    <span className="flex-1">{bookingForm.make || 'Selectează marca'}</span>
+                  </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
+
+                  {/* Make Dropdown */}
+                  <AnimatePresence>
+                    {showMakeDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="py-1">
+                          {uniqueMakes.map((make, index) => {
+                            const logoPath = getMakeLogo(make.toLowerCase());
+                            const isFirst = index === 0;
+                            const isLast = index === uniqueMakes.length - 1;
+                            return (
+                              <div
+                                key={make}
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('make', make);
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                <div className="w-6 flex items-center justify-start flex-shrink-0">
+                                  {logoPath && (
+                                    <img 
+                                      src={logoPath} 
+                                      alt={make}
+                                      className={`${getLogoSizeClass(make)} object-contain`}
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                                <span>{make}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -470,27 +703,61 @@ export const Hero: React.FC = () => {
               <div className="w-px bg-gray-200 my-4"></div>
 
               {/* Model */}
-              <div className="flex-1 px-6 py-5">
+              <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   Model
                 </label>
-                <div className="relative">
-                  <select
-                    value={bookingForm.model}
-                    onChange={(e) => handleFilterChange('model', e.target.value)}
-                    className="w-full text-sm text-gray-500 bg-transparent border-none outline-none appearance-none cursor-pointer hover:text-gray-700 transition-colors pr-8"
+                <div className="relative overflow-visible">
+                  <div
+                    className={`w-full text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer hover:text-gray-700 transition-colors pr-8 flex items-center gap-2 ${!bookingForm.make ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => bookingForm.make && openDropdown('model')}
                   >
-                    <option value="">Orice</option>
-                    <option value="AMG C43">AMG C43</option>
-                    <option value="GLE">GLE</option>
-                    <option value="CLS">CLS</option>
-                    <option value="Ghibli">Ghibli</option>
-                  </select>
+                    <span className="flex-1">{!bookingForm.make ? 'Selectează marca' : (bookingForm.model || 'Selectează modelul')}</span>
+                  </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-4 h-4 ${!bookingForm.make ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
+
+                  {/* Model Dropdown */}
+                  <AnimatePresence>
+                    {showModelDropdown && bookingForm.make && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="py-1">
+                          {availableModels.length > 0 ? (
+                            availableModels.map((model, index) => {
+                              const isFirst = index === 0;
+                              const isLast = index === availableModels.length - 1;
+                              return (
+                                <div
+                                  key={model}
+                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                  onClick={() => {
+                                    handleFilterChange('model', model);
+                                    closeAllDropdowns();
+                                  }}
+                                >
+                                  {model}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                              Nu sunt modele disponibile
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -523,12 +790,12 @@ export const Hero: React.FC = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[200px]"
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="py-1">
                           <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-t-2xl"
                             onClick={() => {
                               handleFilterChange('location', 'Chisinau Airport');
                               closeAllDropdowns();
@@ -537,7 +804,7 @@ export const Hero: React.FC = () => {
                             Chisinau Airport
                           </div>
                           <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors"
+                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-b-2xl"
                             onClick={() => {
                               handleFilterChange('location', 'Chisinau');
                               closeAllDropdowns();
@@ -581,11 +848,11 @@ export const Hero: React.FC = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[280px]"
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Instruction Message */}
-                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                           <p className="text-xs text-gray-600">
                             {!bookingForm.dateRange.startDate 
                               ? 'Selectează data de început' 
@@ -605,7 +872,7 @@ export const Hero: React.FC = () => {
                                 dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
                               }));
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
                           >
                             <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -624,7 +891,7 @@ export const Hero: React.FC = () => {
                                 dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
                               }));
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
                           >
                             <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -652,15 +919,13 @@ export const Hero: React.FC = () => {
                             return (
                               <div
                                 key={index}
-                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                  day ? 'text-gray-700' : 'text-gray-300'
-                                } ${
-                                  isSelected
-                                    ? 'bg-gray-900 text-white hover:bg-gray-800 font-medium'
+                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
+                                  } ${isSelected
+                                    ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
                                     : isInRange
-                                    ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                    : 'hover:bg-gray-100'
-                                }`}
+                                      ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                      : 'hover:bg-gray-100'
+                                  }`}
                                 onClick={() => {
                                   handleDateSelect(day);
                                 }}
