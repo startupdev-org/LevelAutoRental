@@ -78,22 +78,45 @@ export interface OrderDisplay {
 export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
   try {
     const { data, error } = await supabase
-      .from('borrow_requests')
+      .from('BorrowRequest')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('requested_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching borrow requests:', error);
       return [];
     }
 
-    // Map to include user structure (email will be empty, can be populated from profiles table if available)
+    // Map to include user structure and normalize field names
     return (data || []).map((request: any) => ({
-      ...request,
+      id: request.id.toString(),
+      user_id: request.user_id,
+      car_id: request.car_id.toString(),
+      start_date: request.start_date,
+      start_time: request.start_time || '09:00:00',
+      end_date: request.end_date,
+      end_time: request.end_time || '17:00:00',
+      status: request.status || 'PENDING',
+      created_at: request.requested_at || request.created_at,
+      updated_at: request.updated_at,
+      // Include customer information and options from the new schema
+      customer_name: request.customer_name,
+      customer_first_name: request.customer_first_name,
+      customer_last_name: request.customer_last_name,
+      customer_email: request.customer_email,
+      customer_phone: request.customer_phone,
+      customer_age: request.customer_age,
+      comment: request.comment,
+      options: request.options || {},
+      total_amount: request.total_amount,
       user: {
         id: request.user_id,
-        email: '', // Will be populated from profiles table if available
-        user_metadata: {},
+        email: request.customer_email || '', // Use customer_email from request
+        user_metadata: {
+          first_name: request.customer_first_name,
+          last_name: request.customer_last_name,
+          full_name: request.customer_name,
+        },
       },
     }));
   } catch (error) {
@@ -680,98 +703,70 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
     // Process borrow requests
     requests.forEach((request, index) => {
       const car = cars.find((c) => c.id.toString() === request.car_id);
-      const profile = profiles.get(request.user_id);
-      const email = profile?.email || request.user?.email || '';
-      const phone = profile?.phone || '';
-      const firstName = profile?.firstName || '';
-      const lastName = profile?.lastName || '';
-      const userName = (firstName && lastName)
-        ? `${firstName} ${lastName}`
-        : firstName || lastName
-          ? `${firstName}${lastName}`
-          : (email ? email.split('@')[0] : '')
-          || `User ${request.user_id.slice(0, 8)}`;
+      
+      // Use customer data directly from request (new schema) or fall back to profile/user data
+      const email = (request as any).customer_email || request.user?.email || '';
+      const phone = (request as any).customer_phone || '';
+      const firstName = (request as any).customer_first_name || '';
+      const lastName = (request as any).customer_last_name || '';
+      const customerName = (request as any).customer_name || 
+        (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '');
+      
+      const userName = customerName || 
+        (email ? email.split('@')[0] : '') ||
+        `User ${request.user_id.slice(0, 8)}`;
 
-      // Calculate estimated amount
+      // Calculate estimated amount (use stored total_amount if available, otherwise calculate)
       const startDate = new Date(request.start_date || new Date());
       const endDate = new Date(request.end_date || new Date());
       const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-      const amount = car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0;
+      const storedAmount = (request as any).total_amount;
+      const calculatedAmount = car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0;
+      const amount = storedAmount || calculatedAmount;
 
-      // Get age from request data, or use mock data if not available
-      // Mock ages: 28, 35, 42, 29, 31, 26, 38, 33 (cycling through)
-      const mockAges = [28, 35, 42, 29, 31, 26, 38, 33];
-      const age = (request as any).age || (request as any).customer_age || mockAges[index % mockAges.length];
+      // Get age from request data
+      const age = (request as any).customer_age || undefined;
 
-      // Get phone from request data or profile, or use mock data if not available
-      // Mock phones: cycling through different numbers
-      const mockPhones = [
-        '+373 123 456 789',
-        '+373 234 567 890',
-        '+373 345 678 901',
-        '+373 456 789 012',
-        '+373 567 890 123',
-        '+373 678 901 234',
-        '+373 789 012 345',
-        '+373 890 123 456'
-      ];
-      const finalPhone = phone || (request as any).phone || (request as any).customer_phone || mockPhones[index % mockPhones.length];
+      // Get phone from request data
+      const finalPhone = phone || undefined;
 
-      // Get firstName/lastName from request data or profile, or use mock data if not available
-      const mockFirstNames = ['Ion', 'Maria', 'Gheorghe', 'Elena', 'Nicolae', 'Ana', 'Alexandru', 'Natalia'];
-      const mockLastNames = ['Popescu', 'Ionescu', 'Radu', 'Stan', 'Dumitru', 'Constantinescu', 'Munteanu', 'Nistor'];
-      const finalFirstName = firstName || (request as any).first_name || (request as any).firstName || mockFirstNames[index % mockFirstNames.length];
-      const finalLastName = lastName || (request as any).last_name || (request as any).lastName || mockLastNames[index % mockLastNames.length];
-
-      // Parse options if they exist, or use mock data if not available
+      // Parse options if they exist (from JSONB column)
       let options = undefined;
       if ((request as any).options) {
         if (typeof (request as any).options === 'string') {
           try {
             options = JSON.parse((request as any).options);
           } catch (e) {
-            options = undefined;
+            options = {};
           }
         } else {
           options = (request as any).options;
         }
       }
-      
-      // If no options from database, use mock options for demonstration
-      if (!options) {
-        const mockOptionsList = [
-          { unlimitedKm: true, speedLimitIncrease: true },
-          { pickupAtAddress: true, returnAtAddress: true, personalDriver: true },
-          { unlimitedKm: true, tireInsurance: true, childSeat: true },
-          { priorityService: true, simCard: true, roadsideAssistance: true },
-          { pickupAtAddress: true, unlimitedKm: true, personalDriver: true, tireInsurance: true },
-        ];
-        options = mockOptionsList[index % mockOptionsList.length];
-      }
 
       orders.push({
         id: request.id,
         type: 'request',
-        customerName: (finalFirstName && finalLastName) ? `${finalFirstName} ${finalLastName}` : userName,
-        customerEmail: email || (request as any).email || (request as any).customer_email || '',
+        customerName: userName,
+        customerEmail: email,
         customerPhone: finalPhone,
-        customerFirstName: finalFirstName,
-        customerLastName: finalLastName,
+        customerFirstName: firstName,
+        customerLastName: lastName,
         customerAge: age,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: (car as any)?.image || car?.image_url || '',
-        pickupDate: request.start_date,
-        pickupTime: request.start_time,
-        returnDate: request.end_date,
-        returnTime: request.end_time,
+        pickupDate: request.start_date ? new Date(request.start_date).toISOString().split('T')[0] : '',
+        pickupTime: request.start_time || '09:00',
+        returnDate: request.end_date ? new Date(request.end_date).toISOString().split('T')[0] : '',
+        returnTime: request.end_time || '17:00',
         status: request.status,
         total_amount: amount.toString(),
         amount: amount,
         createdAt: request.created_at,
         carId: request.car_id,
         userId: request.user_id,
-        comment: (request as any).comment || (request as any).customer_comment || (request as any).customerComment || undefined,
-        options: options,
+        comment: (request as any).comment || undefined,
+        options: options || {},
       } as OrderDisplay & { comment?: string; options?: any });
     });
 
@@ -792,7 +787,7 @@ export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promi
   try {
     // Fetch the request
     const { data: request, error: fetchError } = await supabase
-      .from('borrow_requests')
+      .from('BorrowRequest')
       .select('*')
       .eq('id', requestId)
       .single();
@@ -808,7 +803,7 @@ export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promi
     // Update request status to APPROVED
     // The rental will be created automatically when pickup time arrives via processExecutedRequests
     const { error: updateError } = await supabase
-      .from('borrow_requests')
+      .from('BorrowRequest')
       .update({ status: 'APPROVED', updated_at: new Date().toISOString() })
       .eq('id', requestId);
 
@@ -829,7 +824,7 @@ export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promi
 export async function rejectBorrowRequest(requestId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from('borrow_requests')
+      .from('BorrowRequest')
       .update({ 
         status: 'REJECTED', 
         updated_at: new Date().toISOString(),
@@ -854,7 +849,7 @@ export async function rejectBorrowRequest(requestId: string, reason?: string): P
 export async function undoRejectBorrowRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from('borrow_requests')
+      .from('BorrowRequest')
       .update({ 
         status: 'PENDING', 
         updated_at: new Date().toISOString()
@@ -889,6 +884,7 @@ export async function updateBorrowRequest(
     customer_age?: string;
     comment?: string;
     options?: any;
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'CANCELLED';
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -907,9 +903,10 @@ export async function updateBorrowRequest(
     if (updates.customer_age !== undefined) updateData.customer_age = updates.customer_age;
     if (updates.comment !== undefined) updateData.comment = updates.comment;
     if (updates.options !== undefined) updateData.options = typeof updates.options === 'string' ? updates.options : JSON.stringify(updates.options);
+    if (updates.status !== undefined) updateData.status = updates.status;
 
     const { error } = await supabase
-      .from('borrow_requests')
+      .from('BorrowRequest')
       .update(updateData)
       .eq('id', requestId);
 
@@ -920,6 +917,69 @@ export async function updateBorrowRequest(
     return { success: true };
   } catch (error) {
     console.error('Error updating borrow request:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Create a new borrow request (by admin)
+ */
+export async function createBorrowRequest(
+  carId: string,
+  startDate: string,
+  startTime: string,
+  endDate: string,
+  endTime: string,
+  customerName: string,
+  customerFirstName: string,
+  customerLastName: string,
+  customerEmail: string,
+  customerPhone: string,
+  customerAge?: string,
+  comment?: string,
+  options?: any,
+  totalAmount?: number
+): Promise<{ success: boolean; requestId?: string; error?: string }> {
+  try {
+    // Generate a temporary user_id for admin-created requests
+    // In a real scenario, you might want to create a user or use a system user ID
+    const userId = `admin-${Date.now()}`;
+
+    const insertData: any = {
+      user_id: userId,
+      car_id: carId,
+      start_date: startDate,
+      start_time: startTime,
+      end_date: endDate,
+      end_time: endTime,
+      status: 'APPROVED', // Admin-created requests are automatically approved
+      customer_name: customerName,
+      customer_first_name: customerFirstName,
+      customer_last_name: customerLastName,
+      customer_email: customerEmail,
+      customer_phone: customerPhone,
+      requested_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (customerAge) insertData.customer_age = customerAge;
+    if (comment) insertData.comment = comment;
+    if (options) insertData.options = typeof options === 'string' ? options : JSON.stringify(options);
+    if (totalAmount !== undefined) insertData.total_amount = totalAmount;
+
+    const { data, error } = await supabase
+      .from('BorrowRequest')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, requestId: data.id.toString() };
+  } catch (error) {
+    console.error('Error creating borrow request:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -993,7 +1053,7 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
   try {
     // Fetch all approved requests
     const { data: approvedRequests, error: fetchError } = await supabase
-      .from('borrow_requests')
+      .from('BorrowRequest')
       .select('*')
       .eq('status', 'APPROVED');
 
@@ -1012,7 +1072,7 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
       if (hasDateTimePassed(request.start_date, request.start_time)) {
         // Update request status to EXECUTED
         const { error: updateError } = await supabase
-          .from('borrow_requests')
+          .from('BorrowRequest')
           .update({ 
             status: 'EXECUTED', 
             updated_at: new Date().toISOString() 
