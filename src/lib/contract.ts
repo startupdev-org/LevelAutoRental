@@ -17,6 +17,7 @@ interface ContractData {
     country?: string;
     idNumber?: string; // IDNP or passport number
     idSeries?: string; // ID series
+    idnp?: string; // IDNP (Personal Numeric Code)
   };
   rentalDetails: {
     startDate: string;
@@ -129,11 +130,8 @@ const addPageFooter = (doc: any, pageNumber: number, pageWidth: number, pageHeig
   doc.setTextColor(0); // Reset color for next page
 };
 
-export const generateContractPDF = async (data: ContractData) => {
+export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob: Blob; filename: string }> => {
   try {
-    console.log('Starting contract PDF generation for:', data.contractNumber);
-    console.log('Contract data:', data);
-
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -258,7 +256,8 @@ export const generateContractPDF = async (data: ContractData) => {
     const idText = convertRomanianToASCII(`posesor al buletinului de identitate/pasaportului cu Seria si Numarul ${data.customer.idSeries || '________________'}, IDNP`);
     doc.text(idText, margin, y);
     y += 5;
-    doc.text(convertRomanianToASCII(`${data.customer.idNumber || '_________________________'}, (denumit in continuare "Locatar"), pe de alta parte, au convenit sa incheie prezentul`), margin, y);
+    const idnpText = data.customer.idnp ? `${data.customer.idNumber || '________________'}, IDNP ${data.customer.idnp}` : (data.customer.idNumber || '_________________________');
+    doc.text(convertRomanianToASCII(`${idnpText}, (denumit in continuare "Locatar"), pe de alta parte, au convenit sa incheie prezentul`), margin, y);
     y += 5;
     doc.text(convertRomanianToASCII('Contract de locatiune in urmatoarele conditii:'), margin, y);
     y += 8;
@@ -366,15 +365,37 @@ export const generateContractPDF = async (data: ContractData) => {
     addTextWithBreakSection1('achitarii de catre Locatar a pretului, in conditiile Capitolului V al prezentului contract.', 6);
     addTextWithBreakSection1('1.2 Autovehiculul inchiriat are urmatoarele caracteristici:', 6);
 
-    // Vehicle details table
+    // Vehicle details table - ensure all values are properly extracted
+    const carMake = data.car?.make || '';
+    const carModel = data.car?.model || '';
+    const carColor = (data as any).carColor || (data.car as any)?.color || data.vehicleDetails?.color || '';
+    const registrationNumber = data.vehicleDetails?.registrationNumber || (data.car as any)?.license || '';
+    const mileage = data.vehicleDetails?.mileage || (data.car as any)?.kilometers || data.car?.mileage || 0;
+    const carYear = data.car?.year || 0;
+    const fuelType = (data as any).carFuelType || data.car?.fuel_type || '';
+    
+    // Convert fuel type to Romanian
+    let fuelTypeRomanian = '';
+    if (fuelType === 'gasoline' || fuelType === 'petrol') {
+      fuelTypeRomanian = 'Benzina';
+    } else if (fuelType === 'diesel') {
+      fuelTypeRomanian = 'Motorina';
+    } else if (fuelType === 'hybrid') {
+      fuelTypeRomanian = 'Hibrid';
+    } else if (fuelType === 'electric') {
+      fuelTypeRomanian = 'Electric';
+    } else {
+      fuelTypeRomanian = fuelType || '';
+    }
+    
     const vehicleInfo = [
-      ['MARCA:', convertRomanianToASCII(data.car.make || '')],
-      ['MODEL:', convertRomanianToASCII(data.car.model || '')],
-      ['CULOARE:', ''],
-      [convertRomanianToASCII('NR. DE INMATRICULARE:'), data.vehicleDetails?.registrationNumber || ''],
-      ['NR/KM LA BORD:', data.vehicleDetails?.mileage?.toString() || ''],
-      ['AN FABRICATIE:', data.car.year.toString()],
-      ['COMBUSTIBIL:', convertRomanianToASCII(data.car.fuel_type === 'gasoline' ? 'Benzina' : data.car.fuel_type === 'diesel' ? 'Motorina' : data.car.fuel_type || '')]
+      ['MARCA:', convertRomanianToASCII(carMake)],
+      ['MODEL:', convertRomanianToASCII(carModel)],
+      ['CULOARE:', convertRomanianToASCII(carColor)],
+      [convertRomanianToASCII('NR. DE INMATRICULARE:'), registrationNumber],
+      ['NR/KM LA BORD:', mileage.toString()],
+      ['AN FABRICATIE:', carYear.toString()],
+      ['COMBUSTIBIL:', convertRomanianToASCII(fuelTypeRomanian)]
     ];
 
     // Check if we need a new page before adding table
@@ -1254,10 +1275,11 @@ export const generateContractPDF = async (data: ContractData) => {
     // Table with black header bar
     const anexa1TableStartY = y;
     const anexa1RowHeight = 8;
-    const col1Width = 30; // DATA
-    const col2Width = 25; // ORA
-    const col3Width = 60; // LOCUL
-    const tableEndX = margin + col1Width + col2Width + col3Width;
+    const col1Width = 30; // PREDARE/PRIMIRE label
+    const col2Width = 30; // DATA
+    const col3Width = 20; // ORA
+    const col4Width = 55; // LOCUL
+    const tableEndX = margin + col1Width + col2Width + col3Width + col4Width;
 
     // Draw black header bar
     doc.setFillColor(0, 0, 0);
@@ -1267,9 +1289,9 @@ export const generateContractPDF = async (data: ContractData) => {
     doc.setTextColor(255, 255, 255);
     doc.setFont('times', 'bold');
     doc.setFontSize(9);
-    doc.text('DATA', margin + 2, anexa1TableStartY + 5);
-    doc.text('ORA', margin + col1Width + 2, anexa1TableStartY + 5);
-    doc.text('LOCUL', margin + col1Width + col2Width + 2, anexa1TableStartY + 5);
+    doc.text('DATA', margin + col1Width + 2, anexa1TableStartY + 5);
+    doc.text('ORA', margin + col1Width + col2Width + 2, anexa1TableStartY + 5);
+    doc.text('LOCUL', margin + col1Width + col2Width + col3Width + 2, anexa1TableStartY + 5);
     
     // Reset text color
     doc.setTextColor(0, 0, 0);
@@ -1277,8 +1299,9 @@ export const generateContractPDF = async (data: ContractData) => {
 
     // Draw table borders
     doc.line(margin, anexa1TableStartY, margin, anexa1TableStartY + (anexa1RowHeight * 3)); // Left border
-    doc.line(margin + col1Width, anexa1TableStartY, margin + col1Width, anexa1TableStartY + (anexa1RowHeight * 3)); // Column separator 1
-    doc.line(margin + col1Width + col2Width, anexa1TableStartY, margin + col1Width + col2Width, anexa1TableStartY + (anexa1RowHeight * 3)); // Column separator 2
+    doc.line(margin + col1Width, anexa1TableStartY, margin + col1Width, anexa1TableStartY + (anexa1RowHeight * 3)); // Column separator 1 (label)
+    doc.line(margin + col1Width + col2Width, anexa1TableStartY, margin + col1Width + col2Width, anexa1TableStartY + (anexa1RowHeight * 3)); // Column separator 2 (DATA)
+    doc.line(margin + col1Width + col2Width + col3Width, anexa1TableStartY, margin + col1Width + col2Width + col3Width, anexa1TableStartY + (anexa1RowHeight * 3)); // Column separator 3 (ORA)
     doc.line(tableEndX, anexa1TableStartY, tableEndX, anexa1TableStartY + (anexa1RowHeight * 3)); // Right border
     doc.line(margin, anexa1TableStartY + anexa1RowHeight, tableEndX, anexa1TableStartY + anexa1RowHeight); // Header separator
     doc.line(margin, anexa1TableStartY + (anexa1RowHeight * 2), tableEndX, anexa1TableStartY + (anexa1RowHeight * 2)); // Row separator
@@ -1297,7 +1320,7 @@ export const generateContractPDF = async (data: ContractData) => {
     // Fill PREDARE cells with actual data
     doc.text(formatDateRO(data.rentalDetails.startDate), margin + col1Width + 2, predareRowY + 5);
     doc.text(formatTime(data.rentalDetails.startTime), margin + col1Width + col2Width + 2, predareRowY + 5);
-    doc.text(convertRomanianToASCII(data.rentalDetails.pickupLocation), margin + col1Width + col2Width + 2, predareRowY + 5);
+    doc.text(convertRomanianToASCII(data.rentalDetails.pickupLocation), margin + col1Width + col2Width + col3Width + 2, predareRowY + 5);
     y += anexa1RowHeight;
 
     // PRIMIRE row with grey background (black text on grey)
@@ -1313,7 +1336,7 @@ export const generateContractPDF = async (data: ContractData) => {
     // Fill PRIMIRE cells with actual data
     doc.text(formatDateRO(data.rentalDetails.endDate), margin + col1Width + 2, primireRowY + 5);
     doc.text(formatTime(data.rentalDetails.endTime), margin + col1Width + col2Width + 2, primireRowY + 5);
-    doc.text(convertRomanianToASCII(data.rentalDetails.returnLocation), margin + col1Width + col2Width + 2, primireRowY + 5);
+    doc.text(convertRomanianToASCII(data.rentalDetails.returnLocation), margin + col1Width + col2Width + col3Width + 2, primireRowY + 5);
     y += anexa1RowHeight + 10;
 
     // PREȚUL LOCAȚIUNII Section
@@ -1387,11 +1410,11 @@ export const generateContractPDF = async (data: ContractData) => {
       if (idx === 0) {
         doc.setFont('times', 'normal');
         doc.setFontSize(8);
-        doc.text(data.rentalDetails.pricePerDay.toString(), margin + priceLabelColWidth + 2, rowY + 4.5);
-        doc.text(data.rentalDetails.numberOfDays.toString(), margin + priceLabelColWidth + priceCol1Width + 2, rowY + 4.5);
-        doc.text(data.rentalDetails.subtotal.toString(), margin + priceLabelColWidth + priceCol1Width + priceCol2Width + 2, rowY + 4.5);
+        doc.text((data.rentalDetails.pricePerDay || 0).toString(), margin + priceLabelColWidth + 2, rowY + 4.5);
+        doc.text((data.rentalDetails.numberOfDays || 0).toString(), margin + priceLabelColWidth + priceCol1Width + 2, rowY + 4.5);
+        doc.text((data.rentalDetails.subtotal || 0).toString(), margin + priceLabelColWidth + priceCol1Width + priceCol2Width + 2, rowY + 4.5);
         doc.text(data.rentalDetails.discount ? data.rentalDetails.discount.toString() : '0', margin + priceLabelColWidth + priceCol1Width + priceCol2Width + priceCol3Width + 2, rowY + 4.5);
-        doc.text(data.rentalDetails.total.toString(), margin + priceLabelColWidth + priceCol1Width + priceCol2Width + priceCol3Width + priceCol4Width + 2, rowY + 4.5);
+        doc.text((data.rentalDetails.total || 0).toString(), margin + priceLabelColWidth + priceCol1Width + priceCol2Width + priceCol3Width + priceCol4Width + 2, rowY + 4.5);
       }
       // Other rows remain empty (white background)
     });
@@ -1401,7 +1424,7 @@ export const generateContractPDF = async (data: ContractData) => {
     // Total to pay - spans multiple columns, right aligned
     doc.setFont('times', 'bold');
     doc.setFontSize(9);
-    const totalText = convertRomanianToASCII(`Total spre plata: ${data.rentalDetails.total} MDL`);
+    const totalText = convertRomanianToASCII(`Total spre plata: ${data.rentalDetails.total || 0} MDL`);
     doc.text(totalText, priceTableEndX, y, { align: 'right' });
     y += 8;
 
@@ -1453,11 +1476,11 @@ export const generateContractPDF = async (data: ContractData) => {
     doc.setFontSize(9);
     const underlineX = margin + depozitCol1Width + 2;
     const underlineY = depozitTableStartY + depozitRowHeight / 2 + 2;
-    const depositAmount = data.rentalDetails.deposit.toString();
+    const depositAmount = (data.rentalDetails.deposit || 0).toString();
     doc.text(depositAmount, underlineX, underlineY);
     doc.text('MDL', underlineX + 35, underlineY); // MDL to the right of amount
     doc.text(convertRomanianToASCII('Mod achitare garantie:'), margin + depozitCol1Width + depozitCol2Width + 2, depozitTableStartY + depozitRowHeight / 2 + 2);
-    doc.text(data.rentalDetails.paymentMethod || '___________________', margin + depozitCol1Width + depozitCol2Width + depozitCol3Width + 2, depozitTableStartY + depozitRowHeight / 2 + 2);
+    doc.text(convertRomanianToASCII((data.rentalDetails as any).depositPaymentMethod || data.rentalDetails.paymentMethod || '___________________'), margin + depozitCol1Width + depozitCol2Width + depozitCol3Width + 2, depozitTableStartY + depozitRowHeight / 2 + 2);
     
     y = depozitTableStartY + depozitRowHeight + 10;
 
@@ -1833,14 +1856,63 @@ export const generateContractPDF = async (data: ContractData) => {
     // Add footer to last page (ensure we have space)
     addPageFooter(doc, currentPage, pageWidth, pageHeight, margin);
 
-    // Save PDF
+    // Generate PDF as blob for upload to Supabase
     const filename = `Contract_Locatiune_${data.contractNumber}.pdf`;
-    console.log('Saving PDF with filename:', filename);
-    doc.save(filename);
-    console.log('PDF saved successfully');
+    const pdfBlob = doc.output('blob');
+    
+    // Return both blob and filename for upload
+    return { pdfBlob, filename };
   } catch (error) {
     console.error('Error in generateContractPDF:', error);
     throw error;
+  }
+};
+
+/**
+ * Upload contract PDF to Supabase storage
+ */
+export const uploadContractToStorage = async (
+  pdfBlob: Blob,
+  filename: string,
+  rentalId: string | number
+): Promise<string | null> => {
+  try {
+    const { supabaseAdmin } = await import('./supabase');
+    
+    // Verify service key is available
+    const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+    if (!serviceKey) {
+      console.error('VITE_SUPABASE_SERVICE_KEY is not set. Cannot upload to storage.');
+      throw new Error('Service key not configured');
+    }
+    
+    // Create folder structure: contracts/rental-{id}/
+    const folderPath = `rental-${rentalId}`;
+    const filePath = `${folderPath}/${filename}`;
+    
+    // Upload to Supabase storage
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('contracts')
+      .upload(filePath, pdfBlob, {
+        cacheControl: '3600',
+        upsert: true, // Replace if exists
+        contentType: 'application/pdf'
+      });
+
+    if (uploadError) {
+      console.error('Error uploading contract to storage:', uploadError);
+      throw uploadError;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('contracts')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading contract PDF:', error);
+    return null;
   }
 };
 
@@ -1860,24 +1932,28 @@ export const createContractDataFromOrder = (
     customerCountry?: string;
     customerIdNumber?: string;
     customerIdSeries?: string;
+    customerIdnp?: string;
     pickupLocation?: string;
     returnLocation?: string;
     deposit?: number;
     paymentMethod?: string;
+    depositPaymentMethod?: string;
     paymentDate?: string;
     additionalDrivers?: Array<{ firstName: string; lastName: string; idnp?: string }>;
     vehicleMileage?: number;
     vehicleFuelLevel?: number;
     vehicleRegistrationNumber?: string;
     carValue?: number;
+    carColor?: string;
+    carFuelType?: string;
   }
 ): ContractData => {
   const startDate = new Date(order.pickupDate);
   const endDate = new Date(order.returnDate);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
   
-  // Calculate pricing
-  const pricePerDay = car.price_per_day;
+  // Calculate pricing - handle both naming conventions
+  const pricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
   const subtotal = pricePerDay * days;
   let discount = 0;
   let discountAmount = 0;
@@ -1896,7 +1972,34 @@ export const createContractDataFromOrder = (
   // Parse customer name - OrderDisplay doesn't have customerName, need to check what fields are available
   const customerName = (order as any).customerName || '';
 
-  return {
+  // Ensure car object has all required properties
+  // If car is missing make/model, try to extract from name or use defaults
+  let carMake = car.make || '';
+  let carModel = car.model || '';
+  
+  // If make/model are missing, try to extract from name field
+  if ((!carMake || !carModel) && (car as any).name) {
+    const nameParts = (car as any).name.split(' ');
+    if (nameParts.length >= 2) {
+      carMake = carMake || nameParts[0];
+      carModel = carModel || nameParts.slice(1).join(' ');
+    }
+  }
+  
+  const carWithDefaults = {
+    ...car,
+    make: carMake,
+    model: carModel,
+    year: car.year || 0,
+    fuel_type: car.fuel_type || '',
+    color: (car as any).color || '',
+    license: (car as any).license || '',
+    kilometers: (car as any).kilometers || car.mileage || 0,
+    mileage: car.mileage || (car as any).kilometers || 0,
+  };
+
+  // Create result object with carColor and carFuelType at top level
+  const result = {
     contractNumber,
     contractDate,
     rental: {
@@ -1912,7 +2015,7 @@ export const createContractDataFromOrder = (
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     } as Rental,
-    car,
+    car: carWithDefaults as Car,
     customer: {
       fullName: customerName,
       email: (order as any).customerEmail || '',
@@ -1923,6 +2026,7 @@ export const createContractDataFromOrder = (
       country: additionalData?.customerCountry || 'Republica Moldova',
       idNumber: additionalData?.customerIdNumber || '',
       idSeries: additionalData?.customerIdSeries || '',
+      idnp: additionalData?.customerIdnp || '',
     },
     rentalDetails: {
       startDate: order.pickupDate,
@@ -1938,8 +2042,9 @@ export const createContractDataFromOrder = (
       total,
       deposit: additionalData?.deposit || Math.round(total * 0.2), // 20% deposit
       paymentMethod: additionalData?.paymentMethod || '',
+      depositPaymentMethod: additionalData?.depositPaymentMethod || '',
       paymentDate: additionalData?.paymentDate || contractDate,
-    },
+    } as any,
     additionalDrivers: additionalData?.additionalDrivers,
     vehicleDetails: {
       mileage: additionalData?.vehicleMileage,
@@ -1947,11 +2052,44 @@ export const createContractDataFromOrder = (
       registrationNumber: additionalData?.vehicleRegistrationNumber,
       carValue: additionalData?.carValue,
     },
-  };
+    // Set carColor and carFuelType at top level for PDF generation
+    // Prioritize additionalData values (from modal input) over car's default values
+    carColor: (additionalData?.carColor && additionalData.carColor.trim().length > 0) ? additionalData.carColor.trim() : ((car as any).color || ''),
+    carFuelType: (additionalData?.carFuelType && additionalData.carFuelType.trim().length > 0) ? additionalData.carFuelType.trim() : (car.fuel_type || ''),
+  } as ContractData & { carColor?: string; carFuelType?: string };
+  
+  // Override car properties with manual data if provided
+  if (additionalData?.carColor) {
+    (result.car as any).color = additionalData.carColor;
+  }
+  if (additionalData?.vehicleRegistrationNumber) {
+    (result.car as any).license = additionalData.vehicleRegistrationNumber;
+  }
+  if (additionalData?.vehicleMileage) {
+    (result.car as any).kilometers = additionalData.vehicleMileage;
+    result.car.mileage = additionalData.vehicleMileage;
+  }
+  if (additionalData?.carFuelType) {
+    result.car.fuel_type = additionalData.carFuelType as any;
+  }
+  
+  // Ensure car has all required properties (already set above, but double-check)
+  if (!result.car.make) {
+    result.car.make = carWithDefaults.make || '';
+  }
+  if (!result.car.model) {
+    result.car.model = carWithDefaults.model || '';
+  }
+  if (!result.car.year) {
+    result.car.year = carWithDefaults.year || 0;
+  }
+  
+  return result;
 };
 
 /**
  * Simplified function to generate contract from OrderDisplay
+ * Also creates/updates rental in database with CONTRACT status
  */
 export const generateContractFromOrder = async (
   order: OrderDisplay,
@@ -1970,6 +2108,154 @@ export const generateContractFromOrder = async (
     additionalData
   );
 
-  await generateContractPDF(contractData);
+  // Create or update rental in database with CONTRACT status
+  let rentalId: number | string = order.id; // Default to order.id
+  try {
+    const { supabase } = await import('./supabase');
+    const { createRentalManually } = await import('./orders');
+    
+    // Check if rental already exists
+    const { data: existingRental } = await supabase
+      .from('Rentals')
+      .select('id')
+      .eq('id', order.id)
+      .single();
+
+    const start = new Date(order.pickupDate);
+    const end = new Date(order.returnDate);
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+    const pricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
+    const subtotal = pricePerDay * days;
+    const taxesFees = subtotal * 0.1;
+    const total = order.amount || (subtotal + taxesFees);
+
+    // Get customer information from order
+    const customerName = (order as any).customerName || '';
+    const customerEmail = (order as any).customerEmail || '';
+    const customerPhone = (order as any).customerPhone || '';
+    const customerFirstName = customerName.split(' ')[0] || '';
+    const customerLastName = customerName.split(' ').slice(1).join(' ') || '';
+    
+    // Get car make and model for historical record
+    const carMake = car.make || '';
+    const carModel = car.model || '';
+
+    if (existingRental) {
+      // Update existing rental
+      rentalId = existingRental.id;
+      await supabase
+        .from('Rentals')
+        .update({
+          rental_status: 'CONTRACT',
+          subtotal: subtotal,
+          taxes_fees: taxesFees,
+          total_amount: total,
+          payment_method: additionalData?.paymentMethod || null,
+          notes: additionalData?.notes || null,
+          special_requests: additionalData?.specialRequests || null,
+          customer_name: customerName || null,
+          customer_email: customerEmail || null,
+          customer_phone: customerPhone || null,
+          customer_first_name: customerFirstName || null,
+          customer_last_name: customerLastName || null,
+          car_make: carMake || null,
+          car_model: carModel || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', rentalId);
+    } else {
+      // Create new rental with CONTRACT status
+      const result = await createRentalManually(
+        order.userId,
+        order.carId,
+        order.pickupDate,
+        order.pickupTime || '09:00',
+        order.returnDate,
+        order.returnTime || '17:00',
+        total,
+        [car],
+        {
+          subtotal,
+          taxesFees,
+          rentalStatus: 'CONTRACT',
+          paymentStatus: 'PENDING',
+          paymentMethod: additionalData?.paymentMethod,
+          notes: additionalData?.notes,
+          specialRequests: additionalData?.specialRequests,
+          customerName: customerName,
+          customerEmail: customerEmail,
+          customerPhone: customerPhone,
+          customerFirstName: customerFirstName,
+          customerLastName: customerLastName,
+        }
+      );
+      
+      // Use the returned rentalId if available
+      if (result.success && result.rentalId) {
+        rentalId = result.rentalId;
+      }
+    }
+  } catch (error) {
+    console.error('Error creating/updating rental for contract:', error);
+    // Continue with PDF generation even if rental creation fails
+  }
+
+  // Generate PDF
+  const { pdfBlob, filename } = await generateContractPDF(contractData);
+  
+  // Upload PDF to Supabase storage
+  const contractUrl = await uploadContractToStorage(pdfBlob, filename, rentalId);
+  
+  // Update rental with contract URL and set status to ACTIVE if upload was successful
+  if (contractUrl) {
+    try {
+      const { supabase } = await import('./supabase');
+      // Ensure rentalId is a number for the database
+      const dbRentalId = typeof rentalId === 'number' ? rentalId : parseInt(rentalId.toString(), 10);
+      
+      const { data: updateData, error: updateError } = await supabase
+        .from('Rentals')
+        .update({
+          contract_url: contractUrl,
+          rental_status: 'ACTIVE',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', dbRentalId)
+        .select();
+      
+      if (updateError) {
+        console.error('Error updating rental with contract URL:', updateError);
+        throw updateError;
+      }
+      
+      if (!updateData || updateData.length === 0) {
+        console.error('No rental was updated. Rental ID might not exist:', dbRentalId);
+      } else {
+        // Update car status to "booked" when rental becomes ACTIVE
+        const rental = updateData[0];
+        if (rental.car_id) {
+          try {
+            const { updateCarStatusBasedOnRentals } = await import('./orders');
+            await updateCarStatusBasedOnRentals(rental.car_id);
+          } catch (error) {
+            console.error('Error updating car status:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating rental with contract URL:', error);
+      // Continue even if URL update fails
+    }
+  }
+  
+  // Also trigger download for user
+  const url = URL.createObjectURL(pdfBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 

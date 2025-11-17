@@ -119,14 +119,16 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
         }
     };
 
-    // Generate sequential order numbers based on position in sorted list
+    // Use the actual database ID from Supabase and format as #0001, #0002, etc.
     const getOrderNumber = (order: OrderDisplay) => {
-        const index = filteredAndSortedOrders.findIndex(o => o.id === order.id);
-        return index + 1;
+        // Convert ID to number if it's a string, then format with leading zeros
+        const id = typeof order.id === 'number' ? order.id : parseInt(order.id.toString(), 10);
+        return id || 0;
     };
 
     const getStatusBadge = (status: string) => {
         const statusMap: Record<string, { bg: string; text: string; border: string }> = {
+            'CONTRACT': { bg: 'bg-orange-500/20', text: 'text-orange-300', border: 'border-orange-500/50' },
             'ACTIVE': { bg: 'bg-blue-500/20', text: 'text-blue-300', border: 'border-blue-500/50' },
             'COMPLETED': { bg: 'bg-emerald-500/20', text: 'text-emerald-300', border: 'border-emerald-500/50' },
             'CANCELLED': { bg: 'bg-gray-500/20', text: 'text-gray-300', border: 'border-gray-500/50' },

@@ -186,6 +186,31 @@ export const CalendarPage: React.FC<Props> = () => {
     };
 
     const getStatusDisplay = (status: string): { text: string; className: string } => {
+        const statusUpper = status.toUpperCase();
+        
+        if (statusUpper === 'CONTRACT') {
+            return {
+                text: 'Contract',
+                className: 'bg-orange-500/20 text-orange-300 border border-orange-500/50'
+            };
+        } else if (statusUpper === 'ACTIVE') {
+            return {
+                text: 'Active',
+                className: 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+            };
+        } else if (statusUpper === 'COMPLETED') {
+            return {
+                text: 'Completed',
+                className: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+            };
+        } else if (statusUpper === 'CANCELLED') {
+            return {
+                text: 'Cancelled',
+                className: 'bg-gray-500/20 text-gray-300 border border-gray-500/50'
+            };
+        }
+        
+        // Fallback for payment statuses (legacy support)
         const statusLower = status.toLowerCase();
         if (statusLower === 'paid') {
             return {
@@ -242,19 +267,14 @@ export const CalendarPage: React.FC<Props> = () => {
         }
     };
 
-    // Get order number function (same as in OrderTable)
+    // Get order number function - use actual database ID from Supabase
     const getOrderNumber = useMemo(() => {
-        // Sort orders by creation date (newest first) to match orders table
-        const sortedOrders = [...orders].sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-        });
         return (order: OrderDisplay) => {
-            const index = sortedOrders.findIndex(o => o.id === order.id);
-            return index + 1;
+            // Convert ID to number if it's a string, then format with leading zeros
+            const id = typeof order.id === 'number' ? order.id : parseInt(order.id.toString(), 10);
+            return id || 0;
         };
-    }, [orders]);
+    }, []);
 
     // Get car make from car name
     const getCarMake = (carName: string): string => {

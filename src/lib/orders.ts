@@ -1,5 +1,47 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 import { Car } from '../types';
+
+/**
+ * Update car status based on rental status
+ * - If rental is ACTIVE, set car to "booked"
+ * - If rental is COMPLETED or CANCELLED, check if car has other ACTIVE rentals
+ *   If no other ACTIVE rentals exist, set car to "available"
+ */
+export async function updateCarStatusBasedOnRentals(carId: number | string): Promise<void> {
+  try {
+    const dbCarId = typeof carId === 'number' ? carId : parseInt(carId.toString(), 10);
+    
+    // Check if there are any ACTIVE rentals for this car
+    const { data: activeRentals, error: checkError } = await supabase
+      .from('Rentals')
+      .select('id')
+      .eq('car_id', dbCarId)
+      .eq('rental_status', 'ACTIVE');
+    
+    if (checkError) {
+      console.error('Error checking active rentals for car:', checkError);
+      return;
+    }
+    
+    // If there are active rentals, set car to "booked", otherwise set to "available"
+    const newStatus = (activeRentals && activeRentals.length > 0) ? 'booked' : 'available';
+    
+    // Update car status using admin client to bypass RLS
+    const { error: updateError } = await supabaseAdmin
+      .from('Cars')
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', dbCarId);
+    
+    if (updateError) {
+      console.error('Error updating car status:', updateError);
+    }
+  } catch (error) {
+    console.error('Error in updateCarStatusBasedOnRentals:', error);
+  }
+}
 
 export interface BorrowRequest {
   id: string;
@@ -70,6 +112,7 @@ export interface OrderDisplay {
   createdAt?: string,
   type?: 'request' | 'rental',
   amount?: number,
+  contract_url?: string,
 }
 
 /**
@@ -131,10 +174,8 @@ export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
 export async function fetchRentals(): Promise<Rental[]> {
   try {
     const { data, error } = await supabase
-      .from('rentals')
+      .from('Rentals')
       .select('*')
-      .neq('rental_status', 'PENDING')
-      .neq('rental_status', 'Pending')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -151,11 +192,7 @@ export async function fetchRentals(): Promise<Rental[]> {
         email: '', // Will be populated from profiles table if available
         user_metadata: {},
       },
-    })).filter((rental: any) => {
-      // Filter out PENDING status rentals
-      const status = rental.rental_status || rental.status;
-      return status !== 'PENDING' && status !== 'Pending';
-    });
+    }));
   } catch (error) {
     console.error('Error in fetchRentals:', error);
     return [];
@@ -171,10 +208,10 @@ async function fetchUserProfiles(userIds: string[]): Promise<Map<string, { email
   if (userIds.length === 0) return profileMap;
 
   try {
-    // Try to fetch from profiles table if it exists
+    // Fetch from Profiles table (capitalized to match your table name)
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, first_name, last_name, phone')
+      .from('Profiles')
+      .select('id, email, first_name, last_name, phone_number')
       .in('id', userIds);
 
     if (!error && data) {
@@ -183,7 +220,7 @@ async function fetchUserProfiles(userIds: string[]): Promise<Map<string, { email
           email: profile.email || '',
           firstName: profile.first_name,
           lastName: profile.last_name,
-          phone: profile.phone || '',
+          phone: profile.phone_number || '',
         });
       });
     }
@@ -319,9 +356,9 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
   try {
     const rentals = await fetchRentals();
 
-    // If no data from database, return mock rentals only
+    // If no data from database, return empty array
     if (rentals.length === 0) {
-      return generateMockRentals(cars);
+      return [];
     }
 
     // Collect all unique user IDs
@@ -335,8 +372,12 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
 
     // Process rentals only
     rentals.forEach((rental) => {
+      // Handle both string and number car_id
+      const carIdMatch = typeof rental.car_id === 'number' 
+        ? rental.car_id 
+        : parseInt(rental.car_id);
 
-      const car = cars.find((c) => c.id.toString() === rental.car_id);
+      const car = cars.find((c) => c.id === carIdMatch || c.id.toString() === rental.car_id?.toString());
       const profile = profiles.get(rental.user_id);
       const email = profile?.email || rental.user?.email || '';
       const phone = profile?.phone || '';
@@ -355,24 +396,40 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
       const amount = rental.total_amount || (car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0);
 
+      // Format dates properly
+      const formatDate = (dateStr: string | Date | null | undefined): string => {
+        if (!dateStr) return '';
+        if (typeof dateStr === 'string') {
+          // If it's already in YYYY-MM-DD format, return as is
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            return dateStr.split('T')[0];
+          }
+          // Otherwise parse and format
+          const date = new Date(dateStr);
+          return date.toISOString().split('T')[0];
+        }
+        return new Date(dateStr).toISOString().split('T')[0];
+      };
+
       orders.push({
         id: rental.id,
         type: 'rental',
         customerName: userName,
         customerEmail: email,
-        customerPhone: phone || '+373 123 456 789',
+        customerPhone: phone || '',
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: (car as any)?.image || car?.image_url || '',
-        pickupDate: rental.start_date,
-        pickupTime: rental.start_time,
-        returnDate: rental.end_date,
-        returnTime: rental.end_time,
-        status: rental.status || (rental as any).rental_status,
+        pickupDate: formatDate(rental.start_date),
+        pickupTime: rental.start_time || '09:00',
+        returnDate: formatDate(rental.end_date),
+        returnTime: rental.end_time || '17:00',
+        status: rental.status || (rental as any).rental_status || 'CONTRACT',
         total_amount: amount.toString(),
         amount: amount,
-        createdAt: rental.created_at,
-        carId: rental.car_id,
-        userId: rental.user_id,
+        createdAt: rental.created_at || new Date().toISOString(),
+        carId: rental.car_id?.toString() || '',
+        userId: rental.user_id || '',
+        contract_url: (rental as any).contract_url || undefined,
       });
     });
 
@@ -384,8 +441,8 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
     });
   } catch (error) {
     console.error('Error in fetchRentalsOnly:', error);
-    // Return mock rentals on error
-    return generateMockRentals(cars);
+    // Return empty array on error - only show real data from Supabase
+    return [];
   }
 }
 
@@ -995,7 +1052,24 @@ export async function createRentalManually(
   endDate: string,
   endTime: string,
   totalAmount: number,
-  cars: Car[]
+  cars: Car[],
+  options?: {
+    subtotal?: number;
+    taxesFees?: number;
+    additionalTaxes?: number;
+    paymentStatus?: string;
+    paymentMethod?: string;
+    rentalStatus?: 'CONTRACT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+    notes?: string;
+    specialRequests?: string;
+    features?: string[];
+    customerName?: string;
+    customerEmail?: string;
+    customerPhone?: string;
+    customerFirstName?: string;
+    customerLastName?: string;
+    customerAge?: number;
+  }
 ): Promise<{ success: boolean; rentalId?: string; error?: string }> {
   try {
     const car = cars.find(c => c.id.toString() === carId);
@@ -1003,19 +1077,52 @@ export async function createRentalManually(
       return { success: false, error: 'Car not found' };
     }
 
+    const pricePerDay = (car as any)?.pricePerDay || car.price_per_day || 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+    
+    // Calculate subtotal if not provided
+    const subtotal = options?.subtotal || (pricePerDay * days);
+    // Calculate taxes (10% of subtotal) if not provided
+    const taxesFees = options?.taxesFees || (subtotal * 0.1);
+    const additionalTaxes = options?.additionalTaxes || 0;
+    // Calculate total if not provided
+    const calculatedTotal = subtotal + taxesFees + additionalTaxes;
+    const finalTotal = totalAmount > 0 ? totalAmount : calculatedTotal;
+
+    // Get car make and model for historical record
+    const carMake = car.make || '';
+    const carModel = car.model || '';
+
     const { data: rental, error } = await supabase
-      .from('rentals')
+      .from('Rentals')
       .insert({
         user_id: userId,
-        car_id: carId,
+        car_id: parseInt(carId),
         start_date: startDate,
-        start_time: startTime,
+        start_time: startTime || '09:00',
         end_date: endDate,
-        end_time: endTime,
-        price_per_day: (car as any)?.pricePerDay || car.price_per_day || 0,
-        total_amount: totalAmount,
-        rental_status: 'ACTIVE',
-        payment_status: 'PENDING',
+        end_time: endTime || '17:00',
+        price_per_day: pricePerDay,
+        subtotal: subtotal,
+        taxes_fees: taxesFees,
+        additional_taxes: additionalTaxes,
+        total_amount: finalTotal,
+        rental_status: options?.rentalStatus || 'CONTRACT',
+        payment_status: options?.paymentStatus || 'PENDING',
+        payment_method: options?.paymentMethod || null,
+        notes: options?.notes || null,
+        special_requests: options?.specialRequests || null,
+        features: options?.features || null,
+        customer_name: options?.customerName || null,
+        customer_email: options?.customerEmail || null,
+        customer_phone: options?.customerPhone || null,
+        customer_first_name: options?.customerFirstName || null,
+        customer_last_name: options?.customerLastName || null,
+        customer_age: options?.customerAge || null,
+        car_make: carMake || null,
+        car_model: carModel || null,
       })
       .select()
       .single();
@@ -1099,15 +1206,15 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
 
         // Check if rental already exists for this request
         const { data: existingRental } = await supabase
-          .from('rentals')
+          .from('Rentals')
           .select('id')
           .eq('request_id', request.id)
           .single();
 
         if (!existingRental) {
-          // Create rental with ACTIVE status
+          // Create rental with ACTIVE status (when pickup time arrives)
           const { error: rentalError } = await supabase
-            .from('rentals')
+            .from('Rentals')
             .insert({
               request_id: request.id,
               user_id: request.user_id,
@@ -1120,16 +1227,27 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
               total_amount: totalAmount,
               rental_status: 'ACTIVE',
               payment_status: 'PENDING',
+              customer_name: (request as any).customer_name || null,
+              customer_email: (request as any).customer_email || null,
+              customer_phone: (request as any).customer_phone || null,
+              customer_first_name: (request as any).customer_first_name || null,
+              customer_last_name: (request as any).customer_last_name || null,
+              customer_age: (request as any).customer_age ? parseInt((request as any).customer_age) : null,
+              car_make: car.make || null,
+              car_model: car.model || null,
             });
 
           if (rentalError) {
             console.error(`Error creating rental for request ${request.id}:`, rentalError);
             continue;
           }
+          
+          // Update car status to "booked" when rental becomes ACTIVE
+          await updateCarStatusBasedOnRentals(request.car_id);
         } else {
-          // Update existing rental to ACTIVE if it's not already
+          // Update existing rental to ACTIVE when pickup time arrives
           const { error: updateRentalError } = await supabase
-            .from('rentals')
+            .from('Rentals')
             .update({ 
               rental_status: 'ACTIVE',
               updated_at: new Date().toISOString()
@@ -1140,6 +1258,9 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
             console.error(`Error updating rental for request ${request.id}:`, updateRentalError);
             continue;
           }
+          
+          // Update car status to "booked" when rental becomes ACTIVE
+          await updateCarStatusBasedOnRentals(request.car_id);
         }
 
         processed++;
@@ -1160,7 +1281,7 @@ export async function processCompletedOrders(): Promise<{ success: boolean; proc
   try {
     // Fetch all active rentals
     const { data: activeRentals, error: fetchError } = await supabase
-      .from('rentals')
+      .from('Rentals')
       .select('*')
       .eq('rental_status', 'ACTIVE');
 
@@ -1179,7 +1300,7 @@ export async function processCompletedOrders(): Promise<{ success: boolean; proc
       if (hasDateTimePassed(rental.end_date, rental.end_time)) {
         // Update rental status to COMPLETED
         const { error: updateError } = await supabase
-          .from('rentals')
+          .from('Rentals')
           .update({ 
             rental_status: 'COMPLETED',
             updated_at: new Date().toISOString() 
@@ -1190,6 +1311,9 @@ export async function processCompletedOrders(): Promise<{ success: boolean; proc
           console.error(`Error updating rental ${rental.id} to COMPLETED:`, updateError);
           continue;
         }
+        
+        // Update car status - check if there are other ACTIVE rentals
+        await updateCarStatusBasedOnRentals(rental.car_id);
 
         processed++;
       }
@@ -1242,8 +1366,19 @@ export async function processStatusTransitions(cars: Car[]): Promise<{ success: 
  */
 export async function cancelRentalOrder(rentalId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    // First, get the rental to find the car_id
+    const { data: rental, error: fetchError } = await supabase
+      .from('Rentals')
+      .select('car_id')
+      .eq('id', rentalId)
+      .single();
+    
+    if (fetchError || !rental) {
+      return { success: false, error: 'Rental not found' };
+    }
+    
     const { error } = await supabase
-      .from('rentals')
+      .from('Rentals')
       .update({ 
         rental_status: 'CANCELLED',
         updated_at: new Date().toISOString() 
@@ -1253,6 +1388,9 @@ export async function cancelRentalOrder(rentalId: string): Promise<{ success: bo
     if (error) {
       return { success: false, error: error.message };
     }
+    
+    // Update car status - check if there are other ACTIVE rentals
+    await updateCarStatusBasedOnRentals(rental.car_id);
 
     return { success: true };
   } catch (error) {
@@ -1262,14 +1400,14 @@ export async function cancelRentalOrder(rentalId: string): Promise<{ success: bo
 }
 
 /**
- * Redo (undo cancel) a rental order - restore to ACTIVE status
+ * Redo (undo cancel) a rental order - restore to CONTRACT status
  */
 export async function redoRentalOrder(rentalId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from('rentals')
+      .from('Rentals')
       .update({ 
-        rental_status: 'ACTIVE',
+        rental_status: 'CONTRACT',
         updated_at: new Date().toISOString() 
       })
       .eq('id', rentalId);

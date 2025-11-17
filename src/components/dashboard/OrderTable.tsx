@@ -2,10 +2,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { cars } from '../../data/cars';
 import { format } from 'date-fns';
 import { fetchRentalsOnly, OrderDisplay } from '../../lib/orders';
-import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search, Plus } from 'lucide-react';
+import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
 
 type OrdersTableProps = {
     title: string;
+    orders: OrderDisplay[];
+    loading?: boolean;
     onOrderClick?: (order: OrderDisplay, orderNumber: number) => void;
     onAddOrder?: () => void;
     initialSearch?: string;
@@ -13,32 +15,12 @@ type OrdersTableProps = {
     onToggleShowCancelled?: () => void;
 };
 
-export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder, initialSearch, showCancelled = false, onToggleShowCancelled }) => {
-    const [orders, setOrders] = useState<OrderDisplay[]>([]);
-    const [loading, setLoading] = useState(true);
+export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading = false, onOrderClick, onAddOrder, initialSearch, showCancelled = false, onToggleShowCancelled }) => {
     const [searchQuery, setSearchQuery] = useState(initialSearch || '');
     const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
-
-    useEffect(() => {
-        const loadOrders = async () => {
-            setLoading(true);
-            try {
-                const data = await fetchRentalsOnly(cars);
-                // Filter out any requests that might have slipped through
-                const rentalsOnly = data.filter(order => order.type === 'rental');
-                setOrders(rentalsOnly);
-            } catch (error) {
-                console.error('Failed to load orders:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadOrders();
-    }, []);
 
     // Update search query when initialSearch prop changes
     useEffect(() => {
@@ -83,6 +65,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                     diff = (a.amount || 0) - (b.amount || 0);
                 } else if (sortBy === 'status') {
                     const statusOrder: Record<string, number> = {
+                        'CONTRACT': 0,
                         'ACTIVE': 1,
                         'COMPLETED': 2,
                         'CANCELLED': 3,
@@ -132,20 +115,17 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
         setCurrentPage(1); // Reset to first page when sorting
     };
 
-    const handleAddOrder = () => {
-        if (onAddOrder) {
-            onAddOrder();
-        }
-    };
 
-    // Generate sequential order numbers based on position in sorted list
+    // Use the actual database ID from Supabase and format as #0001, #0002, etc.
     const getOrderNumber = (order: OrderDisplay) => {
-        const index = filteredAndSortedOrders.findIndex(o => o.id === order.id);
-        return index + 1;
+        // Convert ID to number if it's a string, then format with leading zeros
+        const id = typeof order.id === 'number' ? order.id : parseInt(order.id.toString(), 10);
+        return id || 0;
     };
 
     const getStatusBadge = (status: string) => {
         const statusMap: Record<string, { bg: string; text: string; border: string }> = {
+            'CONTRACT': { bg: 'bg-orange-500/20', text: 'text-orange-300', border: 'border-orange-500/50' },
             'ACTIVE': { bg: 'bg-blue-500/20', text: 'text-blue-300', border: 'border-blue-500/50' },
             'COMPLETED': { bg: 'bg-emerald-500/20', text: 'text-emerald-300', border: 'border-emerald-500/50' },
             'CANCELLED': { bg: 'bg-gray-500/20', text: 'text-gray-300', border: 'border-gray-500/50' },
@@ -213,13 +193,6 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, o
                                     {showCancelled ? 'Hide Cancelled' : 'Show Cancelled'}
                                 </button>
                             )}
-                            <button
-                                onClick={handleAddOrder}
-                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Order
-                            </button>
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
