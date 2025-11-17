@@ -96,7 +96,7 @@ const DashboardView: React.FC = () => {
         });
         const rentedCars = cars.filter(car => {
             const carStatus = car.status?.toLowerCase() || 'available';
-            return carStatus === 'rented';
+            return carStatus === 'booked';
         });
 
         return { freeCars, rentedCars };
@@ -745,9 +745,9 @@ const CarsView: React.FC = () => {
     // Get car status for sorting (based on database status field)
     const getCarStatus = (car: CarType): number => {
         const carStatus = car.status?.toLowerCase() || 'available';
-        // 0 = Available, 1 = Reserved, 2 = Rented (lower number = higher priority)
-        if (carStatus === 'rented') return 2;
-        if (carStatus === 'reserved') return 1;
+        // 0 = Available, 1 = Maintenance, 2 = Booked (lower number = higher priority)
+        if (carStatus === 'booked') return 2;
+        if (carStatus === 'maintenance') return 1;
         return 0;
     };
 
@@ -1092,10 +1092,10 @@ const CarsView: React.FC = () => {
                         <tbody className="divide-y divide-white/10">
                             {filteredCars.length > 0 ? (
                                 filteredCars.map((car) => {
-                                    // Use database status field
+                                    // Use database status field directly
                                     const carStatus = car.status?.toLowerCase() || 'available';
-                                    const isRented = carStatus === 'rented';
-                                    const isReserved = carStatus === 'reserved';
+                                    const isBooked = carStatus === 'booked';
+                                    const isMaintenance = carStatus === 'maintenance';
                                     return (
                                         <tr
                                             key={car.id}
@@ -1124,14 +1124,14 @@ const CarsView: React.FC = () => {
                                             <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                             <td className="px-6 py-4">
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isRented
+                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isBooked
                                                         ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        : isReserved
+                                                        : isMaintenance
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                                         }`}
                                                 >
-                                                    {carStatus === 'rented' ? 'Rented' : carStatus === 'reserved' ? 'Reserved' : 'Available'}
+                                                    {carStatus === 'booked' ? 'Booked' : carStatus === 'maintenance' ? 'Maintenance' : 'Available'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
@@ -6623,6 +6623,8 @@ export const Admin: React.FC = () => {
                         </div>
                     </motion.div>
                 </motion.div>,
+
+                
                 document.body
             )}
         </>

@@ -25,10 +25,13 @@ interface CarRow {
   return_date: string | null;
   created_at: string | null;
   updated_at: string | null;
+  color?: string | null;
+  license?: string | null;
+  kilometers?: number | null;
 }
 
 // Map database row to Car type
-const mapCarRowToCar = (row: CarRow): Car & { name?: string } => {
+const mapCarRowToCar = (row: CarRow): Car & { name?: string; color?: string; license?: string; kilometers?: number } => {
   return {
     id: row.id,
     make: row.make,
@@ -48,6 +51,11 @@ const mapCarRowToCar = (row: CarRow): Car & { name?: string } => {
     reviews: row.reviews || undefined,
     status: row.status || undefined,
     drivetrain: row.drivetrain || undefined,
+    mileage: row.kilometers || undefined,
+    // Include additional fields for contract generation
+    color: row.color || undefined,
+    license: row.license || undefined,
+    kilometers: row.kilometers || undefined,
   };
 };
 

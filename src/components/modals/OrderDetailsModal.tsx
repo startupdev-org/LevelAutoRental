@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car, DollarSign, User, Mail, Download, FileText, Phone, Loader2, XCircle, RefreshCw } from 'lucide-react';
+import { X, Calendar, Clock, Car as CarIcon, DollarSign, User, Mail, Download, FileText, Phone, Loader2, XCircle, RefreshCw, Plus } from 'lucide-react';
 import { OrderDisplay } from '../../lib/orders';
 import { format } from 'date-fns';
-import { cars } from '../../data/cars';
+import { cars as staticCars } from '../../data/cars';
 import { generateContractFromOrder } from '../../lib/contract';
+import { ContractCreationModal } from './ContractCreationModal';
+import { fetchCars } from '../../lib/cars';
+import { Car } from '../../types';
 
 interface OrderDetailsModalProps {
     isOpen: boolean;
@@ -15,6 +18,8 @@ interface OrderDetailsModalProps {
     onCancel?: (order: OrderDisplay) => void;
     onRedo?: (order: OrderDisplay) => void;
     isProcessing?: boolean;
+    cars?: Car[]; // Optional prop to pass cars from parent
+    onOpenContractModal?: () => void; // Callback to open contract modal from parent
 }
 
 export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
@@ -25,8 +30,39 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     onCancel,
     onRedo,
     isProcessing = false,
+    cars: carsProp,
+    onOpenContractModal,
 }) => {
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+    const [showContractModal, setShowContractModal] = useState(false);
+    
+    // If parent provides onOpenContractModal, use it; otherwise use local state
+    const handleOpenContractModal = () => {
+        if (onOpenContractModal) {
+            onOpenContractModal();
+        } else {
+            setShowContractModal(true);
+        }
+    };
+    const [cars, setCars] = useState<Car[]>(carsProp || []);
+
+    // Fetch cars if not provided as prop
+    useEffect(() => {
+        if (!carsProp && isOpen) {
+            const loadCars = async () => {
+                try {
+                    const fetchedCars = await fetchCars();
+                    setCars(fetchedCars.length > 0 ? fetchedCars : staticCars);
+                } catch (error) {
+                    console.error('Error loading cars:', error);
+                    setCars(staticCars);
+                }
+            };
+            loadCars();
+        } else if (carsProp) {
+            setCars(carsProp);
+        }
+    }, [carsProp, isOpen]);
 
     if (!order) return null;
 
@@ -70,12 +106,29 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     };
 
     const downloadContract = async () => {
+        // If contract URL exists, download from bucket
+        if (order.contract_url) {
+            try {
+                const link = document.createElement('a');
+                link.href = order.contract_url;
+                link.download = `Contract_Locatiune_${order.id}.pdf`;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Error downloading contract from URL:', error);
+                alert('Failed to download contract. Please try again.');
+            }
+            return;
+        }
+
+        // Otherwise, generate new contract (fallback)
         if (!car) {
             alert('Car information not found. Cannot generate contract.');
             return;
         }
 
-        console.log('Starting contract generation...', { order, car, orderNumber });
         setIsGeneratingContract(true);
         try {
             const contractNumber = orderNumber
@@ -92,7 +145,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     // customerAddress, customerIdNumber, etc.
                 }
             );
-            console.log('Contract generation completed successfully');
         } catch (error) {
             console.error('Error generating contract:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -104,7 +156,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     if (!isOpen) return null;
 
-    return createPortal(
+    return (
+        <>
+            {createPortal(
         <AnimatePresence>
             {isOpen && (
                 <motion.div
@@ -246,12 +300,28 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                 </div>
                             )}
 
-                            {/* Contract Download */}
+                            {/* Contract Download/Create */}
                             <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
                                     <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                                     <span className="text-sm sm:text-base">Contract</span>
                                 </h3>
+                                {order.status === 'CONTRACT' ? (
+                                    <>
+                                        <button
+                                            onClick={handleOpenContractModal}
+                                            disabled={!car}
+                                            className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            <span>Create Contract</span>
+                                        </button>
+                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
+                                            Create and save contract with manual details
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
                                 <button
                                     onClick={downloadContract}
                                     disabled={isGeneratingContract || !car}
@@ -269,9 +339,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         </>
                                     )}
                                 </button>
+                                {order.contract_url && (
+                                    <button
+                                        onClick={handleOpenContractModal}
+                                        className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold mt-2"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        <span>Recreate Contract</span>
+                                    </button>
+                                )}
                                 <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                    Generates a complete Romanian rental contract with all annexes
+                                    {order.contract_url 
+                                        ? 'Download existing contract or recreate with new details'
+                                        : 'Generates a complete Romanian rental contract with all annexes'}
                                 </p>
+                                    </>
+                                )}
                             </div>
 
                             {/* Action Buttons */}
@@ -336,6 +419,21 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             )}
         </AnimatePresence>,
         document.body
+            )}
+            {car && order && (
+                <ContractCreationModal
+                    isOpen={showContractModal}
+                    onClose={() => setShowContractModal(false)}
+                    order={order}
+                    car={car}
+                    orderNumber={orderNumber}
+                    onContractCreated={() => {
+                        setShowContractModal(false);
+                        // Optionally reload orders or refresh data
+                    }}
+                />
+            )}
+        </>
     );
 };
 

@@ -1,13 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { cars } from '../../../data/cars';
+import { cars as staticCars } from '../../../data/cars';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
 import { OrderDetailsModal } from '../../../components/modals/OrderDetailsModal';
+import { ContractCreationModal } from '../../../components/modals/ContractCreationModal';
 import { OrderDisplay, cancelRentalOrder, redoRentalOrder, fetchRentalsOnly } from '../../../lib/orders';
 import { SalesChartCard } from '../../../components/dashboard/Chart';
 import { motion } from 'framer-motion';
-import { Save, X } from 'lucide-react';
+import { Save, X, Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
+import { fetchCars } from '../../../lib/cars';
+import { Car } from '../../../types';
+import { useNotification } from '../../../components/ui/NotificationToaster';
 
 
 // Order Form Modal Component
@@ -18,6 +22,7 @@ interface OrderFormModalProps {
 
 
 const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
+    const [cars, setCars] = useState<Car[]>([]);
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
@@ -36,6 +41,19 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
         amount: 0,
     });
 
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                setCars(fetchedCars.length > 0 ? fetchedCars : staticCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+                setCars(staticCars);
+            }
+        };
+        loadCars();
+    }, []);
+
     const calculateAmount = () => {
         if (!formData.startDate || !formData.endDate || !formData.carId) return 0;
         const selectedCar = cars.find(c => c.id.toString() === formData.carId);
@@ -44,20 +62,24 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
         const start = new Date(formData.startDate);
         const end = new Date(formData.endDate);
         const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-        return selectedCar.pricePerDay * days;
+        const pricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
+        return pricePerDay * days;
     };
 
     useEffect(() => {
+        if (cars.length > 0) {
         const amount = calculateAmount();
         setFormData(prev => ({ ...prev, amount }));
-    }, [formData.startDate, formData.endDate, formData.carId]);
+        }
+    }, [formData.startDate, formData.endDate, formData.carId, cars]);
 
     const handleCarChange = (carId: string) => {
         const selectedCar = cars.find(c => c.id.toString() === carId);
+        const carName = selectedCar ? ((selectedCar as any).name || `${selectedCar.make || ''} ${selectedCar.model || ''}`.trim()) : '';
         setFormData(prev => ({
             ...prev,
             carId,
-            carName: selectedCar?.name || '',
+            carName,
         }));
     };
 
@@ -145,11 +167,15 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
                                 required
                             >
                                 <option value="">Select a car...</option>
-                                {cars.map((car) => (
+                                {cars.map((car) => {
+                                    const pricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
+                                    const carName = (car as any).name || `${car.make || ''} ${car.model || ''}`.trim();
+                                    return (
                                     <option key={car.id} value={car.id.toString()}>
-                                        {car.name} - {car.pricePerDay} MDL/day
+                                            {carName} - {pricePerDay} MDL/day
                                     </option>
-                                ))}
+                                    );
+                                })}
                             </select>
                         </div>
                     </div>
@@ -261,6 +287,7 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
 export const OrdersViewSection: React.FC = () => {
     const [searchParams] = useSearchParams();
     const initialSearch = searchParams.get('search') || '';
+    const { showSuccess, showError } = useNotification();
     const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -268,10 +295,28 @@ export const OrdersViewSection: React.FC = () => {
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [processingOrder, setProcessingOrder] = useState<string | null>(null);
     const [showCancelled, setShowCancelled] = useState(false);
+    const [cars, setCars] = useState<Car[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // console.log('Order View Section is being rendered')
+    // Load cars from database first
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                setCars(fetchedCars.length > 0 ? fetchedCars : staticCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+                setCars(staticCars);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadCars();
+    }, []);
 
+    // Load orders after cars are loaded
     const loadOrders = async () => {
+        if (cars.length === 0) return;
         try {
             const data = await fetchRentalsOnly(cars);
             const rentalsOnly = data.filter(order => order.type === 'rental');
@@ -282,22 +327,24 @@ export const OrdersViewSection: React.FC = () => {
     };
 
     useEffect(() => {
+        if (cars.length > 0) {
         loadOrders();
-    }, []);
+        }
+    }, [cars]);
 
     const handleCancelOrder = async (order: OrderDisplay) => {
         setProcessingOrder(order.id.toString());
         try {
             const result = await cancelRentalOrder(order.id.toString());
             if (result.success) {
-                alert('Order cancelled successfully!');
+                showSuccess('Order cancelled successfully!');
                 await loadOrders();
             } else {
-                alert(`Failed to cancel order: ${result.error}`);
+                showError(`Failed to cancel order: ${result.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error cancelling order:', error);
-            alert('An error occurred while cancelling the order.');
+            showError('An error occurred while cancelling the order.');
         } finally {
             setProcessingOrder(null);
         }
@@ -308,14 +355,14 @@ export const OrdersViewSection: React.FC = () => {
         try {
             const result = await redoRentalOrder(order.id.toString());
             if (result.success) {
-                alert('Order restored successfully!');
+                showSuccess('Order restored successfully!');
                 await loadOrders();
             } else {
-                alert(`Failed to restore order: ${result.error}`);
+                showError(`Failed to restore order: ${result.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error restoring order:', error);
-            alert('An error occurred while restoring the order.');
+            showError('An error occurred while restoring the order.');
         } finally {
             setProcessingOrder(null);
         }
@@ -435,12 +482,22 @@ export const OrdersViewSection: React.FC = () => {
         return data;
     }, [orders]);
 
+    const [showContractModal, setShowContractModal] = useState(false);
+
     const handleOrderClick = (order: OrderDisplay, orderNum: number) => {
         console.log('handling order click for order: ', order)
         setSelectedOrder(order);
         setOrderNumber(orderNum);
         setIsModalOpen(true);
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-white/50" />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -458,6 +515,8 @@ export const OrdersViewSection: React.FC = () => {
                 >
                     <OrdersTable 
                         title="All Orders" 
+                        orders={orders}
+                        loading={false}
                         onOrderClick={handleOrderClick} 
                         onAddOrder={() => setShowAddOrderModal(true)} 
                         initialSearch={initialSearch}
@@ -587,28 +646,44 @@ export const OrdersViewSection: React.FC = () => {
                 onCancel={handleCancelOrder}
                 onRedo={handleRedoOrder}
                 isProcessing={processingOrder === selectedOrder?.id.toString()}
+                cars={cars}
+                onOpenContractModal={() => {
+                    setIsModalOpen(false); // Close order details modal
+                    setShowContractModal(true); // Open contract modal
+                }}
             />
+            {/* Contract Creation Modal */}
+            {selectedOrder && cars.length > 0 && (() => {
+                const car = cars.find(c => c.id.toString() === selectedOrder.carId);
+                return car ? (
+                    <ContractCreationModal
+                        isOpen={showContractModal}
+                        onClose={() => setShowContractModal(false)}
+                        order={selectedOrder}
+                        car={car}
+                        orderNumber={orderNumber}
+                        onContractCreated={async () => {
+                            setShowContractModal(false);
+                            // Reload orders to reflect status change
+                            await loadOrders();
+                            // Also close the order details modal and clear selection
+                            setIsModalOpen(false);
+                            setSelectedOrder(null);
+                        }}
+                    />
+                ) : null;
+            })()}
 
             {/* Add Order Modal */}
             {showAddOrderModal && (
                 <OrderFormModal
-                    onSave={(orderData: Partial<OrderDisplay>) => {
+                    onSave={async (orderData: Partial<OrderDisplay>) => {
                         // TODO: Implement save to database
                         console.log('Saving order:', orderData);
                         // For now, just close the modal
                         setShowAddOrderModal(false);
                         // Reload orders
-                        const loadOrders = async () => {
-                            try {
-                                const { fetchRentalsOnly } = await import('../../../lib/orders');
-                                const data = await fetchRentalsOnly(cars);
-                                const rentalsOnly = data.filter(order => order.type === 'rental');
-                                setOrders(rentalsOnly);
-                            } catch (error) {
-                                console.error('Failed to load orders:', error);
-                            }
-                        };
-                        loadOrders();
+                        await loadOrders();
                     }}
                     onClose={() => setShowAddOrderModal(false)}
                 />

@@ -51,24 +51,24 @@ export const UsersPage: React.FC = () => {
                 if (profilesError) {
                     console.error('Failed to load users from Profiles table:', profilesError);
                     // Fallback to extracting from orders if Profiles table fails
-                    const userMap = new Map<string, User>();
-                    rentals.forEach((order) => {
-                        if (!order.customerName || !order.customerEmail) return;
-                        const email = order.customerEmail.toLowerCase();
-                        if (!userMap.has(email)) {
-                            const nameParts = order.customerName.trim().split(' ');
-                            const firstName = nameParts[0] || '';
-                            const lastName = nameParts.slice(1).join(' ') || '';
-                            userMap.set(email, {
+                const userMap = new Map<string, User>();
+                rentals.forEach((order) => {
+                    if (!order.customerName || !order.customerEmail) return;
+                    const email = order.customerEmail.toLowerCase();
+                    if (!userMap.has(email)) {
+                        const nameParts = order.customerName.trim().split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        userMap.set(email, {
                                 id: email, // Use email as ID fallback
-                                first_name: firstName,
-                                last_name: lastName,
-                                email: order.customerEmail,
-                                phone_number: order.customerPhone || undefined,
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: order.customerEmail,
+                            phone_number: order.customerPhone || undefined,
                                 role: 'User',
-                            });
-                        }
-                    });
+                        });
+                    }
+                });
                     setUsers(Array.from(userMap.values()));
                     return;
                 }
