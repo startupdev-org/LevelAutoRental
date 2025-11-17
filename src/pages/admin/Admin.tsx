@@ -6205,7 +6205,7 @@ export const Admin: React.FC = () => {
     const section = searchParams.get('section') || 'dashboard';
     const orderId = searchParams.get('orderId');
     const carId = searchParams.get('carId');
-    const { signOut } = useAuth();
+    const { signOut, user, loading, isAdmin, roleLoaded } = useAuth();
     const { i18n, t } = useTranslation();
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
@@ -6214,6 +6214,12 @@ export const Admin: React.FC = () => {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [totalRequests, setTotalRequests] = useState<number>(0);
     const [cars, setCars] = useState<CarType[]>([]);
+
+    // Security check: If user is not admin, don't render anything
+    // AdminProtectedRoute should handle showing 404, but this is a safety net
+    if (!loading && roleLoaded && user && !isAdmin) {
+        return null; // Don't render admin content, AdminProtectedRoute will show 404
+    }
 
     // Fetch cars at top level
     useEffect(() => {
