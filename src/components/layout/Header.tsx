@@ -101,10 +101,51 @@ export const Header: React.FC = () => {
     };
   }, [showLanguageDropdown, showUserDropdown]);
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
+  const handleLogout = (e?: React.MouseEvent) => {
+    console.log('=== LOGOUT BUTTON CLICKED ===');
+    
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Close dropdowns immediately
     setShowUserDropdown(false);
+    setIsMenuOpen(false);
+    
+    // Clear storage immediately
+    console.log('Clearing storage...');
+    localStorage.clear();
+    sessionStorage.clear();
+    console.log('Storage cleared');
+    
+    // Try to sign out, but don't wait for it - use timeout
+    console.log('Calling signOut with timeout...');
+    const signOutPromise = signOut();
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => {
+        console.log('SignOut timeout - proceeding with logout anyway');
+        resolve({ error: null });
+      }, 1000); // 1 second timeout
+    });
+    
+    Promise.race([signOutPromise, timeoutPromise])
+      .then((result: any) => {
+        console.log('SignOut completed or timed out:', result);
+        if (result?.error) {
+          console.error('Logout error:', result.error);
+        } else {
+          console.log('Logout successful (or timed out)');
+        }
+      })
+      .catch((err) => {
+        console.error('Logout promise rejected:', err);
+      })
+      .finally(() => {
+        console.log('Reloading page...');
+        // Force reload regardless of signOut result
+        window.location.replace('/');
+      });
   };
 
   const navigation = [
@@ -219,6 +260,7 @@ export const Header: React.FC = () => {
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 min-w-[220px] overflow-hidden"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <div className="p-4 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-900">{user.email?.split('@')[0] || user.email}</p>
@@ -264,8 +306,15 @@ export const Header: React.FC = () => {
                       
                       <div className="border-t border-gray-100 py-2">
                         <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          onClick={(e) => {
+                            console.log('Desktop logout button clicked');
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleLogout(e);
+                          }}
+                          type="button"
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          style={{ pointerEvents: 'auto' }}
                         >
                           <LogOut className="w-4 h-4" />
                           <span>{t('header.signOut')}</span>
@@ -517,10 +566,13 @@ export const Header: React.FC = () => {
                           </button>
                           
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               setIsMenuOpen(false);
-                              handleLogout();
+                              handleLogout(e);
                             }}
+                            type="button"
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2"
                           >
                             <LogOut className="w-4 h-4" />

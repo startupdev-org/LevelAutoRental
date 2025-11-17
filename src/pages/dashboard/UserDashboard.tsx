@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
@@ -51,7 +51,7 @@ export type TabType = 'overview' | 'bookings' | 'profile' | 'settings' | 'calend
 
 export const UserDashboard: React.FC = () => {
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isEditing, setIsEditing] = useState(false);
@@ -134,23 +134,18 @@ export const UserDashboard: React.FC = () => {
     });
   };
 
-  // Redirect to sign in if not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">{t('dashboard.errors.accessDenied')}</h1>
-          <p className="text-gray-400 mb-8">{t('dashboard.errors.pleaseSignIn')}</p>
-          <button
-            onClick={() => navigate('/auth/login')}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition duration-300"
-          >
-            {t('dashboard.errors.signIn')}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // SECURITY: Redirect to login if not authenticated
+  useEffect(() => {
+    // Only redirect if we're sure there's no user and loading is complete
+    if (!loading && !user) {
+      // Small delay to ensure session restoration is complete
+      const timeoutId = setTimeout(() => {
+        navigate('/auth/login', { replace: true });
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, navigate, loading]);
 
   return (
     <div className="min-h-screen bg-black/10 text-white">

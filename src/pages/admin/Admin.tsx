@@ -61,6 +61,7 @@ import {
     undoRejectBorrowRequest,
     updateBorrowRequest,
     createRentalManually,
+    createBorrowRequest,
     processStatusTransitions,
     cancelRentalOrder,
     redoRentalOrder
@@ -2200,11 +2201,12 @@ const RequestsView: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const requestId = searchParams.get('requestId');
+    const { showSuccess, showError } = useNotification();
     const [requests, setRequests] = useState<OrderDisplay[]>([]);
     const [loading, setLoading] = useState(true);
     const [cars, setCars] = useState<CarType[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<'pickup' | 'return' | 'amount' | 'status' | null>('pickup');
+    const [sortBy, setSortBy] = useState<'pickup' | 'return' | 'amount' | 'status' | null>('status');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [showRejected, setShowRejected] = useState(false);
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
@@ -2228,11 +2230,8 @@ const RequestsView: React.FC = () => {
 
     useEffect(() => {
         if (cars.length > 0) {
-            loadRequests();
-            
-            // Process status transitions on mount
+            // Process status transitions first, then load requests once
             processStatusTransitions(cars).then(() => {
-                // Reload requests after processing to reflect changes
                 loadRequests();
             });
         }
@@ -2263,8 +2262,6 @@ const RequestsView: React.FC = () => {
     const loadRequests = async () => {
         setLoading(true);
         try {
-            // Process status transitions before loading to ensure data is up-to-date
-            await processStatusTransitions(cars);
             const data = await fetchBorrowRequestsForDisplay(cars);
             setRequests(data);
         } catch (error) {
@@ -2283,18 +2280,18 @@ const RequestsView: React.FC = () => {
         try {
             const result = await acceptBorrowRequest(request.id.toString(), cars);
             if (result.success) {
-                alert('Request accepted! Rental created successfully.');
+                showSuccess('Request accepted! Rental created successfully.');
                 await loadRequests();
                 // Optionally navigate to the created rental
                 if (result.rentalId) {
                     navigate(`/admin?section=orders&orderId=${result.rentalId}`);
                 }
             } else {
-                alert(`Failed to accept request: ${result.error}`);
+                showError(`Failed to accept request: ${result.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error accepting request:', error);
-            alert('An error occurred while accepting the request.');
+            showError('An error occurred while accepting the request.');
         } finally {
             setProcessingRequest(null);
         }
@@ -2306,16 +2303,27 @@ const RequestsView: React.FC = () => {
 
         setProcessingRequest(request.id.toString());
         try {
-            const result = await rejectBorrowRequest(request.id.toString(), reason || undefined);
-            if (result.success) {
-                alert('Request rejected.');
-                await loadRequests();
+            // If request is already APPROVED, use updateBorrowRequest instead
+            if (request.status === 'APPROVED') {
+                const result = await updateBorrowRequest(request.id.toString(), { status: 'REJECTED' } as any);
+                if (result.success) {
+                    showSuccess('Request rejected successfully!');
+                    await loadRequests();
+                } else {
+                    showError(`Failed to reject request: ${result.error || 'Unknown error'}`);
+                }
             } else {
-                alert(`Failed to reject request: ${result.error}`);
+                const result = await rejectBorrowRequest(request.id.toString(), reason || undefined);
+                if (result.success) {
+                    showSuccess('Request rejected successfully!');
+                    await loadRequests();
+                } else {
+                    showError(`Failed to reject request: ${result.error || 'Unknown error'}`);
+                }
             }
         } catch (error) {
             console.error('Error rejecting request:', error);
-            alert('An error occurred while rejecting the request.');
+            showError('An error occurred while rejecting the request.');
         } finally {
             setProcessingRequest(null);
         }
@@ -2330,14 +2338,36 @@ const RequestsView: React.FC = () => {
         try {
             const result = await undoRejectBorrowRequest(request.id.toString());
             if (result.success) {
-                alert('Request restored to pending.');
+                showSuccess('Request restored to pending successfully!');
                 await loadRequests();
             } else {
-                alert(`Failed to restore request: ${result.error}`);
+                showError(`Failed to restore request: ${result.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error undoing reject request:', error);
-            alert('An error occurred while restoring the request.');
+            showError('An error occurred while restoring the request.');
+        } finally {
+            setProcessingRequest(null);
+        }
+    };
+
+    const handleSetToPending = async (request: OrderDisplay) => {
+        if (!window.confirm(`Set request from ${request.customerName} for ${request.carName} back to pending?`)) {
+            return;
+        }
+
+        setProcessingRequest(request.id.toString());
+        try {
+            const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
+            if (result.success) {
+                showSuccess('Request set to pending successfully!');
+                await loadRequests();
+            } else {
+                showError(`Failed to update request: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error setting request to pending:', error);
+            showError('An error occurred while updating the request.');
         } finally {
             setProcessingRequest(null);
         }
@@ -2393,7 +2423,12 @@ const RequestsView: React.FC = () => {
         startDateTime.setHours(pickupHour, pickupMin, 0, 0);
         
         const endDateTime = new Date(endDate);
-        endDateTime.setHours(returnHour, returnMin, 0, 0);
+        // If return time is 00:00, treat it as end of previous day (23:59:59)
+        if (returnHour === 0 && returnMin === 0) {
+            endDateTime.setHours(23, 59, 59, 999);
+        } else {
+            endDateTime.setHours(returnHour, returnMin, 0, 0);
+        }
         
         const diffTime = endDateTime.getTime() - startDateTime.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -2479,6 +2514,7 @@ const RequestsView: React.FC = () => {
             const matchesSearch = 
                 request.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 request.carName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                request.customerPhone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 request.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase());
             
             // When showRejected is true, only show rejected requests
@@ -2515,11 +2551,12 @@ const RequestsView: React.FC = () => {
                 return sortOrder === 'asc' ? diff : -diff;
             });
         } else {
-            // Default: sort by pickup date (ascending)
+            // Default: sort by status (ascending)
+            const statusOrder = { 'PENDING': 0, 'APPROVED': 1, 'REJECTED': 2, 'EXECUTED': 3 };
             filtered.sort((a, b) => {
-                const dateA = new Date(a.pickupDate).getTime();
-                const dateB = new Date(b.pickupDate).getTime();
-                return dateA - dateB;
+                const statusA = statusOrder[a.status as keyof typeof statusOrder] ?? 4;
+                const statusB = statusOrder[b.status as keyof typeof statusOrder] ?? 4;
+                return statusA - statusB;
             });
         }
 
@@ -2530,7 +2567,7 @@ const RequestsView: React.FC = () => {
     if (requestId) {
         const request = requests.find(r => r.id.toString() === requestId);
         if (request) {
-            return <RequestDetailsView request={request} onBack={() => setSearchParams({ section: 'requests' })} onAccept={handleAccept} onReject={handleReject} onUndoReject={handleUndoReject} cars={cars} />;
+            return <RequestDetailsView request={request} onBack={() => setSearchParams({ section: 'requests' })} onAccept={handleAccept} onReject={handleReject} onUndoReject={handleUndoReject} onSetToPending={handleSetToPending} cars={cars} />;
         }
     }
 
@@ -2701,8 +2738,8 @@ const RequestsView: React.FC = () => {
                                                         </div>
                                                         <div className="flex flex-col min-w-0">
                                                             <span className="font-semibold text-white text-sm truncate">{request.customerName}</span>
-                                                            {request.customerEmail && (
-                                                                <span className="text-gray-400 text-xs truncate">{request.customerEmail}</span>
+                                                            {request.customerPhone && (
+                                                                <span className="text-gray-400 text-xs truncate">{request.customerPhone}</span>
                                                             )}
                                                         </div>
                                                     </div>
@@ -2769,27 +2806,32 @@ const RequestsView: React.FC = () => {
                     cars={cars}
                     onSave={async (rentalData) => {
                         try {
-                            const result = await createRentalManually(
-                                rentalData.userId || '',
+                            const result = await createBorrowRequest(
                                 rentalData.carId || '',
                                 rentalData.startDate || '',
                                 rentalData.startTime || '',
                                 rentalData.endDate || '',
                                 rentalData.endTime || '',
-                                rentalData.amount || 0,
-                                cars
+                                rentalData.customerName || '',
+                                rentalData.customerFirstName || '',
+                                rentalData.customerLastName || '',
+                                rentalData.customerEmail || '',
+                                rentalData.customerPhone || '',
+                                rentalData.customerAge ? String(rentalData.customerAge) : undefined,
+                                rentalData.comment,
+                                rentalData.options,
+                                rentalData.amount
                             );
                             if (result.success) {
-                                alert('Rental created successfully!');
+                                showSuccess('Request created successfully!');
                                 setShowAddRentalModal(false);
-                                // Navigate to orders section
-                                navigate('/admin?section=orders');
+                                await loadRequests();
                             } else {
-                                alert(`Failed to create rental: ${result.error}`);
+                                showError(`Failed to create request: ${result.error || 'Unknown error'}`);
                             }
                         } catch (error) {
-                            console.error('Error creating rental:', error);
-                            alert('An error occurred while creating the rental.');
+                            console.error('Error creating request:', error);
+                            showError('An error occurred while creating the request.');
                         }
                     }}
                     onClose={() => setShowAddRentalModal(false)}
@@ -2808,6 +2850,7 @@ const RequestsView: React.FC = () => {
                     onAccept={handleAccept}
                     onReject={handleReject}
                     onUndoReject={handleUndoReject}
+                    onSetToPending={handleSetToPending}
                     onEdit={handleEdit}
                     isProcessing={processingRequest === selectedRequest.id.toString()}
                 />
@@ -2851,12 +2894,13 @@ interface RequestDetailsModalProps {
     onAccept: (request: OrderDisplay) => void;
     onReject: (request: OrderDisplay) => void;
     onUndoReject?: (request: OrderDisplay) => void;
+    onSetToPending?: (request: OrderDisplay) => void;
     onEdit?: (request: OrderDisplay) => void;
     isProcessing?: boolean;
     cars: CarType[];
 }
 
-const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onEdit, isProcessing = false, cars }) => {
+const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, isProcessing = false, cars }) => {
     const car = cars.find(c => c.id.toString() === request.carId);
     if (!car) return null;
 
@@ -2900,7 +2944,12 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     startDateTime.setHours(pickupHour, pickupMin, 0, 0);
     
     const endDateTime = new Date(endDate);
-    endDateTime.setHours(returnHour, returnMin, 0, 0);
+    // If return time is 00:00, treat it as end of previous day (23:59:59)
+    if (returnHour === 0 && returnMin === 0) {
+        endDateTime.setHours(23, 59, 59, 999);
+    } else {
+        endDateTime.setHours(returnHour, returnMin, 0, 0);
+    }
     
     const diffTime = endDateTime.getTime() - startDateTime.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -3361,6 +3410,56 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             </button>
                         </div>
                     )}
+                    {request.status === 'APPROVED' && (onReject || onSetToPending) && (
+                        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
+                            {onSetToPending && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onSetToPending(request);
+                                        onClose();
+                                    }}
+                                    disabled={isProcessing}
+                                    className="flex-1 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 hover:border-yellow-500/60 text-yellow-300 hover:text-yellow-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                >
+                                    {isProcessing ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshCw className="w-4 h-4" />
+                                            Set to Pending
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                            {onReject && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onReject(request);
+                                        onClose();
+                                    }}
+                                    disabled={isProcessing}
+                                    className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                >
+                                    {isProcessing ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <X className="w-4 h-4" />
+                                            Reject Request
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {request.status === 'REJECTED' && (onUndoReject || onEdit) && (
                         <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
                             {onUndoReject && (
@@ -3416,11 +3515,12 @@ interface RequestDetailsViewProps {
     onAccept: (request: OrderDisplay) => void;
     onReject: (request: OrderDisplay) => void;
     onUndoReject?: (request: OrderDisplay) => void;
+    onSetToPending?: (request: OrderDisplay) => void;
     onEdit?: (request: OrderDisplay) => void;
     cars: CarType[];
 }
 
-const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onEdit, cars }) => {
+const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, cars }) => {
     const car = cars.find(c => c.id.toString() === request.carId);
     const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image_url);
 
@@ -3594,6 +3694,28 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                                 <X className="w-4 h-4" />
                                 Reject Request
                             </button>
+                        </>
+                    )}
+                    {request.status === 'APPROVED' && (onSetToPending || onReject) && (
+                        <>
+                            {onSetToPending && (
+                                <button
+                                    onClick={() => onSetToPending(request)}
+                                    className="w-full bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 hover:border-yellow-500/60 text-yellow-300 hover:text-yellow-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Set to Pending
+                                </button>
+                            )}
+                            {onReject && (
+                                <button
+                                    onClick={() => onReject(request)}
+                                    className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
+                                >
+                                    <X className="w-4 h-4" />
+                                    Reject Request
+                                </button>
+                            )}
                         </>
                     )}
                     {request.status === 'REJECTED' && (onUndoReject || onEdit) && (
@@ -3912,10 +4034,8 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         // Include country code in phone number
         const fullPhoneNumber = `${selectedCountryCode.code} ${formData.customerPhone}`.trim();
         
-        // For manual creation, we'll use a placeholder userId - in production, you'd look up or create the user
-        if (!formData.userId) {
-            formData.userId = `manual-${Date.now()}`;
-        }
+        // Calculate total amount
+        const totalAmount = calculateAmount();
         
         // Prepare data with all fields including options
         const rentalData = {
@@ -3927,6 +4047,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
             customerPhone: fullPhoneNumber,
             options: options,
             comment: formData.comment || undefined,
+            amount: totalAmount,
         };
         
         onSave(rentalData);
@@ -3950,7 +4071,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             >
                 <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#1C1C1C' }}>
-                    <h2 className="text-xl font-bold text-white">Create New Rental</h2>
+                    <h2 className="text-xl font-bold text-white">Create New Request</h2>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -6084,7 +6205,7 @@ export const Admin: React.FC = () => {
     const section = searchParams.get('section') || 'dashboard';
     const orderId = searchParams.get('orderId');
     const carId = searchParams.get('carId');
-    const { signOut } = useAuth();
+    const { signOut, user, loading, isAdmin, roleLoaded } = useAuth();
     const { i18n, t } = useTranslation();
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
@@ -6093,6 +6214,12 @@ export const Admin: React.FC = () => {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [totalRequests, setTotalRequests] = useState<number>(0);
     const [cars, setCars] = useState<CarType[]>([]);
+
+    // Security check: If user is not admin, don't render anything
+    // AdminProtectedRoute should handle showing 404, but this is a safety net
+    if (!loading && roleLoaded && user && !isAdmin) {
+        return null; // Don't render admin content, AdminProtectedRoute will show 404
+    }
 
     // Fetch cars at top level
     useEffect(() => {

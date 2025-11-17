@@ -19,6 +19,7 @@ import ScrollToTop from './ScrollToTop';
 import { Admin } from '../pages/admin/Admin.tsx';
 import { UserDashboard } from '../pages/dashboard/UserDashboard';
 import { ProtectedRoute } from './ProtectedRoute';
+import { AdminProtectedRoute } from './AdminProtectedRoute';
 
 const RouterWrapper = () => {
   return (
@@ -54,7 +55,14 @@ const RouterWrapper = () => {
           }
         />
 
-        <Route path="/admin" element={<Admin />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute>
+              <Admin />
+            </AdminProtectedRoute>
+          }
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes >
