@@ -560,5 +560,11 @@
         "discountApplied4": "Discount applied: -4% for 8+ days",
         "discountApplied2": "Discount applied: -2% for 4+ days",
         "perDay": "/day"
+    },
+    "notFound": {
+        "title": "Page Not Found",
+        "description": "Sorry, the page you are looking for doesn't exist or has been moved.",
+        "goBackHome": "Home page",
+        "goBack": "Go Back"
     }
 }

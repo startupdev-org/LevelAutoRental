@@ -43,8 +43,6 @@ export function useAuth() {
 
     isFetchingRef.current = true;
       try {
-        const queryStart = Date.now();
-        
         // Fast timeout (2 seconds) - if query hangs, fail fast
         const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
@@ -60,10 +58,6 @@ export function useAuth() {
         let queryResult;
         try {
           queryResult = await Promise.race([fetchPromise, timeoutPromise]);
-          const queryDuration = Date.now() - queryStart;
-          if (queryDuration > 100) {
-            console.log(`✅ Profile fetched in ${queryDuration}ms`);
-          }
         } catch (timeoutError: any) {
           // If Profiles times out, try 'users' table as fallback
           if (timeoutError?.message === 'Profile fetch timeout') {
@@ -75,8 +69,6 @@ export function useAuth() {
                 .maybeSingle();
               
               queryResult = await Promise.race([usersFetchPromise, timeoutPromise]);
-              const queryDuration = Date.now() - queryStart;
-              console.log(`✅ Profile fetched from users table in ${queryDuration}ms`);
             } catch (secondError) {
               console.error('❌ Profile fetch failed from both tables');
               setUserProfile(null);
@@ -216,13 +208,6 @@ export function useAuth() {
     
     // Either method grants admin access
     const result = isAdminByRole || isAdminByEmail;
-    
-    if (userProfile) {
-      console.log('🔐 Admin check:', {
-        role: userProfile?.role,
-        isAdmin: result
-      });
-    }
     
     return result;
   }, [userProfile, user?.email]);

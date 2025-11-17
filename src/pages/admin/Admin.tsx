@@ -6205,7 +6205,7 @@ export const Admin: React.FC = () => {
     const section = searchParams.get('section') || 'dashboard';
     const orderId = searchParams.get('orderId');
     const carId = searchParams.get('carId');
-    const { signOut, user, loading, isAdmin, roleLoaded } = useAuth();
+    const { signOut, user, loading, isAdmin, roleLoaded, userProfile } = useAuth();
     const { i18n, t } = useTranslation();
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
@@ -6493,11 +6493,25 @@ export const Admin: React.FC = () => {
                                 {/* Current User */}
                                 <div className="flex items-center space-x-3 px-1 pb-4">
                                     <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                                        <span className="text-white font-semibold text-sm">V</span>
+                                        <span className="text-white font-semibold text-sm">
+                                            {userProfile?.first_name?.[0]?.toUpperCase() || 
+                                             userProfile?.last_name?.[0]?.toUpperCase() || 
+                                             user?.email?.[0]?.toUpperCase() || 
+                                             'U'}
+                                        </span>
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-white truncate">Victorin</p>
-                                        <p className="text-xs text-gray-300 truncate">admin@lvl.com</p>
+                                        <p className="text-sm font-semibold text-white truncate">
+                                            {userProfile?.first_name && userProfile?.last_name
+                                                ? `${userProfile.first_name} ${userProfile.last_name}`
+                                                : userProfile?.first_name || 
+                                                  userProfile?.last_name || 
+                                                  user?.email?.split('@')[0] || 
+                                                  'User'}
+                                        </p>
+                                        <p className="text-xs text-gray-300 truncate">
+                                            {userProfile?.email || user?.email || 'No email'}
+                                        </p>
                                     </div>
                                     <button
                                         onClick={() => setIsSettingsModalOpen(true)}

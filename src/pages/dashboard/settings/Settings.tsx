@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { User, Lock, Save } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth";
+import { supabase } from "../../../lib/supabase";
 
 type TabKey =
     | "profile"
@@ -18,15 +20,31 @@ function TabPanel({
 }
 
 export const Settings: React.FC = () => {
+    const { userProfile, user } = useAuth();
     const [tab, setTab] = useState<TabKey>("profile");
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    // Personal / profile state
-    const [firstName, setFirstName] = useState("Victorin");
-    const [lastName, setLastName] = useState("Levitchi");
-    const [email, setEmail] = useState("victorin@levelautorental.com");
-    const [phone, setPhone] = useState("+373 62 000 112");
+    // Personal / profile state - initialized from userProfile
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
     const [website, setWebsite] = useState("");
     const [bio, setBio] = useState("");
+
+    // Initialize form data from userProfile when it loads
+    useEffect(() => {
+        if (userProfile) {
+            setFirstName(userProfile.first_name || "");
+            setLastName(userProfile.last_name || "");
+            setEmail(userProfile.email || user?.email || "");
+            setPhone(userProfile.phone_number || "");
+        } else if (user?.email) {
+            // Fallback to user email if profile not loaded yet
+            setEmail(user.email);
+        }
+    }, [userProfile, user]);
 
     // avatar
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -70,8 +88,55 @@ export const Settings: React.FC = () => {
         setAvatarFile(e.target.files[0]);
     };
 
-    const onSaveProfile = () => {
-        console.log("save profile", { firstName, lastName, email, phone, website, bio, avatarFile });
+    const onSaveProfile = async () => {
+        if (!userProfile?.id && !user?.id) {
+            setSaveMessage({ type: 'error', text: 'User not found' });
+            return;
+        }
+
+        setIsSaving(true);
+        setSaveMessage(null);
+
+        try {
+            const userId = userProfile?.id || user?.id;
+            if (!userId) {
+                throw new Error('User ID not found');
+            }
+
+            const { error } = await supabase
+                .from('Profiles')
+                .update({
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: email,
+                    phone_number: phone || null,
+                })
+                .eq('id', userId);
+
+            if (error) {
+                throw error;
+            }
+
+            setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
+            
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                setSaveMessage(null);
+            }, 3000);
+        } catch (error: any) {
+            console.error('Error updating profile:', error);
+            setSaveMessage({ 
+                type: 'error', 
+                text: error?.message || 'Failed to update profile. Please try again.' 
+            });
+            
+            // Clear error message after 5 seconds
+            setTimeout(() => {
+                setSaveMessage(null);
+            }, 5000);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const onUpdatePassword = () => {
@@ -102,6 +167,15 @@ export const Settings: React.FC = () => {
 
             {/* Profile Tab */}
             <TabPanel value={tab} index="profile">
+                {saveMessage && (
+                    <div className={`mb-4 p-4 rounded-lg border ${
+                        saveMessage.type === 'success' 
+                            ? 'bg-green-500/20 border-green-500/50 text-green-300' 
+                            : 'bg-red-500/20 border-red-500/50 text-red-300'
+                    }`}>
+                        {saveMessage.text}
+                    </div>
+                )}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <User className="w-5 h-5" />
@@ -155,10 +229,11 @@ export const Settings: React.FC = () => {
                     <button
                         type="button"
                         onClick={onSaveProfile}
-                        className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
+                        disabled={isSaving}
+                        className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Save className="w-4 h-4" />
-                        Save Changes
+                        <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </TabPanel>

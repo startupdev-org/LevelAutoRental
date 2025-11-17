@@ -559,6 +559,12 @@
         "discountApplied2": "Discount aplicat: -2% pentru 4+ zile",
         "perDay": "/zi"
     },
+    "notFound": {
+        "title": "Pagina nu a fost găsită",
+        "description": "Ne pare rău, pagina pe care o căutați nu există sau a fost mutată.",
+        "goBackHome": "Pagina principală",
+        "goBack": "Înapoi"
+    },
     "dashboard": {
         "welcomeBack": "Bun venit înapoi, {{name}}!",
         "export": "Exportă",
