@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { User } from "../../../types";
-import { users as usersData } from "../../../data/index";
 import {
     ArrowLeft,
     ArrowRight,
@@ -12,7 +11,6 @@ import {
     ArrowUp,
     ArrowDown,
     X,
-    Filter,
     Phone,
     DollarSign
 } from "lucide-react";
@@ -21,6 +19,7 @@ import { createPortal } from "react-dom";
 import { OrderDisplay } from "../../../lib/orders";
 import { cars } from "../../../data/cars";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../../../lib/supabase";
 
 export const UsersPage: React.FC = () => {
     const navigate = useNavigate();
@@ -28,87 +27,79 @@ export const UsersPage: React.FC = () => {
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [filterRole, setFilterRole] = useState<string>("all");
     const [sortBy, setSortBy] = useState<'name' | 'email' | 'role' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [userOrders, setUserOrders] = useState<OrderDisplay[]>([]);
     const pageSize = 10;
 
-    // Load users from orders
+    // Load users from Profiles table and orders
     useEffect(() => {
         const loadUsersAndOrders = async () => {
             try {
+                // Load orders for statistics
                 const { fetchRentalsOnly } = await import('../../../lib/orders');
                 const data = await fetchRentalsOnly(cars);
                 const rentals = data.filter(order => order.type === 'rental');
                 setUserOrders(rentals);
 
-                // Extract unique users from orders
-                const userMap = new Map<string, User>();
+                // Fetch users from Profiles table
+                const { data: profilesData, error: profilesError } = await supabase
+                    .from('Profiles')
+                    .select('id, first_name, last_name, email, phone_number, role, created_at, updated_at')
+                    .order('created_at', { ascending: false });
 
-                rentals.forEach((order) => {
-                    if (!order.customerName || !order.customerEmail) return;
-
-                    // Use email as unique identifier
-                    const email = order.customerEmail.toLowerCase();
-
-                    if (!userMap.has(email)) {
-                        // Parse name
-                        const nameParts = order.customerName.trim().split(' ');
-                        const firstName = nameParts[0] || '';
-                        const lastName = nameParts.slice(1).join(' ') || '';
-
-                        userMap.set(email, {
-                            id: userMap.size + 1,
-                            first_name: firstName,
-                            last_name: lastName,
-                            email: order.customerEmail,
-                            phone_number: order.customerPhone || undefined,
-                            role: userMap.size === 0 ? 'Admin' : 'User', // First user is Admin (Victorin)
-                        });
-                    }
-                });
-
-                // Convert map to array and ensure Victorin is Admin
-                const extractedUsers = Array.from(userMap.values());
-                if (extractedUsers.length > 0) {
-                    // Find Victorin and set as Admin, others as User
-                    extractedUsers.forEach((user, index) => {
-                        if (user.first_name.toLowerCase() === 'victorin' ||
-                            user.email.toLowerCase().includes('victorin')) {
-                            user.role = 'Admin';
-                        } else {
-                            user.role = 'User';
+                if (profilesError) {
+                    console.error('Failed to load users from Profiles table:', profilesError);
+                    // Fallback to extracting from orders if Profiles table fails
+                    const userMap = new Map<string, User>();
+                    rentals.forEach((order) => {
+                        if (!order.customerName || !order.customerEmail) return;
+                        const email = order.customerEmail.toLowerCase();
+                        if (!userMap.has(email)) {
+                            const nameParts = order.customerName.trim().split(' ');
+                            const firstName = nameParts[0] || '';
+                            const lastName = nameParts.slice(1).join(' ') || '';
+                            userMap.set(email, {
+                                id: email, // Use email as ID fallback
+                                first_name: firstName,
+                                last_name: lastName,
+                                email: order.customerEmail,
+                                phone_number: order.customerPhone || undefined,
+                                role: 'User',
+                            });
                         }
                     });
-
-                    // Ensure only one Admin
-                    const adminIndex = extractedUsers.findIndex(u =>
-                        u.first_name.toLowerCase() === 'victorin' ||
-                        u.email.toLowerCase().includes('victorin')
-                    );
-                    if (adminIndex > 0) {
-                        extractedUsers.forEach((user, index) => {
-                            if (index !== adminIndex) {
-                                user.role = 'User';
-                            }
-                        });
-                    }
+                    setUsers(Array.from(userMap.values()));
+                    return;
                 }
 
-                setUsers(extractedUsers);
+                if (profilesData && profilesData.length > 0) {
+                    // Map database data to User type
+                    const usersList: User[] = profilesData.map((profile) => ({
+                        id: profile.id,
+                        first_name: profile.first_name || '',
+                        last_name: profile.last_name || '',
+                        email: profile.email || '',
+                        phone_number: profile.phone_number || undefined,
+                        role: profile.role || 'User',
+                    }));
+                    setUsers(usersList);
+                } else {
+                    // No users in Profiles table, fallback to empty array
+                    setUsers([]);
+                }
             } catch (error) {
                 console.error('Failed to load users and orders:', error);
-                // Fallback to default users on error
-                setUsers(usersData);
+                // Fallback to empty array on error
+                setUsers([]);
             }
         };
         loadUsersAndOrders();
     }, []);
 
     // Get user order count
-    const getUserOrderCount = (userId: number): number => {
-        const user = users.find(u => u.id === userId);
+    const getUserOrderCount = (userId: string | number): number => {
+        const user = users.find(u => u.id === userId || u.id.toString() === userId.toString());
         if (!user) return 0;
 
         return userOrders.filter(order => {
@@ -119,8 +110,8 @@ export const UsersPage: React.FC = () => {
     };
 
     // Get user total spent
-    const getUserTotalSpent = (userId: number): number => {
-        const user = users.find(u => u.id === userId);
+    const getUserTotalSpent = (userId: string | number): number => {
+        const user = users.find(u => u.id === userId || u.id.toString() === userId.toString());
         if (!user) return 0;
 
         return userOrders
@@ -141,8 +132,7 @@ export const UsersPage: React.FC = () => {
                     u.last_name.toLowerCase().includes(search.toLowerCase()) ||
                     (u.phone_number && u.phone_number.toLowerCase().includes(search.toLowerCase())) ||
                     u.email.toLowerCase().includes(search.toLowerCase());
-                const matchesRole = filterRole === 'all' || u.role.toLowerCase() === filterRole.toLowerCase();
-                return matchesSearch && matchesRole;
+                return matchesSearch;
             }
         );
 
@@ -173,7 +163,7 @@ export const UsersPage: React.FC = () => {
         }
 
         return filtered;
-    }, [users, search, filterRole, sortBy, sortOrder, userOrders]);
+    }, [users, search, sortBy, sortOrder, userOrders]);
 
     const totalPages = Math.ceil(filteredUsers.length / pageSize);
 
@@ -225,21 +215,6 @@ export const UsersPage: React.FC = () => {
                                     }}
                                     className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
                                 />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Filter className="text-gray-400 w-4 h-4" />
-                                <select
-                                    value={filterRole}
-                                    onChange={(e) => {
-                                        setFilterRole(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
-                                    className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm"
-                                >
-                                    <option value="all">All Roles</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="user">User</option>
-                                </select>
                             </div>
                         </div>
                     </div>
