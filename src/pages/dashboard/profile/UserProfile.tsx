@@ -25,8 +25,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
         if (profile) {
             setUser(profile);
             setEditForm({
-                firstName: profile.first_name,
-                lastName: profile.last_name,
+                firstName: profile.first_name || '',
+                lastName: profile.last_name || '',
                 phone: profile.phone_number || '',
             });
         }

@@ -1,5 +1,6 @@
 import { User } from '../../../types';
 import { supabase, supabaseAdmin } from '../../supabase';
+import { getLoggedUser } from '../profile';
 
 /**
  * Create a new user
@@ -25,5 +26,22 @@ export async function createUser(user: User) {
     } catch (err) {
         console.error('Unexpected error in while creating a new user:', err);
     }
+}
+
+/**
+ * Change the current logged-in user's password
+ */
+export async function changeUserPassword(newPassword: string) {
+    console.log("chaning user's password ")
+    const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+    });
+
+    if (error) {
+        console.error('Error updating password:', error.message);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
 }
 

@@ -11,17 +11,28 @@ export interface UserProfileUpdate {
     phone_number?: string;
 }
 
+export async function getLoggedUser(): Promise<User | null> {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        console.error('Auth error or no logged-in user', authError);
+        return null;
+    }
+
+    return user;
+}
+
 
 export async function getProfile(): Promise<User | null> {
     try {
         // Get current logged-in user
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
+        const user = await getLoggedUser();
 
-        if (authError || !user) {
-            console.error('Auth error or no logged-in user', authError);
+        if (!user) {
+            console.error("No logged-in user found");
             return null;
         }
 
@@ -43,6 +54,7 @@ export async function getProfile(): Promise<User | null> {
         return null;
     }
 }
+
 
 export async function updateProfile(user: Partial<User>) {
     try {

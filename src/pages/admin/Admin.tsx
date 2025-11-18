@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { LiaCarSideSolid } from 'react-icons/lia';
 import { getDateDiffInDays } from '../../utils/date';
-import Settings from '../dashboard/settings/Settings';
+import Settings from '../dashboard/settings/AdminSettings';
 import Users from '../dashboard/users/Users';
 import { LuPencil } from 'react-icons/lu';
 import { CardStats } from '../../components/dashboard/CardStats';
@@ -56,7 +56,7 @@ import { OrderDisplay } from '../../lib/orders';
 import { OrdersViewSection } from '../dashboard/orders/OrdersViewSection';
 import {
     fetchBorrowRequestsForDisplay,
-    acceptBorrowRequest, 
+    acceptBorrowRequest,
     rejectBorrowRequest,
     undoRejectBorrowRequest,
     updateBorrowRequest,
@@ -757,7 +757,7 @@ const CarsView: React.FC = () => {
             // Hide cars with deleted status
             const carStatus = car.status?.toLowerCase() || '';
             if (carStatus === 'deleted') return false;
-            
+
             const carName = (car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || '';
             const matchesSearch = carName.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesCategory = filterCategory === 'all' || car.category === filterCategory;
@@ -852,7 +852,7 @@ const CarsView: React.FC = () => {
                 // Ensure make and model are provided (required fields)
                 const make = (carData as any).make || (carData as any).name?.split(' ')[0] || '';
                 const model = (carData as any).model || (carData as any).name?.split(' ').slice(1).join(' ') || '';
-                
+
                 if (!make || !model) {
                     throw new Error('Make and Model are required fields');
                 }
@@ -901,8 +901,8 @@ const CarsView: React.FC = () => {
         const car = localCars.find(c => c.id.toString() === carId);
         if (car) {
             return (
-                <CarDetailsEditView 
-                    car={car} 
+                <CarDetailsEditView
+                    car={car}
                     onSave={async (carData) => {
                         try {
                             await handleSaveCar(carData);
@@ -913,8 +913,8 @@ const CarsView: React.FC = () => {
                         } catch (error) {
                             // Error is already handled in handleSaveCar
                         }
-                    }} 
-                    onCancel={() => setSearchParams({ section: 'cars' })} 
+                    }}
+                    onCancel={() => setSearchParams({ section: 'cars' })}
                 />
             );
         } else if (!loading) {
@@ -1294,8 +1294,8 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 .getPublicUrl(filePath);
 
             // Update form data with the public URL
-            setFormData(prev => ({ 
-                ...prev, 
+            setFormData(prev => ({
+                ...prev,
                 image: publicUrl,
                 image_url: publicUrl
             }));
@@ -1441,8 +1441,8 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <input
                                 type="number"
                                 value={(formData as any).pricePerDay || formData.price_per_day || ''}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
                                     pricePerDay: parseFloat(e.target.value),
                                     price_per_day: parseFloat(e.target.value)
                                 }))}
@@ -1485,8 +1485,8 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <label className="block text-sm font-medium text-gray-300 mb-2">Fuel Type</label>
                             <select
                                 value={(formData as any).fuelType || formData.fuel_type || 'gasoline'}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
                                     fuelType: e.target.value as CarType['fuel_type'],
                                     fuel_type: e.target.value as CarType['fuel_type']
                                 }))}
@@ -1576,10 +1576,10 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {((formData as any).photoGallery || formData.photo_gallery || []).map((url: string, index: number) => (
                                     <div key={index} className="relative group inline-block">
-                                        <img 
-                                            src={url} 
-                                            alt={`Gallery ${index + 1}`} 
-                                            className="h-20 object-contain rounded-lg border border-white/10 bg-white/5 cursor-pointer hover:opacity-80 transition-opacity" 
+                                        <img
+                                            src={url}
+                                            alt={`Gallery ${index + 1}`}
+                                            className="h-20 object-contain rounded-lg border border-white/10 bg-white/5 cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => {
                                                 setSelectedImageIndex(index + 1);
                                                 setShowImageGallery(true);
@@ -1711,110 +1711,108 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             style={{ top: 0, left: 0, right: 0, bottom: 0, position: 'fixed' }}
                             onClick={() => setShowImageGallery(false)}
                         >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.98 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="relative w-full h-full flex flex-col"
-                        >
-                            {/* Header Bar */}
-                            <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-3">
-                                <div className="flex items-center gap-3">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="relative w-full h-full flex flex-col"
+                            >
+                                {/* Header Bar */}
+                                <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-3">
+                                    <div className="flex items-center gap-3">
+                                        {(() => {
+                                            const allImages = [
+                                                formData.image_url || (formData as any).image,
+                                                ...((formData as any).photoGallery || formData.photo_gallery || [])
+                                            ].filter(Boolean);
+
+                                            if (allImages.length <= 1) return null;
+
+                                            return (
+                                                <span className="text-white/70 text-sm font-medium">
+                                                    {selectedImageIndex + 1} of {allImages.length}
+                                                </span>
+                                            );
+                                        })()}
+                                        {selectedImageIndex === 0 && (
+                                            <span className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-full">
+                                                Main Photo
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setShowImageGallery(false)}
+                                        className="p-2 hover:bg-white/10 text-white/80 hover:text-white rounded-lg transition-colors"
+                                    >
+                                        <XIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                {/* Main Image Display */}
+                                <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
                                     {(() => {
                                         const allImages = [
                                             formData.image_url || (formData as any).image,
                                             ...((formData as any).photoGallery || formData.photo_gallery || [])
                                         ].filter(Boolean);
-                                        
-                                        if (allImages.length <= 1) return null;
-                                        
-                                        return (
-                                            <span className="text-white/70 text-sm font-medium">
-                                                {selectedImageIndex + 1} of {allImages.length}
-                                            </span>
-                                        );
-                                    })()}
-                                    {selectedImageIndex === 0 && (
-                                        <span className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-full">
-                                            Main Photo
-                                        </span>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => setShowImageGallery(false)}
-                                    className="p-2 hover:bg-white/10 text-white/80 hover:text-white rounded-lg transition-colors"
-                                >
-                                    <XIcon className="w-5 h-5" />
-                                </button>
-                            </div>
+                                        const currentImage = allImages[selectedImageIndex];
 
-                            {/* Main Image Display */}
-                            <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+                                        return currentImage ? (
+                                            <div className="w-full h-full max-w-full max-h-[75vh] flex items-center justify-center">
+                                                <img
+                                                    src={currentImage}
+                                                    alt={`Image ${selectedImageIndex + 1}`}
+                                                    className="max-w-full max-h-[75vh] object-contain rounded-xl"
+                                                />
+                                            </div>
+                                        ) : null;
+                                    })()}
+
+                                </div>
+
+                                {/* Photo Grid */}
                                 {(() => {
                                     const allImages = [
                                         formData.image_url || (formData as any).image,
                                         ...((formData as any).photoGallery || formData.photo_gallery || [])
                                     ].filter(Boolean);
-                                    const currentImage = allImages[selectedImageIndex];
-                                    
-                                    return currentImage ? (
-                                        <div className="w-full h-full max-w-full max-h-[75vh] flex items-center justify-center">
-                                            <img 
-                                                src={currentImage} 
-                                                alt={`Image ${selectedImageIndex + 1}`}
-                                                className="max-w-full max-h-[75vh] object-contain rounded-xl"
-                                            />
-                                        </div>
-                                    ) : null;
-                                })()}
 
-                            </div>
+                                    if (allImages.length <= 1) return null;
 
-                            {/* Photo Grid */}
-                            {(() => {
-                                const allImages = [
-                                    formData.image_url || (formData as any).image,
-                                    ...((formData as any).photoGallery || formData.photo_gallery || [])
-                                ].filter(Boolean);
-                                
-                                if (allImages.length <= 1) return null;
-
-                                return (
-                                    <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/40 backdrop-blur-md">
-                                        <div className="px-6 py-4">
-                                            <div className="grid grid-cols-6 gap-3 max-w-4xl mx-auto">
-                                                {allImages.map((url: string, index: number) => (
-                                                    <button
-                                                        key={index}
-                                                        onClick={() => setSelectedImageIndex(index)}
-                                                        className={`relative transition-all ${
-                                                            selectedImageIndex === index 
-                                                                ? 'opacity-100' 
+                                    return (
+                                        <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/40 backdrop-blur-md">
+                                            <div className="px-6 py-4">
+                                                <div className="grid grid-cols-6 gap-3 max-w-4xl mx-auto">
+                                                    {allImages.map((url: string, index: number) => (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => setSelectedImageIndex(index)}
+                                                            className={`relative transition-all ${selectedImageIndex === index
+                                                                ? 'opacity-100'
                                                                 : 'opacity-50 hover:opacity-80'
-                                                        }`}
-                                                    >
-                                                        <img 
-                                                            src={url} 
-                                                            alt={`Thumbnail ${index + 1}`}
-                                                            className={`w-full h-20 object-cover rounded-lg transition-all ${
-                                                                selectedImageIndex === index 
-                                                                    ? 'border-2 border-white' 
+                                                                }`}
+                                                        >
+                                                            <img
+                                                                src={url}
+                                                                alt={`Thumbnail ${index + 1}`}
+                                                                className={`w-full h-20 object-cover rounded-lg transition-all ${selectedImageIndex === index
+                                                                    ? 'border-2 border-white'
                                                                     : 'border border-white/20'
-                                                            }`}
-                                                        />
-                                                        {index === 0 && (
-                                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white/20"></div>
-                                                        )}
-                                                    </button>
-                                                ))}
+                                                                    }`}
+                                                            />
+                                                            {index === 0 && (
+                                                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white/20"></div>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })()}
+                                    );
+                                })()}
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
                     )}
                 </AnimatePresence>,
                 document.body
@@ -1919,8 +1917,8 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                 .getPublicUrl(filePath);
 
             // Update form data with the public URL
-            setFormData(prev => ({ 
-                ...prev, 
+            setFormData(prev => ({
+                ...prev,
                 image: publicUrl,
                 image_url: publicUrl
             }));
@@ -2240,7 +2238,7 @@ const RequestsView: React.FC = () => {
     // Periodically check and process status transitions (every 60 seconds)
     useEffect(() => {
         if (cars.length === 0) return;
-        
+
         const interval = setInterval(async () => {
             const result = await processStatusTransitions(cars);
             if (result.success && (result.executed > 0 || result.completed > 0)) {
@@ -2413,15 +2411,15 @@ const RequestsView: React.FC = () => {
 
         const startDate = new Date(request.pickupDate);
         const endDate = new Date(request.returnDate);
-        
+
         const pickupTime = formatTime(request.pickupTime);
         const returnTime = formatTime(request.endTime);
         const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
         const [returnHour, returnMin] = returnTime.split(':').map(Number);
-        
+
         const startDateTime = new Date(startDate);
         startDateTime.setHours(pickupHour, pickupMin, 0, 0);
-        
+
         const endDateTime = new Date(endDate);
         // If return time is 00:00, treat it as end of previous day (23:59:59)
         if (returnHour === 0 && returnMin === 0) {
@@ -2429,7 +2427,7 @@ const RequestsView: React.FC = () => {
         } else {
             endDateTime.setHours(returnHour, returnMin, 0, 0);
         }
-        
+
         const diffTime = endDateTime.getTime() - startDateTime.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -2439,10 +2437,10 @@ const RequestsView: React.FC = () => {
 
         const rentalDays = days;
         const totalDays = days + (hours / 24);
-        
+
         // Base price calculation
         let basePrice = 0;
-        
+
         if (rentalDays >= 8) {
             basePrice = car.price_per_day * 0.96 * rentalDays;
         } else if (rentalDays >= 4) {
@@ -2450,17 +2448,17 @@ const RequestsView: React.FC = () => {
         } else {
             basePrice = car.price_per_day * rentalDays;
         }
-        
+
         // Add hours portion
         if (hours > 0) {
             const hoursPrice = (hours / 24) * car.price_per_day;
             basePrice += hoursPrice;
         }
-        
+
         // Calculate additional costs from options
         const options = (request as any).options;
         let parsedOptions: any = {};
-        
+
         if (options) {
             if (typeof options === 'string') {
                 try {
@@ -2472,10 +2470,10 @@ const RequestsView: React.FC = () => {
                 parsedOptions = options;
             }
         }
-        
+
         let additionalCosts = 0;
         const baseCarPrice = car.price_per_day;
-        
+
         // Percentage-based options
         if (parsedOptions.unlimitedKm) {
             additionalCosts += baseCarPrice * totalDays * 0.5;
@@ -2486,7 +2484,7 @@ const RequestsView: React.FC = () => {
         if (parsedOptions.tireInsurance) {
             additionalCosts += baseCarPrice * totalDays * 0.2;
         }
-        
+
         // Fixed daily costs
         if (parsedOptions.personalDriver) {
             additionalCosts += 800 * rentalDays;
@@ -2503,7 +2501,7 @@ const RequestsView: React.FC = () => {
         if (parsedOptions.roadsideAssistance) {
             additionalCosts += 500 * rentalDays;
         }
-        
+
         // Total price = base price + additional costs
         const totalPrice = basePrice + additionalCosts;
         return Math.round(totalPrice);
@@ -2511,18 +2509,18 @@ const RequestsView: React.FC = () => {
 
     const filteredRequests = useMemo(() => {
         let filtered = requests.filter(request => {
-            const matchesSearch = 
+            const matchesSearch =
                 request.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 request.carName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 request.customerPhone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 request.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase());
-            
+
             // When showRejected is true, only show rejected requests
             // When showRejected is false, hide rejected requests
-            const matchesRejectedFilter = showRejected 
+            const matchesRejectedFilter = showRejected
                 ? request.status === 'REJECTED'
                 : request.status !== 'REJECTED';
-            
+
             return matchesSearch && matchesRejectedFilter;
         });
 
@@ -2591,11 +2589,10 @@ const RequestsView: React.FC = () => {
                             <div className="flex items-center gap-2 flex-wrap">
                                 <button
                                     onClick={() => setShowRejected(!showRejected)}
-                                    className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${
-                                        showRejected
-                                            ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
-                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                    }`}
+                                    className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showRejected
+                                        ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
+                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                        }`}
                                 >
                                     {showRejected ? 'Hide Rejected' : 'Show Rejected'}
                                 </button>
@@ -2773,13 +2770,12 @@ const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span
-                                                        className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm ${
-                                                            request.status === 'PENDING'
-                                                                ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                                                : request.status === 'APPROVED'
+                                                        className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm ${request.status === 'PENDING'
+                                                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                                            : request.status === 'APPROVED'
                                                                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                                                 : 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {request.status.charAt(0) + request.status.slice(1).toLowerCase()}
                                                     </span>
@@ -2933,16 +2929,16 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
 
     const startDate = new Date(request.pickupDate);
     const endDate = new Date(request.returnDate);
-    
+
     // Parse times and combine with dates for accurate calculation
     const pickupTime = formatTime(request.pickupTime);
     const returnTime = formatTime(request.endTime);
     const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
     const [returnHour, returnMin] = returnTime.split(':').map(Number);
-    
+
     const startDateTime = new Date(startDate);
     startDateTime.setHours(pickupHour, pickupMin, 0, 0);
-    
+
     const endDateTime = new Date(endDate);
     // If return time is 00:00, treat it as end of previous day (23:59:59)
     if (returnHour === 0 && returnMin === 0) {
@@ -2950,7 +2946,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     } else {
         endDateTime.setHours(returnHour, returnMin, 0, 0);
     }
-    
+
     const diffTime = endDateTime.getTime() - startDateTime.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -2961,11 +2957,11 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     // Calculate pricing using same system as Calculator.tsx
     const rentalDays = days; // Use full days for discount calculation (same as Calculator)
     const totalDays = days + (hours / 24); // Use total days for final calculation
-    
+
     // Base price calculation (same as Calculator.tsx)
     let basePrice = 0;
     let discountPercent = 0;
-    
+
     if (rentalDays >= 8) {
         discountPercent = 4;
         basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
@@ -2975,17 +2971,17 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     } else {
         basePrice = car.price_per_day * rentalDays;
     }
-    
+
     // Add hours portion (hours are charged at full price, no discount)
     if (hours > 0) {
         const hoursPrice = (hours / 24) * car.price_per_day;
         basePrice += hoursPrice;
     }
-    
+
     // Calculate additional costs from options (same as Calculator.tsx)
     const options = (request as any).options;
     let parsedOptions: any = {};
-    
+
     if (options) {
         if (typeof options === 'string') {
             try {
@@ -2997,10 +2993,10 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
             parsedOptions = options;
         }
     }
-    
+
     let additionalCosts = 0;
     const baseCarPrice = car.price_per_day;
-    
+
     // Percentage-based options (calculated as percentage of base car price * totalDays)
     // These should be calculated on the total rental period (days + hours)
     if (parsedOptions.unlimitedKm) {
@@ -3012,7 +3008,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     if (parsedOptions.tireInsurance) {
         additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
     }
-    
+
     // Fixed daily costs
     if (parsedOptions.personalDriver) {
         additionalCosts += 800 * rentalDays;
@@ -3029,7 +3025,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
     if (parsedOptions.roadsideAssistance) {
         additionalCosts += 500 * rentalDays;
     }
-    
+
     // Total price = base price + additional costs
     const totalPrice = basePrice + additionalCosts;
     const pricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : car.price_per_day;
@@ -3082,10 +3078,10 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     {days} zile{days !== 1 ? '' : ''}, {hours} ore{hours !== 1 ? '' : ''}
                                 </span>
                             </div>
-                            
+
                             {/* Discount indicator */}
                             {discountPercent > 0 && (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="p-2.5 md:p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl"
@@ -3095,7 +3091,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                             <Check className="w-3 h-3 text-emerald-400" />
                                         </div>
                                         <span>
-                                            {discountPercent === 4 
+                                            {discountPercent === 4
                                                 ? 'Reducere de 4% pentru 8+ zile'
                                                 : 'Reducere de 2% pentru 4+ zile'
                                             }
@@ -3103,7 +3099,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     </div>
                                 </motion.div>
                             )}
-                            
+
                             <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-white/10">
                                 <div>
                                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Data preluării</p>
@@ -3138,7 +3134,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             <div>
                                 <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</label>
                                 {request.customerPhone ? (
-                                    <a 
+                                    <a
                                         href={`tel:${request.customerPhone.replace(/\s/g, '')}`}
                                         className="text-white font-medium text-sm md:text-base hover:text-emerald-400 transition-colors"
                                     >
@@ -3160,12 +3156,12 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                     {/* Rental Options */}
                     <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
                         <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6">Opțiuni de închiriere</h3>
-                        
+
                         {/* Parse options from request */}
                         {(() => {
                             const options = (request as any).options;
                             let parsedOptions: any = {};
-                            
+
                             if (options) {
                                 if (typeof options === 'string') {
                                     try {
@@ -3177,9 +3173,9 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     parsedOptions = options;
                                 }
                             }
-                            
+
                             const selectedOptions: Array<{ label: string; price: string; category: string }> = [];
-                            
+
                             // Pickup and Return
                             if (parsedOptions.pickupAtAddress) {
                                 selectedOptions.push({ label: 'Preluarea la adresă', price: 'Cost separat', category: 'pickup-return' });
@@ -3187,7 +3183,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             if (parsedOptions.returnAtAddress) {
                                 selectedOptions.push({ label: 'Returnarea la adresă', price: 'Cost separat', category: 'pickup-return' });
                             }
-                            
+
                             // Limits
                             if (parsedOptions.unlimitedKm) {
                                 selectedOptions.push({ label: 'Kilometraj nelimitat', price: '+50%', category: 'limits' });
@@ -3195,7 +3191,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             if (parsedOptions.speedLimitIncrease) {
                                 selectedOptions.push({ label: 'Creșterea limitei de viteză', price: '+20%', category: 'limits' });
                             }
-                            
+
                             // VIP Services
                             if (parsedOptions.personalDriver) {
                                 selectedOptions.push({ label: 'Șofer personal', price: '800 MDL/zi', category: 'vip' });
@@ -3203,12 +3199,12 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             if (parsedOptions.priorityService) {
                                 selectedOptions.push({ label: 'Priority Service', price: '1 000 MDL/zi', category: 'vip' });
                             }
-                            
+
                             // Insurance
                             if (parsedOptions.tireInsurance) {
                                 selectedOptions.push({ label: 'Asigurare anvelope & parbriz', price: '+20%', category: 'insurance' });
                             }
-                            
+
                             // Additional
                             if (parsedOptions.childSeat) {
                                 selectedOptions.push({ label: 'Scaun auto pentru copii', price: '100 MDL/zi', category: 'additional' });
@@ -3219,7 +3215,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             if (parsedOptions.roadsideAssistance) {
                                 selectedOptions.push({ label: 'Asistență rutieră', price: '500 MDL/zi', category: 'additional' });
                             }
-                            
+
                             if (selectedOptions.length === 0) {
                                 return (
                                     <div className="text-center py-6 md:py-8">
@@ -3227,7 +3223,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     </div>
                                 );
                             }
-                            
+
                             return (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3">
                                     {selectedOptions.map((option, index) => (
@@ -3239,11 +3235,10 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                                 <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></div>
                                                 <span className="text-white text-sm font-medium">{option.label}</span>
                                             </div>
-                                            <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                                                option.price.includes('%') 
-                                                    ? 'text-emerald-400 bg-emerald-400/10' 
-                                                    : 'text-gray-300 bg-white/5'
-                                            }`}>
+                                            <span className={`text-xs font-semibold px-2 py-1 rounded ${option.price.includes('%')
+                                                ? 'text-emerald-400 bg-emerald-400/10'
+                                                : 'text-gray-300 bg-white/5'
+                                                }`}>
                                                 {option.price}
                                             </span>
                                         </div>
@@ -3285,7 +3280,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     <span className="text-white font-medium">{Math.round(basePrice).toLocaleString()} MDL</span>
                                 </div>
                             </div>
-                            
+
                             {additionalCosts > 0 && (
                                 <>
                                     <div className="pt-2 md:pt-3 border-t border-white/10">
@@ -3355,7 +3350,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     </div>
                                 </>
                             )}
-                            
+
                             <div className="pt-2 md:pt-3 border-t border-white/10 flex items-center justify-between">
                                 <span className="text-white font-bold text-base md:text-lg">Total</span>
                                 <span className="text-white font-bold text-lg md:text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
@@ -3645,13 +3640,12 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                     <h2 className="text-xl font-bold text-white mb-4">Status</h2>
                     <div className="flex items-center gap-4">
                         <span
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold border backdrop-blur-xl ${
-                                request.status === 'PENDING'
-                                    ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                    : request.status === 'APPROVED'
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold border backdrop-blur-xl ${request.status === 'PENDING'
+                                ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                : request.status === 'APPROVED'
                                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                     : 'bg-red-500/20 text-red-300 border-red-500/50'
-                            }`}
+                                }`}
                         >
                             {request.status}
                         </span>
@@ -3782,7 +3776,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
 
-    const [formData, setFormData] = useState<Partial<OrderDisplay> & { 
+    const [formData, setFormData] = useState<Partial<OrderDisplay> & {
         firstName?: string;
         lastName?: string;
         age?: string;
@@ -3891,16 +3885,16 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         const endDate = new Date(formData.endDate);
         const startTime = formData.startTime || '09:00';
         const endTime = formData.endTime || '17:00';
-        
+
         const [startHour, startMin] = startTime.split(':').map(Number);
         const [endHour, endMin] = endTime.split(':').map(Number);
-        
+
         const startDateTime = new Date(startDate);
         startDateTime.setHours(startHour, startMin, 0, 0);
-        
+
         const endDateTime = new Date(endDate);
         endDateTime.setHours(endHour, endMin, 0, 0);
-        
+
         const diffTime = endDateTime.getTime() - startDateTime.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -3909,10 +3903,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         const hours = diffHours >= 0 ? diffHours : 0;
         const rentalDays = days;
         const totalDays = days + (hours / 24);
-        
+
         // Base price calculation (same as Calculator.tsx and Admin)
         let basePrice = 0;
-        
+
         if (rentalDays >= 8) {
             basePrice = selectedCar.price_per_day * 0.96 * rentalDays; // -4% discount
         } else if (rentalDays >= 4) {
@@ -3920,17 +3914,17 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         } else {
             basePrice = selectedCar.price_per_day * rentalDays;
         }
-        
+
         // Add hours portion
         if (hours > 0) {
             const hoursPrice = (hours / 24) * selectedCar.price_per_day;
             basePrice += hoursPrice;
         }
-        
+
         // Calculate additional costs from options
         let additionalCosts = 0;
         const baseCarPrice = selectedCar.price_per_day;
-        
+
         // Percentage-based options (calculated on totalDays)
         if (options.unlimitedKm) {
             additionalCosts += baseCarPrice * totalDays * 0.5; // 50%
@@ -3941,7 +3935,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         if (options.tireInsurance) {
             additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
         }
-        
+
         // Fixed daily costs
         if (options.personalDriver) {
             additionalCosts += 800 * rentalDays;
@@ -3958,7 +3952,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         if (options.roadsideAssistance) {
             additionalCosts += 500 * rentalDays;
         }
-        
+
         // Total price = base price + additional costs
         return Math.round(basePrice + additionalCosts);
     };
@@ -4027,16 +4021,16 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
             alert('Please fill in all required fields (First Name, Last Name, Age, Phone, Car, Dates)');
             return;
         }
-        
+
         // Combine firstName and lastName into customerName
         const customerName = `${formData.firstName} ${formData.lastName}`;
-        
+
         // Include country code in phone number
         const fullPhoneNumber = `${selectedCountryCode.code} ${formData.customerPhone}`.trim();
-        
+
         // Calculate total amount
         const totalAmount = calculateAmount();
-        
+
         // Prepare data with all fields including options
         const rentalData = {
             ...formData,
@@ -4049,7 +4043,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
             comment: formData.comment || undefined,
             amount: totalAmount,
         };
-        
+
         onSave(rentalData);
     };
 
@@ -4211,11 +4205,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         setShowPickupTime(false);
                                         setShowReturnTime(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.startDate 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startDate
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Calendar className="w-4 h-4" />
                                     <span>{formData.startDate ? formatDate(formData.startDate) : 'Data primirii'}</span>
@@ -4269,7 +4262,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             <div className="grid grid-cols-7 gap-1">
                                                 {generateCalendarDays(calendarMonth.pickup).map((day, index) => {
                                                     if (!day) return <div key={index}></div>;
-                                                    
+
                                                     const dayDate = new Date(day);
                                                     const dayString = day;
                                                     const isSelected = dayString === formData.startDate;
@@ -4278,15 +4271,13 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                                     return (
                                                         <div
                                                             key={index}
-                                                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                                                isPast ? 'text-gray-600 cursor-not-allowed' : 'text-white'
-                                                            } ${
-                                                                isSelected
+                                                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-600 cursor-not-allowed' : 'text-white'
+                                                                } ${isSelected
                                                                     ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
                                                                     : !isPast
                                                                         ? 'hover:bg-white/20'
                                                                         : ''
-                                                            }`}
+                                                                }`}
                                                             onClick={() => {
                                                                 if (!isPast) {
                                                                     setFormData(prev => ({ ...prev, startDate: day }));
@@ -4324,11 +4315,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         setShowPickupCalendar(false);
                                         setShowReturnCalendar(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.startTime 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startTime
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Clock className="w-4 h-4" />
                                     <span>{formData.startTime || '__ : __'}</span>
@@ -4356,11 +4346,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                                                 setShowReturnCalendar(true);
                                                             }, 100);
                                                         }}
-                                                        className={`px-3 py-2 text-xs rounded transition-colors ${
-                                                            formData.startTime === hour
-                                                                ? 'bg-red-500 text-white font-medium'
-                                                                : 'text-white hover:bg-white/20'
-                                                        }`}
+                                                        className={`px-3 py-2 text-xs rounded transition-colors ${formData.startTime === hour
+                                                            ? 'bg-red-500 text-white font-medium'
+                                                            : 'text-white hover:bg-white/20'
+                                                            }`}
                                                     >
                                                         {hour}
                                                     </button>
@@ -4382,11 +4371,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         setShowPickupTime(false);
                                         setShowReturnTime(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.endDate 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endDate
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Calendar className="w-4 h-4" />
                                     <span>{formData.endDate ? formatDate(formData.endDate) : 'Data returnării'}</span>
@@ -4440,7 +4428,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             <div className="grid grid-cols-7 gap-1">
                                                 {generateCalendarDays(calendarMonth.return).map((day, index) => {
                                                     if (!day) return <div key={index}></div>;
-                                                    
+
                                                     const dayDate = new Date(day);
                                                     const dayString = day;
                                                     const isSelected = dayString === formData.endDate;
@@ -4450,15 +4438,13 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                                     return (
                                                         <div
                                                             key={index}
-                                                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                                                isPast ? 'text-gray-600 cursor-not-allowed' : 'text-white'
-                                                            } ${
-                                                                isSelected
+                                                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-600 cursor-not-allowed' : 'text-white'
+                                                                } ${isSelected
                                                                     ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
                                                                     : !isPast
                                                                         ? 'hover:bg-white/20'
                                                                         : ''
-                                                            }`}
+                                                                }`}
                                                             onClick={() => {
                                                                 if (!isPast) {
                                                                     setFormData(prev => ({ ...prev, endDate: day }));
@@ -4491,11 +4477,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         setShowPickupCalendar(false);
                                         setShowReturnCalendar(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.endTime 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endTime
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Clock className="w-4 h-4" />
                                     <span>{formData.endTime || '__ : __'}</span>
@@ -4519,11 +4504,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                                             setFormData(prev => ({ ...prev, endTime: hour }));
                                                             setShowReturnTime(false);
                                                         }}
-                                                        className={`px-3 py-2 text-xs rounded transition-colors ${
-                                                            formData.endTime === hour
-                                                                ? 'bg-red-500 text-white font-medium'
-                                                                : 'text-white hover:bg-white/20'
-                                                        }`}
+                                                        className={`px-3 py-2 text-xs rounded transition-colors ${formData.endTime === hour
+                                                            ? 'bg-red-500 text-white font-medium'
+                                                            : 'text-white hover:bg-white/20'
+                                                            }`}
                                                     >
                                                         {hour}
                                                     </button>
@@ -4541,7 +4525,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                         <h3 className="text-lg font-bold text-white mb-4">
                             Opțiuni de închiriere
                         </h3>
-                        
+
                         {/* Pickup and Return */}
                         <div className="space-y-2 mb-5">
                             <h4 className="text-sm font-semibold text-gray-300 mb-3">Preluarea și returnarea automobilului</h4>
@@ -4553,11 +4537,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         onChange={(e) => setOptions(prev => ({ ...prev, pickupAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.pickupAtAddress
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.pickupAtAddress
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.pickupAtAddress && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <div>
@@ -4574,11 +4557,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         onChange={(e) => setOptions(prev => ({ ...prev, returnAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.returnAtAddress
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.returnAtAddress
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.returnAtAddress && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <div>
@@ -4601,11 +4583,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, unlimitedKm: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.unlimitedKm
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.unlimitedKm
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.unlimitedKm && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Kilometraj nelimitat</span>
@@ -4620,11 +4601,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, speedLimitIncrease: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.speedLimitIncrease
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.speedLimitIncrease
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.speedLimitIncrease && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Creșterea limitei de viteză</span>
@@ -4646,11 +4626,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, personalDriver: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.personalDriver
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.personalDriver
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.personalDriver && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Șofer personal</span>
@@ -4665,11 +4644,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, priorityService: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.priorityService
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.priorityService
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.priorityService && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Priority Service</span>
@@ -4691,11 +4669,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, tireInsurance: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.tireInsurance
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.tireInsurance
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.tireInsurance && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Asigurare anvelope & parbriz</span>
@@ -4717,11 +4694,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, childSeat: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.childSeat
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.childSeat
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.childSeat && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Scaun auto pentru copii</span>
@@ -4736,11 +4712,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, simCard: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.simCard
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.simCard
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.simCard && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Cartelă SIM cu internet</span>
@@ -4755,11 +4730,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             onChange={(e) => setOptions(prev => ({ ...prev, roadsideAssistance: e.target.checked }))}
                                             className="sr-only"
                                         />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            options.roadsideAssistance
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
+                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.roadsideAssistance
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                            }`}>
                                             {options.roadsideAssistance && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="font-medium text-white text-sm">Asistență rutieră</span>
@@ -4789,33 +4763,33 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                             {formData.carId && (() => {
                                 const selectedCar = cars.find(c => c.id.toString() === formData.carId);
                                 if (!selectedCar) return null;
-                                
+
                                 const startDate = new Date(formData.startDate || '');
                                 const endDate = new Date(formData.endDate || '');
                                 const startTime = formData.startTime || '09:00';
                                 const endTime = formData.endTime || '17:00';
-                                
+
                                 const [startHour, startMin] = startTime.split(':').map(Number);
                                 const [endHour, endMin] = endTime.split(':').map(Number);
-                                
+
                                 const startDateTime = new Date(startDate);
                                 startDateTime.setHours(startHour, startMin, 0, 0);
-                                
+
                                 const endDateTime = new Date(endDate);
                                 endDateTime.setHours(endHour, endMin, 0, 0);
-                                
+
                                 const diffTime = endDateTime.getTime() - startDateTime.getTime();
                                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                 const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                
+
                                 const days = diffDays;
                                 const hours = diffHours >= 0 ? diffHours : 0;
                                 const rentalDays = days;
                                 const totalDays = days + (hours / 24);
-                                
+
                                 let basePrice = 0;
                                 let discountPercent = 0;
-                                
+
                                 if (rentalDays >= 8) {
                                     discountPercent = 4;
                                     basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
@@ -4825,15 +4799,15 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                 } else {
                                     basePrice = selectedCar.price_per_day * rentalDays;
                                 }
-                                
+
                                 if (hours > 0) {
                                     const hoursPrice = (hours / 24) * selectedCar.price_per_day;
                                     basePrice += hoursPrice;
                                 }
-                                
+
                                 let additionalCosts = 0;
                                 const baseCarPrice = selectedCar.price_per_day;
-                                
+
                                 if (options.unlimitedKm) {
                                     additionalCosts += baseCarPrice * totalDays * 0.5;
                                 }
@@ -4858,9 +4832,9 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                 if (options.roadsideAssistance) {
                                     additionalCosts += 500 * rentalDays;
                                 }
-                                
+
                                 const totalPrice = basePrice + additionalCosts;
-                                
+
                                 return (
                                     <>
                                         <div className="flex items-center justify-between text-sm">
@@ -4871,7 +4845,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             <span className="text-gray-300">Număr zile</span>
                                             <span className="text-white font-medium">{rentalDays}</span>
 
-                                            
+
                                         </div>
                                         {discountPercent > 0 && (
                                             <div className="flex items-center justify-between text-sm text-emerald-400">
@@ -4885,7 +4859,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                                 <span className="text-white font-medium">{Math.round(basePrice).toLocaleString()} MDL</span>
                                             </div>
                                         </div>
-                                        
+
                                         {additionalCosts > 0 && (
                                             <>
                                                 <div className="pt-3 border-t border-white/10">
@@ -4955,7 +4929,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                                 </div>
                                             </>
                                         )}
-                                        
+
                                         <div className="pt-3 border-t border-white/10 flex items-center justify-between">
                                             <span className="text-white font-bold text-lg">Total</span>
                                             <span className="text-white font-bold text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
@@ -5023,7 +4997,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
 
     const phoneData = parsePhoneNumber(request.customerPhone);
     const initialCountryCode = COUNTRY_CODES.find(c => c.code === phoneData.code) || COUNTRY_CODES[0];
-    
+
     // Parse customer name into first and last name
     const nameParts = (request.customerName || '').split(' ');
     const initialFirstName = request.customerFirstName || nameParts[0] || '';
@@ -5043,7 +5017,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         simCard: false,
         roadsideAssistance: false
     };
-    
+
     if (requestOptions) {
         try {
             const parsed = typeof requestOptions === 'string' ? JSON.parse(requestOptions) : requestOptions;
@@ -5053,7 +5027,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         }
     }
 
-    const [formData, setFormData] = useState<Partial<OrderDisplay> & { 
+    const [formData, setFormData] = useState<Partial<OrderDisplay> & {
         firstName?: string;
         lastName?: string;
         age?: string;
@@ -5089,7 +5063,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
     const [showReturnCalendar, setShowReturnCalendar] = useState(false);
     const [showPickupTime, setShowPickupTime] = useState(false);
     const [showReturnTime, setShowReturnTime] = useState(false);
-    
+
     const startDateObj = formData.startDate ? new Date(formData.startDate) : new Date();
     const endDateObj = formData.endDate ? new Date(formData.endDate) : new Date();
     const [calendarMonth, setCalendarMonth] = useState<{ pickup: Date; return: Date }>({
@@ -5196,25 +5170,25 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         const endDate = new Date(formData.endDate);
         const startTime = formData.startTime || '09:00';
         const endTime = formData.endTime || '17:00';
-        
+
         const [startHour, startMin] = startTime.split(':').map(Number);
         const [endHour, endMin] = endTime.split(':').map(Number);
-        
+
         const startDateTime = new Date(startDate);
         startDateTime.setHours(startHour, startMin, 0, 0);
-        
+
         const endDateTime = new Date(endDate);
         endDateTime.setHours(endHour, endMin, 0, 0);
-        
+
         const diffTime = endDateTime.getTime() - startDateTime.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        
+
         const days = diffDays;
         const hours = diffHours >= 0 ? diffHours : 0;
         const rentalDays = days;
         const totalDays = days + (hours / 24);
-        
+
         let basePrice = 0;
         if (rentalDays >= 8) {
             basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
@@ -5223,15 +5197,15 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         } else {
             basePrice = selectedCar.price_per_day * rentalDays;
         }
-        
+
         if (hours > 0) {
             const hoursPrice = (hours / 24) * selectedCar.price_per_day;
             basePrice += hoursPrice;
         }
-        
+
         const baseCarPrice = selectedCar.price_per_day;
         let additionalCosts = 0;
-        
+
         if (options.unlimitedKm) {
             additionalCosts += baseCarPrice * totalDays * 0.5;
         }
@@ -5256,7 +5230,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         if (options.roadsideAssistance) {
             additionalCosts += 500 * rentalDays;
         }
-        
+
         return Math.round(basePrice + additionalCosts);
     };
 
@@ -5268,10 +5242,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
             alert('Please fill in all required fields');
             return;
         }
-        
+
         const customerName = `${formData.firstName} ${formData.lastName}`;
         const fullPhoneNumber = `${selectedCountryCode.code} ${formData.customerPhone}`.trim();
-        
+
         onSave({
             car_id: formData.carId,
             start_date: formData.startDate,
@@ -5425,11 +5399,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         setShowPickupTime(false);
                                         setShowReturnTime(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.startDate 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startDate
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Calendar className="w-4 h-4" />
                                     <span>{formData.startDate ? formatDate(formData.startDate) : 'Data preluării'}</span>
@@ -5489,15 +5462,13 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                                            isPast ? 'text-gray-500 cursor-not-allowed' : 'text-white'
-                                                        } ${
-                                                            isSelected
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-500 cursor-not-allowed' : 'text-white'
+                                                            } ${isSelected
                                                                 ? 'bg-red-500 text-white font-medium'
                                                                 : !isPast
-                                                                ? 'hover:bg-white/20'
-                                                                : ''
-                                                        }`}
+                                                                    ? 'hover:bg-white/20'
+                                                                    : ''
+                                                            }`}
                                                         onClick={() => {
                                                             if (!isPast) {
                                                                 setFormData(prev => ({ ...prev, startDate: day }));
@@ -5528,11 +5499,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         setShowPickupCalendar(false);
                                         setShowReturnCalendar(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.startTime 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startTime
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Clock className="w-4 h-4" />
                                     <span>{formData.startTime || '__ : __'}</span>
@@ -5558,11 +5528,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                                             setShowReturnCalendar(true);
                                                         }, 100);
                                                     }}
-                                                    className={`px-3 py-2 text-xs rounded transition-colors ${
-                                                        formData.startTime === hour
-                                                            ? 'bg-red-500 text-white font-medium'
-                                                            : 'text-white hover:bg-white/20'
-                                                    }`}
+                                                    className={`px-3 py-2 text-xs rounded transition-colors ${formData.startTime === hour
+                                                        ? 'bg-red-500 text-white font-medium'
+                                                        : 'text-white hover:bg-white/20'
+                                                        }`}
                                                 >
                                                     {hour}
                                                 </button>
@@ -5583,11 +5552,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         setShowPickupTime(false);
                                         setShowReturnTime(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.endDate 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endDate
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Calendar className="w-4 h-4" />
                                     <span>{formData.endDate ? formatDate(formData.endDate) : 'Data returnării'}</span>
@@ -5648,15 +5616,13 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                                            isPast ? 'text-gray-500 cursor-not-allowed' : 'text-white'
-                                                        } ${
-                                                            isSelected
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-500 cursor-not-allowed' : 'text-white'
+                                                            } ${isSelected
                                                                 ? 'bg-red-500 text-white font-medium'
                                                                 : !isPast
-                                                                ? 'hover:bg-white/20'
-                                                                : ''
-                                                        }`}
+                                                                    ? 'hover:bg-white/20'
+                                                                    : ''
+                                                            }`}
                                                         onClick={() => {
                                                             if (!isPast) {
                                                                 setFormData(prev => ({ ...prev, endDate: day }));
@@ -5687,11 +5653,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         setShowPickupCalendar(false);
                                         setShowReturnCalendar(false);
                                     }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                        formData.endTime 
-                                            ? 'border-white/30 text-white hover:border-white/50 bg-white/5' 
-                                            : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                    }`}
+                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endTime
+                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
+                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
+                                        }`}
                                 >
                                     <Clock className="w-4 h-4" />
                                     <span>{formData.endTime || '__ : __'}</span>
@@ -5714,11 +5679,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                                         setFormData(prev => ({ ...prev, endTime: hour }));
                                                         setShowReturnTime(false);
                                                     }}
-                                                    className={`px-3 py-2 text-xs rounded transition-colors ${
-                                                        formData.endTime === hour
-                                                            ? 'bg-red-500 text-white font-medium'
-                                                            : 'text-white hover:bg-white/20'
-                                                    }`}
+                                                    className={`px-3 py-2 text-xs rounded transition-colors ${formData.endTime === hour
+                                                        ? 'bg-red-500 text-white font-medium'
+                                                        : 'text-white hover:bg-white/20'
+                                                        }`}
                                                 >
                                                     {hour}
                                                 </button>
@@ -5759,7 +5723,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                     {/* Rental Options - Same as CreateRentalModal */}
                     <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                         <h3 className="text-lg font-bold text-white mb-4">Opțiuni de închiriere</h3>
-                        
+
                         {/* Pickup and Return */}
                         <div className="space-y-2 mb-5">
                             <h4 className="text-sm font-semibold text-gray-300 mb-3">Preluarea și returnarea automobilului</h4>
@@ -5771,11 +5735,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, pickupAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.pickupAtAddress
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.pickupAtAddress
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.pickupAtAddress && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <div>
@@ -5792,11 +5755,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, returnAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.returnAtAddress
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.returnAtAddress
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.returnAtAddress && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <div>
@@ -5818,11 +5780,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, unlimitedKm: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.unlimitedKm
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.unlimitedKm
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.unlimitedKm && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Kilometraj nelimitat</span>
@@ -5837,11 +5798,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, speedLimitIncrease: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.speedLimitIncrease
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.speedLimitIncrease
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.speedLimitIncrease && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Creșterea limitei de viteză</span>
@@ -5861,11 +5821,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, personalDriver: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.personalDriver
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.personalDriver
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.personalDriver && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Șofer personal</span>
@@ -5880,11 +5839,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, priorityService: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.priorityService
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.priorityService
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.priorityService && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Priority Service</span>
@@ -5904,11 +5862,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, tireInsurance: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.tireInsurance
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.tireInsurance
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.tireInsurance && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Asigurare anvelope & parbriz</span>
@@ -5928,11 +5885,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, childSeat: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.childSeat
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.childSeat
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.childSeat && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Scaun auto pentru copii</span>
@@ -5947,11 +5903,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, simCard: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.simCard
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.simCard
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.simCard && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Cartelă SIM cu internet</span>
@@ -5966,11 +5921,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         onChange={(e) => setOptions(prev => ({ ...prev, roadsideAssistance: e.target.checked }))}
                                         className="sr-only"
                                     />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        options.roadsideAssistance
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                    }`}>
+                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.roadsideAssistance
+                                        ? 'bg-red-500 border-red-500'
+                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                        }`}>
                                         {options.roadsideAssistance && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className="font-medium text-white text-sm">Asistență rutieră</span>
@@ -5999,33 +5953,33 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                             {formData.carId && (() => {
                                 const selectedCar = cars.find(c => c.id.toString() === formData.carId);
                                 if (!selectedCar) return null;
-                                
+
                                 const startDate = new Date(formData.startDate || '');
                                 const endDate = new Date(formData.endDate || '');
                                 const startTime = formData.startTime || '09:00';
                                 const endTime = formData.endTime || '17:00';
-                                
+
                                 const [startHour, startMin] = startTime.split(':').map(Number);
                                 const [endHour, endMin] = endTime.split(':').map(Number);
-                                
+
                                 const startDateTime = new Date(startDate);
                                 startDateTime.setHours(startHour, startMin, 0, 0);
-                                
+
                                 const endDateTime = new Date(endDate);
                                 endDateTime.setHours(endHour, endMin, 0, 0);
-                                
+
                                 const diffTime = endDateTime.getTime() - startDateTime.getTime();
                                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                 const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                
+
                                 const days = diffDays;
                                 const hours = diffHours >= 0 ? diffHours : 0;
                                 const rentalDays = days;
                                 const totalDays = days + (hours / 24);
-                                
+
                                 let basePrice = 0;
                                 let discountPercent = 0;
-                                
+
                                 if (rentalDays >= 8) {
                                     discountPercent = 4;
                                     basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
@@ -6035,15 +5989,15 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                 } else {
                                     basePrice = selectedCar.price_per_day * rentalDays;
                                 }
-                                
+
                                 if (hours > 0) {
                                     const hoursPrice = (hours / 24) * selectedCar.price_per_day;
                                     basePrice += hoursPrice;
                                 }
-                                
+
                                 let additionalCosts = 0;
                                 const baseCarPrice = selectedCar.price_per_day;
-                                
+
                                 if (options.unlimitedKm) {
                                     additionalCosts += baseCarPrice * totalDays * 0.5;
                                 }
@@ -6068,9 +6022,9 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                 if (options.roadsideAssistance) {
                                     additionalCosts += 500 * rentalDays;
                                 }
-                                
+
                                 const totalPrice = basePrice + additionalCosts;
-                                
+
                                 return (
                                     <>
                                         <div className="flex items-center justify-between text-sm">
@@ -6093,7 +6047,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                                 <span className="text-white font-medium">{Math.round(basePrice).toLocaleString()} MDL</span>
                                             </div>
                                         </div>
-                                        
+
                                         {additionalCosts > 0 && (
                                             <>
                                                 <div className="pt-3 border-t border-white/10">
@@ -6163,7 +6117,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                                 </div>
                                             </>
                                         )}
-                                        
+
                                         <div className="pt-3 border-t border-white/10 flex items-center justify-between">
                                             <span className="text-white font-bold text-lg">Total</span>
                                             <span className="text-white font-bold text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
@@ -6460,11 +6414,10 @@ export const Admin: React.FC = () => {
                                             <div className="relative">
                                                 <Icon className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-red-400' : 'text-gray-400 group-hover:text-white'}`} />
                                                 {showBadge && (
-                                                    <span className={`lg:hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1 ${
-                                                        isActive 
-                                                            ? 'bg-red-500 text-white' 
-                                                            : 'bg-yellow-500 text-gray-900'
-                                                    }`}>
+                                                    <span className={`lg:hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1 ${isActive
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-yellow-500 text-gray-900'
+                                                        }`}>
                                                         {totalRequests > 99 ? '99+' : totalRequests}
                                                     </span>
                                                 )}
@@ -6472,11 +6425,10 @@ export const Admin: React.FC = () => {
                                             <span className="text-xs lg:text-sm flex items-center justify-between w-full">
                                                 <span>{item.label}</span>
                                                 {showBadge && (
-                                                    <span className={`hidden lg:flex ml-auto min-w-[20px] h-5 items-center justify-center rounded-full text-[10px] font-bold px-1.5 ${
-                                                        isActive 
-                                                            ? 'bg-red-500 text-white' 
-                                                            : 'bg-yellow-500 text-gray-900'
-                                                    }`}>
+                                                    <span className={`hidden lg:flex ml-auto min-w-[20px] h-5 items-center justify-center rounded-full text-[10px] font-bold px-1.5 ${isActive
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-yellow-500 text-gray-900'
+                                                        }`}>
                                                         {totalRequests > 99 ? '99+' : totalRequests}
                                                     </span>
                                                 )}
@@ -6494,20 +6446,20 @@ export const Admin: React.FC = () => {
                                 <div className="flex items-center space-x-3 px-1 pb-4">
                                     <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
                                         <span className="text-white font-semibold text-sm">
-                                            {userProfile?.first_name?.[0]?.toUpperCase() || 
-                                             userProfile?.last_name?.[0]?.toUpperCase() || 
-                                             user?.email?.[0]?.toUpperCase() || 
-                                             'U'}
+                                            {userProfile?.first_name?.[0]?.toUpperCase() ||
+                                                userProfile?.last_name?.[0]?.toUpperCase() ||
+                                                user?.email?.[0]?.toUpperCase() ||
+                                                'U'}
                                         </span>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-semibold text-white truncate">
                                             {userProfile?.first_name && userProfile?.last_name
                                                 ? `${userProfile.first_name} ${userProfile.last_name}`
-                                                : userProfile?.first_name || 
-                                                  userProfile?.last_name || 
-                                                  user?.email?.split('@')[0] || 
-                                                  'User'}
+                                                : userProfile?.first_name ||
+                                                userProfile?.last_name ||
+                                                user?.email?.split('@')[0] ||
+                                                'User'}
                                         </p>
                                         <p className="text-xs text-gray-300 truncate">
                                             {userProfile?.email || user?.email || 'No email'}
@@ -6624,7 +6576,7 @@ export const Admin: React.FC = () => {
                     </motion.div>
                 </motion.div>,
 
-                
+
                 document.body
             )}
         </>
