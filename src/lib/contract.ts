@@ -368,7 +368,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     // Vehicle details table - ensure all values are properly extracted
     const carMake = data.car?.make || '';
     const carModel = data.car?.model || '';
-    const carColor = (data as any).carColor || (data.car as any)?.color || data.vehicleDetails?.color || '';
+    const carColor = (data as any).carColor || (data.car as any)?.color || '';
     const registrationNumber = data.vehicleDetails?.registrationNumber || (data.car as any)?.license || '';
     const mileage = data.vehicleDetails?.mileage || (data.car as any)?.kilometers || data.car?.mileage || 0;
     const carYear = data.car?.year || 0;
@@ -1946,6 +1946,8 @@ export const createContractDataFromOrder = (
     carValue?: number;
     carColor?: string;
     carFuelType?: string;
+    notes?: string;
+    specialRequests?: string;
   }
 ): ContractData => {
   const startDate = new Date(order.pickupDate);
@@ -2117,7 +2119,7 @@ export const generateContractFromOrder = async (
     // Check if rental already exists
     const { data: existingRental } = await supabase
       .from('Rentals')
-      .select('id')
+      .select('id, request_id')
       .eq('id', order.id)
       .single();
 
@@ -2143,25 +2145,34 @@ export const generateContractFromOrder = async (
     if (existingRental) {
       // Update existing rental
       rentalId = existingRental.id;
+      const updateData: any = {
+        rental_status: 'CONTRACT',
+        subtotal: subtotal,
+        taxes_fees: taxesFees,
+        total_amount: total,
+        payment_method: additionalData?.paymentMethod || null,
+        notes: additionalData?.notes || null,
+        special_requests: additionalData?.specialRequests || null,
+        customer_name: customerName || null,
+        customer_email: customerEmail || null,
+        customer_phone: customerPhone || null,
+        customer_first_name: customerFirstName || null,
+        customer_last_name: customerLastName || null,
+        car_make: carMake || null,
+        car_model: carModel || null,
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Update request_id if it exists in the order and is not already set
+      if ((order as any).request_id && !(existingRental as any).request_id) {
+        updateData.request_id = typeof (order as any).request_id === 'string' 
+          ? parseInt((order as any).request_id) 
+          : (order as any).request_id;
+      }
+      
       await supabase
         .from('Rentals')
-        .update({
-          rental_status: 'CONTRACT',
-          subtotal: subtotal,
-          taxes_fees: taxesFees,
-          total_amount: total,
-          payment_method: additionalData?.paymentMethod || null,
-          notes: additionalData?.notes || null,
-          special_requests: additionalData?.specialRequests || null,
-          customer_name: customerName || null,
-          customer_email: customerEmail || null,
-          customer_phone: customerPhone || null,
-          customer_first_name: customerFirstName || null,
-          customer_last_name: customerLastName || null,
-          car_make: carMake || null,
-          car_model: carModel || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', rentalId);
     } else {
       // Create new rental with CONTRACT status
@@ -2187,6 +2198,7 @@ export const generateContractFromOrder = async (
           customerPhone: customerPhone,
           customerFirstName: customerFirstName,
           customerLastName: customerLastName,
+          requestId: (order as any).request_id, // Pass request_id if it exists
         }
       );
       

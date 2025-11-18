@@ -12,6 +12,7 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchCars } from '../../../lib/cars';
 import { Car } from '../../../types';
 import { useNotification } from '../../../components/ui/NotificationToaster';
+import { useTranslation } from 'react-i18next';
 
 
 // Order Form Modal Component
@@ -285,6 +286,7 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
 
 
 export const OrdersViewSection: React.FC = () => {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const initialSearch = searchParams.get('search') || '';
     const { showSuccess, showError } = useNotification();
@@ -514,7 +516,7 @@ export const OrdersViewSection: React.FC = () => {
                     transition={{ duration: 0.4 }}
                 >
                     <OrdersTable 
-                        title="All Orders" 
+                        title={t('admin.orders.allOrders')} 
                         orders={orders}
                         loading={false}
                         onOrderClick={handleOrderClick} 
@@ -536,7 +538,6 @@ export const OrdersViewSection: React.FC = () => {
                     >
                         <SalesChartCard
                             totalSales={revenueStats.totalRevenue}
-                            change="↑ 3.2% vs last 30 days"
                             data={chartData}
                         />
                     </motion.div>
@@ -550,38 +551,40 @@ export const OrdersViewSection: React.FC = () => {
                     >
                         <div>
                             <div className="mb-6">
-                                <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">Revenue</p>
+                                <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">{t('admin.orders.revenue')}</p>
                                 <h3 className="text-3xl md:text-4xl font-bold text-white mb-2">
                                     {revenueStats.totalRevenue.toFixed(2)} MDL
                                 </h3>
-                                <p className="text-sm text-emerald-400 font-semibold">↑ 3.2% vs last 30 days</p>
+                                <p className="text-sm text-emerald-400 font-semibold">
+                                    {revenueStats.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(revenueStats.revenueGrowth).toFixed(1)}% {t('admin.orders.vsLast30Days')}
+                                </p>
                             </div>
 
                             <div className="space-y-4">
                                 {/* Last Month Comparison */}
                                 <div>
-                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">Last Month Comparison</h4>
+                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">{t('admin.orders.lastMonthComparison')}</h4>
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">Last Month Revenue</span>
+                                            <span className="text-sm text-gray-300">{t('admin.orders.lastMonthRevenue')}</span>
                                             <span className="text-white font-semibold">
                                                 {revenueStats.lastMonthRevenue.toFixed(2)} MDL
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">Growth</span>
+                                            <span className="text-sm text-gray-300">{t('admin.orders.growth')}</span>
                                             <span className={`font-semibold ${revenueStats.revenueGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                                 {revenueStats.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(revenueStats.revenueGrowth).toFixed(1)}%
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">Avg Daily (This Month)</span>
+                                            <span className="text-sm text-gray-300">{t('admin.orders.avgDailyThisMonth')}</span>
                                             <span className="text-white font-semibold">
                                                 {revenueStats.avgDailyRevenue.toFixed(2)} MDL
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">Avg Daily (Last Month)</span>
+                                            <span className="text-sm text-gray-300">{t('admin.orders.avgDailyLastMonth')}</span>
                                             <span className="text-white font-semibold">
                                                 {revenueStats.avgDailyRevenueLastMonth.toFixed(2)} MDL
                                             </span>
@@ -592,11 +595,11 @@ export const OrdersViewSection: React.FC = () => {
                                 {/* Best Performing Day */}
                                 {revenueStats.bestDay && (
                                     <div className="border-t border-white/10 pt-4">
-                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">Best Performing Day</h4>
+                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">{t('admin.orders.bestPerformingDay')}</h4>
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-400">
-                                                    {new Date(revenueStats.bestDay).toLocaleDateString('en-US', {
+                                                    {new Date(revenueStats.bestDay).toLocaleDateString('ro-RO', {
                                                         month: 'short',
                                                         day: 'numeric',
                                                         year: 'numeric'
@@ -612,10 +615,10 @@ export const OrdersViewSection: React.FC = () => {
 
                                 {/* Key Metrics */}
                                 <div className="border-t border-white/10 pt-4">
-                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">Key Metrics</h4>
+                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">{t('admin.orders.keyMetrics')}</h4>
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">Total Orders</span>
+                                            <span className="text-sm text-gray-300">{t('admin.orders.totalOrders')}</span>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-white font-semibold">{revenueStats.totalOrders}</span>
                                                 {revenueStats.orderGrowth !== 0 && (

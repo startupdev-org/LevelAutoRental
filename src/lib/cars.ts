@@ -9,6 +9,7 @@ interface CarRow {
   name: string | null;
   year: number | null;
   price_per_day: number;
+  discount_percentage?: number | null;
   status: string | null;
   body: string | null;
   transmission: string | null;
@@ -39,6 +40,7 @@ const mapCarRowToCar = (row: CarRow): Car & { name?: string; color?: string; lic
     name: row.name || undefined,
     year: row.year || new Date().getFullYear(),
     price_per_day: row.price_per_day,
+    discount_percentage: row.discount_percentage || undefined,
     category: (row.category as 'suv' | 'sports' | 'luxury') || undefined,
     image_url: row.image_url || undefined,
     photo_gallery: row.photo_gallery || undefined,
@@ -118,6 +120,7 @@ export const createCar = async (carData: Partial<Car>): Promise<Car | null> => {
       name: (carData as any).name || null,
       year: carData.year || new Date().getFullYear(),
       price_per_day: carData.price_per_day || 0,
+      discount_percentage: carData.discount_percentage !== undefined ? carData.discount_percentage : null,
       status: carData.status || 'available',
       body: carData.body || null,
       transmission: carData.transmission || null,
@@ -165,6 +168,7 @@ export const updateCar = async (id: number, carData: Partial<Car>): Promise<Car 
     if ((carData as any).name !== undefined) updateData.name = (carData as any).name;
     if (carData.year !== undefined) updateData.year = carData.year;
     if (carData.price_per_day !== undefined) updateData.price_per_day = carData.price_per_day;
+    if (carData.discount_percentage !== undefined) updateData.discount_percentage = carData.discount_percentage;
     if (carData.status !== undefined) updateData.status = carData.status;
     if (carData.body !== undefined) updateData.body = carData.body;
     if (carData.transmission !== undefined) updateData.transmission = carData.transmission;

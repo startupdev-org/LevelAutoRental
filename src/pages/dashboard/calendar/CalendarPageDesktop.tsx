@@ -1,9 +1,10 @@
 import React from "react";
 import { format, isSameMonth } from "date-fns";
-import { cars } from "../../../data/cars";
+import { Car } from "../../../types";
 import { motion } from "framer-motion";
 import { User, Clock, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { OrderDisplay } from "../../../lib/orders";
+import { useTranslation } from 'react-i18next';
 
 interface CalendarPageDesktopProps {
     currentMonth: Date;
@@ -28,6 +29,7 @@ interface CalendarPageDesktopProps {
     handleSort: (field: 'time' | 'customer' | 'car' | 'status') => void;
     sortOrders: (orders: OrderDisplay[], isPickup: boolean) => OrderDisplay[];
     clearSort: () => void;
+    cars: Car[];
 }
 
 export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
@@ -53,7 +55,9 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
     handleSort,
     sortOrders,
     clearSort,
+    cars,
 }) => {
+    const { t } = useTranslation();
     const sortedPickups = sortOrders(selectedDayPickups, true);
     const sortedReturns = sortOrders(selectedDayReturns, false);
     return (
@@ -77,7 +81,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                             </svg>
                         </button>
                         <div className="text-sm font-medium text-white">
-                            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            {currentMonth.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                         </div>
                         <button
                             onClick={nextMonth}
@@ -91,8 +95,8 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
 
                     {/* Weekday Header */}
                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, i) => (
-                            <div key={day} className={`text-gray-400 font-medium ${i === 0 || i === 6 ? 'text-red-400' : ''}`}>
+                        {['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'].map((day, i) => (
+                            <div key={day} className={`text-gray-400 font-medium ${i === 5 || i === 6 ? 'text-red-400' : ''}`}>
                                 {day}
                             </div>
                         ))}
@@ -182,13 +186,13 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                 >
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-white">
-                            {displayDateObj.toLocaleDateString('en-US', { 
+                            {displayDateObj.toLocaleDateString('ro-RO', { 
                                 weekday: 'long', 
                                 year: 'numeric', 
                                 month: 'long', 
                                 day: 'numeric' 
                             })}
-                            {!selectedDate && <span className="ml-2 text-sm text-gray-400">(Today)</span>}
+                            {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t('admin.calendar.today')})</span>}
                         </h3>
                         {selectedDate && (
                             <button
@@ -205,7 +209,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                     {/* Pickups Section */}
                     {sortedPickups.length > 0 && (
                         <div className="mb-6">
-                            <h4 className="text-base font-semibold text-yellow-300 mb-4 uppercase tracking-wide">Pickups ({sortedPickups.length})</h4>
+                            <h4 className="text-base font-semibold text-yellow-300 mb-4 uppercase tracking-wide">{t('admin.calendar.pickups')} ({sortedPickups.length})</h4>
                             <div className="space-y-4">
                                 {sortedPickups.map((order) => {
                                     const car = cars.find(c => c.id.toString() === order.carId.toString());
@@ -232,7 +236,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                                                     </div>
                                                     <div>
                                                         <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                        <div className="text-gray-400 text-xs">Rental #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
                                                     </div>
                                                 </div>
                                                 {(() => {
@@ -264,7 +268,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                     {/* Returns Section */}
                     {sortedReturns.length > 0 && (
                         <div className="mb-6">
-                            <h4 className="text-base font-semibold text-blue-300 mb-4 uppercase tracking-wide">Returns ({sortedReturns.length})</h4>
+                            <h4 className="text-base font-semibold text-blue-300 mb-4 uppercase tracking-wide">{t('admin.calendar.returns')} ({sortedReturns.length})</h4>
                             <div className="space-y-4">
                                 {sortedReturns.map((order) => {
                                     const car = cars.find(c => c.id.toString() === order.carId.toString());
@@ -291,7 +295,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                                                     </div>
                                                     <div>
                                                         <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                        <div className="text-gray-400 text-xs">Rental #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
                                                     </div>
                                                 </div>
                                                 {(() => {

@@ -6,6 +6,7 @@ import { OrderDisplay } from '../../lib/orders';
 import { Car } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
 import { useNotification } from '../ui/NotificationToaster';
+import { useTranslation } from 'react-i18next';
 
 interface ContractCreationModalProps {
     isOpen: boolean;
@@ -30,6 +31,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
     orderNumber,
     onContractCreated
 }) => {
+    const { t } = useTranslation();
     const { showSuccess, showError } = useNotification();
     const [isGenerating, setIsGenerating] = useState(false);
     
@@ -193,7 +195,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                             <div>
                                 <h2 className="text-xl sm:text-2xl font-bold text-white">Create Contract</h2>
                                 <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                                    Order #{orderNumber ? orderNumber.toString().padStart(4, '0') : 'N/A'}
+                                    {t('admin.orders.orderNumber')}{orderNumber ? orderNumber.toString().padStart(4, '0') : 'N/A'}
                                 </p>
                             </div>
                             <button
