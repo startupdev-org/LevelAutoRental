@@ -130,9 +130,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             return;
         }
 
-        // const { success: updated, error: updateError } = await changeUserPassword(passwordForm.newPassword);
-        const updated = true;
-        const updateError = null;
+        const { success: updated, error: updateError } = await changeUserPassword(passwordForm.newPassword);
 
         if (updated) {
             setSuccess('Password updated successfully!');
@@ -164,11 +162,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             initial={{ opacity: 0, y: -10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-center gap-2 text-red-700 text-sm"
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="mb-4 p-4 bg-gradient-to-r from-red-500/20 to-rose-500/20 backdrop-blur-sm border border-red-500/30 rounded-xl shadow-lg shadow-red-500/10"
                         >
-                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                            <span>{error}</span>
+                            <div className="flex items-center gap-3">
+                                <motion.div
+                                    initial={{ scale: 0, rotate: -180 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                                    className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500 flex items-center justify-center shadow-md"
+                                >
+                                    <AlertCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
+                                </motion.div>
+                                <div className="flex-1">
+                                    <p className="text-red-100 font-medium text-sm leading-tight">
+                                        {error}
+                                    </p>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
