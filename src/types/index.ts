@@ -57,13 +57,18 @@ export interface Feature {
 
 export interface User {
   id: string;
+
+  // profile fields
   avatar?: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   phone_number?: string;
-  email: string;
-  role: string;
-};
+  role?: string | null;
+
+  // auth field
+  email?: string | null;
+}
+
 
 export interface Orders {
   id: number,

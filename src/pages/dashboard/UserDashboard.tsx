@@ -30,10 +30,11 @@ import { UserDashboardSidebar } from '../../components/dashboard/sidebar/UserDas
 import CalendarPage from './calendar/CalendarPage';
 
 import { orders } from '../../data/index'
-import { UserOrdersSection } from './user/orders/UserOrdersSection';
+import { UserOrdersSection } from './user-dashboard/orders/UserOrdersSection';
 
-import { CarsView } from './user/cars/UserCarPage'
+import { CarsView } from './user-dashboard/cars/UserCarPage'
 import ProfileTab from './profile/UserProfile';
+import { SettingsTab } from './user-dashboard/settings/UserSettings';
 
 interface Booking {
   id: string;
@@ -89,9 +90,6 @@ export const UserDashboard: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
 
   const handleNotificationToggle = (setting: keyof typeof notificationSettings) => {
     setNotificationSettings(prev => ({
@@ -142,7 +140,7 @@ export const UserDashboard: React.FC = () => {
       const timeoutId = setTimeout(() => {
         navigate('/auth/login', { replace: true });
       }, 100);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [user, navigate, loading]);
@@ -371,114 +369,15 @@ export const UserDashboard: React.FC = () => {
 
                     {/* Settings Tab */}
                     {activeTab === 'settings' && (
-                      <motion.div
-                        key="settings"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <h2 className="text-4xl font-bold text-white">{t('dashboard.settings.title')}</h2>
-
-                        {/* Password Change */}
-                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                          <h3 className="text-xl font-bold mb-4">{t('dashboard.settings.changePassword')}</h3>
-                          <form onSubmit={handlePasswordChange} className="space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.settings.currentPassword')}</label>
-                              <input
-                                type="password"
-                                value={passwordForm.currentPassword}
-                                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
-                                placeholder={t('dashboard.settings.enterCurrentPassword')}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.settings.newPassword')}</label>
-                              <input
-                                type="password"
-                                value={passwordForm.newPassword}
-                                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
-                                placeholder={t('dashboard.settings.enterNewPassword')}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.settings.confirmNewPassword')}</label>
-                              <input
-                                type="password"
-                                value={passwordForm.confirmPassword}
-                                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300"
-                                placeholder={t('dashboard.settings.confirmNewPasswordPlaceholder')}
-                              />
-                            </div>
-                            <button
-                              type="submit"
-                              className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-all duration-300"
-                            >
-                              {t('dashboard.settings.updatePassword')}
-                            </button>
-                          </form>
-                        </div>
-
-                        {/* Notification Settings */}
-                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                          <h3 className="text-xl font-bold mb-4">{t('dashboard.settings.notificationSettings')}</h3>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                              <div>
-                                <p className="font-medium">{t('dashboard.settings.bookingUpdates')}</p>
-                                <p className="text-gray-400 text-sm">{t('dashboard.settings.bookingUpdatesDesc')}</p>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={notificationSettings.bookingUpdates}
-                                  onChange={() => handleNotificationToggle('bookingUpdates')}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                              </label>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                              <div>
-                                <p className="font-medium">{t('dashboard.settings.promotions')}</p>
-                                <p className="text-gray-400 text-sm">{t('dashboard.settings.promotionsDesc')}</p>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={notificationSettings.promotions}
-                                  onChange={() => handleNotificationToggle('promotions')}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                              </label>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                              <div>
-                                <p className="font-medium">{t('dashboard.settings.newsletter')}</p>
-                                <p className="text-gray-400 text-sm">{t('dashboard.settings.newsletterDesc')}</p>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={notificationSettings.newsletter}
-                                  onChange={() => handleNotificationToggle('newsletter')}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
+                      <SettingsTab
+                        t={t}
+                        passwordForm={passwordForm}
+                        setPasswordForm={setPasswordForm}
+                        notificationSettings={notificationSettings}
+                        handleNotificationToggle={handleNotificationToggle}
+                      />
                     )}
+
                   </AnimatePresence>
                 </div>
               </motion.div>
