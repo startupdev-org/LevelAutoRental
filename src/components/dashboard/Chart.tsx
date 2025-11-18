@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 type TimePeriod = '12M' | '30D' | '7D' | '24H' | 'WEEKS';
 
@@ -103,15 +104,15 @@ const calculateTotalSales = (data: { sales: number }[]) => {
     return data.reduce((sum, item) => sum + item.sales, 0);
 };
 
-const calculateChange = (period: TimePeriod) => {
+const calculateChange = (period: TimePeriod, t: (key: string) => string) => {
     const changes: Record<TimePeriod, string> = {
-        '24H': '↑ 5.2% vs last 24 hours',
-        '7D': '↑ 4.1% vs last 7 days',
-        '30D': '↑ 3.2% vs last 30 days',
-        '12M': '↑ 12.5% vs last 12 months',
-        'WEEKS': '↑ 8.3% vs last 12 weeks',
+        '24H': t('admin.dashboard.chart.change.24H'),
+        '7D': t('admin.dashboard.chart.change.7D'),
+        '30D': t('admin.dashboard.chart.change.30D'),
+        '12M': t('admin.dashboard.chart.change.12M'),
+        'WEEKS': t('admin.dashboard.chart.change.4W'),
     };
-    return changes[period] || '↑ 3.2% vs last period';
+    return changes[period] || t('admin.dashboard.chart.change.default');
 };
 
 export const SalesChartCard: React.FC<SalesChartCardProps> = ({ 
@@ -119,6 +120,7 @@ export const SalesChartCard: React.FC<SalesChartCardProps> = ({
     change: initialChange, 
     data: initialData 
 }) => {
+    const { t } = useTranslation();
     const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30D');
 
     const chartData = useMemo(() => {
@@ -165,8 +167,8 @@ export const SalesChartCard: React.FC<SalesChartCardProps> = ({
         if (initialChange) {
             return initialChange;
         }
-        return calculateChange(selectedPeriod);
-    }, [selectedPeriod, initialChange]);
+        return calculateChange(selectedPeriod, t);
+    }, [selectedPeriod, initialChange, t]);
 
     const formatTotalSales = (sales: number, period: TimePeriod) => {
         // Use MDL if we have actual data provided, otherwise use $
@@ -195,11 +197,11 @@ export const SalesChartCard: React.FC<SalesChartCardProps> = ({
 
     const getPeriodLabel = (period: TimePeriod) => {
         const labels: Record<TimePeriod, string> = {
-            '24H': '24H',
-            '7D': '7D',
-            '30D': '30D',
-            'WEEKS': '4W',
-            '12M': '12M',
+            '24H': t('admin.dashboard.chart.periods.24H'),
+            '7D': t('admin.dashboard.chart.periods.7D'),
+            '30D': t('admin.dashboard.chart.periods.30D'),
+            'WEEKS': t('admin.dashboard.chart.periods.4W'),
+            '12M': t('admin.dashboard.chart.periods.12M'),
         };
         return labels[period];
     };
@@ -208,7 +210,7 @@ export const SalesChartCard: React.FC<SalesChartCardProps> = ({
         <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                 <div>
-                    <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">Sales</p>
+                    <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">{t('admin.dashboard.chart.sales')}</p>
                     <h3 className="text-3xl md:text-4xl font-bold text-white">
                         {formatTotalSales(totalSales, selectedPeriod)}
                     </h3>

@@ -3,6 +3,7 @@ import { cars } from '../../data/cars';
 import { format } from 'date-fns';
 import { fetchRentalsOnly, OrderDisplay } from '../../lib/orders';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type OrdersTableProps = {
     title: string;
@@ -16,6 +17,7 @@ type OrdersTableProps = {
 };
 
 export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading = false, onOrderClick, onAddOrder, initialSearch, showCancelled = false, onToggleShowCancelled }) => {
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState(initialSearch || '');
     const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -34,12 +36,13 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
         // First filter by search query
         let filtered = orders.filter(order => {
             const searchLower = searchQuery.toLowerCase();
+            const orderIdString = typeof order.id === 'string' ? order.id : order.id.toString();
             const matchesSearch = (
                 order.customerName.toLowerCase().includes(searchLower) ||
                 order.customerPhone?.toLowerCase().includes(searchLower) ||
                 order.customerEmail?.toLowerCase().includes(searchLower) ||
                 order.carName.toLowerCase().includes(searchLower) ||
-                order.id.toLowerCase().includes(searchLower)
+                orderIdString.toLowerCase().includes(searchLower)
             );
             
             // Filter by cancelled status
@@ -132,10 +135,16 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
         };
 
         const styles = statusMap[status] || statusMap['ACTIVE'];
-        const capitalizedStatus = status.charAt(0) + status.slice(1).toLowerCase();
+        const statusTranslations: Record<string, string> = {
+            'CONTRACT': t('admin.status.contract'),
+            'ACTIVE': t('admin.status.active'),
+            'COMPLETED': t('admin.status.completed'),
+            'CANCELLED': t('admin.status.cancelled'),
+        };
+        const statusText = statusTranslations[status] || status.charAt(0) + status.slice(1).toLowerCase();
         return (
             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm ${styles.bg} ${styles.text} ${styles.border}`}>
-                {capitalizedStatus}
+                {statusText}
             </span>
         );
     };
@@ -190,7 +199,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                             : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                     }`}
                                 >
-                                    {showCancelled ? 'Hide Cancelled' : 'Show Cancelled'}
+                                    {showCancelled ? t('admin.orders.hideCancelled') : t('admin.orders.showCancelled')}
                                 </button>
                             )}
                         </div>
@@ -202,7 +211,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Search orders..."
+                                    placeholder={t('admin.placeholders.searchOrders')}
                                     value={searchQuery}
                                     onChange={(e) => {
                                         setSearchQuery(e.target.value);
@@ -214,7 +223,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                         </div>
                         {/* Sort Controls */}
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.orders.sortBy')}</span>
                             <button
                                 onClick={() => handleSort('date')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'date'
@@ -222,7 +231,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                Date
+                                {t('admin.orders.date')}
                                 {sortBy === 'date' && (
                                     sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                 )}
@@ -235,7 +244,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                Customer
+                                {t('admin.orders.customer')}
                                 {sortBy === 'customer' && (
                                     sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                 )}
@@ -248,7 +257,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                Amount
+                                {t('admin.orders.amount')}
                                 {sortBy === 'amount' && (
                                     sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                 )}
@@ -261,7 +270,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                Status
+                                {t('admin.orders.status')}
                                 {sortBy === 'status' && (
                                     sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                 )}
@@ -275,7 +284,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     }}
                                     className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                 >
-                                    Clear Sort
+                                    {t('admin.orders.clearSort')}
                                 </button>
                             )}
                         </div>
@@ -289,14 +298,14 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                     <thead className="bg-white/5">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Order ID
+                                {t('admin.orders.orderId')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 <button
                                     onClick={() => handleSort('customer')}
                                     className="flex items-center gap-1.5 hover:text-white transition-colors"
                                 >
-                                    Customer
+                                    {t('admin.orders.customer')}
                                     {sortBy === 'customer' ? (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     ) : (
@@ -305,14 +314,14 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                 </button>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Vehicle
+                                {t('admin.orders.vehicle')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 <button
                                     onClick={() => handleSort('status')}
                                     className="flex items-center gap-1.5 hover:text-white transition-colors"
                                 >
-                                    Status
+                                    {t('admin.orders.status')}
                                     {sortBy === 'status' ? (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     ) : (
@@ -325,7 +334,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     onClick={() => handleSort('amount')}
                                     className="flex items-center gap-1.5 hover:text-white transition-colors"
                                 >
-                                    Amount
+                                    {t('admin.orders.amount')}
                                     {sortBy === 'amount' ? (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     ) : (
@@ -339,7 +348,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                         {paginatedOrders.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
-                                    No orders available
+                                    {t('admin.orders.noOrders')}
                                 </td>
                             </tr>
                         ) : (
@@ -403,7 +412,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
                 <div className="text-sm text-gray-300">
-                    Showing {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} to {Math.min(currentPage * pageSize, filteredAndSortedOrders.length)} of {filteredAndSortedOrders.length} orders
+                    {t('admin.orders.showing')} {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.orders.to')} {Math.min(currentPage * pageSize, filteredAndSortedOrders.length)} {t('admin.orders.of')} {filteredAndSortedOrders.length} {t('admin.orders.orders')}
                 </div>
                 <div className="flex items-center gap-2">
                     <button
@@ -412,17 +421,17 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                         className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Previous
+                        {t('admin.orders.previous')}
                     </button>
                     <div className="text-sm text-gray-300 px-2">
-                        Page {currentPage} of {totalPages || 1}
+                        {t('admin.orders.page')} {currentPage} {t('admin.orders.ofPage')} {totalPages || 1}
                     </div>
                     <button
                         onClick={() => goToPage(currentPage + 1)}
                         disabled={currentPage === totalPages || totalPages === 0}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
                     >
-                        Next
+                        {t('admin.orders.next')}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>

@@ -113,6 +113,9 @@ export interface OrderDisplay {
   type?: 'request' | 'rental',
   amount?: number,
   contract_url?: string,
+  features?: string[] | any,
+  options?: any,
+  request_id?: string | number,
 }
 
 /**
@@ -411,6 +414,45 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         return new Date(dateStr).toISOString().split('T')[0];
       };
 
+      // Parse features/options from rental
+      let options = undefined;
+      const features = (rental as any).features;
+      if (features) {
+        // If features is an array of strings, convert to options object
+        if (Array.isArray(features)) {
+          options = {};
+          features.forEach((feature: string) => {
+            // Map feature names to option keys
+            const featureLower = feature.toLowerCase();
+            if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
+              options.unlimitedKm = true;
+            } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
+              options.speedLimitIncrease = true;
+            } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
+              options.tireInsurance = true;
+            } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
+              options.personalDriver = true;
+            } else if (featureLower.includes('priority')) {
+              options.priorityService = true;
+            } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
+              options.childSeat = true;
+            } else if (featureLower.includes('sim') || featureLower.includes('card')) {
+              options.simCard = true;
+            } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
+              options.roadsideAssistance = true;
+            }
+          });
+        } else if (typeof features === 'string') {
+          try {
+            options = JSON.parse(features);
+          } catch (e) {
+            options = {};
+          }
+        } else {
+          options = features;
+        }
+      }
+
       orders.push({
         id: rental.id,
         type: 'rental',
@@ -430,6 +472,9 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         carId: rental.car_id?.toString() || '',
         userId: rental.user_id || '',
         contract_url: (rental as any).contract_url || undefined,
+        features: features,
+        options: options,
+        request_id: (rental as any).request_id || undefined,
       });
     });
 
@@ -1069,6 +1114,7 @@ export async function createRentalManually(
     customerFirstName?: string;
     customerLastName?: string;
     customerAge?: number;
+    requestId?: string | number; // Link to BorrowRequest if rental was created from a request
   }
 ): Promise<{ success: boolean; rentalId?: string; error?: string }> {
   try {
@@ -1123,6 +1169,7 @@ export async function createRentalManually(
         customer_age: options?.customerAge || null,
         car_make: carMake || null,
         car_model: carModel || null,
+        request_id: options?.requestId ? (typeof options.requestId === 'string' ? parseInt(options.requestId) : options.requestId) : null,
       })
       .select()
       .single();

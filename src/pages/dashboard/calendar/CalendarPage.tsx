@@ -6,18 +6,21 @@ import {
     addMonths,
     subMonths,
 } from "date-fns";
-import { cars } from "../../../data/cars";
+import { fetchCars } from "../../../lib/cars";
+import { Car } from "../../../types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, User, Clock, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { OrderDetailsModal } from "../../../components/modals/OrderDetailsModal";
 import { OrderDisplay, fetchRentalsOnly } from "../../../lib/orders";
 import { CalendarPageDesktop } from "./CalendarPageDesktop";
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     viewMode: string | null;
 }
 
 export const CalendarPage: React.FC<Props> = () => {
+    const { t } = useTranslation();
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     const [showFilters, setShowFilters] = useState(false);
     const [selectedCar, setSelectedCar] = useState<any | null>(null);
@@ -25,6 +28,7 @@ export const CalendarPage: React.FC<Props> = () => {
     const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
+    const [cars, setCars] = useState<Car[]>([]);
     const [isDesktop, setIsDesktop] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -48,9 +52,23 @@ export const CalendarPage: React.FC<Props> = () => {
     const [sortBy, setSortBy] = useState<'time' | 'customer' | 'car' | 'status' | null>('time');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-    // Fetch orders with customer data
+    // Fetch cars from Supabase
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                setCars(fetchedCars);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
+    }, []);
+
+    // Fetch orders with customer data (after cars are loaded)
     useEffect(() => {
         const loadOrders = async () => {
+            if (cars.length === 0) return;
             try {
                 const data = await fetchRentalsOnly(cars);
                 // Filter to only rentals (not requests)
@@ -61,7 +79,7 @@ export const CalendarPage: React.FC<Props> = () => {
             }
         };
         loadOrders();
-    }, []);
+    }, [cars]);
 
     // Auto-select today when clicking outside the calendar
     useEffect(() => {
@@ -397,13 +415,16 @@ export const CalendarPage: React.FC<Props> = () => {
     const prevMonth = () => setCurrentMonth((m) => subMonths(m, 1));
     const nextMonth = () => setCurrentMonth((m) => addMonths(m, 1));
 
-    // Generate calendar days like in Cars page
+    // Generate calendar days starting with Monday (not Sunday)
     const generateCalendarDays = (date: Date): (string | null)[] => {
         const year = date.getFullYear();
         const month = date.getMonth();
         const firstDay = new Date(year, month, 1);
         const startDate = new Date(firstDay);
-        startDate.setDate(startDate.getDate() - firstDay.getDay());
+        // Adjust to start from Monday: if firstDay is Sunday (0), go back 6 days; otherwise go back (getDay() - 1) days
+        const dayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0 days back, Sunday = 6 days back
+        startDate.setDate(startDate.getDate() - daysToSubtract);
 
         const days: (string | null)[] = [];
         const currentDate = new Date(startDate);
@@ -425,7 +446,7 @@ export const CalendarPage: React.FC<Props> = () => {
             <div className="mb-4 flex items-center justify-between gap-4">
                 {/* Sort Controls */}
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.calendar.sortBy')}</span>
                     <button
                         onClick={() => handleSort('time')}
                         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'time'
@@ -433,7 +454,7 @@ export const CalendarPage: React.FC<Props> = () => {
                             : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                             }`}
                     >
-                        Time
+                        {t('admin.calendar.time')}
                         {sortBy === 'time' && (
                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                         )}
@@ -449,7 +470,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                     : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                Car
+                                {t('admin.calendar.car')}
                                 {sortBy === 'car' && (
                                     sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                 )}
@@ -462,7 +483,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                     : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                Status
+                                {t('admin.calendar.status')}
                                 {sortBy === 'status' && (
                                     sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                 )}
@@ -476,7 +497,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                     }}
                                     className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                 >
-                                    Clear Sort
+                                    {t('admin.calendar.clearSort')}
                                 </button>
                             )}
                         </>
@@ -531,7 +552,7 @@ export const CalendarPage: React.FC<Props> = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white transition-all flex-shrink-0"
                         >
                             <Filter className="w-3 h-3" />
-                            {showFilters ? 'Hide Filters' : 'Show Filters'}
+                            {showFilters ? t('admin.calendar.hideFilters') : t('admin.calendar.showFilters')}
                         </button>
                     )}
                 </div>
@@ -760,7 +781,7 @@ export const CalendarPage: React.FC<Props> = () => {
                         </svg>
                         </button>
                     <div className="text-sm font-medium text-white">
-                        {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        {currentMonth.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                     </div>
                         <button
                             onClick={nextMonth}
@@ -774,8 +795,8 @@ export const CalendarPage: React.FC<Props> = () => {
 
                 {/* Weekday Header */}
                 <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, i) => (
-                        <div key={day} className={`text-gray-400 font-medium ${i === 0 || i === 6 ? 'text-red-400' : ''}`}>
+                    {['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'].map((day, i) => (
+                        <div key={day} className={`text-gray-400 font-medium ${i === 5 || i === 6 ? 'text-red-400' : ''}`}>
                             {day}
                         </div>
                     ))}
@@ -878,13 +899,13 @@ export const CalendarPage: React.FC<Props> = () => {
                     >
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-white">
-                                {displayDateObj.toLocaleDateString('en-US', { 
+                                {displayDateObj.toLocaleDateString('ro-RO', { 
                                     weekday: 'long', 
                                     year: 'numeric', 
                                     month: 'long', 
                                     day: 'numeric' 
                                 })}
-                                {!selectedDate && <span className="ml-2 text-sm text-gray-400">(Today)</span>}
+                                {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t('admin.calendar.today')})</span>}
                             </h3>
                             {selectedDate && (
                                 <button
@@ -901,7 +922,7 @@ export const CalendarPage: React.FC<Props> = () => {
                         {/* Pickups Section */}
                         {selectedDayPickups.length > 0 && (
                             <div className="mb-6">
-                                <h4 className="text-sm font-semibold text-yellow-300 mb-3 uppercase tracking-wide">Pickups ({selectedDayPickups.length})</h4>
+                                <h4 className="text-sm font-semibold text-yellow-300 mb-3 uppercase tracking-wide">{t('admin.calendar.pickups')} ({selectedDayPickups.length})</h4>
                                 <div className="space-y-3">
                                     {selectedDayPickups.map((order) => {
                                         const car = cars.find(c => c.id.toString() === order.carId.toString());
@@ -928,7 +949,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                                         </div>
                                                         <div>
                                                             <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                            <div className="text-gray-400 text-xs">Rental #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                            <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
                                                         </div>
                                                     </div>
                                                     {(() => {
@@ -960,7 +981,7 @@ export const CalendarPage: React.FC<Props> = () => {
                         {/* Returns Section */}
                         {selectedDayReturns.length > 0 && (
                             <div className="mb-6">
-                                <h4 className="text-sm font-semibold text-blue-300 mb-3 uppercase tracking-wide">Returns ({selectedDayReturns.length})</h4>
+                                <h4 className="text-sm font-semibold text-blue-300 mb-3 uppercase tracking-wide">{t('admin.calendar.returns')} ({selectedDayReturns.length})</h4>
                                 <div className="space-y-3">
                                     {selectedDayReturns.map((order) => {
                                         const car = cars.find(c => c.id.toString() === order.carId.toString());
@@ -987,7 +1008,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                                         </div>
                                                         <div>
                                                             <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                            <div className="text-gray-400 text-xs">Rental #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                            <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
                                                         </div>
                                                     </div>
                                                     {(() => {
@@ -1065,6 +1086,7 @@ export const CalendarPage: React.FC<Props> = () => {
                             setSortBy(null);
                             setSortOrder('asc');
                         }}
+                        cars={cars}
                     />
                 );
             })()}

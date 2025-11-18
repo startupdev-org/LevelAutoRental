@@ -71,6 +71,7 @@ import { supabaseAdmin } from '../../lib/supabase';
 
 // Dashboard View Component
 const DashboardView: React.FC = () => {
+    const { t } = useTranslation();
     const [cars, setCars] = useState<CarType[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -126,7 +127,7 @@ const DashboardView: React.FC = () => {
             {/* Top stat cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <CardStats
-                    title="Total Sales"
+                    title={t('admin.dashboard.totalSales')}
                     value="2,114.40 MDL"
                     trend="up"
                     trendValue="2.4%"
@@ -143,7 +144,7 @@ const DashboardView: React.FC = () => {
                     )}
                 />
                 <CardStats
-                    title="Total Orders"
+                    title={t('admin.dashboard.totalOrders')}
                     value={24}
                     trend="up"
                     trendValue="8.6%"
@@ -160,7 +161,7 @@ const DashboardView: React.FC = () => {
                 />
                 <div className="hidden md:block">
                     <CardStats
-                        title="Avg Order Value"
+                        title={t('admin.dashboard.avgOrderValue')}
                         value="88.10 MDL"
                         trend="up"
                         trendValue="6.0%"
@@ -177,12 +178,12 @@ const DashboardView: React.FC = () => {
                     />
                 </div>
                 <CardStats
-                    title="Fleet Status"
+                    title={t('admin.dashboard.fleetStatus')}
                     value={`${freeCars.length}/${cars.length}`}
                     subtitle={
                         <div className="flex items-center gap-3 text-xs">
-                            <span className="text-emerald-400">{freeCars.length} Available</span>
-                            <span className="text-red-400">{rentedCars.length} Rented</span>
+                            <span className="text-emerald-400">{freeCars.length} {t('admin.dashboard.available')}</span>
+                            <span className="text-red-400">{rentedCars.length} {t('admin.dashboard.rented')}</span>
                         </div>
                     }
                 />
@@ -196,18 +197,18 @@ const DashboardView: React.FC = () => {
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden"
             >
                 <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-white">Fleet Status</h3>
+                    <h3 className="text-lg font-semibold text-white">{t('admin.dashboard.fleetStatus')}</h3>
                     <div className="flex items-center gap-4 text-sm text-gray-300">
-                        <span><span className="font-semibold text-emerald-400">{freeCars.length}</span> Available</span>
+                        <span><span className="font-semibold text-emerald-400">{freeCars.length}</span> {t('admin.dashboard.available')}</span>
                         <span className="text-gray-500">•</span>
-                        <span><span className="font-semibold text-red-400">{rentedCars.length}</span> Rented</span>
+                        <span><span className="font-semibold text-red-400">{rentedCars.length}</span> {t('admin.dashboard.rented')}</span>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                     {/* Free Cars */}
                     <div>
-                        <h4 className="text-sm font-semibold text-white mb-3">Available</h4>
+                        <h4 className="text-sm font-semibold text-white mb-3">{t('admin.dashboard.available')}</h4>
                         <div className="space-y-2 max-h-[300px] overflow-y-auto">
                             {freeCars.length > 0 ? (
                                 freeCars.map((car) => (
@@ -222,7 +223,7 @@ const DashboardView: React.FC = () => {
                                         />
                                         <p className="text-sm font-medium text-white truncate flex-1">{(car as any).name || `${car.make} ${car.model}`}</p>
                                         <button className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 text-xs font-semibold rounded-lg transition-all flex-shrink-0">
-                                            Book
+                                            {t('admin.dashboard.book')}
                                         </button>
                                     </div>
                                 ))
@@ -234,7 +235,7 @@ const DashboardView: React.FC = () => {
 
                     {/* Rented Cars */}
                     <div>
-                        <h4 className="text-sm font-semibold text-white mb-3">Rented</h4>
+                        <h4 className="text-sm font-semibold text-white mb-3">{t('admin.dashboard.rented')}</h4>
                         <div className="space-y-2 max-h-[300px] overflow-y-auto">
                             {rentedCars.length > 0 ? (
                                 rentedCars.map((car) => {
@@ -255,11 +256,11 @@ const DashboardView: React.FC = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-white truncate">{(car as any).name || `${car.make} ${car.model}`}</p>
                                                 <p className="text-xs text-gray-400 truncate">
-                                                    Until {carOrder?.returnDate}
+                                                    {t('admin.dashboard.until')} {carOrder?.returnDate}
                                                 </p>
                                             </div>
                                             <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg transition-all flex-shrink-0">
-                                                View
+                                                {t('admin.dashboard.view')}
                                             </button>
                                         </div>
                                     );
@@ -281,7 +282,7 @@ const DashboardView: React.FC = () => {
                     transition={{ duration: 0.4, delay: 0.1 }}
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                 >
-                    <SalesChartCard totalSales={8422.6} change="↑ 3.2% vs last 30 days" data={mainChart} />
+                    <SalesChartCard totalSales={8422.6} data={mainChart} />
                 </motion.div>
 
                 {/* Most Rented Cars */}
@@ -293,8 +294,8 @@ const DashboardView: React.FC = () => {
                 >
                     <div>
                         <div className="mb-6">
-                            <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">Top Performers</p>
-                            <h3 className="text-3xl md:text-4xl font-bold text-white">Most Rented</h3>
+                            <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">{t('admin.dashboard.topPerformers')}</p>
+                            <h3 className="text-3xl md:text-4xl font-bold text-white">{t('admin.dashboard.mostRented')}</h3>
                         </div>
 
                         <div className="space-y-4">
@@ -332,7 +333,7 @@ const DashboardView: React.FC = () => {
                                                 />
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-semibold text-white truncate">{(car as any).name || `${car.make} ${car.model}`}</p>
-                                                    <p className="text-xs text-gray-400">{car.rentals} rental{car.rentals > 1 ? 's' : ''}</p>
+                                                    <p className="text-xs text-gray-400">{car.rentals} {car.rentals > 1 ? t('admin.dashboard.rentals') : t('admin.dashboard.rental')}</p>
                                                 </div>
                                             </div>
                                             <span className="text-sm font-bold text-white">{car.revenue.toFixed(0)} MDL</span>
@@ -365,6 +366,7 @@ const OrdersView: React.FC = () => {
 // Order Details View Component
 const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [ordersList, setOrdersList] = useState<OrderDisplay[]>([]);
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -403,7 +405,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     const handleCancelOrder = async () => {
         const order = ordersList.find((o) => o.id === orderId);
         if (!order) return;
-        if (!window.confirm(`Are you sure you want to cancel this order?`)) {
+        if (!window.confirm(t('admin.orders.confirmCancelOrder'))) {
             return;
         }
 
@@ -411,16 +413,16 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
         try {
             const result = await cancelRentalOrder(order.id.toString());
             if (result.success) {
-                alert('Order cancelled successfully!');
+                alert(t('admin.orders.orderCancelled'));
                 await loadOrders();
                 // Navigate back to orders list
                 navigate('/admin?section=orders');
             } else {
-                alert(`Failed to cancel order: ${result.error}`);
+                alert(`${t('admin.orders.orderCancelFailed')} ${result.error}`);
             }
         } catch (error) {
             console.error('Error cancelling order:', error);
-            alert('An error occurred while cancelling the order.');
+            alert(t('admin.orders.orderCancelErrorOccurred'));
         } finally {
             setIsProcessing(false);
         }
@@ -429,7 +431,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
     const handleRedoOrder = async () => {
         const order = ordersList.find((o) => o.id === orderId);
         if (!order) return;
-        if (!window.confirm(`Are you sure you want to restore this cancelled order?`)) {
+        if (!window.confirm(t('admin.orders.confirmRestoreOrder'))) {
             return;
         }
 
@@ -437,14 +439,14 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
         try {
             const result = await redoRentalOrder(order.id.toString());
             if (result.success) {
-                alert('Order restored successfully!');
+                alert(t('admin.orders.orderRestored'));
                 await loadOrders();
             } else {
-                alert(`Failed to restore order: ${result.error}`);
+                alert(`${t('admin.orders.orderRestoreFailed')} ${result.error}`);
             }
         } catch (error) {
             console.error('Error restoring order:', error);
-            alert('An error occurred while restoring the order.');
+            alert(t('admin.orders.orderRestoreErrorOccurred'));
         } finally {
             setIsProcessing(false);
         }
@@ -467,7 +469,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
 
     const handleDownloadContract = async () => {
         if (!order || !car) {
-            alert('Order or car information not found. Cannot generate contract.');
+            alert(t('admin.orders.contractNotFound'));
             return;
         }
 
@@ -486,7 +488,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
         } catch (error) {
             console.error('Error generating contract:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Failed to generate contract: ${errorMessage}\n\nPlease check the browser console for more details.`);
+            alert(`${t('admin.orders.contractGenerationFailed')}: ${errorMessage}\n\n${t('admin.orders.contractGenerationErrorDetails')}`);
         } finally {
             setIsGeneratingContract(false);
         }
@@ -530,34 +532,34 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                     transition={{ duration: 0.4, delay: 0.1 }}
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 space-y-6 shadow-lg"
                 >
-                    <h2 className="text-xl font-bold text-white">Booking Information</h2>
+                    <h2 className="text-xl font-bold text-white">{t('admin.orders.bookingInfo')}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Pickup</p>
-                                <span className="text-white text-sm font-medium">{new Date(order.startDate).toLocaleDateString()}</span>
+                                <span className="text-white text-sm font-medium">{new Date(order.pickupDate).toLocaleDateString()}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{order.startTime || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{order.pickupTime || '--:--'}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Return</p>
-                                <span className="text-white text-sm font-medium">{new Date(order.endDate).toLocaleDateString()}</span>
+                                <span className="text-white text-sm font-medium">{new Date(order.returnDate).toLocaleDateString()}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{order.endTime || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{order.returnTime || '--:--'}</span>
                             </div>
                         </div>
                     </div>
@@ -565,20 +567,20 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                         <div>
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Rental Days</p>
-                            <span className="text-white text-lg font-bold">{getDateDiffInDays(order.startDate, order.endDate)}</span>
+                            <span className="text-white text-lg font-bold">{getDateDiffInDays(order.pickupDate, order.returnDate)}</span>
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Price</p>
-                            <span className="text-white text-lg font-bold">{order.amount > 0 ? `${order.amount} MDL` : `${getDateDiffInDays(order.startDate, order.endDate) * car.price_per_day} MDL`}</span>
+                            <span className="text-white text-lg font-bold">{(order.amount ?? 0) > 0 ? `${order.amount} MDL` : `${getDateDiffInDays(order.pickupDate, order.returnDate) * car.price_per_day} MDL`}</span>
                         </div>
                     </div>
 
-                    {car.features?.length > 0 && (
+                    {car.features && Array.isArray(car.features) && car.features.length > 0 && (
                         <>
                             <div className="border-t border-white/10 pt-6">
-                                <h3 className="text-lg font-bold text-white mb-4">Additional Features</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('admin.cars.additionalFeatures')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {car.features.map((feature, i) => (
+                                    {(car.features as string[] || []).map((feature, i) => (
                                         <div key={i} className="flex items-center gap-2 text-gray-300 text-sm">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                                             <span>{feature}</span>
@@ -619,7 +621,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
                     transition={{ duration: 0.4, delay: 0.3 }}
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                 >
-                    <h2 className="text-xl font-bold text-white mb-4">Payment</h2>
+                    <h2 className="text-xl font-bold text-white mb-4">{t('admin.orders.payment')}</h2>
                     <div className="flex justify-between items-center">
                         <div>
                             <span className="text-gray-400 text-sm uppercase tracking-wide">Amount Paid</span>
@@ -714,6 +716,7 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
 
 // Cars Management View Component
 const CarsView: React.FC = () => {
+    const { t } = useTranslation();
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const [searchQuery, setSearchQuery] = useState('');
@@ -813,17 +816,17 @@ const CarsView: React.FC = () => {
     };
 
     const handleDeleteCar = async (carId: number) => {
-        if (window.confirm('Are you sure you want to delete this car?')) {
+        if (window.confirm(t('admin.cars.confirmDeleteCar'))) {
             try {
                 // Soft delete: update status to 'deleted' instead of actually deleting
                 await updateCar(carId, { status: 'deleted' });
                 // Reload cars to get updated list (deleted cars will be filtered out)
                 const fetchedCars = await fetchCars();
                 setLocalCars(fetchedCars);
-                showSuccess('Car deleted successfully!');
+                showSuccess(t('admin.cars.carDeleted'));
             } catch (error) {
                 console.error('Error deleting car:', error);
-                showError('Failed to delete car. Please try again.');
+                showError(t('admin.cars.carDeleteError'));
             }
         }
     };
@@ -832,15 +835,16 @@ const CarsView: React.FC = () => {
         try {
             if (editingCar) {
                 // Update existing car - map form fields to database fields
-                const updateData: Partial<CarType> = {
+                const updateData: Partial<CarType> & { name?: string } = {
                     ...carData,
                     name: (carData as any).name,
                     image_url: (carData as any).image || carData.image_url,
                     photo_gallery: (carData as any).photoGallery || carData.photo_gallery,
                     price_per_day: (carData as any).pricePerDay || carData.price_per_day,
+                    discount_percentage: (carData as any).discountPercentage !== undefined ? (carData as any).discountPercentage : carData.discount_percentage,
                     fuel_type: (carData as any).fuelType || carData.fuel_type,
                 };
-                const updatedCar = await updateCar(editingCar.id, updateData);
+                const updatedCar = await updateCar(editingCar.id, updateData as Partial<CarType>);
                 if (updatedCar) {
                     setLocalCars(prev => prev.map(c => c.id === editingCar.id ? updatedCar : c));
                     setShowAddModal(false);
@@ -865,9 +869,10 @@ const CarsView: React.FC = () => {
                     image_url: (carData as any).image || carData.image_url,
                     photo_gallery: (carData as any).photoGallery || carData.photo_gallery,
                     price_per_day: (carData as any).pricePerDay || carData.price_per_day,
+                    discount_percentage: (carData as any).discountPercentage !== undefined ? (carData as any).discountPercentage : carData.discount_percentage,
                     fuel_type: (carData as any).fuelType || carData.fuel_type,
                     status: 'available',
-                });
+                } as Partial<CarType>);
                 if (newCar) {
                     setLocalCars(prev => [...prev, newCar]);
                     // Success notification will be shown by the component
@@ -951,14 +956,14 @@ const CarsView: React.FC = () => {
                         {/* Title and Add Button Row */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-xl font-bold text-white">All Cars</h2>
+                                <h2 className="text-xl font-bold text-white">{t('admin.cars.allCars')}</h2>
                             </div>
                             <button
                                 onClick={handleAddCar}
                                 className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
-                                Add New Car
+                                {t('admin.cars.addNew')}
                             </button>
                         </div>
                         {/* Search and Sort Row */}
@@ -969,7 +974,7 @@ const CarsView: React.FC = () => {
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                     <input
                                         type="text"
-                                        placeholder="Search cars..."
+                                        placeholder={t('admin.placeholders.searchCars')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
@@ -978,7 +983,7 @@ const CarsView: React.FC = () => {
                             </div>
                             {/* Sort Controls */}
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.cars.sortBy')}</span>
                                 <button
                                     onClick={() => handleSort('price')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'price'
@@ -986,7 +991,7 @@ const CarsView: React.FC = () => {
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    Price
+                                    {t('admin.cars.price')}
                                     {sortBy === 'price' && (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     )}
@@ -999,7 +1004,7 @@ const CarsView: React.FC = () => {
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    Year
+                                    {t('admin.cars.year')}
                                     {sortBy === 'year' && (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     )}
@@ -1012,7 +1017,7 @@ const CarsView: React.FC = () => {
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    Status
+                                    {t('admin.cars.status')}
                                     {sortBy === 'status' && (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     )}
@@ -1026,7 +1031,7 @@ const CarsView: React.FC = () => {
                                         }}
                                         className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                     >
-                                        Clear Sort
+                                        {t('admin.cars.clearSort')}
                                     </button>
                                 )}
                             </div>
@@ -1040,17 +1045,17 @@ const CarsView: React.FC = () => {
                         <thead className="bg-white/5">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Car
+                                    {t('admin.requests.car')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Category
+                                    {t('admin.cars.category')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                     <button
                                         onClick={() => handleSort('price')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        Price/Day
+                                        {t('admin.cars.pricePerDay')}
                                         {sortBy === 'price' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -1063,7 +1068,7 @@ const CarsView: React.FC = () => {
                                         onClick={() => handleSort('year')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        Year
+                                        {t('admin.cars.year')}
                                         {sortBy === 'year' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -1076,7 +1081,7 @@ const CarsView: React.FC = () => {
                                         onClick={() => handleSort('status')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        Status
+                                        {t('admin.cars.status')}
                                         {sortBy === 'status' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -1085,7 +1090,7 @@ const CarsView: React.FC = () => {
                                     </button>
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Actions
+                                    {t('admin.cars.actions')}
                                 </th>
                             </tr>
                         </thead>
@@ -1111,7 +1116,7 @@ const CarsView: React.FC = () => {
                                                     />
                                                     <div>
                                                         <p className="text-white font-semibold">{(car as any).name || `${car.make} ${car.model}`}</p>
-                                                        <p className="text-gray-400 text-xs">{car.body} · {car.seats} seats</p>
+                                                        <p className="text-gray-400 text-xs">{car.body} · {car.seats} {t('admin.cars.seats')}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -1131,7 +1136,7 @@ const CarsView: React.FC = () => {
                                                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                                         }`}
                                                 >
-                                                    {carStatus === 'booked' ? 'Booked' : carStatus === 'maintenance' ? 'Maintenance' : 'Available'}
+                                                    {carStatus === 'booked' ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
@@ -1139,7 +1144,7 @@ const CarsView: React.FC = () => {
                                                     <button
                                                         onClick={() => handleEditCar(car)}
                                                         className="p-2 text-white hover:text-gray-300 transition-colors"
-                                                        title="Edit"
+                                                        title={t('admin.common.edit')}
                                                     >
                                                         {/* @ts-ignore - react-icons type compatibility */}
                                                         <LuPencil className="w-4 h-4" />
@@ -1147,7 +1152,7 @@ const CarsView: React.FC = () => {
                                                     <button
                                                         onClick={() => handleDeleteCar(car.id)}
                                                         className="p-2 text-red-300 hover:text-red-200 transition-colors"
-                                                        title="Delete"
+                                                        title={t('admin.common.delete')}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -1159,7 +1164,7 @@ const CarsView: React.FC = () => {
                             ) : (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                                        {searchQuery || filterCategory !== 'all' ? 'No cars found matching your filters' : 'No cars available'}
+                                        {searchQuery || filterCategory !== 'all' ? t('admin.cars.noCars') : t('admin.cars.noCars')}
                                     </td>
                                 </tr>
                             )}
@@ -1203,6 +1208,7 @@ interface CarDetailsEditViewProps {
 }
 
 const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, onCancel }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState<Partial<CarType>>(car);
     const [loading, setLoading] = useState(false);
     const { showSuccess, showError } = useNotification();
@@ -1236,17 +1242,18 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
         setLoading(true);
         try {
             // Map form data to database fields
-            const carDataToSave: Partial<CarType> = {
+            const carDataToSave: Partial<CarType> & { name?: string } = {
                 ...formData,
                 name: (formData as any).name,
                 image_url: (formData as any).image || formData.image_url,
                 photo_gallery: (formData as any).photoGallery || formData.photo_gallery,
                 price_per_day: (formData as any).pricePerDay || formData.price_per_day,
+                discount_percentage: (formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : formData.discount_percentage,
                 fuel_type: (formData as any).fuelType || formData.fuel_type,
             };
-            await onSave(carDataToSave);
+            await onSave(carDataToSave as Partial<CarType>);
             // Show success notification
-            showSuccess('Car saved successfully!');
+            showSuccess(t('admin.cars.carSaved'));
             // Close the edit view after a short delay to show the notification
             setTimeout(() => {
                 onCancel();
@@ -1271,7 +1278,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
     const handleMainImageUpload = async (file: File) => {
         setUploadingMainImage(true);
         try {
-            const carName = (formData as any).name || car.name || 'car';
+            const carName = (formData as any).name || (car as any).name || 'car';
             const folderName = createFolderName(carName);
             const fileName = `${folderName}-main.jpg`;
             const filePath = `${folderName}/${fileName}`;
@@ -1300,10 +1307,10 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 image_url: publicUrl
             }));
 
-            showSuccess('Image uploaded successfully!');
+            showSuccess(t('admin.cars.imageUploaded'));
         } catch (error) {
             console.error('Error uploading image:', error);
-            showError('Failed to upload image. Please try again.');
+            showError(t('admin.cars.imageUploadError'));
         } finally {
             setUploadingMainImage(false);
         }
@@ -1313,7 +1320,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
     const handleGalleryImageUpload = async (file: File) => {
         setUploadingGalleryImage(true);
         try {
-            const carName = (formData as any).name || car.name || 'car';
+            const carName = (formData as any).name || (car as any).name || 'car';
             const folderName = createFolderName(carName);
             const timestamp = Date.now();
             const fileName = `${folderName}-${timestamp}.jpg`;
@@ -1344,10 +1351,10 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 photo_gallery: [...currentGallery, publicUrl]
             }));
 
-            showSuccess('Gallery image uploaded successfully!');
+            showSuccess(t('admin.cars.galleryImageUploaded'));
         } catch (error) {
             console.error('Error uploading image:', error);
-            showError('Failed to upload image. Please try again.');
+            showError(t('admin.cars.imageUploadError'));
         } finally {
             setUploadingGalleryImage(false);
         }
@@ -1384,13 +1391,13 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Basic Information */}
                     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <h3 className="text-lg font-bold text-white mb-4">Basic Information</h3>
+                        <h3 className="text-lg font-bold text-white mb-4">{t('admin.cars.basicInfo')}</h3>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.carName')}</label>
                             <input
                                 type="text"
-                                value={(formData as any).name || car.name || ''}
+                                value={(formData as any).name || (car as any).name || ''}
                                 onChange={(e) => setFormData(prev => ({
                                     ...prev,
                                     name: e.target.value
@@ -1402,7 +1409,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Year</label>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.year')}</label>
                                 <input
                                     type="number"
                                     value={formData.year || ''}
@@ -1412,7 +1419,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Seats</label>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.seats')}</label>
                                 <input
                                     type="number"
                                     value={formData.seats || ''}
@@ -1424,20 +1431,20 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')}</label>
                             <select
                                 value={formData.category || 'luxury'}
                                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as CarType['category'] }))}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             >
-                                <option value="suv">SUV</option>
-                                <option value="sports">Sports</option>
-                                <option value="luxury">Luxury</option>
+                                <option value="suv">{t('admin.cars.categorySuv')}</option>
+                                <option value="sports">{t('admin.cars.categorySports')}</option>
+                                <option value="luxury">{t('admin.cars.categoryLuxury')}</option>
                             </select>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Price Per Day (MDL)</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.pricePerDay')}</label>
                             <input
                                 type="number"
                                 value={(formData as any).pricePerDay || formData.price_per_day || ''}
@@ -1450,14 +1457,47 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 required
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.discountPercentage')}</label>
+                            <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value={(formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : (formData.discount_percentage !== undefined ? formData.discount_percentage : '')}
+                                onChange={(e) => {
+                                    const discountValue = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        discountPercentage: discountValue,
+                                        discount_percentage: discountValue
+                                    }));
+                                }}
+                                placeholder="0"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">{t('admin.cars.discountPercentageHint')}</p>
+                            {((formData as any).discountPercentage !== undefined && (formData as any).discountPercentage > 0) || (formData.discount_percentage !== undefined && formData.discount_percentage > 0) ? (
+                                <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                                    <p className="text-xs text-emerald-400 font-medium">
+                                        {t('admin.cars.discountedPrice')}: {(() => {
+                                            const basePrice = (formData as any).pricePerDay || formData.price_per_day || 0;
+                                            const discount = (formData as any).discountPercentage || formData.discount_percentage || 0;
+                                            const discountedPrice = basePrice * (1 - discount / 100);
+                                            return `${discountedPrice.toFixed(2)} MDL`;
+                                        })()}
+                                    </p>
+                                </div>
+                            ) : null}
+                        </div>
                     </div>
 
                     {/* Specifications */}
                     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <h3 className="text-lg font-bold text-white mb-4">Specifications</h3>
+                        <h3 className="text-lg font-bold text-white mb-4">{t('admin.cars.specifications')}</h3>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Body Type</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.bodyType')}</label>
                             <select
                                 value={formData.body || 'Sedan'}
                                 onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value as CarType['body'] }))}
@@ -1470,7 +1510,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Transmission</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.transmission')}</label>
                             <select
                                 value={formData.transmission || 'Automatic'}
                                 onChange={(e) => setFormData(prev => ({ ...prev, transmission: e.target.value as CarType['transmission'] }))}
@@ -1482,7 +1522,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Fuel Type</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.fuelType')}</label>
                             <select
                                 value={(formData as any).fuelType || formData.fuel_type || 'gasoline'}
                                 onChange={(e) => setFormData(prev => ({
@@ -1501,12 +1541,12 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Drivetrain</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.drivetrain')}</label>
                             <input
                                 type="text"
                                 value={formData.drivetrain || ''}
                                 onChange={(e) => setFormData(prev => ({ ...prev, drivetrain: e.target.value }))}
-                                placeholder="e.g., AWD, RWD, FWD"
+                                placeholder={t('admin.placeholders.drivetrain')}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
                         </div>
@@ -1515,14 +1555,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 
                 {/* Images */}
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Images</h3>
+                    <h3 className="text-lg font-bold text-white mb-4">{t('admin.cars.images')}</h3>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Main Image</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.mainImage')}</label>
                         <div>
                             <label className="inline-block px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-2">
                                 <Upload className="w-4 h-4" />
-                                <span className="text-sm font-medium">Upload Image</span>
+                                <span className="text-sm font-medium">{t('admin.cars.uploadImage')}</span>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -1535,7 +1575,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 />
                             </label>
                             {uploadingMainImage && (
-                                <p className="text-xs text-gray-400 mb-2">Uploading image...</p>
+                                <p className="text-xs text-gray-400 mb-2">{t('admin.cars.uploadingImage')}</p>
                             )}
                             {(formData.image_url || (formData as any).image) && (
                                 <div className="mt-2 inline-block relative group cursor-pointer" onClick={() => {
@@ -1544,7 +1584,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 }}>
                                     <img src={formData.image_url || (formData as any).image} alt="Preview" className="h-20 object-contain rounded-lg border border-white/10" />
                                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1 rounded-b-lg">
-                                        Main Photo
+                                        {t('admin.cars.mainPhoto')}
                                     </div>
                                 </div>
                             )}
@@ -1552,11 +1592,11 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.photoGallery')}</label>
                         <div className="flex gap-2 mb-2">
                             <label className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <Upload className="w-4 h-4" />
-                                <span className="text-sm font-medium">Upload Image</span>
+                                <span className="text-sm font-medium">{t('admin.cars.uploadImage')}</span>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -1569,7 +1609,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 />
                             </label>
                             {uploadingGalleryImage && (
-                                <p className="text-xs text-gray-400 flex items-center">Uploading...</p>
+                                <p className="text-xs text-gray-400 flex items-center">{t('admin.common.uploading')}</p>
                             )}
                         </div>
                         {((formData as any).photoGallery || formData.photo_gallery || []).length > 0 && (
@@ -1578,7 +1618,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     <div key={index} className="relative group inline-block">
                                         <img
                                             src={url}
-                                            alt={`Gallery ${index + 1}`}
+                                            alt={`${t('admin.cars.gallery')} ${index + 1}`}
                                             className="h-20 object-contain rounded-lg border border-white/10 bg-white/5 cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => {
                                                 setSelectedImageIndex(index + 1);
@@ -1604,14 +1644,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 
                 {/* Features */}
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Features</h3>
+                    <h3 className="text-lg font-bold text-white mb-4">{t('admin.cars.features')}</h3>
                     <div className="flex gap-2 mb-4">
                         <input
                             type="text"
                             value={newFeature}
                             onChange={(e) => setNewFeature(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                            placeholder="Add feature"
+                            placeholder={t('admin.placeholders.addFeature')}
                             className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                         />
                         <button
@@ -1643,11 +1683,11 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 
                 {/* Status & Ratings */}
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Status & Ratings</h3>
+                    <h3 className="text-lg font-bold text-white mb-4">{t('admin.cars.statusAndRatings')}</h3>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.rating')}</label>
                             <input
                                 type="number"
                                 step="0.1"
@@ -1659,7 +1699,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Reviews Count</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.reviewsCount')}</label>
                             <input
                                 type="number"
                                 value={formData.reviews || ''}
@@ -1677,7 +1717,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         onClick={onCancel}
                         className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
                     >
-                        Cancel
+                        {t('admin.cars.cancel')}
                     </button>
                     <button
                         type="submit"
@@ -1687,14 +1727,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         {loading ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Saving...
+                                {t('admin.cars.saving')}
                             </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4" />
-                                Save Changes
-                            </>
-                        )}
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    {t('admin.common.save')}
+                                </>
+                            )}
                     </button>
                 </div>
             </form>
@@ -1830,6 +1870,7 @@ interface CarFormModalProps {
 
 const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => {
     const [, setSearchParams] = useSearchParams();
+    const { t } = useTranslation();
     const [formData, setFormData] = useState<Partial<CarType>>(
         car || {
             name: '',
@@ -1838,7 +1879,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
             pricePerDay: 0,
             year: new Date().getFullYear(),
             seats: 5,
-        }
+        } as any
     );
     const [uploadingMainImage, setUploadingMainImage] = useState(false);
     const [carAdded, setCarAdded] = useState(false);
@@ -1856,13 +1897,13 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                 if (typeof carId === 'number') {
                     setNewCarId(carId);
                     setCarAdded(true);
-                    showSuccess('Car created successfully!');
+                    showSuccess(t('admin.cars.carCreated'));
                     // Don't auto-close - let user click Continue or Close
                 }
             } else {
                 // Editing existing car
                 await onSave(formData);
-                showSuccess('Car updated successfully!');
+                showSuccess(t('admin.cars.carUpdated'));
                 setTimeout(() => {
                     onClose();
                 }, 500);
@@ -1923,10 +1964,10 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                 image_url: publicUrl
             }));
 
-            showSuccess('Image uploaded successfully!');
+            showSuccess(t('admin.cars.imageUploaded'));
         } catch (error) {
             console.error('Error uploading image:', error);
-            showError('Failed to upload image. Please try again.');
+            showError(t('admin.cars.imageUploadError'));
         } finally {
             setUploadingMainImage(false);
         }
@@ -1951,9 +1992,9 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                 {/* Header */}
                 <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                     <div>
-                        <h2 className="text-2xl font-bold text-white">Add New Car</h2>
+                        <h2 className="text-2xl font-bold text-white">{t('admin.cars.addNew')}</h2>
                         <p className="text-gray-400 text-sm mt-1">
-                            Create a new vehicle entry in the fleet
+                            {t('admin.cars.addNewDescription')}
                         </p>
                     </div>
                     <button
@@ -1969,12 +2010,12 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                         {/* Basic Information */}
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                <LiaCarSideSolid className="w-5 h-5" />
-                                Basic Information
+                                {React.createElement(LiaCarSideSolid as any, { className: "w-5 h-5" })}
+                                {t('admin.cars.basicInfo')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Car Name *</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.carName')} *</label>
                                     <input
                                         type="text"
                                         value={(formData as any).name || ''}
@@ -1989,7 +2030,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Make *</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.make')} *</label>
                                     <input
                                         type="text"
                                         value={(formData as any).make || ''}
@@ -2004,7 +2045,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Model *</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.model')} *</label>
                                     <input
                                         type="text"
                                         value={(formData as any).model || ''}
@@ -2019,20 +2060,20 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Category *</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')} *</label>
                                     <select
                                         value={formData.category || 'luxury'}
                                         onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as CarType['category'] }))}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                     >
-                                        <option value="suv">SUV</option>
-                                        <option value="sports">Sports</option>
-                                        <option value="luxury">Luxury</option>
+                                        <option value="suv">{t('admin.cars.categorySuv')}</option>
+                                        <option value="sports">{t('admin.cars.categorySports')}</option>
+                                        <option value="luxury">{t('admin.cars.categoryLuxury')}</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Year *</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.year')} *</label>
                                     <input
                                         type="number"
                                         value={formData.year || ''}
@@ -2043,7 +2084,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Seats *</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.seats')} *</label>
                                     <input
                                         type="number"
                                         value={formData.seats || ''}
@@ -2054,14 +2095,47 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Price Per Day (MDL) *</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.pricePerDay')} *</label>
                                     <input
                                         type="number"
-                                        value={formData.pricePerDay || ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, pricePerDay: parseFloat(e.target.value) }))}
+                                        value={(formData as any).pricePerDay || formData.price_per_day || ''}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, price_per_day: parseFloat(e.target.value), pricePerDay: parseFloat(e.target.value) } as any))}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                         required
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.discountPercentage')}</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.1"
+                                        value={(formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : (formData.discount_percentage !== undefined ? formData.discount_percentage : '')}
+                                        onChange={(e) => {
+                                            const discountValue = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                discountPercentage: discountValue,
+                                                discount_percentage: discountValue
+                                            } as any));
+                                        }}
+                                        placeholder="0"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">{t('admin.cars.discountPercentageHint')}</p>
+                                    {((formData as any).discountPercentage !== undefined && (formData as any).discountPercentage > 0) || (formData.discount_percentage !== undefined && formData.discount_percentage > 0) ? (
+                                        <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                                            <p className="text-xs text-emerald-400 font-medium">
+                                                {t('admin.cars.discountedPrice')}: {(() => {
+                                                    const basePrice = (formData as any).pricePerDay || formData.price_per_day || 0;
+                                                    const discount = (formData as any).discountPercentage || formData.discount_percentage || 0;
+                                                    const discountedPrice = basePrice * (1 - discount / 100);
+                                                    return `${discountedPrice.toFixed(2)} MDL`;
+                                                })()}
+                                            </p>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
@@ -2070,12 +2144,12 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                 <Upload className="w-5 h-5" />
-                                Main Image
+                                {t('admin.cars.mainImage')}
                             </h3>
                             <div>
                                 <label className="inline-block px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-2">
                                     <Upload className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Upload Image</span>
+                                    <span className="text-sm font-medium">{t('admin.cars.uploadImage')}</span>
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -2088,7 +2162,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                     />
                                 </label>
                                 {uploadingMainImage && (
-                                    <p className="text-xs text-gray-400 mb-2">Uploading image...</p>
+                                    <p className="text-xs text-gray-400 mb-2">{t('admin.cars.uploadingImage')}</p>
                                 )}
                                 {((formData as any).image || formData.image_url) && (
                                     <div className="mt-2 inline-block">
@@ -2105,7 +2179,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 onClick={onClose}
                                 className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
                             >
-                                Cancel
+                                {t('admin.cars.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -2115,12 +2189,12 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                 {loading ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Saving...
+                                        {t('admin.cars.saving')}
                                     </>
                                 ) : (
                                     <>
                                         <Save className="w-4 h-4" />
-                                        Add Car
+                                        {t('admin.cars.addCar')}
                                     </>
                                 )}
                             </button>
@@ -2131,22 +2205,22 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                         <div className="text-green-400 mb-4">
                             <CheckCircle className="w-16 h-16 mx-auto" />
                         </div>
-                        <h3 className="text-xl font-bold text-white">Car Added Successfully!</h3>
-                        <p className="text-gray-300">You can now add more details in the edit section.</p>
+                        <h3 className="text-xl font-bold text-white">{t('admin.cars.carAddedSuccess')}</h3>
+                        <p className="text-gray-300">{t('admin.cars.carAddedDescription')}</p>
                         <div className="flex gap-4 justify-center pt-4">
                             <button
                                 type="button"
                                 onClick={onClose}
                                 className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
                             >
-                                Close
+                                {t('admin.cars.close')}
                             </button>
                             <button
                                 type="button"
                                 onClick={handleContinue}
                                 className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
                             >
-                                Continue
+                                {t('admin.cars.continue')}
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
@@ -2159,6 +2233,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
 };
 
 const CalendarView: React.FC = () => {
+    const { t } = useTranslation();
     return (
         <motion.div
             initial={{ opacity: 1 }}
@@ -2174,7 +2249,7 @@ const CalendarView: React.FC = () => {
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden"
             >
                 <div className="px-6 py-4 border-b border-white/10">
-                    <h2 className="text-xl font-bold text-white">Booking Calendar</h2>
+                    <h2 className="text-xl font-bold text-white">{t('admin.orders.bookingCalendar')}</h2>
                 </div>
                 <div className="p-6">
                     <CalendarPage viewMode='admin' />
@@ -2196,6 +2271,7 @@ const UsersView: React.FC = () => (
 
 // Requests View Component
 const RequestsView: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const requestId = searchParams.get('requestId');
@@ -2270,7 +2346,7 @@ const RequestsView: React.FC = () => {
     };
 
     const handleAccept = async (request: OrderDisplay) => {
-        if (!window.confirm(`Accept request from ${request.customerName} for ${request.carName}?`)) {
+        if (!window.confirm(`${t('admin.requests.confirmAcceptRequest')} ${request.customerName} ${t('admin.requests.forCar')} ${request.carName}?`)) {
             return;
         }
 
@@ -2278,25 +2354,25 @@ const RequestsView: React.FC = () => {
         try {
             const result = await acceptBorrowRequest(request.id.toString(), cars);
             if (result.success) {
-                showSuccess('Request accepted! Rental created successfully.');
+                showSuccess(t('admin.requests.requestAccepted'));
                 await loadRequests();
                 // Optionally navigate to the created rental
                 if (result.rentalId) {
                     navigate(`/admin?section=orders&orderId=${result.rentalId}`);
                 }
             } else {
-                showError(`Failed to accept request: ${result.error || 'Unknown error'}`);
+                showError(`${t('admin.requests.requestAcceptFailed')} ${result.error || t('admin.common.unknownError')}`);
             }
         } catch (error) {
             console.error('Error accepting request:', error);
-            showError('An error occurred while accepting the request.');
+            showError(t('admin.requests.requestAcceptErrorOccurred'));
         } finally {
             setProcessingRequest(null);
         }
     };
 
     const handleReject = async (request: OrderDisplay) => {
-        const reason = window.prompt(`Reject request from ${request.customerName}? (Optional reason):`);
+        const reason = window.prompt(`${t('admin.requests.confirmRejectRequest')} ${request.customerName}? ${t('admin.requests.rejectReasonPrompt')}`);
         if (reason === null) return; // User cancelled
 
         setProcessingRequest(request.id.toString());
@@ -2305,30 +2381,30 @@ const RequestsView: React.FC = () => {
             if (request.status === 'APPROVED') {
                 const result = await updateBorrowRequest(request.id.toString(), { status: 'REJECTED' } as any);
                 if (result.success) {
-                    showSuccess('Request rejected successfully!');
+                    showSuccess(t('admin.requests.requestRejected'));
                     await loadRequests();
                 } else {
-                    showError(`Failed to reject request: ${result.error || 'Unknown error'}`);
+                    showError(`${t('admin.requests.requestRejectFailed')} ${result.error || t('admin.common.unknownError')}`);
                 }
             } else {
                 const result = await rejectBorrowRequest(request.id.toString(), reason || undefined);
                 if (result.success) {
-                    showSuccess('Request rejected successfully!');
+                    showSuccess(t('admin.requests.requestRejected'));
                     await loadRequests();
                 } else {
-                    showError(`Failed to reject request: ${result.error || 'Unknown error'}`);
+                    showError(`${t('admin.requests.requestRejectFailed')} ${result.error || t('admin.common.unknownError')}`);
                 }
             }
         } catch (error) {
             console.error('Error rejecting request:', error);
-            showError('An error occurred while rejecting the request.');
+            showError(t('admin.requests.requestRejectErrorOccurred'));
         } finally {
             setProcessingRequest(null);
         }
     };
 
     const handleUndoReject = async (request: OrderDisplay) => {
-        if (!window.confirm(`Restore request from ${request.customerName} for ${request.carName} to pending?`)) {
+        if (!window.confirm(`${t('admin.requests.confirmRestoreRequest')} ${request.customerName} ${t('admin.requests.forCar')} ${request.carName} ${t('admin.requests.toPending')}`)) {
             return;
         }
 
@@ -2336,21 +2412,21 @@ const RequestsView: React.FC = () => {
         try {
             const result = await undoRejectBorrowRequest(request.id.toString());
             if (result.success) {
-                showSuccess('Request restored to pending successfully!');
+                showSuccess(t('admin.requests.requestRestored'));
                 await loadRequests();
             } else {
-                showError(`Failed to restore request: ${result.error || 'Unknown error'}`);
+                showError(`${t('admin.requests.requestRestoreFailed')} ${result.error || t('admin.common.unknownError')}`);
             }
         } catch (error) {
             console.error('Error undoing reject request:', error);
-            showError('An error occurred while restoring the request.');
+            showError(t('admin.requests.requestRestoreErrorOccurred'));
         } finally {
             setProcessingRequest(null);
         }
     };
 
     const handleSetToPending = async (request: OrderDisplay) => {
-        if (!window.confirm(`Set request from ${request.customerName} for ${request.carName} back to pending?`)) {
+        if (!window.confirm(`${t('admin.requests.confirmSetToPending')} ${request.customerName} ${t('admin.requests.forCar')} ${request.carName} ${t('admin.requests.backToPending')}`)) {
             return;
         }
 
@@ -2358,14 +2434,14 @@ const RequestsView: React.FC = () => {
         try {
             const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
             if (result.success) {
-                showSuccess('Request set to pending successfully!');
+                showSuccess(t('admin.requests.requestSetToPending'));
                 await loadRequests();
             } else {
-                showError(`Failed to update request: ${result.error || 'Unknown error'}`);
+                showError(`${t('admin.requests.requestUpdateFailed')} ${result.error || t('admin.common.unknownError')}`);
             }
         } catch (error) {
             console.error('Error setting request to pending:', error);
-            showError('An error occurred while updating the request.');
+            showError(t('admin.requests.requestUpdateErrorOccurred'));
         } finally {
             setProcessingRequest(null);
         }
@@ -2413,7 +2489,7 @@ const RequestsView: React.FC = () => {
         const endDate = new Date(request.returnDate);
 
         const pickupTime = formatTime(request.pickupTime);
-        const returnTime = formatTime(request.endTime);
+        const returnTime = formatTime(request.returnTime);
         const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
         const [returnHour, returnMin] = returnTime.split(':').map(Number);
 
@@ -2584,7 +2660,7 @@ const RequestsView: React.FC = () => {
                         {/* Title and Add Button Row */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-xl font-bold text-white">Rental Requests</h2>
+                                <h2 className="text-xl font-bold text-white">{t('admin.requests.rentalRequests')}</h2>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
                                 <button
@@ -2594,14 +2670,14 @@ const RequestsView: React.FC = () => {
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    {showRejected ? 'Hide Rejected' : 'Show Rejected'}
+                                    {showRejected ? t('admin.requests.hideRejected') : t('admin.requests.showRejected')}
                                 </button>
                                 <button
                                     onClick={() => setShowAddRentalModal(true)}
                                     className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    Create New Rental
+                                    {t('admin.requests.createRequest')}
                                 </button>
                             </div>
                         </div>
@@ -2613,7 +2689,7 @@ const RequestsView: React.FC = () => {
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                     <input
                                         type="text"
-                                        placeholder="Search requests..."
+                                        placeholder={t('admin.placeholders.searchRequests')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
@@ -2622,7 +2698,7 @@ const RequestsView: React.FC = () => {
                             </div>
                             {/* Filter and Sort Buttons */}
                             <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.requests.sortBy')}</span>
                                 <button
                                     onClick={() => handleSort('pickup')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'pickup'
@@ -2630,7 +2706,7 @@ const RequestsView: React.FC = () => {
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    Pickup Date
+                                    {t('admin.requests.pickupDate')}
                                     {sortBy === 'pickup' && (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     )}
@@ -2643,7 +2719,7 @@ const RequestsView: React.FC = () => {
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    Amount
+                                    {t('admin.requests.amount')}
                                     {sortBy === 'amount' && (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     )}
@@ -2656,7 +2732,7 @@ const RequestsView: React.FC = () => {
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    Status
+                                    {t('admin.requests.status')}
                                     {sortBy === 'status' && (
                                         sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                     )}
@@ -2670,7 +2746,7 @@ const RequestsView: React.FC = () => {
                                         }}
                                         className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                     >
-                                        Clear Sort
+                                        {t('admin.requests.clearSort')}
                                     </button>
                                 )}
                             </div>
@@ -2689,22 +2765,22 @@ const RequestsView: React.FC = () => {
                             <thead className="bg-white/5">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        Customer
+                                        {t('admin.requests.customer')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        Car
+                                        {t('admin.requests.car')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        Pickup
+                                        {t('admin.requests.pickup')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        Return
+                                        {t('admin.requests.return')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        Amount
+                                        {t('admin.requests.amount')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        Status
+                                        {t('admin.requests.status')}
                                     </th>
                                 </tr>
                             </thead>
@@ -2777,7 +2853,11 @@ const RequestsView: React.FC = () => {
                                                                 : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                             }`}
                                                     >
-                                                        {request.status.charAt(0) + request.status.slice(1).toLowerCase()}
+                                                        {request.status === 'PENDING' ? t('admin.status.pending') : 
+                                                         request.status === 'APPROVED' ? t('admin.status.approved') : 
+                                                         request.status === 'REJECTED' ? t('admin.status.rejected') : 
+                                                         request.status === 'EXECUTED' ? t('admin.status.executed') : 
+                                                         request.status}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -2786,7 +2866,7 @@ const RequestsView: React.FC = () => {
                                 ) : (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                                            {searchQuery ? 'No requests found matching your search' : 'No requests available'}
+                                            {searchQuery ? t('admin.requests.noRequests') : t('admin.requests.noRequests')}
                                         </td>
                                     </tr>
                                 )}
@@ -2804,18 +2884,18 @@ const RequestsView: React.FC = () => {
                         try {
                             const result = await createBorrowRequest(
                                 rentalData.carId || '',
-                                rentalData.startDate || '',
-                                rentalData.startTime || '',
-                                rentalData.endDate || '',
-                                rentalData.endTime || '',
+                                rentalData.pickupDate || '',
+                                rentalData.pickupTime || '',
+                                rentalData.returnDate || '',
+                                rentalData.returnTime || '',
                                 rentalData.customerName || '',
                                 rentalData.customerFirstName || '',
                                 rentalData.customerLastName || '',
                                 rentalData.customerEmail || '',
                                 rentalData.customerPhone || '',
                                 rentalData.customerAge ? String(rentalData.customerAge) : undefined,
-                                rentalData.comment,
-                                rentalData.options,
+                                (rentalData as any).comment,
+                                (rentalData as any).options,
                                 rentalData.amount
                             );
                             if (result.success) {
@@ -2861,16 +2941,16 @@ const RequestsView: React.FC = () => {
                         try {
                             const result = await updateBorrowRequest(editingRequest.id.toString(), updatedData);
                             if (result.success) {
-                                alert('Request updated successfully!');
+                                alert(t('admin.requests.requestUpdated'));
                                 setShowEditModal(false);
                                 setEditingRequest(null);
                                 await loadRequests();
                             } else {
-                                alert(`Failed to update request: ${result.error}`);
+                                alert(`${t('admin.requests.requestUpdateFailed')} ${result.error}`);
                             }
                         } catch (error) {
                             console.error('Error updating request:', error);
-                            alert('An error occurred while updating the request.');
+                            alert(t('admin.requests.requestUpdateErrorOccurred'));
                         }
                     }}
                     onClose={() => {
@@ -2897,6 +2977,7 @@ interface RequestDetailsModalProps {
 }
 
 const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, isProcessing = false, cars }) => {
+    const { t } = useTranslation();
     const car = cars.find(c => c.id.toString() === request.carId);
     if (!car) return null;
 
@@ -2932,7 +3013,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
 
     // Parse times and combine with dates for accurate calculation
     const pickupTime = formatTime(request.pickupTime);
-    const returnTime = formatTime(request.endTime);
+    const returnTime = formatTime(request.returnTime);
     const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
     const [returnHour, returnMin] = returnTime.split(':').map(Number);
 
@@ -3056,7 +3137,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                 {/* Header */}
                 <div className="sticky top-0 border-b border-white/20 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                     <div>
-                        <h2 className="text-xl md:text-2xl font-bold text-white">Cerere de închiriere</h2>
+                        <h2 className="text-xl md:text-2xl font-bold text-white">{t('admin.requestDetails.rentalRequest')}</h2>
                         <p className="text-gray-400 text-sm md:text-sm mt-1">{(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}</p>
                     </div>
                     <button
@@ -3071,11 +3152,11 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                 <div className="p-4 md:p-6 space-y-4 md:space-y-6">
                     {/* Rental Period */}
                     <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
-                        <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">Perioada închirierii</h3>
+                        <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">{t('admin.requestDetails.rentalPeriod')}</h3>
                         <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-300 text-sm md:text-base">
-                                    {days} zile{days !== 1 ? '' : ''}, {hours} ore{hours !== 1 ? '' : ''}
+                                    {days} {t('admin.requestDetails.days')}{days !== 1 ? '' : ''}, {hours} {t('admin.requestDetails.hours')}{hours !== 1 ? '' : ''}
                                 </span>
                             </div>
 
@@ -3092,8 +3173,8 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                         </div>
                                         <span>
                                             {discountPercent === 4
-                                                ? 'Reducere de 4% pentru 8+ zile'
-                                                : 'Reducere de 2% pentru 4+ zile'
+                                                ? t('admin.requestDetails.discount4Percent')
+                                                : t('admin.requestDetails.discount2Percent')
                                             }
                                         </span>
                                     </div>
@@ -3102,14 +3183,14 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
 
                             <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-white/10">
                                 <div>
-                                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Data preluării</p>
+                                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.requestDetails.pickupDate')}</p>
                                     <p className="text-white font-semibold text-sm md:text-base">{formatDate(request.pickupDate)}</p>
-                                    <p className="text-gray-400 text-xs md:text-sm">ora {formatTime(request.pickupTime)}</p>
+                                    <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.pickupTime)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Data returnării</p>
+                                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.requestDetails.returnDate')}</p>
                                     <p className="text-white font-semibold text-sm md:text-base">{formatDate(request.returnDate)}</p>
-                                    <p className="text-gray-400 text-xs md:text-sm">ora {formatTime(request.endTime)}</p>
+                                    <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.returnTime)}</p>
                                 </div>
                             </div>
                         </div>
@@ -3117,22 +3198,22 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
 
                     {/* Contact Information */}
                     <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
-                        <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">Date de contact</h3>
+                        <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">{t('admin.requestDetails.contactInformation')}</h3>
                         <div className="grid grid-cols-2 gap-3 md:gap-4">
                             <div>
-                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">Prenume</label>
+                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.firstName')}</label>
                                 <p className="text-white font-medium text-sm md:text-base">{firstName || '—'}</p>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">Nume</label>
+                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.lastName')}</label>
                                 <p className="text-white font-medium text-sm md:text-base">{lastName || '—'}</p>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">Vârstă</label>
+                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.age')}</label>
                                 <p className="text-white font-medium text-sm md:text-base">{age ? `${age}` : '—'}</p>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</label>
+                                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.phone')}</label>
                                 {request.customerPhone ? (
                                     <a
                                         href={`tel:${request.customerPhone.replace(/\s/g, '')}`}
@@ -3146,7 +3227,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             </div>
                             {request.customerEmail && (
                                 <div className="col-span-2">
-                                    <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">E-mail (opțional)</label>
+                                    <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.emailOptional')}</label>
                                     <p className="text-white text-sm md:text-base">{request.customerEmail}</p>
                                 </div>
                             )}
@@ -3155,7 +3236,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
 
                     {/* Rental Options */}
                     <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
-                        <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6">Opțiuni de închiriere</h3>
+                        <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6">{t('admin.requestDetails.rentalOptions')}</h3>
 
                         {/* Parse options from request */}
                         {(() => {
@@ -3219,7 +3300,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             if (selectedOptions.length === 0) {
                                 return (
                                     <div className="text-center py-6 md:py-8">
-                                        <p className="text-gray-400 text-sm">Nu au fost selectate opțiuni suplimentare</p>
+                                        <p className="text-gray-400 text-sm">{t('admin.requestDetails.noOptionsSelected')}</p>
                                     </div>
                                 );
                             }
@@ -3251,32 +3332,32 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                     {/* Comment - Only show if comment exists */}
                     {((request as any).comment || (request as any).customerComment) && (
                         <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
-                            <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">Comentariu (opțional)</h3>
+                            <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">{t('admin.requestDetails.commentOptional')}</h3>
                             <p className="text-gray-300 text-sm whitespace-pre-wrap">{(request as any).comment || (request as any).customerComment}</p>
                         </div>
                     )}
 
                     {/* Price Summary */}
                     <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
-                        <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">Detalii preț</h3>
+                        <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">{t('admin.requestDetails.priceDetails')}</h3>
                         <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-300">Preț pe zi</span>
+                                <span className="text-gray-300">{t('admin.requestDetails.pricePerDay')}</span>
                                 <span className="text-white font-medium">{car.price_per_day} MDL</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-300">Număr zile</span>
+                                <span className="text-gray-300">{t('admin.requestDetails.numberOfDays')}</span>
                                 <span className="text-white font-medium">{rentalDays}</span>
                             </div>
                             {discountPercent > 0 && (
                                 <div className="flex items-center justify-between text-sm text-emerald-400">
-                                    <span>Reducere</span>
+                                    <span>{t('admin.requestDetails.discount')}</span>
                                     <span className="font-medium">-{discountPercent}%</span>
                                 </div>
                             )}
                             <div className="pt-2 border-t border-white/10">
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-white font-medium">Preț de bază</span>
+                                    <span className="text-white font-medium">{t('admin.requestDetails.basePrice')}</span>
                                     <span className="text-white font-medium">{Math.round(basePrice).toLocaleString()} MDL</span>
                                 </div>
                             </div>
@@ -3284,7 +3365,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             {additionalCosts > 0 && (
                                 <>
                                     <div className="pt-2 md:pt-3 border-t border-white/10">
-                                        <h4 className="text-sm font-bold text-white mb-2 md:mb-3">Servicii suplimentare</h4>
+                                        <h4 className="text-sm font-bold text-white mb-2 md:mb-3">{t('admin.requestDetails.additionalServices')}</h4>
                                         <div className="space-y-1.5 md:space-y-2 text-sm">
                                             {parsedOptions.unlimitedKm && (
                                                 <div className="flex justify-between">
@@ -3342,7 +3423,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                             )}
                                             <div className="pt-1.5 md:pt-2 border-t border-white/10">
                                                 <div className="flex justify-between font-medium text-sm">
-                                                    <span className="text-white">Total servicii</span>
+                                                    <span className="text-white">{t('admin.requestDetails.totalServices')}</span>
                                                     <span className="text-white">{Math.round(additionalCosts).toLocaleString()} MDL</span>
                                                 </div>
                                             </div>
@@ -3352,7 +3433,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             )}
 
                             <div className="pt-2 md:pt-3 border-t border-white/10 flex items-center justify-between">
-                                <span className="text-white font-bold text-base md:text-lg">Total</span>
+                                <span className="text-white font-bold text-base md:text-lg">{t('admin.requestDetails.total')}</span>
                                 <span className="text-white font-bold text-lg md:text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
                             </div>
                         </div>
@@ -3373,12 +3454,12 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                 {isProcessing ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Processing...
+                                        {t('admin.requestDetails.processing')}
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="w-4 h-4" />
-                                        Accept Request
+                                        {t('admin.requestDetails.acceptRequest')}
                                     </>
                                 )}
                             </button>
@@ -3394,12 +3475,12 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                 {isProcessing ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Processing...
+                                        {t('admin.requestDetails.processing')}
                                     </>
                                 ) : (
                                     <>
                                         <X className="w-4 h-4" />
-                                        Reject Request
+                                        {t('admin.requestDetails.rejectRequest')}
                                     </>
                                 )}
                             </button>
@@ -3420,12 +3501,12 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     {isProcessing ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Processing...
+                                            {t('admin.requestDetails.processing')}
                                         </>
                                     ) : (
                                         <>
                                             <RefreshCw className="w-4 h-4" />
-                                            Set to Pending
+                                            {t('admin.requestDetails.setToPending')}
                                         </>
                                     )}
                                 </button>
@@ -3470,12 +3551,12 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     {isProcessing ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Processing...
+                                            {t('admin.requestDetails.processing')}
                                         </>
                                     ) : (
                                         <>
                                             <RefreshCw className="w-4 h-4" />
-                                            Undo Reject
+                                            {t('admin.requestDetails.undoReject')}
                                         </>
                                     )}
                                 </button>
@@ -3491,7 +3572,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/60 text-blue-300 hover:text-blue-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                                 >
                                     <Edit className="w-4 h-4" />
-                                    Edit Request
+                                    {t('admin.requestDetails.editRequest')}
                                 </button>
                             )}
                         </div>
@@ -3591,7 +3672,7 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{request.endTime || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{request.returnTime || '--:--'}</span>
                             </div>
                         </div>
                     </div>
@@ -3690,7 +3771,7 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                             </button>
                         </>
                     )}
-                    {request.status === 'APPROVED' && (onSetToPending || onReject) && (
+                    {request.status === 'APPROVED' && (typeof onSetToPending !== 'undefined' || typeof onReject !== 'undefined') && (
                         <>
                             {onSetToPending && (
                                 <button
@@ -3772,6 +3853,7 @@ const COUNTRY_CODES = [
 ];
 
 const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, cars }) => {
+    const { t } = useTranslation();
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
@@ -3781,6 +3863,10 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         lastName?: string;
         age?: string;
         comment?: string;
+        startDate?: string;
+        endDate?: string;
+        startTime?: string;
+        endTime?: string;
     }>({
         customerName: '',
         customerFirstName: '',
@@ -4011,14 +4097,14 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         setFormData(prev => ({
             ...prev,
             carId,
-            carName: selectedCar?.name || '',
+            carName: (selectedCar as any)?.name || '',
         }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.firstName || !formData.lastName || !formData.age || !formData.customerPhone || !formData.carId || !formData.startDate || !formData.endDate) {
-            alert('Please fill in all required fields (First Name, Last Name, Age, Phone, Car, Dates)');
+            alert(t('admin.requests.fillRequiredFields'));
             return;
         }
 
@@ -4065,7 +4151,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             >
                 <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#1C1C1C' }}>
-                    <h2 className="text-xl font-bold text-white">Create New Request</h2>
+                    <h2 className="text-xl font-bold text-white">{t('admin.requests.createNew')}</h2>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -4162,7 +4248,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     type="email"
                                     value={formData.customerEmail || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
-                                    placeholder="email@mail.com"
+                                    placeholder={t('admin.placeholders.email')}
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 />
                             </div>
@@ -4180,7 +4266,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
                             >
-                                <option value="">Select a car</option>
+                                <option value="">{t('admin.requests.selectACar')}</option>
                                 {cars.map(car => (
                                     <option key={car.id} value={car.id.toString()}>
                                         {(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'} - {car.price_per_day || 0} MDL/day
@@ -4534,7 +4620,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     <input
                                         type="checkbox"
                                         checked={options.pickupAtAddress}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, pickupAtAddress: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, pickupAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.pickupAtAddress
@@ -4554,7 +4640,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     <input
                                         type="checkbox"
                                         checked={options.returnAtAddress}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, returnAtAddress: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, returnAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.returnAtAddress
@@ -4580,7 +4666,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.unlimitedKm}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, unlimitedKm: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, unlimitedKm: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.unlimitedKm
@@ -4598,7 +4684,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.speedLimitIncrease}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, speedLimitIncrease: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, speedLimitIncrease: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.speedLimitIncrease
@@ -4623,7 +4709,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.personalDriver}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, personalDriver: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, personalDriver: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.personalDriver
@@ -4641,7 +4727,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.priorityService}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, priorityService: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, priorityService: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.priorityService
@@ -4666,7 +4752,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.tireInsurance}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, tireInsurance: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, tireInsurance: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.tireInsurance
@@ -4691,7 +4777,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.childSeat}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, childSeat: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, childSeat: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.childSeat
@@ -4709,7 +4795,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.simCard}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, simCard: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, simCard: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.simCard
@@ -4727,7 +4813,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                         <input
                                             type="checkbox"
                                             checked={options.roadsideAssistance}
-                                            onChange={(e) => setOptions(prev => ({ ...prev, roadsideAssistance: e.target.checked }))}
+                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, roadsideAssistance: e.target.checked }))}
                                             className="sr-only"
                                         />
                                         <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.roadsideAssistance
@@ -4947,14 +5033,14 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                             onClick={onClose}
                             className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
                         >
-                            Cancel
+                            {t('admin.common.cancel')}
                         </button>
                         <button
                             type="submit"
                             className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
                         >
                             <Save className="w-4 h-4" />
-                            Create Rental
+                            {t('admin.requests.createRental')}
                         </button>
                     </div>
                 </form>
@@ -4985,6 +5071,7 @@ interface EditRequestModalProps {
 }
 
 const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, onClose, cars }) => {
+    const { t } = useTranslation();
     // Parse existing request data
     const parsePhoneNumber = (phone: string | undefined): { code: string; number: string } => {
         if (!phone) return { code: '+373', number: '' };
@@ -5032,6 +5119,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         lastName?: string;
         age?: string;
         comment?: string;
+        startDate?: string;
+        endDate?: string;
+        startTime?: string;
+        endTime?: string;
     }>({
         customerName: request.customerName || '',
         customerFirstName: initialFirstName,
@@ -5044,13 +5135,13 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         startDate: request.pickupDate || '',
         startTime: request.pickupTime || '09:00',
         endDate: request.returnDate || '',
-        endTime: (request as any).endTime || '17:00',
+        endTime: request.returnTime || '17:00',
         status: (request.status || 'PENDING') as any,
         amount: request.amount || 0,
         userId: request.userId || '',
         firstName: initialFirstName,
         lastName: initialLastName,
-        age: request.customerAge || '',
+        age: request.customerAge ? String(request.customerAge) : '',
         comment: (request as any).comment || (request as any).customerComment || '',
     });
 
@@ -5239,7 +5330,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.firstName || !formData.lastName || !formData.age || !formData.customerPhone || !formData.carId || !formData.startDate || !formData.endDate) {
-            alert('Please fill in all required fields');
+            alert(t('admin.requests.fillRequiredFieldsShort'));
             return;
         }
 
@@ -5281,7 +5372,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#1C1C1C' }}>
-                    <h2 className="text-xl font-bold text-white">Edit Request</h2>
+                    <h2 className="text-xl font-bold text-white">{t('admin.requests.editRequest')}</h2>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -5732,7 +5823,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.pickupAtAddress}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, pickupAtAddress: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, pickupAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.pickupAtAddress
@@ -5752,7 +5843,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.returnAtAddress}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, returnAtAddress: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, returnAtAddress: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.returnAtAddress
@@ -5777,7 +5868,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.unlimitedKm}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, unlimitedKm: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, unlimitedKm: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.unlimitedKm
@@ -5795,7 +5886,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.speedLimitIncrease}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, speedLimitIncrease: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, speedLimitIncrease: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.speedLimitIncrease
@@ -5818,7 +5909,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.personalDriver}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, personalDriver: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, personalDriver: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.personalDriver
@@ -5836,7 +5927,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.priorityService}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, priorityService: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, priorityService: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.priorityService
@@ -5859,7 +5950,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.tireInsurance}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, tireInsurance: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, tireInsurance: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.tireInsurance
@@ -5882,7 +5973,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.childSeat}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, childSeat: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, childSeat: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.childSeat
@@ -5900,7 +5991,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.simCard}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, simCard: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, simCard: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.simCard
@@ -5918,7 +6009,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <input
                                         type="checkbox"
                                         checked={options.roadsideAssistance}
-                                        onChange={(e) => setOptions(prev => ({ ...prev, roadsideAssistance: e.target.checked }))}
+                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, roadsideAssistance: e.target.checked }))}
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.roadsideAssistance
@@ -6135,14 +6226,14 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                             onClick={onClose}
                             className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
                         >
-                            Cancel
+                            {t('admin.common.cancel')}
                         </button>
                         <button
                             type="submit"
                             className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
                         >
                             <Save className="w-4 h-4" />
-                            Save Changes
+                            {t('admin.common.save')}
                         </button>
                     </div>
                 </form>
@@ -6223,13 +6314,22 @@ export const Admin: React.FC = () => {
         return () => clearInterval(interval);
     }, [refreshKey, cars]);
 
+    // Force Romanian language for admin panel
+    useEffect(() => {
+        if (i18n.language !== 'ro') {
+            i18n.changeLanguage('ro');
+            localStorage.setItem('selectedLanguage', 'ro');
+            setCurrentLanguage('ro');
+        }
+    }, [i18n]);
+
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'requests', label: 'Requests', icon: FileText },
-        { id: 'cars', label: 'Cars', icon: LiaCarSideSolid },
-        { id: 'calendar', label: 'Calendar', icon: CalendarDays },
-        { id: 'orders', label: 'Orders', icon: ShoppingCart },
-        { id: 'users', label: 'Users', icon: UsersIcon },
+        { id: 'dashboard', label: t('admin.menu.dashboard'), icon: LayoutDashboard },
+        { id: 'requests', label: t('admin.menu.requests'), icon: FileText },
+        { id: 'cars', label: t('admin.menu.cars'), icon: LiaCarSideSolid },
+        { id: 'calendar', label: t('admin.menu.calendar'), icon: CalendarDays },
+        { id: 'orders', label: t('admin.menu.orders'), icon: ShoppingCart },
+        { id: 'users', label: t('admin.menu.users'), icon: UsersIcon },
     ];
 
     const handleSectionChange = (sectionId: string) => {
@@ -6256,41 +6356,41 @@ export const Admin: React.FC = () => {
     };
 
     const getPageTitle = () => {
-        if (orderId) return `Order #${orderId}`;
+        if (orderId) return t('admin.orderDetails.title', { id: orderId });
         const requestId = searchParams.get('requestId');
         if (requestId && section === 'requests') {
-            return `Request #${requestId}`;
+            return t('admin.requestDetails.title', { id: requestId });
         }
         if (carId && section === 'cars') {
             const car = cars.find(c => c.id.toString() === carId);
-            return car ? ((car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car') : 'Edit Car';
+            return car ? ((car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || t('admin.cars.name')) : t('admin.carDetails.title');
         }
         const item = menuItems.find(m => m.id === section);
-        return item?.label || 'Dashboard';
+        return item?.label || t('admin.menu.dashboard');
     };
 
     const getPageDescription = () => {
-        if (orderId) return 'View and manage order details';
+        if (orderId) return t('admin.orderDetails.description');
         const requestId = searchParams.get('requestId');
         if (requestId && section === 'requests') {
-            return 'View and manage rental request details';
+            return t('admin.requestDetails.description');
         }
         if (carId && section === 'cars') {
-            return 'Modify car details and settings';
+            return t('admin.carDetails.description');
         }
         switch (section) {
             case 'dashboard':
-                return 'Welcome back! Here\'s what\'s happening today.';
+                return t('admin.dashboard.title');
             case 'requests':
-                return 'Manage customer rental requests and approvals';
+                return t('admin.requests.description');
             case 'orders':
-                return 'Manage all rental orders and bookings';
+                return t('admin.orders.description');
             case 'cars':
-                return 'Manage your vehicle fleet';
+                return t('admin.cars.description');
             case 'calendar':
-                return 'View and manage bookings calendar';
+                return t('admin.calendar.description');
             case 'users':
-                return 'Manage user accounts and permissions';
+                return t('admin.users.description');
             default:
                 return '';
         }
@@ -6362,8 +6462,8 @@ export const Admin: React.FC = () => {
                                 </div>
                                 <div className="flex items-center justify-between w-full">
                                     <div>
-                                        <h1 className="text-lg font-bold text-white">Admin Panel</h1>
-                                        <p className="text-xs text-gray-300">Level Auto Rental</p>
+                                        <h1 className="text-lg font-bold text-white">{t('admin.title')}</h1>
+                                        <p className="text-xs text-gray-300">{t('admin.subtitle')}</p>
                                     </div>
                                     {/* Mobile Refresh and Settings */}
                                     <div className="lg:hidden flex items-center gap-2">
@@ -6372,7 +6472,7 @@ export const Admin: React.FC = () => {
                                             onClick={handleRefresh}
                                             disabled={isRefreshing}
                                             className="flex items-center px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20 disabled:opacity-50"
-                                            title="Refresh data"
+                                            title={t('admin.common.refresh')}
                                         >
                                             <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
                                         </button>
@@ -6380,7 +6480,7 @@ export const Admin: React.FC = () => {
                                         <button
                                             onClick={() => setIsSettingsModalOpen(true)}
                                             className="flex items-center px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
-                                            title="Settings"
+                                            title={t('admin.common.settings')}
                                         >
                                             <SettingsIcon className="w-4 h-4 text-white" />
                                         </button>
@@ -6412,7 +6512,7 @@ export const Admin: React.FC = () => {
                                                 }`}
                                         >
                                             <div className="relative">
-                                                <Icon className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-red-400' : 'text-gray-400 group-hover:text-white'}`} />
+                                                {Icon && React.createElement(Icon as any, { className: `h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-red-400' : 'text-gray-400 group-hover:text-white'}` })}
                                                 {showBadge && (
                                                     <span className={`lg:hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1 ${isActive
                                                         ? 'bg-red-500 text-white'
@@ -6468,7 +6568,7 @@ export const Admin: React.FC = () => {
                                     <button
                                         onClick={() => setIsSettingsModalOpen(true)}
                                         className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
-                                        aria-label="Settings"
+                                        aria-label={t('admin.common.settings')}
                                     >
                                         <SettingsIcon className="w-4 h-4 text-gray-300 hover:text-white" />
                                     </button>
@@ -6480,7 +6580,7 @@ export const Admin: React.FC = () => {
                                     className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-white/10 border border-white/20 text-gray-200 text-sm font-medium rounded-lg hover:bg-white/20 hover:border-white/30 hover:text-white transition-all duration-200"
                                 >
                                     <Home className="w-4 h-4" />
-                                    <span>Back to Site</span>
+                                    <span>{t('admin.common.backToSite')}</span>
                                 </button>
 
                                 {/* Logout Button */}
@@ -6489,7 +6589,7 @@ export const Admin: React.FC = () => {
                                     className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-500/20 border border-red-500/50 text-red-300 text-sm font-medium rounded-lg hover:bg-red-500/30 hover:border-red-500/60 hover:text-red-200 transition-all duration-200"
                                 >
                                     <LogOut className="w-4 h-4" />
-                                    <span>Logout</span>
+                                    <span>{t('admin.common.signOut')}</span>
                                 </button>
                             </div>
                         </div>
@@ -6556,9 +6656,9 @@ export const Admin: React.FC = () => {
                         {/* Header */}
                         <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                             <div>
-                                <h2 className="text-2xl font-bold text-white">Settings</h2>
+                                <h2 className="text-2xl font-bold text-white">{t('admin.common.settings')}</h2>
                                 <p className="text-gray-400 text-sm mt-1">
-                                    Manage your account settings and preferences
+                                    {t('admin.settings.description')}
                                 </p>
                             </div>
                             <button

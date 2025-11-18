@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { User, Lock, Save } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { supabase } from "../../../lib/supabase";
+import { useTranslation } from "react-i18next";
 
 type TabKey =
     | "profile"
@@ -20,6 +21,7 @@ function TabPanel({
 }
 
 export const Settings: React.FC = () => {
+    const { t } = useTranslation();
     const { userProfile, user } = useAuth();
     const [tab, setTab] = useState<TabKey>("profile");
     const [isSaving, setIsSaving] = useState(false);
@@ -79,8 +81,8 @@ export const Settings: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
 
     const tabs: { key: TabKey; label: string }[] = [
-        { key: "profile", label: "Profile" },
-        { key: "password", label: "Password" },
+        { key: "profile", label: t('admin.settings.profile') },
+        { key: "password", label: t('admin.settings.password') },
     ];
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +92,7 @@ export const Settings: React.FC = () => {
 
     const onSaveProfile = async () => {
         if (!userProfile?.id && !user?.id) {
-            setSaveMessage({ type: 'error', text: 'User not found' });
+            setSaveMessage({ type: 'error', text: t('admin.settings.userNotFound') });
             return;
         }
 
@@ -100,7 +102,7 @@ export const Settings: React.FC = () => {
         try {
             const userId = userProfile?.id || user?.id;
             if (!userId) {
-                throw new Error('User ID not found');
+                throw new Error(t('admin.settings.userIdNotFound'));
             }
 
             const { error } = await supabase
@@ -117,7 +119,7 @@ export const Settings: React.FC = () => {
                 throw error;
             }
 
-            setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setSaveMessage({ type: 'success', text: t('admin.settings.profileUpdatedSuccess') });
             
             // Clear message after 3 seconds
             setTimeout(() => {
@@ -127,7 +129,7 @@ export const Settings: React.FC = () => {
             console.error('Error updating profile:', error);
             setSaveMessage({ 
                 type: 'error', 
-                text: error?.message || 'Failed to update profile. Please try again.' 
+                text: error?.message || t('admin.settings.profileUpdateFailed') 
             });
             
             // Clear error message after 5 seconds
@@ -141,7 +143,7 @@ export const Settings: React.FC = () => {
 
     const onUpdatePassword = () => {
         if (newPassword !== confirmPassword) {
-            alert("Passwords do not match");
+            alert(t('admin.settings.passwordsDoNotMatch'));
             return;
         }
         console.log("update password", { currentPassword, newPassword });
@@ -179,11 +181,11 @@ export const Settings: React.FC = () => {
                 <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <User className="w-5 h-5" />
-                        Profile Information
+                        {t('admin.settings.profileInformation')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Prenume</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.firstName')}</label>
                             <input
                                 type="text"
                                 value={firstName}
@@ -193,7 +195,7 @@ export const Settings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Nume</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.lastName')}</label>
                             <input
                                 type="text"
                                 value={lastName}
@@ -203,7 +205,7 @@ export const Settings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.email')}</label>
                             <input
                                 type="email"
                                 value={email}
@@ -213,7 +215,7 @@ export const Settings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Telefon</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.phone')}</label>
                             <input
                                 type="tel"
                                 value={phone}
@@ -233,7 +235,7 @@ export const Settings: React.FC = () => {
                         className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                        {isSaving ? t('admin.settings.saving') : t('admin.settings.saveChanges')}
                     </button>
                 </div>
             </TabPanel>
@@ -243,11 +245,11 @@ export const Settings: React.FC = () => {
                 <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <Lock className="w-5 h-5" />
-                        Change Password
+                        {t('admin.settings.changePassword')}
                     </h3>
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Current password</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.currentPassword')}</label>
                             <input
                                 type="password"
                                 value={currentPassword}
@@ -257,7 +259,7 @@ export const Settings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">New password</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.newPassword')}</label>
                             <input
                                 type="password"
                                 value={newPassword}
@@ -265,12 +267,12 @@ export const Settings: React.FC = () => {
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                             />
                             <p className="text-xs text-gray-400 mt-1">
-                                Your new password must be more than 8 characters.
+                                {t('admin.settings.passwordRequirement')}
                             </p>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Confirm new password</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.confirmNewPassword')}</label>
                             <input
                                 type="password"
                                 value={confirmPassword}
@@ -289,7 +291,7 @@ export const Settings: React.FC = () => {
                         className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
                     >
                         <Save className="w-4 h-4" />
-                        Update Password
+                        {t('admin.settings.updatePassword')}
                     </button>
                 </div>
             </TabPanel>

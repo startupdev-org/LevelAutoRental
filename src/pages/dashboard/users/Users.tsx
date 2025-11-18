@@ -20,8 +20,10 @@ import { OrderDisplay } from "../../../lib/orders";
 import { cars } from "../../../data/cars";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
+import { useTranslation } from "react-i18next";
 
 export const UsersPage: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
     const [search, setSearch] = useState("");
@@ -207,7 +209,7 @@ export const UsersPage: React.FC = () => {
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Search users..."
+                                    placeholder={t('admin.users.search')}
                                     value={search}
                                     onChange={(e) => {
                                         setSearch(e.target.value);
@@ -230,7 +232,7 @@ export const UsersPage: React.FC = () => {
                                         onClick={() => handleSort('name')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        User
+                                        {t('admin.users.user')}
                                         {sortBy === 'name' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -243,7 +245,7 @@ export const UsersPage: React.FC = () => {
                                         onClick={() => handleSort('email')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        Email
+                                        {t('admin.users.email')}
                                         {sortBy === 'email' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -252,14 +254,14 @@ export const UsersPage: React.FC = () => {
                                     </button>
                                 </th>
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Phone
+                                    {t('admin.users.phone')}
                                 </th>
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                     <button
                                         onClick={() => handleSort('role')}
                                         className="flex items-center gap-1.5 hover:text-white transition-colors"
                                     >
-                                        Role
+                                        {t('admin.users.role')}
                                         {sortBy === 'role' ? (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                         ) : (
@@ -268,10 +270,10 @@ export const UsersPage: React.FC = () => {
                                     </button>
                                 </th>
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Rentals
+                                    {t('admin.users.rentals')}
                                 </th>
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Total Spent
+                                    {t('admin.users.totalSpent')}
                                 </th>
                             </tr>
                         </thead>
@@ -327,7 +329,7 @@ export const UsersPage: React.FC = () => {
                             {paginatedUsers.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-8 text-center text-gray-400 text-sm">
-                                        No users found.
+                                        {t('admin.users.noUsers')}
                                     </td>
                                 </tr>
                             )}
@@ -338,7 +340,7 @@ export const UsersPage: React.FC = () => {
                 {/* Pagination */}
                 <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
                     <div className="text-sm text-gray-300">
-                        Showing {paginatedUsers.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} to {Math.min(currentPage * pageSize, filteredUsers.length)} of {filteredUsers.length} users
+                        {t('admin.users.showing')} {paginatedUsers.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.users.to')} {Math.min(currentPage * pageSize, filteredUsers.length)} {t('admin.users.of')} {filteredUsers.length} {t('admin.users.users')}
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -347,17 +349,17 @@ export const UsersPage: React.FC = () => {
                             className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            Previous
+                            {t('admin.users.previous')}
                         </button>
                         <div className="text-sm text-gray-300 px-2">
-                            Page {currentPage} of {totalPages || 1}
+                            {t('admin.users.page')} {currentPage} {t('admin.users.ofPage')} {totalPages || 1}
                         </div>
                         <button
                             onClick={() => goToPage(currentPage + 1)}
                             disabled={currentPage === totalPages || totalPages === 0}
                             className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
                         >
-                            Next
+                            {t('admin.users.next')}
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
@@ -385,6 +387,7 @@ interface UserDetailsModalProps {
 }
 
 const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, user, userOrders }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     if (!isOpen || !user) return null;
 
@@ -426,7 +429,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                     >
                         {/* Header */}
                         <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
-                            <h2 className="text-2xl font-bold text-white">User Details</h2>
+                            <h2 className="text-2xl font-bold text-white">{t('admin.users.userDetails')}</h2>
                             <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -465,7 +468,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                         <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                                             <div className="flex items-center gap-3 mb-3">
                                                 <Mail className="h-5 w-5 text-gray-400" />
-                                                <p className="text-xs text-gray-400 uppercase tracking-wide">Email</p>
+                                                <p className="text-xs text-gray-400 uppercase tracking-wide">{t('admin.users.email')}</p>
                                             </div>
                                             <p className="text-white font-medium">{user.email}</p>
                                         </div>
@@ -474,7 +477,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                                                 <div className="flex items-center gap-3 mb-3">
                                                     <Phone className="h-5 w-5 text-gray-400" />
-                                                    <p className="text-xs text-gray-400 uppercase tracking-wide">Phone</p>
+                                                    <p className="text-xs text-gray-400 uppercase tracking-wide">{t('admin.users.phone')}</p>
                                                 </div>
                                                 <a
                                                     href={`tel:${user.phone_number.replace(/\s/g, '')}`}
@@ -488,7 +491,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                         <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                                             <div className="flex items-center gap-3 mb-3">
                                                 <UserIcon className="h-5 w-5 text-gray-400" />
-                                                <p className="text-xs text-gray-400 uppercase tracking-wide">Role</p>
+                                                <p className="text-xs text-gray-400 uppercase tracking-wide">{t('admin.users.role')}</p>
                                             </div>
                                             <span className={`px-3 py-1 rounded-lg text-sm font-semibold border backdrop-blur-sm ${user.role.trim().toLowerCase() === 'admin'
                                                 ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
@@ -503,7 +506,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                     <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                                         <div className="flex items-center gap-3 mb-3">
                                             <DollarSign className="h-5 w-5 text-gray-400" />
-                                            <p className="text-xs text-gray-400 uppercase tracking-wide">Total Spent</p>
+                                            <p className="text-xs text-gray-400 uppercase tracking-wide">{t('admin.users.totalSpent')}</p>
                                         </div>
                                         <p className="text-3xl font-bold text-white">
                                             {userOrders.reduce((sum, order) => sum + (order.amount || 0), 0).toFixed(2)} MDL
@@ -515,7 +518,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                 <div>
                                     <div className="flex items-center gap-2 mb-4">
                                         <Car className="h-5 w-5 text-gray-400" />
-                                        <h4 className="text-lg font-bold text-white">Rental History</h4>
+                                        <h4 className="text-lg font-bold text-white">{t('admin.users.rentalHistory')}</h4>
                                         <span className="text-sm text-gray-400">({userOrders.length})</span>
                                     </div>
 
@@ -525,9 +528,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                                 <table className="w-full text-sm" style={{ minWidth: '100%' }}>
                                                     <thead className="bg-white/5 sticky top-0">
                                                         <tr>
-                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Car</th>
-                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Dates</th>
-                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Amount</th>
+                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('admin.users.car')}</th>
+                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('admin.users.dates')}</th>
+                                                            <th className="text-left px-3 md:px-4 py-2 md:py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('admin.users.amount')}</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -563,7 +566,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                                         }}
                                                         className="w-full px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 hover:text-blue-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
                                                     >
-                                                        View {user.first_name} {user.last_name} Past Rentals
+                                                        {t('admin.users.viewPastRentals', { name: `${user.first_name} ${user.last_name}` })}
                                                         <ArrowRight className="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -572,7 +575,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                     ) : (
                                         <div className="bg-white/5 rounded-lg p-12 border border-white/10 text-center">
                                             <Car className="w-16 h-16 text-gray-400 mx-auto mb-4 opacity-50" />
-                                            <p className="text-gray-400">No rental history found</p>
+                                            <p className="text-gray-400">{t('admin.users.noRentalHistory')}</p>
                                         </div>
                                     )}
                                 </div>
