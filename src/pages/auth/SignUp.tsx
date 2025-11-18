@@ -64,7 +64,7 @@ export const SignUp: React.FC = () => {
             const id = data.user.id;
 
             // Insert profile into your 'profiles' table
-            await createUser({
+            const { data: createdProfile, error } = await createUser({
                 id,
                 first_name: firstName,
                 last_name: lastName,
@@ -73,10 +73,17 @@ export const SignUp: React.FC = () => {
                 role: "USER",
             });
 
+            if (error || !createdProfile) {
+                console.error("Profile creation error:", error);
+                setError("Failed to create profile. Please try again later.");
+                setLoading(false);
+                return;
+            }
+
             // Redirect to dashboard
             navigate("/dashboard");
         } catch (err) {
-            setError("An unexpected error occurred. Please try again.");
+            setError("An unexpected error occurred. Please contact the administrator.");
         } finally {
             setLoading(false);
         }
