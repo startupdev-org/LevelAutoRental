@@ -122,9 +122,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                 <button
                     onClick={() => isEditing ? handleCancelEdit() : setIsEditing(true)}
                     disabled={initialLoading}
-                    className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                 >
-                    <Edit3 size={16} />
+                    <Edit3 size={18} />
                     {isEditing ? t('dashboard.profile.cancel') : t('dashboard.profile.editProfile')}
                 </button>
             </div>
@@ -133,102 +133,124 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                 {/* Initial Loading Overlay */}
                 <AnimatePresence>
                     {initialLoading && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-2xl z-20 flex items-center justify-center"
-                        >
+                        <>
+                            {/* Blurred Background Layer */}
                             <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                                className="flex flex-col items-center gap-4"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute inset-0 bg-black/50 backdrop-blur-xl rounded-2xl z-20"
+                            />
+                            {/* Content Overlay */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute inset-0 rounded-2xl z-30 flex items-center justify-center pointer-events-none"
                             >
-                                <div className="relative">
-                                    {/* Outer ring */}
-                                    <motion.div
-                                        className="w-16 h-16 rounded-full border-4 border-red-500/20"
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                    />
-                                    {/* Inner spinner */}
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-600 border-r-red-600/50"
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                    />
-                                    {/* Center dot */}
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="w-2 h-2 rounded-full bg-red-600"></div>
-                                    </div>
-                                </div>
-                                <motion.p
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
-                                    className="text-white/90 font-medium text-sm"
+                                <motion.div
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.8, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    className="flex flex-col items-center gap-4"
                                 >
-                                    {t('dashboard.profile.loading') || 'Loading profile...'}
-                                </motion.p>
+                                    <div className="relative">
+                                        {/* Outer ring */}
+                                        <motion.div
+                                            className="w-16 h-16 rounded-full border-4 border-red-500/20"
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                        />
+                                        {/* Inner spinner */}
+                                        <motion.div
+                                            className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-600 border-r-red-600/50"
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                        />
+                                        {/* Center dot */}
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                                        </div>
+                                    </div>
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="text-white/90 font-medium text-sm"
+                                    >
+                                        {t('dashboard.profile.loading') || 'Loading profile...'}
+                                    </motion.p>
+                                </motion.div>
                             </motion.div>
-                        </motion.div>
+                        </>
                     )}
                 </AnimatePresence>
 
                 {/* Save Loading Overlay */}
                 <AnimatePresence>
                     {loading && !initialLoading && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-2xl z-20 flex items-center justify-center"
-                        >
+                        <>
+                            {/* Blurred Background Layer */}
                             <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                                className="flex flex-col items-center gap-4"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute inset-0 bg-black/50 backdrop-blur-xl rounded-2xl z-20"
+                            />
+                            {/* Content Overlay */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute inset-0 rounded-2xl z-30 flex items-center justify-center pointer-events-none"
                             >
-                                <div className="relative">
-                                    {/* Outer ring */}
-                                    <motion.div
-                                        className="w-16 h-16 rounded-full border-4 border-red-500/20"
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                    />
-                                    {/* Inner spinner */}
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-600 border-r-red-600/50"
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                    />
-                                    {/* Center dot */}
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="w-2 h-2 rounded-full bg-red-600"></div>
-                                    </div>
-                                </div>
-                                <motion.p
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
-                                    className="text-white/90 font-medium text-sm"
+                                <motion.div
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.8, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    className="flex flex-col items-center gap-4"
                                 >
-                                    {t('dashboard.profile.saving') || 'Saving...'}
-                                </motion.p>
+                                    <div className="relative">
+                                        {/* Outer ring */}
+                                        <motion.div
+                                            className="w-16 h-16 rounded-full border-4 border-red-500/20"
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                        />
+                                        {/* Inner spinner */}
+                                        <motion.div
+                                            className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-600 border-r-red-600/50"
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                        />
+                                        {/* Center dot */}
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                                        </div>
+                                    </div>
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="text-white/90 font-medium text-sm"
+                                    >
+                                        {t('dashboard.profile.saving') || 'Saving...'}
+                                    </motion.p>
+                                </motion.div>
                             </motion.div>
-                        </motion.div>
+                        </>
                     )}
                 </AnimatePresence>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.firstName')}</label>
+                        <label className="block text-base font-bold text-gray-200 mb-3">{t('dashboard.profile.firstName')}</label>
                         <input
                             type="text"
                             value={editForm.firstName}
@@ -237,12 +259,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                                 setEditForm({ ...editForm, firstName: value });
                             }}
                             disabled={!isEditing || loading || initialLoading}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.lastName')}</label>
+                        <label className="block text-base font-bold text-gray-200 mb-3">{t('dashboard.profile.lastName')}</label>
                         <input
                             type="text"
                             value={editForm.lastName}
@@ -251,27 +273,27 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                                 setEditForm({ ...editForm, lastName: value });
                             }}
                             disabled={!isEditing || loading || initialLoading}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.email')}</label>
+                        <label className="block text-base font-bold text-gray-200 mb-3">{t('dashboard.profile.email')}</label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="email"
                                 value={user?.email || ''}
                                 disabled
-                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 disabled:opacity-50"
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-3 pl-11 pr-4 text-white text-base placeholder-gray-400 disabled:opacity-50"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('dashboard.profile.phone')}</label>
+                        <label className="block text-base font-bold text-gray-200 mb-3">{t('dashboard.profile.phone')}</label>
                         <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="tel"
                                 value={editForm.phone}
@@ -281,7 +303,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                                     setEditForm({ ...editForm, phone: value });
                                 }}
                                 disabled={!isEditing || loading || initialLoading}
-                                className="w-full bg-white/10 border border-white/20 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-3 pl-11 pr-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                             />
                         </div>
                     </div>
@@ -292,7 +314,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                         <button
                             onClick={handleSaveProfile}
                             disabled={loading}
-                            className="relative bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-red-600 flex items-center justify-center gap-2 min-w-[140px] overflow-hidden"
+                            className="px-3 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-m whitespace-nowrap flex items-center gap-2"
                         >
                             {loading ? (
                                 <>
@@ -301,7 +323,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                                         animate={{ rotate: 360 }}
                                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                                     >
-                                        <Loader2 className="w-4 h-4" />
+                                        <Loader2 className="w-5 h-5" />
                                     </motion.div>
                                     <span>{t('dashboard.profile.saving') || 'Saving...'}</span>
                                 </>
@@ -313,7 +335,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                         <button
                             onClick={handleCancelEdit}
                             disabled={loading}
-                            className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                         >
                             {t('dashboard.profile.cancel')}
                         </button>
@@ -347,42 +369,42 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                             >
                                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-md w-full">
                                     {/* Header */}
-                                    <div className="px-6 py-4 border-b border-white/20 flex items-center justify-between">
+                                    <div className="px-6 py-5 border-b border-white/20 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                                                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                                            <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                                <AlertTriangle className="w-6 h-6 text-yellow-500" />
                                             </div>
-                                            <h3 className="text-xl font-bold text-white">
+                                            <h3 className="text-2xl font-bold text-white">
                                                 {t('dashboard.profile.discardChanges') || 'Discard Changes?'}
                                             </h3>
                                         </div>
                                         <button
                                             onClick={handleCancelDiscard}
-                                            className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                                         >
-                                            <X className="w-5 h-5 text-white/70" />
+                                            <X className="w-6 h-6 text-white/70" />
                                         </button>
                                     </div>
 
                                     {/* Content */}
-                                    <div className="px-6 py-4">
-                                        <p className="text-white/80 text-sm leading-relaxed">
+                                    <div className="px-6 py-5">
+                                        <p className="text-white/80 text-base leading-relaxed font-medium">
                                             {t('dashboard.profile.discardChangesMessage') ||
                                                 'You have unsaved changes. Are you sure you want to discard them? This action cannot be undone.'}
                                         </p>
                                     </div>
 
                                     {/* Footer */}
-                                    <div className="px-6 py-4 border-t border-white/20 flex items-center justify-end gap-3">
+                                    <div className="px-6 py-5 border-t border-white/20 flex items-center justify-end gap-3">
                                         <button
                                             onClick={handleCancelDiscard}
-                                            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-300 font-medium"
+                                            className="px-4 py-2 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-500/50 text-gray-300 font-semibold rounded-lg hover:border-gray-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                                         >
                                             {t('dashboard.profile.keepEditing') || 'Keep Editing'}
                                         </button>
                                         <button
                                             onClick={handleConfirmDiscard}
-                                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 font-medium shadow-md hover:shadow-lg"
+                                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                                         >
                                             {t('dashboard.profile.discard') || 'Discard Changes'}
                                         </button>
