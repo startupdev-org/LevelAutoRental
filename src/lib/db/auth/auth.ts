@@ -1,6 +1,5 @@
 import { User } from '../../../types';
 import { supabase, supabaseAdmin } from '../../supabase';
-import { getLoggedUser } from '../profile';
 
 /**
  * Create a new user
@@ -22,9 +21,16 @@ export async function createUser(user: User) {
 
         console.log('error: ', error)
 
+        return { data, error };
+
 
     } catch (err) {
         console.error('Unexpected error in while creating a new user:', err);
+
+        return {
+            data: null,
+            error: err
+        };
     }
 }
 
