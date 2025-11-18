@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit3, Mail, Phone, Loader2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Edit3, Mail, Phone, Loader2, AlertTriangle, X } from 'lucide-react';
 import { getProfile, updateProfile } from '../../../lib/db/profile';
 import { User } from '../../../types';
 
@@ -19,6 +20,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
     });
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+    const [showDiscardModal, setShowDiscardModal] = useState(false);
 
     // Fetch profile
     async function handleGetProfile() {
@@ -66,14 +68,41 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
         setLoading(false);
     };
 
+    // Check if there are unsaved changes
+    const hasUnsavedChanges = () => {
+        if (!user || !isEditing) return false;
+        return (
+            editForm.firstName !== (user.first_name || '') ||
+            editForm.lastName !== (user.last_name || '') ||
+            editForm.phone !== (user.phone_number || '')
+        );
+    };
+
     const resetProfileInfo = () => {
         setEditForm({
             firstName: user?.first_name || '',
             lastName: user?.last_name || '',
             phone: user?.phone_number || '',
         });
-        setIsEditing(false)
-    }
+        setIsEditing(false);
+        setShowDiscardModal(false);
+    };
+
+    const handleCancelEdit = () => {
+        if (hasUnsavedChanges()) {
+            setShowDiscardModal(true);
+        } else {
+            resetProfileInfo();
+        }
+    };
+
+    const handleConfirmDiscard = () => {
+        resetProfileInfo();
+    };
+
+    const handleCancelDiscard = () => {
+        setShowDiscardModal(false);
+    };
 
     if (activeTab !== 'profile') return null;
 
@@ -91,7 +120,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
 
                 <h2 className="text-4xl font-bold text-white">{t('dashboard.profile.title')}</h2>
                 <button
-                    onClick={() => setIsEditing(!isEditing)}
+                    onClick={() => isEditing ? handleCancelEdit() : setIsEditing(true)}
                     disabled={initialLoading}
                     className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -282,7 +311,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                         </button>
 
                         <button
-                            onClick={() => resetProfileInfo()}
+                            onClick={handleCancelEdit}
                             disabled={loading}
                             className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -291,6 +320,80 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                     </div>
                 )}
             </div>
+
+            {/* Discard Changes Confirmation Modal */}
+            {createPortal(
+                <AnimatePresence>
+                    {showDiscardModal && (
+                        <>
+                            {/* Backdrop */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+                                onClick={handleCancelDiscard}
+                            />
+
+                            {/* Modal */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-md w-full">
+                                    {/* Header */}
+                                    <div className="px-6 py-4 border-b border-white/20 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white">
+                                                {t('dashboard.profile.discardChanges') || 'Discard Changes?'}
+                                            </h3>
+                                        </div>
+                                        <button
+                                            onClick={handleCancelDiscard}
+                                            className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                                        >
+                                            <X className="w-5 h-5 text-white/70" />
+                                        </button>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="px-6 py-4">
+                                        <p className="text-white/80 text-sm leading-relaxed">
+                                            {t('dashboard.profile.discardChangesMessage') ||
+                                                'You have unsaved changes. Are you sure you want to discard them? This action cannot be undone.'}
+                                        </p>
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="px-6 py-4 border-t border-white/20 flex items-center justify-end gap-3">
+                                        <button
+                                            onClick={handleCancelDiscard}
+                                            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-300 font-medium"
+                                        >
+                                            {t('dashboard.profile.keepEditing') || 'Keep Editing'}
+                                        </button>
+                                        <button
+                                            onClick={handleConfirmDiscard}
+                                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 font-medium shadow-md hover:shadow-lg"
+                                        >
+                                            {t('dashboard.profile.discard') || 'Discard Changes'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </motion.div>
     );
 };
