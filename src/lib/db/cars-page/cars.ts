@@ -1,0 +1,206 @@
+import { supabase } from '../../supabase';
+import { Car } from '../../../types';
+
+/**
+ * Filter interface for car queries
+ */
+export interface CarFilters {
+    make?: string;
+    model?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    minYear?: number;
+    maxYear?: number;
+    drivetrain?: string;
+    transmission?: 'Automatic' | 'Manual';
+    fuelType?: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol';
+    seats?: number;
+    status?: string;
+}
+
+/**
+ * Fetch the cars from the database
+ * @returns Car[]
+ */
+export async function fetchCars(): Promise<Car[]> {
+    try {
+        console.log('fetching cars from database');
+        const { data, error } = await supabase
+            .from("Cars")
+            .select("*")
+            .or('status.is.null,status.neq.deleted')
+            .order('id', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching cars:', error);
+            return [];
+        }
+
+        console.log('cars fetched: ', data);
+
+        return data ?? [];
+    } catch (err) {
+        console.error('Unexpected error in fetchCars:', err);
+        return [];
+    }
+}
+
+/**
+ * Fetch the cars make from the database
+ */
+export async function fetchCarsMake() {
+    try {
+        console.log('fetching cars make from database');
+        const { data, error } = await supabase
+            .from("Cars")
+            .select("make");
+
+        if (error) {
+            console.error('Error fetching cars make:', error);
+            return [];
+        }
+
+        // console.log('cars make fetched: ', data);
+
+        // Make them distinct
+        const distinctMakes = [...new Set(data.map(car => car.make))];
+
+        return distinctMakes;
+    } catch (err) {
+        console.error('Unexpected error in fetchCars:', err);
+        return [];
+    }
+}
+
+/**
+ * Fetch the cars models from the database
+ */
+export async function fetchCarsModels(make: string): Promise<string[]> {
+    try {
+        console.log('fetching model for car make: ', make);
+        const { data, error } = await supabase
+            .from("Cars")
+            .select("model")
+            .eq("make", make);
+
+        if (error) {
+            console.error('Error fetching ' + make + ' models:', error);
+            return [];
+        }
+
+        console.log('the fetched models are: ', data)
+
+        return data?.map(item => item.model) ?? [];
+    } catch (err) {
+        console.error('Unexpected error in fetchCars:', err);
+        return [];
+    }
+}
+
+/**
+ * Fetch filtered cars from the database
+ * @param filters - Filter criteria
+ * @returns Car[]
+ */
+export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
+    try {
+        console.log('fetching filtered cars from database', filters);
+
+        let query = supabase
+            .from("Cars")
+            .select("*");
+
+        // Apply status filter (exclude deleted)
+        query = query.or('status.is.null,status.neq.deleted');
+
+        // Apply make filter
+        if (filters.make) {
+            // Handle cases where make might be "Mercedes-AMG" or "Mercedes AMG"
+            const makeParts = filters.make.split(' ');
+            const firstPart = makeParts[0];
+            // Check if make contains the filter (case-insensitive)
+            query = query.ilike('make', `${firstPart}%`);
+        }
+
+        // Apply model filter (model is part of the make field in this database structure)
+        if (filters.model) {
+            // Since model is stored as part of make field (e.g., "Mercedes AMG C43"),
+            // we search in the make field for the model
+            query = query.ilike('make', `%${filters.model}%`);
+        }
+
+        // Apply price range filter
+        if (
+            filters.minPrice !== undefined &&
+            filters.minPrice !== null &&
+            typeof filters.minPrice === "number" &&
+            Number.isFinite(filters.minPrice)
+        ) {
+            query = query.gte('price_per_day', filters.minPrice);
+        }
+
+        if (
+            filters.maxPrice !== undefined &&
+            filters.maxPrice !== null &&
+            typeof filters.maxPrice === "number" &&
+            Number.isFinite(filters.maxPrice)
+        ) {
+            query = query.lte('price_per_day', filters.maxPrice);
+        }
+
+        // Apply year range filter
+        if (filters.minYear !== undefined) {
+            query = query.gte('year', filters.minYear);
+        }
+        if (filters.maxYear !== undefined) {
+            query = query.lte('year', filters.maxYear);
+        }
+
+        // Apply transmission filter
+        if (filters.transmission) {
+            query = query.eq('transmission', filters.transmission);
+        }
+
+        // Apply fuel type filter
+        if (filters.fuelType) {
+            // Map display fuel types to database values
+            const fuelTypeMap: Record<string, string> = {
+                'Petrol': 'gasoline',
+                'Gasoline': 'gasoline',
+                'Diesel': 'diesel',
+                'Electric': 'electric',
+                'Hybrid': 'hybrid'
+            };
+            const dbFuelType = fuelTypeMap[filters.fuelType] || filters.fuelType.toLowerCase();
+            query = query.eq('fuel_type', dbFuelType);
+        }
+
+        // Apply seats filter
+        if (filters.seats !== undefined) {
+            query = query.eq('seats', filters.seats);
+        }
+
+        // Apply status filter (if specific status requested)
+        if (filters.status && filters.status !== 'Any' && filters.status !== 'All') {
+            query = query.eq('status', filters.status);
+        }
+
+        // Order by id
+        query = query.order('id', { ascending: true });
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Error fetching filtered cars:', error);
+            return [];
+        }
+
+        console.log('!!!! filtered cars fetched: ', data);
+
+        return data ?? [];
+    } catch (err) {
+        console.error('Unexpected error in fetchFilteredCars:', err);
+        return [];
+    }
+}
+
