@@ -2,6 +2,35 @@ import { supabase } from '../../supabase';
 import { Car } from '../../../types';
 
 /**
+ * Fetch car by id
+ */
+export async function fetchCarById(carId: number): Promise<Car | null> {
+    console.log('fetching car by id from database');
+    try {
+        const { data, error } = await supabase
+            .from("Cars")
+            .select("*")
+            .eq('id', carId)
+            .single();
+
+
+        if (error) {
+            console.error('Error fetching cars:', error);
+            return null;
+        }
+
+        console.log('car fetched: ', data)
+
+        // data can be null, so default to empty array
+        return data ?? null;
+    } catch (err) {
+        console.error('Unexpected error while fetching a car:', err);
+        return null;
+    }
+}
+
+
+/**
  * Fetch all cars from Supabase
  */
 export async function fetchCars(): Promise<Car[]> {
