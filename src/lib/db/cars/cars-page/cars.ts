@@ -1,5 +1,6 @@
-import { supabase } from '../../supabase';
-import { Car } from '../../../types';
+import { supabase } from '../../../supabase';
+import { Car } from '../../../../types';
+import { fetchImagesByCarName } from '../cars';
 
 /**
  * Filter interface for car queries
@@ -97,6 +98,32 @@ export async function fetchCarsModels(make: string): Promise<string[]> {
     }
 }
 
+
+export async function fetchFilteredCarsWithPhotos(filters: CarFilters): Promise<(Car & { mainImage?: string })[]> {
+    try {
+        const filteredCars = await fetchFilteredCars(filters);
+
+        const carsWithImages = await Promise.all(
+            filteredCars.map(async (car) => {
+                // Assume folder name is based on the car name in lowercase and dash-separated
+                const carName = car.make + ' ' + car.model;
+                const { mainImage, photoGallery } = await fetchImagesByCarName(carName)
+                return {
+                    ...car,
+                    image_url: mainImage,
+                    photo_gallery: photoGallery
+                };
+            })
+        );
+
+        console.log('cars with images are: ', carsWithImages)
+
+        return carsWithImages;
+    } catch (err) {
+        console.error('Error fetching filtered cars with photos:', err);
+        return [];
+    }
+}
 /**
  * Fetch filtered cars from the database
  * @param filters - Filter criteria

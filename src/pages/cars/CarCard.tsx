@@ -93,13 +93,13 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     className="relative overflow-hidden cursor-pointer"
                     onClick={() => navigate(`/cars/${car.id}`)}
                     onMouseMove={(e) => {
-                        if (car.photoGallery && car.photoGallery.length > 1) {
+                        if (car.photo_gallery && car.photo_gallery.length > 1) {
                             const container = e.currentTarget;
                             const rect = container.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const width = rect.width;
                             const maxPhotos = 5;
-                            const photosToShow = Math.min(car.photoGallery.length, maxPhotos);
+                            const photosToShow = Math.min(car.photo_gallery.length, maxPhotos);
                             const photoIndex = Math.floor((x / width) * photosToShow);
                             const clampedIndex = Math.max(0, Math.min(photoIndex, photosToShow - 1));
 
@@ -113,7 +113,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         }
                     }}
                     onMouseLeave={(e) => {
-                        if (car.photoGallery && car.photoGallery.length > 1) {
+                        if (car.photo_gallery && car.photo_gallery.length > 1) {
                             setActivePhotoIndex(0);
                             const imageContainer = e.currentTarget.querySelector('.photo-gallery') as HTMLElement;
                             if (imageContainer) {
@@ -123,11 +123,11 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     }}
                 >
                     <div className="flex transition-transform duration-300 ease-out group-hover:scale-105 photo-gallery">
-                        {car.photoGallery && car.photoGallery.length > 1 ? (
+                        {car.photo_gallery && car.photo_gallery.length > 1 ? (
                             (() => {
                                 const maxPhotos = 5;
-                                const photosToShow = car.photoGallery.slice(0, maxPhotos);
-                                const totalPhotos = car.photoGallery.length;
+                                const photosToShow = car.photo_gallery.slice(0, maxPhotos);
+                                const totalPhotos = car.photo_gallery.length;
                                 const remainingPhotos = totalPhotos - maxPhotos;
 
                                 return photosToShow.map((photo, index) => (
@@ -179,9 +179,9 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     </div>
 
                     {/* Photo Navigation Lines */}
-                    {car.photoGallery && car.photoGallery.length > 1 && (
+                    {car.photo_gallery && car.photo_gallery.length > 1 && (
                         <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1 px-4">
-                            {Array.from({ length: Math.min(car.photoGallery.length, 5) }).map((_, index) => (
+                            {Array.from({ length: Math.min(car.photo_gallery.length, 5) }).map((_, index) => (
                                 <div
                                     key={index}
                                     className={`flex-1 h-0.5 rounded-full transition-colors duration-200 ${index === activePhotoIndex

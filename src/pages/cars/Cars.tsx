@@ -5,7 +5,7 @@ import { Search, Filter, X } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from './CarCard';
-import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels } from '../../lib/db/cars-page/cars';
+import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels, fetchFilteredCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
 import { Car as CarType } from '../../types';
 
 import { RentalOptionsSection } from './section/RentalOptionsSection'
@@ -44,20 +44,6 @@ export const Cars: React.FC = () => {
   const [models, setModels] = useState<string[]>([]);
 
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
-
-  // Map database Car to display Car format
-  const mapCarToDisplay = (car: CarType): DisplayCar => {
-    return {
-      ...car,
-      name: `${car.make} ${car.model}`.trim(),
-      image: car.image_url || '',
-      pricePerDay: car.price_per_day,
-      photoGallery: car.photo_gallery,
-      fuelType: car.fuel_type,
-      availability: car.status === 'available' ? 'Disponibil' : car.status === 'rented' ? 'Închiriat' : car.status || undefined,
-    };
-  };
-
 
   async function handleFetchCarsModel(make: string) {
     // setLoading(true);
@@ -117,7 +103,7 @@ export const Cars: React.FC = () => {
 
       console.log('the last filters are: ', filters)
 
-      const fetchedCars = await fetchFilteredCars(filters);
+      const fetchedCars = await fetchFilteredCarsWithPhotos(filters);
       setCars(fetchedCars);
     } catch (error) {
       console.error('Error fetching filtered cars:', error);
