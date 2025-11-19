@@ -138,7 +138,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                     >
                                         <img
                                             src={photo}
-                                            alt={`${car.name} - Photo ${index + 1}`}
+                                            alt={`${car.make} ${car.model} - Photo ${index + 1}`}
                                             className="w-full h-56 object-cover object-center bg-gray-100"
                                         />
                                         {(() => {
@@ -171,8 +171,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             })()
                         ) : (
                             <img
-                                src={car.image}
-                                alt={car.name}
+                                src={car.image_url || ''}
+                                alt={car.make + ' ' + car.model}
                                 className="w-full h-56 object-cover object-center bg-gray-100"
                             />
                         )}
@@ -194,14 +194,48 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     )}
 
                     {/* Availability Badge */}
-                    {car.availability && (
+                    {car.status && (
                         <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
                             <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span className="whitespace-nowrap">{car.availability}</span>
+                            <span className="whitespace-nowrap">{car.status}</span>
                         </div>
                     )}
+                    {car.status && (
+                        <div
+                            className={`
+                                absolute top-3 left-3 
+                                px-3 py-1.5 
+                                text-xs font-semibold rounded-lg 
+                                flex items-center gap-1.5 
+                                backdrop-blur-md transition-all 
+                                whitespace-nowrap
+                                ${car.status === 'available'
+                                    ? 'bg-green-500/20 border border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500/60'
+                                    : 'bg-red-500/20 border border-red-500/50 text-red-300 hover:bg-red-500/30 hover:border-red-500/60'
+                                }
+                            `}
+                        >
+                            <svg
+                                className="w-3 h-3 flex-shrink-0 opacity-80"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
+                            </svg>
+
+                            <span>{car.status}</span>
+                        </div>
+                    )}
+
+
 
                     {/* Favorite Heart Icon - Top Right */}
                     <div
