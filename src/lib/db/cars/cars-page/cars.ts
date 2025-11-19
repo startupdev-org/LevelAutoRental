@@ -237,6 +237,7 @@ export async function fetchCarsWithPhotos(numberOfCars: number): Promise<(Car[])
     const { data: cars, error } = await supabase
         .from("Cars")
         .select("*")
+        .order('reviews', { ascending: true }) // temporary (should be deleted or modified)
         .limit(numberOfCars);
 
     if (error || !cars) {
