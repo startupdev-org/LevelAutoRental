@@ -1,15 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Filter, X, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
-import { CarCard } from './CarCard';
-import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels } from '../../lib/db/cars-page/cars';
+import { CarCard } from '../../components/car/CarCard';
+import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels, fetchFilteredCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
 import { Car as CarType } from '../../types';
 
-import { RentalOptionsSection } from './section/RentalOptionsSection'
-import { ContractSection } from './section/ContractSection';
+import { RentalOptionsSection } from './sections/RentalOptionsSection'
+import { ContractSection } from './sections/ContractSection';
 import { FUEL_TYPE_MAP, FuelTypeUI } from '../../constants';
 
 // Display Car type for CarCard component
@@ -39,26 +39,11 @@ export const Cars: React.FC = () => {
   const navigate = useNavigate();
 
   const [cars, setCars] = useState<CarType[]>([]);
-  const [displayCars, setDisplayCars] = useState<DisplayCar[]>([]);
   const [loading, setLoading] = useState(true);
   const [makes, setMakes] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
 
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
-
-  // Map database Car to display Car format
-  const mapCarToDisplay = (car: CarType): DisplayCar => {
-    return {
-      ...car,
-      name: `${car.make} ${car.model}`.trim(),
-      image: car.image_url || '',
-      pricePerDay: car.price_per_day,
-      photoGallery: car.photo_gallery,
-      fuelType: car.fuel_type,
-      availability: car.status === 'available' ? 'Disponibil' : car.status === 'rented' ? 'Închiriat' : car.status || undefined,
-    };
-  };
-
 
   async function handleFetchCarsModel(make: string) {
     // setLoading(true);
@@ -79,7 +64,6 @@ export const Cars: React.FC = () => {
     try {
       const fetchedCars = await fetchCars();
       setCars(fetchedCars);
-      setDisplayCars(fetchedCars.map(mapCarToDisplay));
     } catch (error) {
       console.error('Error fetching cars:', error);
     } finally {
@@ -117,12 +101,10 @@ export const Cars: React.FC = () => {
         seats: sidebarFilters.seats !== undefined ? sidebarFilters.seats : undefined,
       };
 
-
       console.log('the last filters are: ', filters)
 
-      const fetchedCars = await fetchFilteredCars(filters);
+      const fetchedCars = await fetchFilteredCarsWithPhotos(filters);
       setCars(fetchedCars);
-      setDisplayCars(fetchedCars.map(mapCarToDisplay));
     } catch (error) {
       console.error('Error fetching filtered cars:', error);
     } finally {
@@ -274,25 +256,6 @@ export const Cars: React.FC = () => {
     }
     return 'w-4 h-4';
   };
-
-  // Sort display cars (filtering is done server-side)
-  const sortedCars = useMemo(() => {
-    const carsToSort = [...displayCars];
-
-    // Sort cars
-    switch (sortBy) {
-      case 'price-low':
-        return carsToSort.sort((a, b) => a.pricePerDay - b.pricePerDay);
-      case 'price-high':
-        return carsToSort.sort((a, b) => b.pricePerDay - a.pricePerDay);
-      case 'year-new':
-        return carsToSort.sort((a, b) => b.year - a.year);
-      case 'year-old':
-        return carsToSort.sort((a, b) => a.year - b.year);
-      default:
-        return carsToSort;
-    }
-  }, [displayCars, sortBy]);
 
   const handleFilterChange = (key: string, value: string) => {
     console.log('settings the filter: key = ', key, ' ; value = ', value)

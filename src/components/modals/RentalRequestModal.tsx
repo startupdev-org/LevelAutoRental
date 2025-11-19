@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check } from 'lucide-react';
-import { Input } from '../ui/Input';
+import { Car as CarType } from '../../types';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
     onClose: () => void;
-    car: {
-        id: number;
-        name: string;
-        pricePerDay: number;
-    };
+    car: CarType;
     pickupDate: string;
     returnDate: string;
     pickupTime: string;
@@ -94,17 +90,17 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const calculateBasePrice = () => {
         if (!rentalCalculation) return 0;
         // Get price with car discount applied first
-        const basePricePerDay = (car as any).pricePerDay || car.pricePerDay || 0;
+        const basePricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
         const carDiscount = (car as any).discount_percentage || 0;
-        const pricePerDay = carDiscount > 0 
+        const pricePerDay = carDiscount > 0
             ? basePricePerDay * (1 - carDiscount / 100)
             : basePricePerDay;
         const rentalDays = rentalCalculation.days; // Use full days for discount calculation
         const totalDays = rentalDays + (rentalCalculation.hours / 24); // Use total days for final calculation
-        
+
         // Base price calculation (same as Calculator.tsx and Admin) - using discounted price
         let basePrice = 0;
-        
+
         if (rentalDays >= 8) {
             basePrice = pricePerDay * 0.96 * rentalDays; // -4% discount
         } else if (rentalDays >= 4) {
@@ -112,13 +108,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         } else {
             basePrice = pricePerDay * rentalDays;
         }
-        
+
         // Add hours portion if there are extra hours
         if (rentalCalculation.hours > 0) {
             const hoursPrice = (rentalCalculation.hours / 24) * pricePerDay;
             basePrice += hoursPrice;
         }
-        
+
         return basePrice;
     };
 
@@ -127,7 +123,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
         // Use the same calculation logic as Calculator page and Admin
         const basePrice = calculateBasePrice();
-        const baseCarPrice = car.pricePerDay;
+        const baseCarPrice = car.price_per_day;
         const rentalDays = rentalCalculation.days; // Use full days for additional costs calculation
         let additionalCost = 0;
 
@@ -167,18 +163,18 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     const basePrice = calculateBasePrice();
     const totalCost = calculateTotalCost();
-    
+
     // Calculate additional costs separately for display
     const rentalDays = rentalCalculation?.days || 0;
     let additionalCosts = 0;
-    
+
     // Get discounted price for additional services
-    const basePricePerDay = (car as any).pricePerDay || car.pricePerDay || 0;
+    const basePricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
     const carDiscount = (car as any).discount_percentage || 0;
-    const baseCarPrice = carDiscount > 0 
+    const baseCarPrice = carDiscount > 0
         ? basePricePerDay * (1 - carDiscount / 100)
         : basePricePerDay;
-    
+
     // Percentage-based options (calculated as percentage of base car price * days)
     if (options.unlimitedKm) {
         additionalCosts += baseCarPrice * rentalDays * 0.5; // 50%
@@ -189,7 +185,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     if (options.tireInsurance) {
         additionalCosts += baseCarPrice * rentalDays * 0.2; // 20%
     }
-    
+
     // Fixed daily costs
     if (options.personalDriver) {
         additionalCosts += 800 * rentalDays;
@@ -206,18 +202,18 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     if (options.roadsideAssistance) {
         additionalCosts += 500 * rentalDays;
     }
-    
+
     const pricePerDay = rentalCalculation ? Math.round(totalCost / (rentalCalculation.days + (rentalCalculation.hours / 24))) : 0;
-    
+
     // Calculate discount info
-    const discountPercentage = rentalCalculation && rentalCalculation.days >= 8 
-        ? 4 
-        : rentalCalculation && rentalCalculation.days >= 4 
-        ? 2 
-        : 0;
-    
-    const originalPrice = rentalCalculation 
-        ? car.pricePerDay * (rentalCalculation.days + (rentalCalculation.hours / 24))
+    const discountPercentage = rentalCalculation && rentalCalculation.days >= 8
+        ? 4
+        : rentalCalculation && rentalCalculation.days >= 4
+            ? 2
+            : 0;
+
+    const originalPrice = rentalCalculation
+        ? car.price_per_day * (rentalCalculation.days + (rentalCalculation.hours / 24))
         : 0;
 
     const handleInputChange = (field: string, value: string) => {
@@ -321,7 +317,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             <div className="sticky top-0 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between rounded-t-3xl z-10 backdrop-blur-sm">
                                 <div>
                                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Cerere de închiriere</h2>
-                                    <p className="text-xs md:text-sm text-gray-500">{car.name}</p>
+                                    <p className="text-xs md:text-sm text-gray-500">{car.make + ' ' + car.model}</p>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -349,10 +345,10 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
                                             </span>
                                         </div>
-                                        
+
                                         {/* Discount indicator */}
                                         {discountPercentage > 0 && (
-                                            <motion.div 
+                                            <motion.div
                                                 initial={{ opacity: 0, y: -10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 className="mb-4 md:mb-5 p-3 md:p-4 bg-theme-50 border border-theme-200 rounded-xl"
@@ -362,7 +358,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         <Check className="w-3 md:w-4 h-3 md:h-4 text-white" />
                                                     </div>
                                                     <span>
-                                                        {discountPercentage === 4 
+                                                        {discountPercentage === 4
                                                             ? 'Reducere de 4% pentru 8+ zile'
                                                             : 'Reducere de 2% pentru 4+ zile'
                                                         }
@@ -492,7 +488,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             </div>
                                             Opțiuni de închiriere
                                         </h3>
-                                        
+
                                         {/* Pickup and Return */}
                                         <div className="space-y-2 mb-5 md:mb-6">
                                             <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Preluarea și returnarea automobilului</h4>
@@ -505,15 +501,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                             onChange={(e) => handleOptionChange('pickupAtAddress', e.target.checked)}
                                                             className="sr-only"
                                                         />
-                                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                            options.pickupAtAddress
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                        }`}>
+                                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.pickupAtAddress
+                                                            ? 'bg-theme-500 border-theme-500'
+                                                            : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                            }`}>
                                                             <svg
-                                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                    options.pickupAtAddress ? 'opacity-100' : 'opacity-0'
-                                                                }`}
+                                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.pickupAtAddress ? 'opacity-100' : 'opacity-0'
+                                                                    }`}
                                                                 fill="currentColor"
                                                                 viewBox="0 0 20 20"
                                                             >
@@ -540,15 +534,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                             onChange={(e) => handleOptionChange('returnAtAddress', e.target.checked)}
                                                             className="sr-only"
                                                         />
-                                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                            options.returnAtAddress
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                        }`}>
+                                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.returnAtAddress
+                                                            ? 'bg-theme-500 border-theme-500'
+                                                            : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                            }`}>
                                                             <svg
-                                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                    options.returnAtAddress ? 'opacity-100' : 'opacity-0'
-                                                                }`}
+                                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.returnAtAddress ? 'opacity-100' : 'opacity-0'
+                                                                    }`}
                                                                 fill="currentColor"
                                                                 viewBox="0 0 20 20"
                                                             >
@@ -581,15 +573,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.unlimitedKm
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.unlimitedKm ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -615,15 +605,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('speedLimitIncrease', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.speedLimitIncrease
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.speedLimitIncrease
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.speedLimitIncrease ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.speedLimitIncrease ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -655,15 +643,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('personalDriver', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.personalDriver
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.personalDriver
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.personalDriver ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.personalDriver ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -689,15 +675,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('priorityService', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.priorityService
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.priorityService
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.priorityService ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.priorityService ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -729,15 +713,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('tireInsurance', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.tireInsurance
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.tireInsurance
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.tireInsurance ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.tireInsurance ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -769,15 +751,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('childSeat', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.childSeat
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.childSeat
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.childSeat ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.childSeat ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -803,15 +783,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('simCard', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.simCard
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.simCard
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.simCard ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.simCard ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -837,15 +815,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 onChange={(e) => handleOptionChange('roadsideAssistance', e.target.checked)}
                                                                 className="sr-only"
                                                             />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                                options.roadsideAssistance
-                                                                    ? 'bg-theme-500 border-theme-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.roadsideAssistance
+                                                                ? 'bg-theme-500 border-theme-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                }`}>
                                                                 <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                                        options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
                                                                     fill="currentColor"
                                                                     viewBox="0 0 20 20"
                                                                 >
@@ -883,7 +859,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-600">Preț pe zi</span>
-                                                <span className="text-gray-900 font-medium">{car.pricePerDay.toLocaleString('ro-RO')} MDL</span>
+                                                <span className="text-gray-900 font-medium">{car.price_per_day.toLocaleString('ro-RO')} MDL</span>
                                             </div>
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-600">Număr zile</span>
@@ -901,7 +877,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     <span className="text-gray-900 font-medium">{Math.round(basePrice).toLocaleString('ro-RO')} MDL</span>
                                                 </div>
                                             </div>
-                                            
+
                                             {additionalCosts > 0 && (
                                                 <>
                                                     <div className="pt-3 border-t border-gray-200">
@@ -911,7 +887,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-600">Kilometraj nelimitat</span>
                                                                     <span className="text-gray-900 font-medium">
-                                                                        {Math.round(car.pricePerDay * rentalCalculation.days * 0.5).toLocaleString('ro-RO')} MDL
+                                                                        {Math.round(car.price_per_day * rentalCalculation.days * 0.5).toLocaleString('ro-RO')} MDL
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -919,7 +895,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-600">Creșterea limitei de viteză</span>
                                                                     <span className="text-gray-900 font-medium">
-                                                                        {Math.round(car.pricePerDay * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
+                                                                        {Math.round(car.price_per_day * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -927,7 +903,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-600">Asigurare anvelope & parbriz</span>
                                                                     <span className="text-gray-900 font-medium">
-                                                                        {Math.round(car.pricePerDay * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
+                                                                        {Math.round(car.price_per_day * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -971,7 +947,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     </div>
                                                 </>
                                             )}
-                                            
+
                                             <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
                                                 <span className="text-gray-900 font-bold text-lg">Total</span>
                                                 <span className="text-gray-900 font-bold text-xl">{totalCost.toLocaleString('ro-RO')} MDL</span>

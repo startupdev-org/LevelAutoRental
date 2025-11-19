@@ -1,10 +1,30 @@
 import { motion } from "framer-motion";
 import { CarFront } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { cars } from '../../../data/cars';
+import { Car as CarType } from "../../../types/index"
+import { useEffect, useState } from "react";
+import { fetchCarsWithPhotos } from "../../../lib/db/cars/cars-page/cars";
+
+const NUMBER_OF_CARS = 3;
 
 export const CarNotFound: React.FC = () => {
     const navigate = useNavigate();
+
+    const [cars, setCars] = useState<CarType[]>([]);
+
+    async function handleFetchCarsWithPhotos() {
+        try {
+            const fetchedCars = await fetchCarsWithPhotos(NUMBER_OF_CARS);
+            setCars(fetchedCars);
+            // console.log('fetched cars are: ', fetchedCars)
+        } catch (error) {
+            console.error('Error fetching cars:', error);
+        }
+    }
+
+    useEffect(() => {
+        handleFetchCarsWithPhotos();
+    }, []);
 
     return (
         <motion.div
@@ -59,21 +79,21 @@ export const CarNotFound: React.FC = () => {
                     <div className="mt-6">
                         <h3 className="text-sm text-gray-500 mb-4 font-medium">Poate te interesează</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {cars.slice(1, 4).map((c) => (
+                            {cars.map((car) => (
                                 <Link
-                                    key={c.id}
-                                    to={`/cars/${c.id}`}
+                                    key={car.id}
+                                    to={`/cars/${car.id}`}
                                     className="flex flex-col sm:flex-row items-center sm:items-start gap-3 p-4 rounded-xl border hover:shadow-lg transition bg-white"
                                 >
                                     <img
-                                        src={c.image}
-                                        alt={c.name}
+                                        src={car.image_url || ''}
+                                        alt={car.make + ' ' + car.model}
                                         className="w-24 h-16 object-cover rounded-md flex-shrink-0"
                                     />
                                     <div className="text-left sm:flex-1">
-                                        <div className="text-sm font-semibold text-gray-800 truncate">{c.name}</div>
-                                        <div className="text-xs text-gray-500">{c.year}</div>
-                                        <div className="text-sm text-red-600 font-semibold mt-1">{c.pricePerDay ? `${c.pricePerDay} € / zi` : 'Contact'}</div>
+                                        <div className="text-sm font-semibold text-gray-800 truncate">{car.make + ' ' + car.model}</div>
+                                        <div className="text-xs text-gray-500">{car.year}</div>
+                                        <div className="text-sm text-red-600 font-semibold mt-1">{car.price_per_day ? `${car.price_per_day} € / zi` : 'Contact'}</div>
                                     </div>
                                 </Link>
                             ))}

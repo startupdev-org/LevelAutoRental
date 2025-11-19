@@ -6,8 +6,8 @@ export interface Car {
   price_per_day: number;
   discount_percentage?: number; // optional discount percentage (0-100)
   category?: 'suv' | 'sports' | 'luxury'; // optional if nullable in DB
-  image_url?: string;
-  photo_gallery?: string[]; // optional array of URLs
+  image_url?: string | null;
+  photo_gallery?: string[] | null;
   seats?: number;
   transmission?: 'Automatic' | 'Manual';
   body?: 'Coupe' | 'Sedan' | 'SUV';

@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useInView } from '../../hooks/useInView';
 import { Car } from '../../types';
 import { fadeInUp } from '../../utils/animations';
-import { Card } from '../../components/ui/Card';
+import { Card } from '../ui/Card';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -93,13 +93,13 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     className="relative overflow-hidden cursor-pointer"
                     onClick={() => navigate(`/cars/${car.id}`)}
                     onMouseMove={(e) => {
-                        if (car.photoGallery && car.photoGallery.length > 1) {
+                        if (car.photo_gallery && car.photo_gallery.length > 1) {
                             const container = e.currentTarget;
                             const rect = container.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const width = rect.width;
                             const maxPhotos = 5;
-                            const photosToShow = Math.min(car.photoGallery.length, maxPhotos);
+                            const photosToShow = Math.min(car.photo_gallery.length, maxPhotos);
                             const photoIndex = Math.floor((x / width) * photosToShow);
                             const clampedIndex = Math.max(0, Math.min(photoIndex, photosToShow - 1));
 
@@ -113,7 +113,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         }
                     }}
                     onMouseLeave={(e) => {
-                        if (car.photoGallery && car.photoGallery.length > 1) {
+                        if (car.photo_gallery && car.photo_gallery.length > 1) {
                             setActivePhotoIndex(0);
                             const imageContainer = e.currentTarget.querySelector('.photo-gallery') as HTMLElement;
                             if (imageContainer) {
@@ -123,11 +123,11 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     }}
                 >
                     <div className="flex transition-transform duration-300 ease-out group-hover:scale-105 photo-gallery">
-                        {car.photoGallery && car.photoGallery.length > 1 ? (
+                        {car.photo_gallery && car.photo_gallery.length > 1 ? (
                             (() => {
                                 const maxPhotos = 5;
-                                const photosToShow = car.photoGallery.slice(0, maxPhotos);
-                                const totalPhotos = car.photoGallery.length;
+                                const photosToShow = car.photo_gallery.slice(0, maxPhotos);
+                                const totalPhotos = car.photo_gallery.length;
                                 const remainingPhotos = totalPhotos - maxPhotos;
 
                                 return photosToShow.map((photo, index) => (
@@ -138,7 +138,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                     >
                                         <img
                                             src={photo}
-                                            alt={`${car.name} - Photo ${index + 1}`}
+                                            alt={`${car.make} ${car.model} - Photo ${index + 1}`}
                                             className="w-full h-56 object-cover object-center bg-gray-100"
                                         />
                                         {(() => {
@@ -171,17 +171,17 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             })()
                         ) : (
                             <img
-                                src={car.image}
-                                alt={car.name}
+                                src={car.image_url || ''}
+                                alt={car.make + ' ' + car.model}
                                 className="w-full h-56 object-cover object-center bg-gray-100"
                             />
                         )}
                     </div>
 
                     {/* Photo Navigation Lines */}
-                    {car.photoGallery && car.photoGallery.length > 1 && (
+                    {car.photo_gallery && car.photo_gallery.length > 1 && (
                         <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1 px-4">
-                            {Array.from({ length: Math.min(car.photoGallery.length, 5) }).map((_, index) => (
+                            {Array.from({ length: Math.min(car.photo_gallery.length, 5) }).map((_, index) => (
                                 <div
                                     key={index}
                                     className={`flex-1 h-0.5 rounded-full transition-colors duration-200 ${index === activePhotoIndex
@@ -194,14 +194,48 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     )}
 
                     {/* Availability Badge */}
-                    {car.availability && (
+                    {car.status && (
                         <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
                             <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span className="whitespace-nowrap">{car.availability}</span>
+                            <span className="whitespace-nowrap">{car.status}</span>
                         </div>
                     )}
+                    {car.status && (
+                        <div
+                            className={`
+                                absolute top-3 left-3 
+                                px-3 py-1.5 
+                                text-xs font-semibold rounded-lg 
+                                flex items-center gap-1.5 
+                                backdrop-blur-md transition-all 
+                                whitespace-nowrap
+                                ${car.status === 'available'
+                                    ? 'bg-green-500/20 border border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500/60'
+                                    : 'bg-red-500/20 border border-red-500/50 text-red-300 hover:bg-red-500/30 hover:border-red-500/60'
+                                }
+                            `}
+                        >
+                            <svg
+                                className="w-3 h-3 flex-shrink-0 opacity-80"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
+                            </svg>
+
+                            <span>{car.status}</span>
+                        </div>
+                    )}
+
+
 
                     {/* Favorite Heart Icon - Top Right */}
                     <div

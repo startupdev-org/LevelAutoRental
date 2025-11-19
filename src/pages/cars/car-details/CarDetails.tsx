@@ -1,37 +1,57 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Star, 
-    Calendar, 
+import {
+    Star,
+    Calendar,
     ChevronRight,
-    Gauge,
-    UserRound,
-    Zap,
-    Shield,
-    Baby,
-    Wifi,
-    Wrench,
     Phone,
     Send,
     Clock
 } from 'lucide-react';
 import { BiSolidHeart } from "react-icons/bi";
-import { LiaCarSideSolid } from 'react-icons/lia';
-
-import { cars } from '../../../data/cars';
-import { CarNotFound } from './CarNotFound';
+import { CarNotFound } from '../sections/CarNotFound';
 import { RentalRequestModal } from '../../../components/modals/RentalRequestModal';
+import { ContractSection } from '../sections/ContractSection';
+import { Car } from '../../../types';
+import { fetchCarById } from '../../../lib/cars';
+import { RentalOptionsSection } from '../sections/RentalOptionsSection';
 
 export const CarDetails: React.FC = () => {
-    const { carId } = useParams();
+    const { carId } = useParams<{ carId: string }>();
     const navigate = useNavigate();
-    const car = cars.find((c) => c.id.toString() === carId);
 
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image);
-    const gallery = (car && (car.photoGallery ?? [car.image]).filter(Boolean)) || [];
+    // ───── STATE ─────
+    const [car, setCar] = useState<Car | null>(null);
+    const [selectedImage, setSelectedImage] = useState<string | undefined>();
+    const [isFavorite, setIsFavorite] = useState(false);
 
-    // Favorite functionality
+    const [pickupDate, setPickupDate] = useState<string>('');
+    const [returnDate, setReturnDate] = useState<string>('');
+    const [pickupTime, setPickupTime] = useState<string>('');
+    const [returnTime, setReturnTime] = useState<string>('');
+
+    const [showPickupCalendar, setShowPickupCalendar] = useState(false);
+    const [showReturnCalendar, setShowReturnCalendar] = useState(false);
+    const [showPickupTime, setShowPickupTime] = useState(false);
+    const [showReturnTime, setShowReturnTime] = useState(false);
+
+    const [calendarMonth, setCalendarMonth] = useState<{ pickup: Date; return: Date }>(() => {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return { pickup: today, return: tomorrow };
+    });
+
+    const [showRentalModal, setShowRentalModal] = useState(false);
+
+    // ───── REFS ─────
+    const pickupCalendarRef = useRef<HTMLDivElement>(null);
+    const returnCalendarRef = useRef<HTMLDivElement>(null);
+    const pickupTimeRef = useRef<HTMLDivElement>(null);
+    const returnTimeRef = useRef<HTMLDivElement>(null);
+
+    // ───── HELPERS ─────
     const getFavorites = (): number[] => {
         try {
             const favorites = localStorage.getItem('carFavorites');
@@ -41,23 +61,13 @@ export const CarDetails: React.FC = () => {
         }
     };
 
-    const [isFavorite, setIsFavorite] = useState(() => {
-        if (!car) return false;
-        const favorites = getFavorites();
-        return favorites.includes(car.id);
-    });
-
     const saveFavorite = (carId: number, favorite: boolean) => {
         const favorites = getFavorites();
         if (favorite) {
-            if (!favorites.includes(carId)) {
-                favorites.push(carId);
-            }
+            if (!favorites.includes(carId)) favorites.push(carId);
         } else {
             const index = favorites.indexOf(carId);
-            if (index > -1) {
-                favorites.splice(index, 1);
-            }
+            if (index > -1) favorites.splice(index, 1);
         }
         localStorage.setItem('carFavorites', JSON.stringify(favorites));
     };
@@ -69,41 +79,6 @@ export const CarDetails: React.FC = () => {
         saveFavorite(car.id, newFavoriteState);
     };
 
-    // Update favorite state when car changes
-    useEffect(() => {
-        if (car) {
-            const favorites = getFavorites();
-            setIsFavorite(favorites.includes(car.id));
-        }
-    }, [car?.id]);
-
-    // Rental booking state
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const [pickupDate, setPickupDate] = useState<string>('');
-    const [returnDate, setReturnDate] = useState<string>('');
-    const [pickupTime, setPickupTime] = useState<string>('');
-    const [returnTime, setReturnTime] = useState<string>('');
-    
-    const [showPickupCalendar, setShowPickupCalendar] = useState(false);
-    const [showReturnCalendar, setShowReturnCalendar] = useState(false);
-    const [showPickupTime, setShowPickupTime] = useState(false);
-    const [showReturnTime, setShowReturnTime] = useState(false);
-    
-    const [calendarMonth, setCalendarMonth] = useState<{ pickup: Date; return: Date }>({
-        pickup: today,
-        return: tomorrow
-    });
-
-    // Refs for click outside detection
-    const pickupCalendarRef = useRef<HTMLDivElement>(null);
-    const returnCalendarRef = useRef<HTMLDivElement>(null);
-    const pickupTimeRef = useRef<HTMLDivElement>(null);
-    const returnTimeRef = useRef<HTMLDivElement>(null);
-
-    // Helper functions
     const formatDate = (dateString: string): string => {
         const date = new Date(dateString);
         const day = String(date.getDate()).padStart(2, '0');
@@ -134,8 +109,6 @@ export const CarDetails: React.FC = () => {
         return days;
     };
 
-
-    // Generate hours (00:00 to 23:00 in 30 minute intervals)
     const generateHours = (): string[] => {
         const hours: string[] = [];
         for (let h = 0; h < 24; h++) {
@@ -145,114 +118,106 @@ export const CarDetails: React.FC = () => {
         return hours;
     };
 
-    // Click outside handler
+    // ───── EFFECTS ─────
+    // Fetch car
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (pickupCalendarRef.current && !pickupCalendarRef.current.contains(event.target as Node)) {
-                setShowPickupCalendar(false);
-            }
-            if (returnCalendarRef.current && !returnCalendarRef.current.contains(event.target as Node)) {
-                setShowReturnCalendar(false);
-            }
-            if (pickupTimeRef.current && !pickupTimeRef.current.contains(event.target as Node)) {
-                setShowPickupTime(false);
-            }
-            if (returnTimeRef.current && !returnTimeRef.current.contains(event.target as Node)) {
-                setShowReturnTime(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    useEffect(() => {
-        setSelectedImage(car?.image);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [carId, car?.image]);
-
-    // Sync calendar month with selected dates
-    useEffect(() => {
-        if (pickupDate) {
-            setCalendarMonth(prev => ({ ...prev, pickup: new Date(pickupDate) }));
+        if (!carId) {
+            return;
         }
+        const fetchCar = async () => {
+            const fetchedCar = await fetchCarById(Number(carId));
+            if (!fetchedCar) {
+                return;
+            }
+            setCar(fetchedCar);
+            console.log('the car is: ', fetchedCar)
+        };
+        fetchCar();
+    }, [carId, navigate]);
+
+    // Update favorite & selected image when car loads
+    useEffect(() => {
+        if (car) {
+            const favorites = getFavorites();
+            setIsFavorite(favorites.includes(car.id));
+            setSelectedImage(car.image_url || '');
+        }
+    }, [car]);
+
+    // Scroll to top on car change
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [carId, car?.image_url]);
+
+    // Sync calendar months with selected dates
+    useEffect(() => {
+        if (pickupDate) setCalendarMonth(prev => ({ ...prev, pickup: new Date(pickupDate) }));
     }, [pickupDate]);
 
     useEffect(() => {
         if (returnDate) {
             setCalendarMonth(prev => ({ ...prev, return: new Date(returnDate) }));
         } else if (pickupDate) {
-            // If return date is not set but pickup is, show next month
             const nextMonth = new Date(pickupDate);
             nextMonth.setMonth(nextMonth.getMonth() + 1);
             setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
         }
     }, [returnDate, pickupDate]);
 
-    if (!car) {
-        return <CarNotFound />
+    // Click outside for calendars & time selectors
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (pickupCalendarRef.current && !pickupCalendarRef.current.contains(event.target as Node))
+                setShowPickupCalendar(false);
+            if (returnCalendarRef.current && !returnCalendarRef.current.contains(event.target as Node))
+                setShowReturnCalendar(false);
+            if (pickupTimeRef.current && !pickupTimeRef.current.contains(event.target as Node))
+                setShowPickupTime(false);
+            if (returnTimeRef.current && !returnTimeRef.current.contains(event.target as Node))
+                setShowReturnTime(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // ───── DERIVED DATA ─────
+    const gallery = (car?.photo_gallery ?? [car?.image_url]).filter(Boolean);
+
+    if (!carId || car === null) {
+        // Show placeholder / not found component while loading or if invalid
+        return <CarNotFound />;
     }
 
-    // Calculate rental duration and price (same system as Calculator.tsx)
+    // rental calculation, etc.
     const calculateRental = () => {
-        if (!pickupDate || !returnDate || !pickupTime || !returnTime) {
-            return null;
-        }
-
+        if (!pickupDate || !returnDate || !pickupTime || !returnTime) return null;
         const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
         const returnDateTime = new Date(`${returnDate}T${returnTime}`);
-        
-        // Calculate total milliseconds
         const diffMs = returnDateTime.getTime() - pickupDateTime.getTime();
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
         const days = Math.floor(diffHours / 24);
         const hours = diffHours % 24;
 
-        // Use same calculation system as Calculator.tsx
-        const rentalDays = days; // Use full days for discount calculation
-        const totalDays = days + (hours / 24); // Use total days for final calculation
-        
-        // Get price with car discount applied first
+        const rentalDays = days;
+        const totalDays = days + hours / 24;
         const basePricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
         const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
-        const pricePerDay = carDiscount > 0 
-            ? basePricePerDay * (1 - carDiscount / 100)
-            : basePricePerDay;
-        
-        // Base price calculation (same as Calculator.tsx) - using discounted price
-        let basePrice = 0;
-        
-        if (rentalDays >= 8) {
-            basePrice = pricePerDay * 0.96 * rentalDays; // -4% discount
-        } else if (rentalDays >= 4) {
-            basePrice = pricePerDay * 0.98 * rentalDays; // -2% discount
-        } else {
-            basePrice = pricePerDay * rentalDays;
-        }
-        
-        // Add hours portion if there are extra hours
-        if (hours > 0) {
-            const hoursPrice = (hours / 24) * pricePerDay;
-            basePrice += hoursPrice;
-        }
-        
+        const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
+
+        let basePrice = rentalDays >= 8 ? pricePerDay * 0.96 * rentalDays
+            : rentalDays >= 4 ? pricePerDay * 0.98 * rentalDays
+                : pricePerDay * rentalDays;
+
+        if (hours > 0) basePrice += (hours / 24) * pricePerDay;
+
         const totalPrice = Math.round(basePrice);
         const finalPricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : pricePerDay;
 
-        return {
-            days,
-            hours,
-            pricePerDay: finalPricePerDay,
-            totalPrice
-        };
+        return { days, hours, pricePerDay: finalPricePerDay, totalPrice };
     };
 
     const rentalCalculation = calculateRental();
     const isBookingComplete = pickupDate && returnDate && pickupTime && returnTime;
-
-    const [showRentalModal, setShowRentalModal] = useState(false);
 
     const handleBooking = () => {
         if (!isBookingComplete) return;
@@ -268,7 +233,7 @@ export const CarDetails: React.FC = () => {
                     <div className="lg:col-start-1">
                         {/* Car Title & Rating - Mobile */}
                         <div className="mb-8 lg:hidden">
-                            <h1 className="text-3xl font-bold text-gray-900 mb-3">{car.name}</h1>
+                            <h1 className="text-3xl font-bold text-gray-900 mb-3">{car.make + ' ' + car.model}</h1>
                             <div className="flex items-center gap-3 text-sm">
                                 <div className="flex items-center gap-1.5">
                                     <Star className="w-4 h-4 text-gray-400 fill-current" />
@@ -282,17 +247,43 @@ export const CarDetails: React.FC = () => {
                         {/* Image Gallery */}
                         <div className="relative rounded-lg overflow-hidden bg-white shadow-sm mb-6 border border-gray-200">
                             <img
-                                src={selectedImage ?? car.image}
-                                alt={car.name}
+                                src={selectedImage}
+                                alt={`${car.make} ${car.model}`}
                                 className="w-full h-[450px] md:h-[600px] object-cover"
                             />
-                            
-                            {/* Availability Badge - Minimalist */}
-                            <div className="absolute top-4 left-4">
-                                <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm border border-gray-200">
-                                    Disponibil acum
-                                </span>
-                            </div>
+
+                            {/* Availability Badge */}
+                            {car.status && (
+                                <div
+                                    className={`
+                                absolute top-3 left-3 
+                                px-3 py-1.5 
+                                text-xs font-semibold rounded-lg 
+                                flex items-center gap-1.5 
+                                backdrop-blur-md transition-all 
+                                whitespace-nowrap
+                                ${car.status === 'available'
+                                            ? 'bg-green-500/20 border border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500/60'
+                                            : 'bg-red-500/20 border border-red-500/50 text-red-300 hover:bg-red-500/30 hover:border-red-500/60'
+                                        }
+                            `}
+                                >
+                                    <svg
+                                        className="w-3 h-3 flex-shrink-0 opacity-80"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                        />
+                                    </svg>
+                                    {car.status}
+                                </div>
+                            )}
 
                             {/* Navigation arrows */}
                             {gallery.length > 1 && (
@@ -301,7 +292,7 @@ export const CarDetails: React.FC = () => {
                                         onClick={() => {
                                             const currentIndex = gallery.findIndex(img => img === selectedImage);
                                             const prevIndex = currentIndex > 0 ? currentIndex - 1 : gallery.length - 1;
-                                            setSelectedImage(gallery[prevIndex]);
+                                            setSelectedImage(gallery[prevIndex] || '');
                                         }}
                                         className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2.5 shadow-md transition-all border border-gray-200"
                                     >
@@ -311,7 +302,7 @@ export const CarDetails: React.FC = () => {
                                         onClick={() => {
                                             const currentIndex = gallery.findIndex(img => img === selectedImage);
                                             const nextIndex = currentIndex < gallery.length - 1 ? currentIndex + 1 : 0;
-                                            setSelectedImage(gallery[nextIndex]);
+                                            setSelectedImage(gallery[nextIndex] || '');
                                         }}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2.5 shadow-md transition-all border border-gray-200"
                                     >
@@ -327,17 +318,16 @@ export const CarDetails: React.FC = () => {
                                 {gallery.map((src, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => setSelectedImage(src)}
-                                        className={`rounded-lg overflow-hidden border-2 transition-all ${
-                                            selectedImage === src 
-                                                ? 'border-theme-500 ring-2 ring-theme-100' 
-                                                : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                                        onClick={() => setSelectedImage(src || '')}
+                                        className={`rounded-lg overflow-hidden border-2 transition-all ${selectedImage === src
+                                            ? 'border-theme-500 ring-2 ring-theme-100'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            }`}
                                     >
-                                        <img 
-                                            src={src} 
-                                            alt={`${car.name}-${i}`} 
-                                            className="w-full h-20 object-cover" 
+                                        <img
+                                            src={src || ''}
+                                            alt={`${car.make} ${car.model}-${i}`}
+                                            className="w-full h-20 object-cover"
                                         />
                                     </button>
                                 ))}
@@ -370,11 +360,11 @@ export const CarDetails: React.FC = () => {
                                 <div>
                                     <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Combustibil</div>
                                     <div className="text-lg font-semibold text-gray-900">
-                                        {car.fuelType === 'gasoline' ? 'Benzină' :
-                                            car.fuelType === 'diesel' ? 'Diesel' :
-                                                car.fuelType === 'petrol' ? 'Benzină' :
-                                                    car.fuelType === 'hybrid' ? 'Hibrid' :
-                                                        car.fuelType === 'electric' ? 'Electric' : car.fuelType}
+                                        {car.fuel_type === 'gasoline' ? 'Benzină' :
+                                            car.fuel_type === 'diesel' ? 'Diesel' :
+                                                car.fuel_type === 'petrol' ? 'Benzină' :
+                                                    car.fuel_type === 'hybrid' ? 'Hibrid' :
+                                                        car.fuel_type === 'electric' ? 'Electric' : car.fuel_type}
                                     </div>
                                 </div>
                                 <div>
@@ -384,7 +374,7 @@ export const CarDetails: React.FC = () => {
                             </div>
 
                             {/* Additional Specs */}
-                            {(car.power || car.acceleration || car.fuelConsumption) && (
+                            {(car.power || car.acceleration || car.fuel_consumption) && (
                                 <div className="mt-8 pt-8 border-t border-gray-100">
                                     <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Specificații tehnice</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -400,10 +390,10 @@ export const CarDetails: React.FC = () => {
                                                 <div className="text-base font-medium text-gray-900">{car.acceleration}</div>
                                             </div>
                                         )}
-                                        {car.fuelConsumption && (
+                                        {car.fuel_consumption && (
                                             <div>
                                                 <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Consum</div>
-                                                <div className="text-base font-medium text-gray-900">{car.fuelConsumption} L/100km</div>
+                                                <div className="text-base font-medium text-gray-900">{car.fuel_consumption} L/100km</div>
                                             </div>
                                         )}
                                     </div>
@@ -430,220 +420,17 @@ export const CarDetails: React.FC = () => {
                         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Despre acest vehicul</h2>
                             <p className="text-gray-600 leading-relaxed text-sm">
-                                {car.longDescription ?? car.description ?? 
-                                    `Inchiriați ${car.name} ${car.year} pentru experiențe premium de conducere. Acest vehicul ${car.body.toLowerCase()} oferă confort și performanță superioară, perfect pentru călătorii de afaceri sau vacanțe. Vehiculul este bine întreținut și echipat cu toate dotările moderne pentru siguranță și confort.`
+                                {car.long_description ?? car.description ??
+                                    `Inchiriați ${car.make} ${car.model} ${car.year} pentru experiențe premium de conducere. Acest vehicul ${car.body || ''.toLowerCase()} oferă confort și performanță superioară, perfect pentru călătorii de afaceri sau vacanțe. Vehiculul este bine întreținut și echipat cu toate dotările moderne pentru siguranță și confort.`
                                 }
                             </p>
                         </div>
 
                         {/* Rental Options */}
-                        <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Opțiuni de închiriere</h2>
-                            
-                            <p className="text-gray-700 leading-relaxed mb-8">
-                                O varietate de opțiuni disponibile pentru activare extinde semnificativ posibilitățile în cadrul închirierii unei mașini de la AUTOHUB. De exemplu, puteți activa asigurarea CASCO, care acoperă toate tipurile de daune ale vehiculului, iar prin activarea serviciului Priority Service beneficiați de procesare prioritară a documentelor și suport prioritar pe tot parcursul închirierii. De asemenea, sunt disponibile opțiuni precum: închirierea scaunelor auto pentru copii, asistență rutieră, livrare la adresa indicată și multe altele.
-                            </p>
-
-                            <div className="space-y-6">
-                                {/* Delivery Option */}
-                                <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                                    <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                                        <LiaCarSideSolid className="w-5 h-5 text-theme-500" />
-                                        Preluarea automobilului la adresa convenabilă pentru dvs./dumneavoastră
-                                    </h3>
-                                    <p className="text-gray-600 text-sm">Costul se calculează separat și depinde de locul livrării</p>
-                                </div>
-
-                                {/* Return Option */}
-                                <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                                    <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                                        <LiaCarSideSolid className="w-5 h-5 text-theme-500" />
-                                        Returnarea mașinii la adresa convenabilă pentru dumneavoastră
-                                    </h3>
-                                    <p className="text-gray-600 text-sm">Prețul se negociază separat și depinde de locul returnării</p>
-                                </div>
-
-                                {/* Options Grid */}
-                                <div className="grid md:grid-cols-2 gap-4 mt-6">
-                                    {/* Unlimited KM */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                                                <Gauge className="w-5 h-5 text-theme-500" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Kilometraj nelimitat</h4>
-                                                <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 50% mai mare</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Speed Limit Increase */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                                                <Zap className="w-5 h-5 text-theme-500" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Creșterea limitei de viteză</h4>
-                                                <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Personal Driver */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                                <UserRound className="w-5 h-5 text-gray-700" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Șofer personal</h4>
-                                                <p className="text-gray-700 font-semibold text-sm">din 800 MDL pe zi</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Priority Service */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                                <Star className="w-5 h-5 text-gray-700" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Priority Service</h4>
-                                                <p className="text-gray-700 font-semibold text-sm">din 1000 MDL pe zi</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Tire Insurance */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                                                <Shield className="w-5 h-5 text-theme-500" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Asigurare pentru anvelope și parbriz</h4>
-                                                <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Child Seat */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                                <Baby className="w-5 h-5 text-gray-700" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Scaun auto pentru copii</h4>
-                                                <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* SIM Card */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                                <Wifi className="w-5 h-5 text-gray-700" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Cartelă SIM cu internet</h4>
-                                                <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Roadside Assistance */}
-                                    <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                                <Wrench className="w-5 h-5 text-gray-700" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 mb-1">Asistență rutieră</h4>
-                                                <p className="text-gray-700 font-semibold text-sm">din 500 MDL pe zi</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <RentalOptionsSection />
 
                         {/* Contract Section */}
-                        <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Contract</h2>
-                            
-                            <p className="text-gray-700 leading-relaxed mb-6">
-                                Compania noastră oferă servicii de închiriere auto pe teritoriul Republicii Moldova, respectând cu strictețe legislația în vigoare. Interacțiunea cu clienții se bazează pe Contractul de închiriere, care garantează protecția juridică a intereselor acestora.
-                            </p>
-
-                            <h3 className="text-xl font-semibold text-gray-900 mb-4">Condiții și cerințe</h3>
-                            <p className="text-gray-700 mb-4">
-                                Pentru a închiria o mașină, trebuie îndeplinite următoarele cerințe și acceptate următoarele condiții:
-                            </p>
-
-                            <ul className="space-y-3 text-gray-700">
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Vârsta minimă a șoferului: 21 ani.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Permis de conducere valabil, categoria B.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Experiență de conducere de cel puțin 3 ani.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Deținerea buletinului de identitate.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Achitarea integrală (100%) a taxei de închiriere pentru mașina selectată.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Depunerea unui depozit conform valorii stabilite în Contract. Depozitul reprezintă o asigurare a îndeplinirii obligațiilor de către Chiriaș și este returnat după 10 zile de la predarea mașinii, în absența încălcărilor majore.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Toate amenzile primite în timpul utilizării vehiculului revin în responsabilitatea șoferului.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>În lipsa poliței CASCO, responsabilitatea pentru accidente revine șoferului.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Limita zilnică de parcurs este de 200 km. În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Plata se poate efectua în numerar, prin transfer bancar sau cu cardul.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Clientul are dreptul la recalcularea costului în caz de returnare anticipată a vehiculului.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Prelungirea Contractului de închiriere este posibilă în format la distanță, dar nu este garantată.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Este posibilă livrarea sau returnarea mașinii la adresa convenabilă. Costul se confirmă la telefon +373 79 75-22-22.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                                    <span>Înainte de semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 0 lei. După semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 500 lei.</span>
-                                </li>
-                            </ul>
-                        </div>
+                        <ContractSection />
 
                     </div>
 
@@ -660,10 +447,10 @@ export const CarDetails: React.FC = () => {
                                     {(() => {
                                         const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
                                         const discount = (car as any).discount_percentage || car.discount_percentage || 0;
-                                        const finalPrice = discount > 0 
+                                        const finalPrice = discount > 0
                                             ? basePrice * (1 - discount / 100)
                                             : basePrice;
-                                        
+
                                         return (
                                             <>
                                                 <div className="text-4xl font-bold text-gray-900 mb-2">
@@ -684,7 +471,7 @@ export const CarDetails: React.FC = () => {
 
                                 {/* Title */}
                                 <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                                    Închiriere {car.name}, {car.year} an în Chișinău
+                                    Închiriere {car.make} {car.model}, {car.year} an în Chișinău
                                 </h2>
 
                                 {/* Phone Button */}
@@ -723,11 +510,10 @@ export const CarDetails: React.FC = () => {
                                                 setShowPickupTime(false);
                                                 setShowReturnTime(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                                pickupDate 
-                                                    ? 'border-gray-300 text-gray-900 hover:border-gray-400' 
-                                                    : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                            }`}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${pickupDate
+                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                                }`}
                                         >
                                             <Calendar className="w-4 h-4" />
                                             <span>{pickupDate ? formatDate(pickupDate) : 'Data primirii'}</span>
@@ -779,24 +565,22 @@ export const CarDetails: React.FC = () => {
                                                     <div className="grid grid-cols-7 gap-1">
                                                         {generateCalendarDays(calendarMonth.pickup).map((day, index) => {
                                                             if (!day) return <div key={index}></div>;
-                                                            
+
                                                             const dayDate = new Date(day);
                                                             const dayString = day;
                                                             const isSelected = dayString === pickupDate;
-                                                            const isPast = dayString < today.toISOString().split('T')[0];
+                                                            const isPast = dayString < new Date().toISOString().split('T')[0];
 
                                                             return (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                                                        isPast ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
-                                                                    } ${
-                                                                        isSelected
+                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
+                                                                        } ${isSelected
                                                                             ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
                                                                             : !isPast
-                                                                            ? 'hover:bg-gray-100'
-                                                                            : ''
-                                                                    }`}
+                                                                                ? 'hover:bg-gray-100'
+                                                                                : ''
+                                                                        }`}
                                                                     onClick={() => {
                                                                         if (!isPast) {
                                                                             setPickupDate(day);
@@ -835,11 +619,10 @@ export const CarDetails: React.FC = () => {
                                                 setShowPickupCalendar(false);
                                                 setShowReturnCalendar(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                                pickupTime 
-                                                    ? 'border-gray-300 text-gray-900 hover:border-gray-400' 
-                                                    : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                            }`}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${pickupTime
+                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                                }`}
                                         >
                                             <Clock className="w-4 h-4" />
                                             <span>{pickupTime || '__ : __'}</span>
@@ -868,11 +651,10 @@ export const CarDetails: React.FC = () => {
                                                                         }
                                                                     }, 100);
                                                                 }}
-                                                                className={`px-3 py-2 text-xs rounded transition-colors ${
-                                                                    pickupTime === hour
-                                                                        ? 'bg-theme-500 text-white font-medium'
-                                                                        : 'text-gray-700 hover:bg-gray-100'
-                                                                }`}
+                                                                className={`px-3 py-2 text-xs rounded transition-colors ${pickupTime === hour
+                                                                    ? 'bg-theme-500 text-white font-medium'
+                                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                                    }`}
                                                             >
                                                                 {hour}
                                                             </button>
@@ -894,11 +676,10 @@ export const CarDetails: React.FC = () => {
                                                 setShowPickupTime(false);
                                                 setShowReturnTime(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                                returnDate 
-                                                    ? 'border-gray-300 text-gray-900 hover:border-gray-400' 
-                                                    : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                            }`}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${returnDate
+                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                                }`}
                                         >
                                             <Calendar className="w-4 h-4" />
                                             <span>{returnDate ? formatDate(returnDate) : 'Data returnării'}</span>
@@ -950,25 +731,23 @@ export const CarDetails: React.FC = () => {
                                                     <div className="grid grid-cols-7 gap-1">
                                                         {generateCalendarDays(calendarMonth.return).map((day, index) => {
                                                             if (!day) return <div key={index}></div>;
-                                                            
+
                                                             const dayDate = new Date(day);
                                                             const dayString = day;
                                                             const isSelected = dayString === returnDate;
-                                                            const minReturnDate = pickupDate || today.toISOString().split('T')[0];
+                                                            const minReturnDate = pickupDate || new Date().toISOString().split('T')[0];
                                                             const isPast = dayString < minReturnDate;
 
                                                             return (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${
-                                                                        isPast ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
-                                                                    } ${
-                                                                        isSelected
+                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
+                                                                        } ${isSelected
                                                                             ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
                                                                             : !isPast
-                                                                            ? 'hover:bg-gray-100'
-                                                                            : ''
-                                                                    }`}
+                                                                                ? 'hover:bg-gray-100'
+                                                                                : ''
+                                                                        }`}
                                                                     onClick={() => {
                                                                         if (!isPast) {
                                                                             setReturnDate(day);
@@ -1001,11 +780,10 @@ export const CarDetails: React.FC = () => {
                                                 setShowPickupCalendar(false);
                                                 setShowReturnCalendar(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
-                                                returnTime 
-                                                    ? 'border-gray-300 text-gray-900 hover:border-gray-400' 
-                                                    : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                            }`}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${returnTime
+                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                                }`}
                                         >
                                             <Clock className="w-4 h-4" />
                                             <span>{returnTime || '__ : __'}</span>
@@ -1028,11 +806,10 @@ export const CarDetails: React.FC = () => {
                                                                     setReturnTime(hour);
                                                                     setShowReturnTime(false);
                                                                 }}
-                                                                className={`px-3 py-2 text-xs rounded transition-colors ${
-                                                                    returnTime === hour
-                                                                        ? 'bg-theme-500 text-white font-medium'
-                                                                        : 'text-gray-700 hover:bg-gray-100'
-                                                                }`}
+                                                                className={`px-3 py-2 text-xs rounded transition-colors ${returnTime === hour
+                                                                    ? 'bg-theme-500 text-white font-medium'
+                                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                                    }`}
                                                             >
                                                                 {hour}
                                                             </button>
@@ -1081,16 +858,15 @@ export const CarDetails: React.FC = () => {
                                             Alegeți datele
                                         </button>
                                     )}
-                                    <button 
+                                    <button
                                         onClick={handleFavoriteToggle}
                                         className="w-14 h-14 flex items-center justify-center border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
                                     >
                                         {React.createElement(BiSolidHeart as any, {
-                                            className: `w-6 h-6 transition-all duration-300 ${
-                                                isFavorite 
-                                                    ? 'text-red-500' 
-                                                    : 'text-gray-600 hover:text-red-500'
-                                            }`
+                                            className: `w-6 h-6 transition-all duration-300 ${isFavorite
+                                                ? 'text-red-500'
+                                                : 'text-gray-600 hover:text-red-500'
+                                                }`
                                         })}
                                     </button>
                                 </div>
@@ -1098,14 +874,14 @@ export const CarDetails: React.FC = () => {
                                 {/* Pricing Tiers */}
                                 <div className="border-t border-gray-200 pt-6">
                                     <h3 className="text-xl font-bold text-gray-900 mb-4">Costul închirierii</h3>
-                                    
+
                                     <div className="space-y-3">
                                         {/* 1 day */}
                                         <div className="flex items-center justify-between">
                                             <span className="text-gray-600">De la 1 zi</span>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
-                                                    {car.pricePerDay.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1118,7 +894,7 @@ export const CarDetails: React.FC = () => {
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
-                                                    {Math.round(car.pricePerDay * 0.98).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                                    {Math.round(car.price_per_day * 0.98).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1131,7 +907,7 @@ export const CarDetails: React.FC = () => {
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
-                                                    {Math.round(car.pricePerDay * 0.96).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                                    {Math.round(car.price_per_day * 0.96).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1158,7 +934,7 @@ export const CarDetails: React.FC = () => {
                             ) : (
                                 <>
                                     <div className="text-xl font-bold text-gray-900">
-                                        {car.pricePerDay.toLocaleString('ro-RO')} MDL
+                                        {car.price_per_day.toLocaleString('ro-RO')} MDL
                                     </div>
                                     <div className="text-xs text-gray-500">pe zi</div>
                                 </>

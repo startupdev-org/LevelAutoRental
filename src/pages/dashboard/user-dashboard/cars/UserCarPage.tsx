@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Car, Car as CarType } from '../../../../types';
 
-import { fetchCars, fetchImages, fetchMainImages } from "../../../../lib/db/cars";
+import { fetchCars, fetchImages, fetchMainImages } from "../../../../lib/db/cars/cars";
 
 
 // Cars Management View Component

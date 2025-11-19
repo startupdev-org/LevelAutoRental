@@ -1,5 +1,34 @@
-import { supabase } from '../supabase';
-import { Car } from '../../types';
+import { supabase } from '../../supabase';
+import { Car } from '../../../types';
+
+/**
+ * Fetch car by id
+ */
+export async function fetchCarById(carId: number): Promise<Car | null> {
+    console.log('fetching car by id from database');
+    try {
+        const { data, error } = await supabase
+            .from("Cars")
+            .select("*")
+            .eq('id', carId)
+            .single();
+
+
+        if (error) {
+            console.error('Error fetching cars:', error);
+            return null;
+        }
+
+        console.log('car fetched: ', data)
+
+        // data can be null, so default to empty array
+        return data ?? null;
+    } catch (err) {
+        console.error('Unexpected error while fetching a car:', err);
+        return null;
+    }
+}
+
 
 /**
  * Fetch all cars from Supabase
@@ -76,6 +105,78 @@ export async function fetchImages() {
         return [];
     }
 }
+
+
+/**
+ * Fetch main image + gallery images for a given car name.
+ * Example carName: "Audi Q7"
+ * Folder structure: cars/audi-q7/
+ */
+export async function fetchImagesByCarName(
+    carName: string
+): Promise<{ mainImage: string | null; photoGallery: string[] }> {
+    try {
+        // Convert "Mercedes C43" → "mercedes-c43"
+        const folder = carName.toLowerCase().replace(/\s+/g, "-");
+
+        const { data: files, error } = await supabase.storage
+            .from("cars")
+            .list(folder);
+
+        if (error || !files) {
+            console.error("Error listing files:", error);
+            return { mainImage: null, photoGallery: [] };
+        }
+
+        // Keep only valid image files
+        const imageFiles = files.filter(
+            (file) =>
+                file.name !== ".emptyFolderPlaceholder" &&
+                /\.(jpg|jpeg|png)$/i.test(file.name)
+        );
+
+        if (imageFiles.length === 0) {
+            return { mainImage: null, photoGallery: [] };
+        }
+
+        // Find main file
+        const mainFile = imageFiles.find((f) => f.name.endsWith("-main.jpg")) || null;
+
+        // Generate URLs helper
+        const getUrl = (name: string) =>
+            supabase.storage.from("cars").getPublicUrl(`${folder}/${name}`).data.publicUrl;
+
+        // Build mainImage URL
+        const mainImage = mainFile ? getUrl(mainFile.name) : null;
+
+        // Sort gallery:
+        // 1. main first
+        // 2. numeric order after (c43-2, c43-3, ...)
+        const sortedImages = imageFiles
+            .filter((f) => f !== mainFile)
+            .sort((a, b) => {
+                // Extract number from "c43-2.jpg"
+                const numA = parseInt(a.name.match(/-(\d+)\./)?.[1] || "0", 10);
+                const numB = parseInt(b.name.match(/-(\d+)\./)?.[1] || "0", 10);
+                return numA - numB;
+            })
+            .map((file) => getUrl(file.name));
+
+        // Final gallery: main first, then sorted rest
+        const photoGallery = [
+            ...(mainImage ? [mainImage] : []),
+            ...sortedImages,
+        ];
+
+        return { mainImage, photoGallery };
+    } catch (err) {
+        console.error("Unexpected error in fetchImagesByCarName:", err);
+        return { mainImage: null, photoGallery: [] };
+    }
+}
+
+
+
 
 /**
  * Fetch the main images of the cars 
