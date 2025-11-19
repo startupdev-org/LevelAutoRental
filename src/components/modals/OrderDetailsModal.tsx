@@ -184,7 +184,38 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     if (!order) return null;
 
-    const car = cars.find(c => c.id.toString() === order.carId);
+    // Find car by matching carId (handle both string and number types)
+    const car = cars.find(c => {
+        if (!order.carId) return false;
+        
+        // Normalize both IDs to numbers for comparison
+        const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
+        const orderCarIdNum = typeof order.carId === 'number' 
+            ? order.carId 
+            : parseInt(order.carId.toString(), 10);
+        
+        // Compare as numbers
+        if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
+            return true;
+        }
+        
+        // Fallback: compare as strings
+        const carIdStr = c.id.toString();
+        const orderCarIdStr = order.carId.toString();
+        return carIdStr === orderCarIdStr;
+    });
+    
+    // Debug logging
+    if (!car && order.carId && cars.length > 0) {
+        console.warn('OrderDetailsModal: Car not found', {
+            orderCarId: order.carId,
+            orderCarIdType: typeof order.carId,
+            orderCarIdValue: order.carId,
+            availableCarIds: cars.map(c => ({ id: c.id, idType: typeof c.id, idValue: c.id })),
+            carsLength: cars.length,
+            orderCarName: order.carName
+        });
+    }
     const startDate = new Date(order.pickupDate);
     const endDate = new Date(order.returnDate);
 
@@ -420,15 +451,15 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
                                     </h3>
                                     <div className="flex items-center gap-2">
-                                        {order.avatar && (
+                                        {(car?.image_url || (car as any)?.image || order.avatar) && (
                                             <img
-                                                src={order.avatar}
-                                                alt={order.carName || car?.name || t('admin.orders.unknownCar')}
+                                                src={car?.image_url || (car as any)?.image || order.avatar}
+                                                alt={car?.name || (car ? `${car.make} ${car.model}`.trim() : '') || order.carName || t('admin.orders.unknownCar')}
                                                 className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded-md border border-white/10"
                                             />
                                         )}
                                         <span className="text-white font-semibold text-xs sm:text-sm">
-                                            {order.carName || car?.name || t('admin.orders.unknownCar')}
+                                            {car?.name || (car ? `${car.make} ${car.model}`.trim() : '') || (order.carName && order.carName !== 'Unknown Car' ? order.carName : '') || t('admin.orders.unknownCar')}
                                         </span>
                                     </div>
                                 </div>
@@ -457,7 +488,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                     </div>
                                 </div>
                                 <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/10">
-                                    <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.duration')}: <span className="text-white font-semibold">{days} {t('admin.orders.days')}</span></p>
+                                    <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.duration')}: <span className="text-white font-semibold">{days} {t('admin.orders.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours') || 'ore'}` : ''}</span></p>
                                 </div>
                             </div>
 

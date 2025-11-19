@@ -169,11 +169,15 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
                             >
                                 <option value="">Select a car...</option>
                                 {cars.map((car) => {
-                                    const pricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
+                                    const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
+                                    const discount = (car as any).discount_percentage || car.discount_percentage || 0;
+                                    const finalPrice = discount > 0 
+                                        ? basePrice * (1 - discount / 100)
+                                        : basePrice;
                                     const carName = (car as any).name || `${car.make || ''} ${car.model || ''}`.trim();
                                     return (
                                     <option key={car.id} value={car.id.toString()}>
-                                            {carName} - {pricePerDay} MDL/day
+                                            {carName} - {finalPrice.toFixed(0)} MDL/day{discount > 0 ? ` (-${discount}%)` : ''}
                                     </option>
                                     );
                                 })}
@@ -429,10 +433,15 @@ export const OrdersViewSection: React.FC = () => {
         });
 
         // Calculate order count metrics
-        const totalOrders = currentMonthOrders.length;
+        // Total orders: count ALL rental orders (like dashboard), not just current month
+        const allRentalOrders = orders.filter(order => 
+            order.type === 'rental' && 
+            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        );
+        const totalOrders = allRentalOrders.length;
         const lastMonthOrdersCount = lastMonthOrders.length;
         const orderGrowth = lastMonthOrdersCount > 0
-            ? ((totalOrders - lastMonthOrdersCount) / lastMonthOrdersCount) * 100
+            ? ((currentMonthOrders.length - lastMonthOrdersCount) / lastMonthOrdersCount) * 100
             : 0;
 
         const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -455,33 +464,172 @@ export const OrdersViewSection: React.FC = () => {
         };
     }, [orders]);
 
-    // Generate chart data from orders (last 30 days)
-    const chartData = useMemo(() => {
-        const now = new Date();
-        const days = 30;
-        const data: { day: number; sales: number; baseline: number }[] = [];
+    // Generate chart data for all periods (like dashboard)
+    const calculateChartData = useMemo(() => {
+        // Filter only rental orders (completed or active) for sales calculation
+        const rentalOrders = orders.filter(order => 
+            order.type === 'rental' && 
+            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        );
 
-        for (let i = days - 1; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
+        const generateChartDataForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
+            const now = new Date();
+            const data: { day: number; sales: number; baseline: number }[] = [];
+            
+            // Calculate date ranges
+            let startDate: Date;
+            let intervals: number;
+            let intervalMs: number;
+            
+            switch (period) {
+                case '24H':
+                    startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    intervals = 24;
+                    intervalMs = 60 * 60 * 1000; // 1 hour
+                    break;
+                case '7D':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    intervals = 7;
+                    intervalMs = 24 * 60 * 60 * 1000; // 1 day
+                    break;
+                case '30D':
+                    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    intervals = 30;
+                    intervalMs = 24 * 60 * 60 * 1000; // 1 day
+                    break;
+                case 'WEEKS':
+                    startDate = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+                    intervals = 4;
+                    intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 week
+                    break;
+                case '12M':
+                    startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    intervals = 12;
+                    intervalMs = 30 * 24 * 60 * 60 * 1000; // ~1 month
+                    break;
+            }
 
-            // Calculate sales for this day (orders created on this day)
-            const daySales = orders
-                .filter(order => {
-                    const orderDate = new Date(order.createdAt).toISOString().split('T')[0];
-                    return orderDate === dateStr;
-                })
-                .reduce((sum, order) => sum + (order.amount || 0), 0);
+            // Group orders by time interval
+            for (let i = 0; i < intervals; i++) {
+                const intervalStart = new Date(startDate.getTime() + i * intervalMs);
+                const intervalEnd = new Date(startDate.getTime() + (i + 1) * intervalMs);
+                
+                const intervalOrders = rentalOrders.filter(order => {
+                    if (!order.createdAt) return false;
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= intervalStart && orderDate < intervalEnd;
+                });
+                
+                const sales = intervalOrders.reduce((sum, order) => {
+                    const amount = order.amount || parseFloat(order.total_amount || '0') || 0;
+                    return sum + amount;
+                }, 0);
+                
+                // Baseline is 70% of average sales for visual reference
+                const avgSales = rentalOrders.length > 0 
+                    ? (rentalOrders.reduce((sum, o) => sum + (o.amount || parseFloat(o.total_amount || '0') || 0), 0) / rentalOrders.length) * 0.7
+                    : 0;
+                
+                data.push({
+                    day: i + 1,
+                    sales: Math.round(sales),
+                    baseline: Math.round(avgSales)
+                });
+            }
+            
+            return data;
+        };
 
-            data.push({
-                day: days - i,
-                sales: Math.round(daySales),
-                baseline: Math.round(daySales * 0.7), // Baseline is 70% of sales
+        return {
+            '24H': generateChartDataForPeriod('24H'),
+            '7D': generateChartDataForPeriod('7D'),
+            '30D': generateChartDataForPeriod('30D'),
+            'WEEKS': generateChartDataForPeriod('WEEKS'),
+            '12M': generateChartDataForPeriod('12M')
+        };
+    }, [orders]);
+
+    // Calculate sales and change for a specific period
+    const calculatePeriodStats = useMemo(() => {
+        const rentalOrders = orders.filter(order => 
+            order.type === 'rental' && 
+            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        );
+
+        const calculateForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
+            const now = new Date();
+            let periodStart: Date;
+            let previousPeriodStart: Date;
+            let previousPeriodEnd: Date;
+            
+            switch (period) {
+                case '24H':
+                    periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    break;
+                case '7D':
+                    periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30D':
+                    periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'WEEKS':
+                    periodStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 56 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+                    break;
+                case '12M':
+                    periodStart = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    break;
+            }
+
+            const periodOrders = rentalOrders.filter(order => {
+                if (!order.createdAt) return false;
+                const orderDate = new Date(order.createdAt);
+                return orderDate >= periodStart && orderDate <= now;
             });
-        }
 
-        return data;
+            const previousPeriodOrders = rentalOrders.filter(order => {
+                if (!order.createdAt) return false;
+                const orderDate = new Date(order.createdAt);
+                return orderDate >= previousPeriodStart && orderDate < previousPeriodEnd;
+            });
+
+            const periodSales = periodOrders.reduce((sum, order) => {
+                const amount = order.amount || parseFloat(order.total_amount || '0') || 0;
+                return sum + amount;
+            }, 0);
+
+            const previousPeriodSales = previousPeriodOrders.reduce((sum, order) => {
+                const amount = order.amount || parseFloat(order.total_amount || '0') || 0;
+                return sum + amount;
+            }, 0);
+
+            const change = previousPeriodSales > 0
+                ? ((periodSales - previousPeriodSales) / previousPeriodSales) * 100
+                : 0;
+
+            return {
+                sales: periodSales,
+                change: change,
+                isPositive: change >= 0
+            };
+        };
+
+        return {
+            '24H': calculateForPeriod('24H'),
+            '7D': calculateForPeriod('7D'),
+            '30D': calculateForPeriod('30D'),
+            'WEEKS': calculateForPeriod('WEEKS'),
+            '12M': calculateForPeriod('12M')
+        };
     }, [orders]);
 
     const [showContractModal, setShowContractModal] = useState(false);
@@ -537,8 +685,8 @@ export const OrdersViewSection: React.FC = () => {
                         className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                     >
                         <SalesChartCard
-                            totalSales={revenueStats.totalRevenue}
-                            data={chartData}
+                            allPeriodData={calculateChartData}
+                            periodStats={calculatePeriodStats}
                         />
                     </motion.div>
 
@@ -551,40 +699,40 @@ export const OrdersViewSection: React.FC = () => {
                     >
                         <div>
                             <div className="mb-6">
-                                <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">{t('admin.orders.revenue')}</p>
+                                <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">VENITURI</p>
                                 <h3 className="text-3xl md:text-4xl font-bold text-white mb-2">
                                     {revenueStats.totalRevenue.toFixed(2)} MDL
                                 </h3>
                                 <p className="text-sm text-emerald-400 font-semibold">
-                                    {revenueStats.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(revenueStats.revenueGrowth).toFixed(1)}% {t('admin.orders.vsLast30Days')}
+                                    {revenueStats.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(revenueStats.revenueGrowth).toFixed(1)}% față de ultimele 30 zile
                                 </p>
                             </div>
 
                             <div className="space-y-4">
                                 {/* Last Month Comparison */}
                                 <div>
-                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">{t('admin.orders.lastMonthComparison')}</h4>
+                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">Comparație cu Luna Trecută</h4>
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">{t('admin.orders.lastMonthRevenue')}</span>
+                                            <span className="text-sm text-gray-300">Venituri Luna Trecută</span>
                                             <span className="text-white font-semibold">
                                                 {revenueStats.lastMonthRevenue.toFixed(2)} MDL
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">{t('admin.orders.growth')}</span>
+                                            <span className="text-sm text-gray-300">Creștere</span>
                                             <span className={`font-semibold ${revenueStats.revenueGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                                 {revenueStats.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(revenueStats.revenueGrowth).toFixed(1)}%
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">{t('admin.orders.avgDailyThisMonth')}</span>
+                                            <span className="text-sm text-gray-300">Medie Zilnică (Luna Aceasta)</span>
                                             <span className="text-white font-semibold">
                                                 {revenueStats.avgDailyRevenue.toFixed(2)} MDL
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">{t('admin.orders.avgDailyLastMonth')}</span>
+                                            <span className="text-sm text-gray-300">Medie Zilnică (Luna Trecută)</span>
                                             <span className="text-white font-semibold">
                                                 {revenueStats.avgDailyRevenueLastMonth.toFixed(2)} MDL
                                             </span>
@@ -595,13 +743,13 @@ export const OrdersViewSection: React.FC = () => {
                                 {/* Best Performing Day */}
                                 {revenueStats.bestDay && (
                                     <div className="border-t border-white/10 pt-4">
-                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">{t('admin.orders.bestPerformingDay')}</h4>
+                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">Ziua cu Cea Mai Bună Performanță</h4>
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-400">
                                                     {new Date(revenueStats.bestDay).toLocaleDateString('ro-RO', {
-                                                        month: 'short',
                                                         day: 'numeric',
+                                                        month: 'short',
                                                         year: 'numeric'
                                                     })}
                                                 </span>
@@ -615,10 +763,10 @@ export const OrdersViewSection: React.FC = () => {
 
                                 {/* Key Metrics */}
                                 <div className="border-t border-white/10 pt-4">
-                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">{t('admin.orders.keyMetrics')}</h4>
+                                    <h4 className="text-sm font-semibold text-gray-300 mb-3">Metrici Cheie</h4>
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-300">{t('admin.orders.totalOrders')}</span>
+                                            <span className="text-sm text-gray-300">Total Comenzi</span>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-white font-semibold">{revenueStats.totalOrders}</span>
                                                 {revenueStats.orderGrowth !== 0 && (
