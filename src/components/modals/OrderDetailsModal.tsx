@@ -306,9 +306,10 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         };
 
         const styles = statusMap[status] || statusMap['PENDING'];
+        const capitalizedStatus = status.charAt(0) + status.slice(1).toLowerCase();
         return (
             <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold border backdrop-blur-sm ${styles.bg} ${styles.text} ${styles.border}`}>
-                {status}
+                {capitalizedStatus}
             </span>
         );
     };

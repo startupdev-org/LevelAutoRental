@@ -85,35 +85,35 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
     const handleCreateContract = async () => {
         // Validate required fields
         if (!customerAddress.trim()) {
-            showError('Please enter customer address');
+            showError('Introduceți adresa clientului');
             return;
         }
         if (!customerIdSeries.trim() || !customerIdNumber.trim()) {
-            showError('Please enter customer ID series and number');
+            showError('Introduceți seria și numărul CI');
             return;
         }
         if (!customerIdnp.trim()) {
-            showError('Please enter customer IDNP');
+            showError('Introduceți IDNP-ul clientului');
             return;
         }
         if (!carColor.trim()) {
-            showError('Please enter car color');
+            showError('Introduceți culoarea mașinii');
             return;
         }
         if (!carRegistrationNumber.trim()) {
-            showError('Please enter car registration number');
+            showError('Introduceți numărul de înmatriculare');
             return;
         }
         if (!carMileage.trim()) {
-            showError('Please enter car mileage');
+            showError('Introduceți kilometrajul');
             return;
         }
         if (!paymentMethod.trim()) {
-            showError('Please enter payment method');
+            showError('Introduceți metoda de plată');
             return;
         }
         if (!depositAmount.trim()) {
-            showError('Please enter deposit amount');
+            showError('Introduceți suma depozitului');
             return;
         }
 
@@ -156,15 +156,15 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                 } as any
             );
 
-            showSuccess('Contract created and saved successfully!');
+            showSuccess('Contractul a fost creat și salvat cu succes!');
             if (onContractCreated) {
                 onContractCreated();
             }
             onClose();
         } catch (error) {
             console.error('Error creating contract:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            showError(`Failed to create contract: ${errorMessage}`);
+            const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
+            showError(`Nu s-a putut crea contractul: ${errorMessage}`);
         } finally {
             setIsGenerating(false);
         }
@@ -193,7 +193,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                         {/* Header */}
                         <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                             <div>
-                                <h2 className="text-xl sm:text-2xl font-bold text-white">Create Contract</h2>
+                                <h2 className="text-xl sm:text-2xl font-bold text-white">Creează Contract</h2>
                                 <p className="text-gray-400 text-xs sm:text-sm mt-1">
                                     {t('admin.orders.orderNumber')}{orderNumber ? orderNumber.toString().padStart(4, '0') : 'N/A'}
                                 </p>
@@ -211,55 +211,55 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                             {/* Customer Information */}
                             <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                    <span className="text-sm sm:text-base">Customer Information</span>
+                                    <span className="text-sm sm:text-base">Informații Client</span>
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Address (Domiciliat la) *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Adresă (Domiciliat la) *
                                         </label>
                                         <input
                                             type="text"
                                             value={customerAddress}
                                             onChange={(e) => setCustomerAddress(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter customer address"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți adresa clientului"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
                                             IDNP *
                                         </label>
                                         <input
                                             type="text"
                                             value={customerIdnp}
                                             onChange={(e) => setCustomerIdnp(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter IDNP"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți IDNP"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            ID Series *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Serie CI *
                                         </label>
                                         <input
                                             type="text"
                                             value={customerIdSeries}
                                             onChange={(e) => setCustomerIdSeries(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter ID series"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți seria CI"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            ID Number *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Număr CI *
                                         </label>
                                         <input
                                             type="text"
                                             value={customerIdNumber}
                                             onChange={(e) => setCustomerIdNumber(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter ID number"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți numărul CI"
                                         />
                                     </div>
                                 </div>
@@ -268,55 +268,55 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                             {/* Vehicle Details */}
                             <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                    <span className="text-sm sm:text-base">Vehicle Details</span>
+                                    <span className="text-sm sm:text-base">Detalii Vehicul</span>
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Color (Culoare) *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Culoare *
                                         </label>
                                         <input
                                             type="text"
                                             value={carColor}
                                             onChange={(e) => setCarColor(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter car color"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți culoarea mașinii"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Registration Number (NR. DE INMATRICULARE) *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Număr de înmatriculare *
                                         </label>
                                         <input
                                             type="text"
                                             value={carRegistrationNumber}
                                             onChange={(e) => setCarRegistrationNumber(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter registration number"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți numărul de înmatriculare"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Mileage (NR/KM LA BORD) *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Kilometraj (NR/KM LA BORD) *
                                         </label>
                                         <input
                                             type="number"
                                             value={carMileage}
                                             onChange={(e) => setCarMileage(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter mileage"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți kilometrajul"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Fuel Type (Combustibil) *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Tip combustibil *
                                         </label>
                                         <select
                                             value={carFuelType}
                                             onChange={(e) => setCarFuelType(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                                         >
-                                            <option value="">Select fuel type</option>
+                                            <option value="">Selectați tipul de combustibil</option>
                                             <option value="gasoline">Benzina</option>
                                             <option value="diesel">Motorina</option>
                                             <option value="hybrid">Hibrid</option>
@@ -329,55 +329,55 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                             {/* Payment Details */}
                             <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                    <span className="text-sm sm:text-base">Payment Details</span>
+                                    <span className="text-sm sm:text-base">Detalii Plată</span>
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Payment Method (Mod achitare locatiune) *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Metodă de plată (Mod achitare locațiune) *
                                         </label>
                                         <input
                                             type="text"
                                             value={paymentMethod}
                                             onChange={(e) => setPaymentMethod(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="e.g., Cash, Card, Transfer"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="ex: Numerar, Card, Transfer"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Deposit Amount (DEPOZIT) MDL *
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Sumă depozit (DEPOZIT) MDL *
                                         </label>
                                         <input
                                             type="number"
                                             value={depositAmount}
                                             onChange={(e) => setDepositAmount(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter deposit amount"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți suma depozitului"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Deposit Payment Method (Mod achitare garantie)
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Metodă de plată depozit (Mod achitare garanție)
                                         </label>
                                         <input
                                             type="text"
                                             value={depositPaymentMethod}
                                             onChange={(e) => setDepositPaymentMethod(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="e.g., Cash, Card"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="ex: Numerar, Card"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Car Value (for total loss clause)
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Valoare mașină (pentru clauza de pierdere totală)
                                         </label>
                                         <input
                                             type="number"
                                             value={carValue}
                                             onChange={(e) => setCarValue(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter car value in MDL"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți valoarea mașinii în MDL"
                                         />
                                     </div>
                                 </div>
@@ -386,31 +386,31 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                             {/* Locations */}
                             <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                    <span className="text-sm sm:text-base">Pickup & Return Locations</span>
+                                    <span className="text-sm sm:text-base">Locații Preluare și Returnare</span>
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Pickup Location
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Locație preluare
                                         </label>
                                         <input
                                             type="text"
                                             value={pickupLocation}
                                             onChange={(e) => setPickupLocation(e.target.value)}
                                             placeholder="Chișinău, str. Mircea cel Bătrân 13/1"
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Return Location
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Locație returnare
                                         </label>
                                         <input
                                             type="text"
                                             value={returnLocation}
                                             onChange={(e) => setReturnLocation(e.target.value)}
                                             placeholder="Chișinău, str. Mircea cel Bătrân 13/1"
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                                         />
                                     </div>
                                 </div>
@@ -419,31 +419,31 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                             {/* Vehicle Condition (Anexa Nr.2) */}
                             <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                    <span className="text-sm sm:text-base">Vehicle Condition (Anexa Nr.2)</span>
+                                    <span className="text-sm sm:text-base">Starea Vehiculului (Anexa Nr.2)</span>
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Pickup Odometer (km)
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Kilometraj preluare (km)
                                         </label>
                                         <input
                                             type="number"
                                             value={pickupOdometer}
                                             onChange={(e) => setPickupOdometer(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter odometer reading"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți kilometrajul"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Pickup Fuel Level (%)
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                            Nivel combustibil preluare (%)
                                         </label>
                                         <input
                                             type="number"
                                             value={pickupFuelLevel}
                                             onChange={(e) => setPickupFuelLevel(e.target.value)}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                            placeholder="Enter fuel level"
+                                            className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                            placeholder="Introduceți nivelul combustibilului"
                                         />
                                     </div>
                                 </div>
@@ -453,61 +453,62 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                             <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                                     <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                                        <span className="text-sm sm:text-base">Additional Drivers (Soferi Aditionali)</span>
+                                        <span className="text-sm sm:text-base">Șoferi Adiționali</span>
                                     </h3>
                                     <button
                                         onClick={handleAddDriver}
-                                        className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm"
+                                        className="px-2.5 sm:px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                                     >
-                                        <Plus className="w-4 h-4" />
-                                        Add Driver
+                                        <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                        <span className="hidden sm:inline">Adaugă Șofer</span>
+                                        <span className="sm:hidden">Adaugă</span>
                                     </button>
                                 </div>
                                 {additionalDrivers.map((driver, index) => (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-white/5 rounded-lg border border-white/10 mt-4">
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10 mt-3 sm:mt-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                First Name
+                                            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                                Prenume
                                             </label>
                                             <input
                                                 type="text"
                                                 value={driver.firstName}
                                                 onChange={(e) => handleDriverChange(index, 'firstName', e.target.value)}
-                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                                placeholder="First name"
+                                                className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                                placeholder="Prenume"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                                                Last Name
+                                            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                                Nume
                                             </label>
                                             <input
                                                 type="text"
                                                 value={driver.lastName}
                                                 onChange={(e) => handleDriverChange(index, 'lastName', e.target.value)}
-                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                                placeholder="Last name"
+                                                className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                                placeholder="Nume"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
                                                 IDNP
                                             </label>
                                             <input
                                                 type="text"
                                                 value={driver.idnp}
                                                 onChange={(e) => handleDriverChange(index, 'idnp', e.target.value)}
-                                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                                className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                                                 placeholder="IDNP"
                                             />
                                         </div>
                                         <div className="flex items-end">
                                             <button
                                                 onClick={() => handleRemoveDriver(index)}
-                                                className="w-full px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-2"
+                                                className="w-full px-3 sm:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                                Remove
+                                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                <span className="hidden sm:inline">Șterge</span>
                                             </button>
                                         </div>
                                     </div>
@@ -516,26 +517,26 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                         </div>
 
                         {/* Footer */}
-                        <div className="sticky bottom-0 border-t border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-end gap-3 sm:gap-4 bg-white/5 backdrop-blur-sm" style={{ backgroundColor: '#1C1C1C' }}>
+                        <div className="border-t border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 bg-white/5 backdrop-blur-sm" style={{ backgroundColor: '#1C1C1C' }}>
                             <button
                                 onClick={onClose}
                                 disabled={isGenerating}
-                                className="px-4 sm:px-6 py-2 sm:py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all font-semibold text-xs sm:text-sm disabled:opacity-50"
+                                className="px-3 sm:px-4 md:px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all font-semibold text-xs sm:text-sm disabled:opacity-50"
                             >
-                                Cancel
+                                Anulează
                             </button>
                             <button
                                 onClick={handleCreateContract}
                                 disabled={isGenerating}
-                                className="px-4 sm:px-6 py-2 sm:py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all font-semibold flex items-center gap-2 text-xs sm:text-sm disabled:opacity-50"
+                                className="px-3 sm:px-4 md:px-6 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all font-semibold flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm disabled:opacity-50"
                             >
                                 {isGenerating ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Creating Contract...</span>
+                                        <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                                        <span>Se creează contractul...</span>
                                     </>
                                 ) : (
-                                    'Create Contract'
+                                    'Creează Contract'
                                 )}
                             </button>
                         </div>
