@@ -352,7 +352,7 @@ const DashboardView: React.FC = () => {
                     valueSize="md"
                     spark={(
                         // @ts-ignore - recharts type compatibility issue
-                        <ResponsiveContainer width="100%" height={48}>
+                        <ResponsiveContainer width="100%" height={36}>
                             {/* @ts-ignore */}
                             <LineChart data={sparkData}>
                                 {/* @ts-ignore */}
@@ -369,7 +369,7 @@ const DashboardView: React.FC = () => {
                     valueSize="md"
                     spark={(
                         // @ts-ignore - recharts type compatibility issue
-                        <ResponsiveContainer width="100%" height={48}>
+                        <ResponsiveContainer width="100%" height={36}>
                             {/* @ts-ignore */}
                             <LineChart data={sparkData}>
                                 {/* @ts-ignore */}
@@ -387,7 +387,7 @@ const DashboardView: React.FC = () => {
                         valueSize="md"
                         spark={(
                             // @ts-ignore - recharts type compatibility issue
-                            <ResponsiveContainer width="100%" height={48}>
+                            <ResponsiveContainer width="100%" height={36}>
                                 {/* @ts-ignore */}
                                 <LineChart data={sparkData}>
                                     {/* @ts-ignore */}
@@ -1279,206 +1279,130 @@ const CarsView: React.FC = () => {
             {/* Cars Table Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-white/10">
-                    <div className="flex flex-col gap-4">
+                <div className="px-3 md:px-6 py-3 md:py-4 border-b border-white/10">
+                    <div className="flex flex-col gap-3 md:gap-4">
                         {/* Title and Add Button Row */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                             <div>
-                                <h2 className="text-xl font-bold text-white">{t('admin.cars.allCars')}</h2>
+                                <h2 className="text-lg md:text-xl font-bold text-white">{t('admin.cars.allCars')}</h2>
                             </div>
                             <button
                                 onClick={handleAddCar}
-                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                                className="px-3 md:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-xs md:text-sm whitespace-nowrap flex items-center justify-center gap-2 w-full sm:w-auto"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                 {t('admin.cars.addNew')}
                             </button>
                         </div>
                         {/* Search and Sort Row */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                             {/* Search */}
-                            <div className="flex-1 max-w-md">
+                            <div className="w-full md:flex-1 md:max-w-md">
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 md:w-4 md:h-4" />
                                     <input
                                         type="text"
                                         placeholder={t('admin.placeholders.searchCars')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
+                                        className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-xs md:text-sm placeholder-gray-400"
                                     />
                                 </div>
                             </div>
                             {/* Sort Controls */}
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.cars.sortBy')}</span>
-                                <button
-                                    onClick={() => handleSort('price')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'price'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    {t('admin.cars.price')}
-                                    {sortBy === 'price' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'price' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                <button
-                                    onClick={() => handleSort('year')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'year'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    {t('admin.cars.year')}
-                                    {sortBy === 'year' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'year' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                <button
-                                    onClick={() => handleSort('status')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'status'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    {t('admin.cars.status')}
-                                    {sortBy === 'status' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                {sortBy && (
+                            <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-2">
+                                <span className="hidden md:inline text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.cars.sortBy')}</span>
+                                <span className="md:hidden text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{t('admin.cars.sortBy')}</span>
+                                <div className="flex flex-wrap items-center gap-2">
                                     <button
-                                        onClick={() => {
-                                            setSortBy(null);
-                                            setSortOrder('asc');
-                                        }}
-                                        className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+                                        onClick={() => handleSort('price')}
+                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'price'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                            }`}
                                     >
-                                        {t('admin.cars.clearSort')}
+                                        <span className="truncate">{t('admin.cars.price')}</span>
+                                        {sortBy === 'price' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
+                                        )}
+                                        {sortBy !== 'price' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
                                     </button>
-                                )}
+                                    <button
+                                        onClick={() => handleSort('year')}
+                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'year'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                            }`}
+                                    >
+                                        <span className="truncate">{t('admin.cars.year')}</span>
+                                        {sortBy === 'year' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
+                                        )}
+                                        {sortBy !== 'year' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
+                                    </button>
+                                    <button
+                                        onClick={() => handleSort('status')}
+                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'status'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                            }`}
+                                    >
+                                        <span className="truncate">{t('admin.cars.status')}</span>
+                                        {sortBy === 'status' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
+                                        )}
+                                        {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
+                                    </button>
+                                    {sortBy && (
+                                        <button
+                                            onClick={() => {
+                                                setSortBy(null);
+                                                setSortOrder('asc');
+                                            }}
+                                            className="px-2.5 md:px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+                                        >
+                                            {t('admin.cars.clearSort')}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-white/10">
-                        <thead className="bg-white/5">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    {t('admin.requests.car')}
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    {t('admin.cars.category')}
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <button
-                                        onClick={() => handleSort('price')}
-                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
+                {/* Mobile Cards / Desktop Table */}
+                {filteredCars.length > 0 ? (
+                    <>
+                        {/* Mobile Card View */}
+                        <div className="block md:hidden p-4 space-y-4">
+                            {filteredCars.map((car) => {
+                                const carStatus = car.status?.toLowerCase() || 'available';
+                                const isBooked = carStatus === 'booked';
+                                const isMaintenance = carStatus === 'maintenance';
+                                const basePrice = car.price_per_day || 0;
+                                const discount = car.discount_percentage || 0;
+                                const finalPrice = discount > 0 
+                                    ? basePrice * (1 - discount / 100)
+                                    : basePrice;
+
+                                return (
+                                    <div
+                                        key={car.id}
+                                        className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition cursor-pointer"
+                                        onClick={() => handleEditCar(car)}
                                     >
-                                        {t('admin.cars.pricePerDay')}
-                                        {sortBy === 'price' ? (
-                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                        ) : (
-                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
-                                        )}
-                                    </button>
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <button
-                                        onClick={() => handleSort('year')}
-                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
-                                    >
-                                        {t('admin.cars.year')}
-                                        {sortBy === 'year' ? (
-                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                        ) : (
-                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
-                                        )}
-                                    </button>
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <button
-                                        onClick={() => handleSort('status')}
-                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
-                                    >
-                                        {t('admin.cars.status')}
-                                        {sortBy === 'status' ? (
-                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                        ) : (
-                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
-                                        )}
-                                    </button>
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    {t('admin.cars.actions')}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10">
-                            {filteredCars.length > 0 ? (
-                                filteredCars.map((car) => {
-                                    // Use database status field directly
-                                    const carStatus = car.status?.toLowerCase() || 'available';
-                                    const isBooked = carStatus === 'booked';
-                                    const isMaintenance = carStatus === 'maintenance';
-                                    return (
-                                        <tr
-                                            key={car.id}
-                                            className="hover:bg-white/5 transition-colors cursor-pointer"
-                                            onClick={() => handleEditCar(car)}
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <img
-                                                        src={(car as any).image || car.image_url || ''}
-                                                        alt={(car as any).name || `${car.make} ${car.model}`}
-                                                        className="w-12 h-12 object-cover rounded-md border border-white/10"
-                                                    />
-                                                    <div>
-                                                        <p className="text-white font-semibold">{(car as any).name || `${car.make} ${car.model}`}</p>
-                                                        <p className="text-gray-400 text-xs">{car.body} · {car.seats} {t('admin.cars.seats')}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="px-2 py-1 text-xs font-semibold bg-white/10 text-gray-300 rounded capitalize">
-                                                    {car.category}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {(() => {
-                                                    const basePrice = car.price_per_day || 0;
-                                                    const discount = car.discount_percentage || 0;
-                                                    const finalPrice = discount > 0 
-                                                        ? basePrice * (1 - discount / 100)
-                                                        : basePrice;
-                                                    
-                                                    return (
-                                                        <div className="flex flex-col">
-                                                            {discount > 0 ? (
-                                                                <>
-                                                                    <span className="text-white font-semibold">{finalPrice.toFixed(2)} MDL</span>
-                                                                    <span className="text-gray-400 text-xs line-through">{basePrice} MDL</span>
-                                                                </>
-                                                            ) : (
-                                                                <span className="text-white font-semibold">{basePrice} MDL</span>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-300">{car.year}</td>
-                                            <td className="px-6 py-4">
+                                        {/* Header: Car Image, Name and Status */}
+                                        <div className="flex items-start gap-3 mb-4">
+                                            <img
+                                                src={(car as any).image || car.image_url || ''}
+                                                alt={(car as any).name || `${car.make} ${car.model}`}
+                                                className="w-16 h-16 object-cover rounded-md border border-white/10 flex-shrink-0"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-white font-semibold text-sm mb-1 truncate">{(car as any).name || `${car.make} ${car.model}`}</h3>
+                                                <p className="text-gray-400 text-xs mb-2">{car.body} · {car.seats} {t('admin.cars.seats')}</p>
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isBooked
+                                                    className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isBooked
                                                         ? 'bg-red-500/20 text-red-300 border-red-500/50'
                                                         : isMaintenance
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
@@ -1487,39 +1411,207 @@ const CarsView: React.FC = () => {
                                                 >
                                                     {carStatus === 'booked' ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                                    <button
-                                                        onClick={() => handleEditCar(car)}
-                                                        className="p-2 text-white hover:text-gray-300 transition-colors"
-                                                        title={t('admin.common.edit')}
+                                            </div>
+                                        </div>
+
+                                        {/* Details Grid */}
+                                        <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-white/10">
+                                            <div>
+                                                <p className="text-gray-400 text-xs mb-1">{t('admin.cars.category')}</p>
+                                                <p className="text-white text-sm font-medium capitalize">{car.category}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 text-xs mb-1">{t('admin.cars.year')}</p>
+                                                <p className="text-white text-sm font-medium">{car.year}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Price and Actions */}
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-gray-400 text-xs mb-1">{t('admin.cars.pricePerDay')}</p>
+                                                {discount > 0 ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-white font-semibold text-sm">{finalPrice.toFixed(2)} MDL</span>
+                                                        <span className="text-gray-400 text-xs line-through">{basePrice} MDL</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-white font-semibold text-sm">{basePrice} MDL</span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    onClick={() => handleEditCar(car)}
+                                                    className="p-2 text-white hover:text-gray-300 transition-colors"
+                                                    title={t('admin.common.edit')}
+                                                >
+                                                    {/* @ts-ignore - react-icons type compatibility */}
+                                                    <LuPencil className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteCar(car.id)}
+                                                    className="p-2 text-red-300 hover:text-red-200 transition-colors"
+                                                    title={t('admin.common.delete')}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-white/10">
+                                <thead className="bg-white/5">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.requests.car')}
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.cars.category')}
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <button
+                                                onClick={() => handleSort('price')}
+                                                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                            >
+                                                {t('admin.cars.pricePerDay')}
+                                                {sortBy === 'price' ? (
+                                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                ) : (
+                                                    <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                                )}
+                                            </button>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <button
+                                                onClick={() => handleSort('year')}
+                                                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                            >
+                                                {t('admin.cars.year')}
+                                                {sortBy === 'year' ? (
+                                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                ) : (
+                                                    <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                                )}
+                                            </button>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <button
+                                                onClick={() => handleSort('status')}
+                                                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                            >
+                                                {t('admin.cars.status')}
+                                                {sortBy === 'status' ? (
+                                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                ) : (
+                                                    <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                                )}
+                                            </button>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.cars.actions')}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/10">
+                                    {filteredCars.map((car) => {
+                                        const carStatus = car.status?.toLowerCase() || 'available';
+                                        const isBooked = carStatus === 'booked';
+                                        const isMaintenance = carStatus === 'maintenance';
+                                        return (
+                                            <tr
+                                                key={car.id}
+                                                className="hover:bg-white/5 transition-colors cursor-pointer"
+                                                onClick={() => handleEditCar(car)}
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <img
+                                                            src={(car as any).image || car.image_url || ''}
+                                                            alt={(car as any).name || `${car.make} ${car.model}`}
+                                                            className="w-12 h-12 object-cover rounded-md border border-white/10"
+                                                        />
+                                                        <div>
+                                                            <p className="text-white font-semibold">{(car as any).name || `${car.make} ${car.model}`}</p>
+                                                            <p className="text-gray-400 text-xs">{car.body} · {car.seats} {t('admin.cars.seats')}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="px-2 py-1 text-xs font-semibold bg-white/10 text-gray-300 rounded capitalize">
+                                                        {car.category}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {(() => {
+                                                        const basePrice = car.price_per_day || 0;
+                                                        const discount = car.discount_percentage || 0;
+                                                        const finalPrice = discount > 0 
+                                                            ? basePrice * (1 - discount / 100)
+                                                            : basePrice;
+                                                        
+                                                        return (
+                                                            <div className="flex flex-col">
+                                                                {discount > 0 ? (
+                                                                    <>
+                                                                        <span className="text-white font-semibold">{finalPrice.toFixed(2)} MDL</span>
+                                                                        <span className="text-gray-400 text-xs line-through">{basePrice} MDL</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="text-white font-semibold">{basePrice} MDL</span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-300">{car.year}</td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isBooked
+                                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                            : isMaintenance
+                                                                ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                                                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                                                            }`}
                                                     >
-                                                        {/* @ts-ignore - react-icons type compatibility */}
-                                                        <LuPencil className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteCar(car.id)}
-                                                        className="p-2 text-red-300 hover:text-red-200 transition-colors"
-                                                        title={t('admin.common.delete')}
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                                        {searchQuery || filterCategory !== 'all' ? t('admin.cars.noCars') : t('admin.cars.noCars')}
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                                        {carStatus === 'booked' ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                        <button
+                                                            onClick={() => handleEditCar(car)}
+                                                            className="p-2 text-white hover:text-gray-300 transition-colors"
+                                                            title={t('admin.common.edit')}
+                                                        >
+                                                            {/* @ts-ignore - react-icons type compatibility */}
+                                                            <LuPencil className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteCar(car.id)}
+                                                            className="p-2 text-red-300 hover:text-red-200 transition-colors"
+                                                            title={t('admin.common.delete')}
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                ) : (
+                    <div className="px-6 py-12 text-center text-gray-400">
+                        {searchQuery || filterCategory !== 'all' ? t('admin.cars.noCars') : t('admin.cars.noCars')}
+                    </div>
+                )}
             </div>
 
             {/* Add/Edit Car Modal */}
@@ -3202,17 +3294,17 @@ const RequestsView: React.FC = () => {
             {/* Requests Table Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-white/10">
-                    <div className="flex flex-col gap-4">
+                <div className="px-3 md:px-6 py-3 md:py-4 border-b border-white/10">
+                    <div className="flex flex-col gap-3 md:gap-4">
                         {/* Title and Add Button Row */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                             <div>
-                                <h2 className="text-xl font-bold text-white">{t('admin.requests.rentalRequests')}</h2>
+                                <h2 className="text-lg md:text-xl font-bold text-white">{t('admin.requests.rentalRequests')}</h2>
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                                 <button
                                     onClick={() => setShowRejected(!showRejected)}
-                                    className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showRejected
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showRejected
                                         ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
@@ -3221,119 +3313,195 @@ const RequestsView: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => setShowAddRentalModal(true)}
-                                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                                    className="px-3 md:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-xs md:text-sm whitespace-nowrap flex items-center justify-center gap-2"
                                 >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                     {t('admin.requests.createRequest')}
                                 </button>
                             </div>
                         </div>
                         {/* Search and Sort Row */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                             {/* Search */}
-                            <div className="flex-1 max-w-md">
+                            <div className="w-full md:flex-1 md:max-w-md">
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 md:w-4 md:h-4" />
                                     <input
                                         type="text"
                                         placeholder={t('admin.placeholders.searchRequests')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
+                                        className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-xs md:text-sm placeholder-gray-400"
                                     />
                                 </div>
                             </div>
                             {/* Filter and Sort Buttons */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.requests.sortBy')}</span>
-                                <button
-                                    onClick={() => handleSort('pickup')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'pickup'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    {t('admin.requests.pickupDate')}
-                                    {sortBy === 'pickup' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'pickup' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                <button
-                                    onClick={() => handleSort('amount')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'amount'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    {t('admin.requests.amount')}
-                                    {sortBy === 'amount' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'amount' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                <button
-                                    onClick={() => handleSort('status')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'status'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    {t('admin.requests.status')}
-                                    {sortBy === 'status' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                {sortBy && (
+                            <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-2">
+                                <span className="hidden md:inline text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.requests.sortBy')}</span>
+                                <span className="md:hidden text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{t('admin.requests.sortBy')}</span>
+                                <div className="flex flex-wrap items-center gap-2">
                                     <button
-                                        onClick={() => {
-                                            setSortBy(null);
-                                            setSortOrder('asc');
-                                        }}
-                                        className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+                                        onClick={() => handleSort('pickup')}
+                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'pickup'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                            }`}
                                     >
-                                        {t('admin.requests.clearSort')}
+                                        <span className="truncate">{t('admin.requests.pickupDate')}</span>
+                                        {sortBy === 'pickup' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
+                                        )}
+                                        {sortBy !== 'pickup' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
                                     </button>
-                                )}
+                                    <button
+                                        onClick={() => handleSort('amount')}
+                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'amount'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                            }`}
+                                    >
+                                        <span className="truncate">{t('admin.requests.amount')}</span>
+                                        {sortBy === 'amount' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
+                                        )}
+                                        {sortBy !== 'amount' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
+                                    </button>
+                                    {sortBy && sortBy !== 'status' && (
+                                        <button
+                                            onClick={() => {
+                                                setSortBy('status');
+                                                setSortOrder('asc');
+                                            }}
+                                            className="px-2.5 md:px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+                                        >
+                                            {t('admin.requests.clearSort')}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Table */}
+                {/* Mobile Cards / Desktop Table */}
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <Loader2 className="w-8 h-8 animate-spin text-white/50" />
                     </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-white/10">
-                            <thead className="bg-white/5">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        {t('admin.requests.customer')}
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        {t('admin.requests.car')}
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        {t('admin.requests.pickup')}
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        {t('admin.requests.return')}
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        {t('admin.requests.amount')}
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        {t('admin.requests.status')}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/10">
-                                {filteredRequests.length > 0 ? (
-                                    filteredRequests.map((request) => {
+                ) : filteredRequests.length > 0 ? (
+                    <>
+                        {/* Mobile Card View */}
+                        <div className="block md:hidden p-4 space-y-4">
+                            {filteredRequests.map((request) => {
+                                const getInitials = (name: string) => {
+                                    const parts = name.trim().split(' ');
+                                    if (parts.length >= 2) {
+                                        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+                                    }
+                                    return name.substring(0, 2).toUpperCase();
+                                };
+
+                                return (
+                                    <div
+                                        key={request.id}
+                                        className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition cursor-pointer"
+                                        onClick={() => {
+                                            setSelectedRequest(request);
+                                            setShowRequestDetailsModal(true);
+                                        }}
+                                    >
+                                        {/* Header: Customer and Status */}
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
+                                                    {getInitials(request.customerName || 'U')}
+                                                </div>
+                                                <div className="flex flex-col min-w-0 flex-1">
+                                                    <span className="font-semibold text-white text-sm truncate">{request.customerName}</span>
+                                                    {request.customerPhone && (
+                                                        <span className="text-gray-400 text-xs truncate">{request.customerPhone}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span
+                                                className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm flex-shrink-0 ${request.status === 'PENDING'
+                                                    ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                                    : request.status === 'APPROVED'
+                                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                                                        : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                    }`}
+                                            >
+                                                {request.status === 'PENDING' ? t('admin.status.pending') : 
+                                                 request.status === 'APPROVED' ? t('admin.status.approved') : 
+                                                 request.status === 'REJECTED' ? t('admin.status.rejected') : 
+                                                 request.status === 'EXECUTED' ? t('admin.status.executed') : 
+                                                 request.status}
+                                            </span>
+                                        </div>
+
+                                        {/* Car Info */}
+                                        <div className="flex items-center gap-3 mb-4 pb-4 border-b border-white/10">
+                                            <img
+                                                src={request.avatar}
+                                                alt={request.carName}
+                                                className="w-12 h-12 object-cover rounded-md border border-white/10 flex-shrink-0"
+                                            />
+                                            <span className="text-white font-medium text-sm flex-1">{request.carName}</span>
+                                        </div>
+
+                                        {/* Dates and Amount */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-gray-400 text-xs mb-1">{t('admin.requests.pickup')}</p>
+                                                <p className="text-white text-sm font-medium">{new Date(request.pickupDate).toLocaleDateString()}</p>
+                                                <p className="text-gray-400 text-xs">{request.pickupTime}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 text-xs mb-1">{t('admin.requests.return')}</p>
+                                                <p className="text-white text-sm font-medium">{new Date(request.returnDate).toLocaleDateString()}</p>
+                                                <p className="text-gray-400 text-xs">{request.returnTime}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Amount */}
+                                        <div className="mt-4 pt-4 border-t border-white/10">
+                                            <p className="text-gray-400 text-xs mb-1">{t('admin.requests.amount')}</p>
+                                            <p className="text-white font-semibold text-base">
+                                                {calculateRequestTotalPrice(request).toLocaleString()} MDL
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-white/10">
+                                <thead className="bg-white/5">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.requests.customer')}
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.requests.car')}
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.requests.pickup')}
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.requests.return')}
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.requests.amount')}
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            {t('admin.requests.status')}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/10">
+                                    {filteredRequests.map((request) => {
                                         const getInitials = (name: string) => {
                                             const parts = name.trim().split(' ');
                                             if (parts.length >= 2) {
@@ -3409,16 +3577,14 @@ const RequestsView: React.FC = () => {
                                                 </td>
                                             </tr>
                                         );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                                            {searchQuery ? t('admin.requests.noRequests') : t('admin.requests.noRequests')}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                ) : (
+                    <div className="px-6 py-12 text-center text-gray-400">
+                        {searchQuery ? t('admin.requests.noRequests') : t('admin.requests.noRequests')}
                     </div>
                 )}
             </div>
@@ -3898,8 +4064,10 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                 <span className="text-white font-medium">{car.price_per_day} MDL</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-300">{t('admin.requestDetails.numberOfDays')}</span>
-                                <span className="text-white font-medium">{rentalDays}</span>
+                                <span className="text-gray-300">Durată</span>
+                                <span className="text-white font-medium">
+                                    {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}{hours > 0 ? `, ${hours} ${hours === 1 ? 'oră' : 'ore'}` : ''}
+                                </span>
                             </div>
                             {discountPercent > 0 && (
                                 <div className="flex items-center justify-between text-sm text-emerald-400">

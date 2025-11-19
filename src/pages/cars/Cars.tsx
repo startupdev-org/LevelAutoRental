@@ -1,73 +1,177 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Search, Filter, X, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench } from 'lucide-react';
-import { cars } from '../../data/cars';
+import { Search, Filter, X, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from './CarCard';
+import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels } from '../../lib/db/cars-page/cars';
+import { Car as CarType } from '../../types';
+
+import { RentalOptionsSection } from './section/RentalOptionsSection'
+import { ContractSection } from './section/ContractSection';
+import { FUEL_TYPE_MAP, FuelTypeUI } from '../../constants';
+
+// Display Car type for CarCard component
+interface DisplayCar extends CarType {
+  name: string;
+  image: string;
+  pricePerDay: number;
+  photoGallery?: string[];
+  fuelType?: string;
+  availability?: string;
+}
+
+interface SidebarFilters {
+  transmission: 'Any' | 'Automatic' | 'Manual';
+  fuelType: FuelTypeUI;
+  make?: string;
+  model?: string;
+  priceRange: [number, number];
+  yearRange: [number, number];
+  seats?: number;
+  status?: string;
+}
 
 export const Cars: React.FC = () => {
   const { ref, isInView } = useInView();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const InfoIconPath = (
-    <path
-      fillRule="evenodd"
-      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-      clipRule="evenodd"
-    />
-  );
+  const [cars, setCars] = useState<CarType[]>([]);
+  const [displayCars, setDisplayCars] = useState<DisplayCar[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [makes, setMakes] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
 
+  const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
+
+  // Map database Car to display Car format
+  const mapCarToDisplay = (car: CarType): DisplayCar => {
+    return {
+      ...car,
+      name: `${car.make} ${car.model}`.trim(),
+      image: car.image_url || '',
+      pricePerDay: car.price_per_day,
+      photoGallery: car.photo_gallery,
+      fuelType: car.fuel_type,
+      availability: car.status === 'available' ? 'Disponibil' : car.status === 'rented' ? 'Închiriat' : car.status || undefined,
+    };
+  };
+
+
+  async function handleFetchCarsModel(make: string) {
+    // setLoading(true);
+    try {
+      const fetchedMakeModels = await fetchCarsModels(make);
+      console.log('fetched models are: ', fetchedMakeModels)
+      setModels(fetchedMakeModels)
+    } catch (error) {
+      console.error('Error fetching make models:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  async function handleFetchCars() {
+    setLoading(true);
+    try {
+      const fetchedCars = await fetchCars();
+      setCars(fetchedCars);
+      setDisplayCars(fetchedCars.map(mapCarToDisplay));
+    } catch (error) {
+      console.error('Error fetching cars:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleFetchCarsMake() {
+    try {
+      const fetchedCarsMake = await fetchCarsMake();
+      setMakes(fetchedCarsMake);
+    } catch (error) {
+      console.error('Error fetching cars make:', error);
+    }
+  }
+
+  async function handleFetchFilteredCars(basicFilters: typeof filters) {
+    setLoading(true);
+    // console.log('fetching the cars after filters: ', filters)
+    console.log('fetching the cars WITH THIS applied filters: ', basicFilters)
+    console.log('fetching the cars WITH THIS sidebar filters: ', sidebarFilters)
+    try {
+      // Build filter object from applied filters and sidebar filters
+      const filters: CarFilters = {
+        make: basicFilters.make || undefined,
+        model: basicFilters.model || undefined,
+        minPrice: sidebarFilters.priceRange[0],
+        maxPrice: sidebarFilters.priceRange[1],
+        minYear: sidebarFilters.yearRange[0],
+        maxYear: sidebarFilters.yearRange[1],
+        fuelType: sidebarFilters.fuelType !== 'Any'
+          ? FUEL_TYPE_MAP[sidebarFilters.fuelType as keyof typeof FUEL_TYPE_MAP]
+          : undefined,
+        transmission: sidebarFilters.transmission !== 'Any' ? sidebarFilters.transmission as 'Automatic' | 'Manual' : undefined,
+        seats: sidebarFilters.seats !== undefined ? sidebarFilters.seats : undefined,
+      };
+
+
+      console.log('the last filters are: ', filters)
+
+      const fetchedCars = await fetchFilteredCars(filters);
+      setCars(fetchedCars);
+      setDisplayCars(fetchedCars.map(mapCarToDisplay));
+    } catch (error) {
+      console.error('Error fetching filtered cars:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    handleFetchCars();
+    handleFetchCarsMake();
+  }, []);
 
   // Filter state
   const [filters, setFilters] = useState({
     make: '',
-    model: '',
-    location: '',
-    dateRange: { startDate: '', endDate: '' }
+    model: ''
   });
 
   // Applied filters state (what's actually used for filtering)
   const [appliedFilters, setAppliedFilters] = useState({
     make: '',
-    model: '',
-    location: '',
-    dateRange: { startDate: '', endDate: '' }
+    model: ''
   });
 
   // Dropdown states
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [showDateCalendar, setShowDateCalendar] = useState(false);
   const [showMakeDropdown, setShowMakeDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
-    setShowLocationDropdown(false);
-    setShowDateCalendar(false);
     setShowMakeDropdown(false);
     setShowModelDropdown(false);
   };
 
+  useEffect(() => {
+    console.log('SidebarFilters are: ', sidebarFilters)
+  }, [showAdvancedFilters])
+
   // Handle opening a specific dropdown and closing others
-  const openDropdown = (dropdownType: 'location' | 'date' | 'make' | 'model') => {
-    if ((dropdownType === 'location' && showLocationDropdown) ||
-      (dropdownType === 'date' && showDateCalendar) ||
-      (dropdownType === 'make' && showMakeDropdown) ||
+  const openDropdown = (dropdownType: 'make' | 'model') => {
+    if ((dropdownType === 'make' && showMakeDropdown) ||
       (dropdownType === 'model' && showModelDropdown)) {
       closeAllDropdowns();
       return;
     }
 
     closeAllDropdowns();
-    if (dropdownType === 'location') {
-      setShowLocationDropdown(true);
-    } else if (dropdownType === 'date') {
-      setShowDateCalendar(true);
-    } else if (dropdownType === 'make') {
+    if (dropdownType === 'make') {
       setShowMakeDropdown(true);
     } else if (dropdownType === 'model') {
       setShowModelDropdown(true);
@@ -83,12 +187,12 @@ export const Cars: React.FC = () => {
       }
     };
 
-    if (showLocationDropdown || showDateCalendar || showMakeDropdown || showModelDropdown) {
+    if (showMakeDropdown || showModelDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showLocationDropdown, showDateCalendar, showMakeDropdown, showModelDropdown]);
+  }, [showMakeDropdown, showModelDropdown]);
 
   // Prevent body scroll when drawer is open
   useEffect(() => {
@@ -102,138 +206,51 @@ export const Cars: React.FC = () => {
     };
   }, [showAdvancedFilters]);
 
-  // Helper functions
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+
+  const defaultSidebarFilters: SidebarFilters = {
+    priceRange: [0, 10000],
+    yearRange: [new Date().getFullYear() - 10, new Date().getFullYear()],
+    transmission: 'Any',
+    fuelType: 'Any',
+    seats: undefined,
   };
-
-  const formatDateRange = (dateRange: { startDate: string; endDate: string }): string => {
-    if (!dateRange.startDate && !dateRange.endDate) return '';
-    if (!dateRange.endDate) return formatDate(dateRange.startDate);
-    if (!dateRange.startDate) return formatDate(dateRange.endDate);
-    return `${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`;
-  };
-
-  const generateCalendarDays = (date: Date): (string | null)[] => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-    const days: (string | null)[] = [];
-    const currentDate = new Date(startDate);
-
-    for (let i = 0; i < 42; i++) {
-      if (currentDate.getMonth() === month) {
-        days.push(currentDate.toISOString().split('T')[0]);
-      } else {
-        days.push(null);
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return days;
-  };
-
-  const isSameDay = (date1: Date, date2: Date): boolean => {
-    return date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate();
-  };
-
-  // Initialize date range
-  const todayDate = new Date().toISOString().split('T')[0];
-  const tomorrowDate = new Date();
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrowDateString = tomorrowDate.toISOString().split('T')[0];
-
-  // Get min/max values for sliders
-  const priceRange = useMemo(() => {
-    const prices = cars.map(car => car.pricePerDay);
-    return { min: Math.min(...prices), max: Math.max(...prices) };
-  }, []);
-
-  const yearRangeData = useMemo(() => {
-    const years = cars.map(car => car.year);
-    return { min: Math.min(...years), max: Math.max(...years) };
-  }, []);
 
   // Sidebar filter state
-  const [sidebarFilters, setSidebarFilters] = useState({
-    rentalType: 'Any', // Per Day, Per Hour, Any
-    priceRange: [0, 1000] as [number, number], // Will be updated in useEffect
-    yearRange: [2010, 2025] as [number, number], // Will be updated in useEffect
-    transmission: 'Any', // Any, Manual, Automatic
-    fuelType: 'Any', // Any, Petrol, Diesel, Electric, Hybrid, etc.
-    seats: 'Any', // Any, 2, 4, 5, 7
-    vehicleCondition: 'All', // All, Brand New, Used
-    availability: 'Any' // Any, Available, Not Available
-  });
+  const [sidebarFilters, setSidebarFilters] = useState<SidebarFilters>(defaultSidebarFilters);
 
-  // Update sidebar filters when priceRange and yearRangeData are available
-  useEffect(() => {
-    if (priceRange.min && priceRange.max && yearRangeData.min && yearRangeData.max) {
-      setSidebarFilters(prev => ({
-        ...prev,
-        priceRange: prev.priceRange[0] === 0 && prev.priceRange[1] === 1000
-          ? [priceRange.min, priceRange.max]
-          : prev.priceRange,
-        yearRange: prev.yearRange[0] === 2010 && prev.yearRange[1] === 2025
-          ? [yearRangeData.min, yearRangeData.max]
-          : prev.yearRange
-      }));
-    }
-  }, [priceRange.min, priceRange.max, yearRangeData.min, yearRangeData.max]);
-
-  const [sortBy, setSortBy] = useState('default');
-  const [showAllParams, setShowAllParams] = useState(false);
   const [applyError, setApplyError] = useState('');
 
   // Read URL parameters on mount and apply them
   useEffect(() => {
     const makeParam = searchParams.get('make');
     const modelParam = searchParams.get('model');
-    const locationParam = searchParams.get('location');
-    const startDateParam = searchParams.get('startDate');
-    const endDateParam = searchParams.get('endDate');
 
-    if (makeParam || modelParam || locationParam || startDateParam || endDateParam) {
+    if (makeParam || modelParam) {
       const initialFilters = {
         make: makeParam || '',
-        model: modelParam || '',
-        location: locationParam || '',
-        dateRange: {
-          startDate: startDateParam || '',
-          endDate: endDateParam || ''
-        }
+        model: modelParam || ''
       };
       setFilters(initialFilters);
       setAppliedFilters(initialFilters);
     }
   }, [searchParams]);
 
-  // Validation states
-  const [validationErrors, setValidationErrors] = useState({
-    yearRange: false,
-    priceRange: false,
-    kilometersRange: false,
-  });
+  // Validation states (kept for potential future use)
+  // const [validationErrors, setValidationErrors] = useState({
+  //   yearRange: false,
+  //   priceRange: false,
+  //   kilometersRange: false,
+  // });
 
-  // Get unique makes from cars data
+  // Get unique makes from fetched makes array
   const uniqueMakes = useMemo(() => {
-    const makes = cars.map(car => {
-      const parts = car.name.split(' ');
+    return makes.map(make => {
+      const parts = make.split(' ');
       const firstPart = parts[0];
       // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
       return firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
-    });
-    return [...new Set(makes)];
-  }, []);
+    }).filter((value, index, self) => self.indexOf(value) === index);
+  }, [makes]);
 
   // Get car make logo path
   const getMakeLogo = (make: string): string | null => {
@@ -258,231 +275,83 @@ export const Cars: React.FC = () => {
     return 'w-4 h-4';
   };
 
-  // Map makes to their available models
-  const makeToModels = useMemo(() => {
-    const mapping: Record<string, string[]> = {};
-    cars.forEach(car => {
-      const parts = car.name.split(' ');
-      const firstPart = parts[0];
-      // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
-      const make = firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
-      const model = parts.slice(1).join(' '); // Rest is the model
-
-      if (!mapping[make]) {
-        mapping[make] = [];
-      }
-      if (model && !mapping[make].includes(model)) {
-        mapping[make].push(model);
-      }
-    });
-    return mapping;
-  }, []);
-
-  // Get available models for selected make
-  const availableModels = useMemo(() => {
-    if (!filters.make) return [];
-    return makeToModels[filters.make] || [];
-  }, [filters.make, makeToModels]);
-
-  // Filter and sort cars
-  const filteredCars = useMemo(() => {
-    let filtered = cars.filter((car) => {
-      // Extract make: split on '-' first for cases like "Mercedes-AMG" -> "Mercedes"
-      const firstPart = car.name.split(' ')[0];
-      const carMake = firstPart.includes('-') ? firstPart.split('-')[0].toLowerCase() : firstPart.toLowerCase();
-      const carModel = car.name.split(' ').slice(1).join(' ').toLowerCase();
-
-      // Make filter
-      if (appliedFilters.make && carMake !== appliedFilters.make.toLowerCase()) {
-        return false;
-      }
-
-      // Model filter
-      if (appliedFilters.model && !carModel.includes(appliedFilters.model.toLowerCase())) {
-        return false;
-      }
-
-      // Sidebar filters
-      // Price range filter
-      if (car.pricePerDay < sidebarFilters.priceRange[0] || car.pricePerDay > sidebarFilters.priceRange[1]) {
-        return false;
-      }
-
-      // Year range filter
-      if (car.year < sidebarFilters.yearRange[0] || car.year > sidebarFilters.yearRange[1]) {
-        return false;
-      }
-
-      // Transmission filter
-      if (sidebarFilters.transmission !== 'Any' && car.transmission !== sidebarFilters.transmission) {
-        return false;
-      }
-
-      // Fuel type filter
-      if (sidebarFilters.fuelType !== 'Any') {
-        const fuelTypeMap: Record<string, string> = {
-          'Petrol': 'gasoline',
-          'Gasoline': 'gasoline',
-          'Diesel': 'diesel',
-          'Electric': 'electric',
-          'Hybrid': 'hybrid'
-        };
-        const mappedFuelType = fuelTypeMap[sidebarFilters.fuelType] || sidebarFilters.fuelType.toLowerCase();
-        if (car.fuelType !== mappedFuelType) {
-          return false;
-        }
-      }
-
-      // Seats filter
-      if (sidebarFilters.seats !== 'Any') {
-        const seatsCount = parseInt(sidebarFilters.seats);
-        if (car.seats !== seatsCount) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+  // Sort display cars (filtering is done server-side)
+  const sortedCars = useMemo(() => {
+    const carsToSort = [...displayCars];
 
     // Sort cars
     switch (sortBy) {
       case 'price-low':
-        return filtered.sort((a, b) => a.pricePerDay - b.pricePerDay);
+        return carsToSort.sort((a, b) => a.pricePerDay - b.pricePerDay);
       case 'price-high':
-        return filtered.sort((a, b) => b.pricePerDay - a.pricePerDay);
+        return carsToSort.sort((a, b) => b.pricePerDay - a.pricePerDay);
       case 'year-new':
-        return filtered.sort((a, b) => b.year - a.year);
+        return carsToSort.sort((a, b) => b.year - a.year);
       case 'year-old':
-        return filtered.sort((a, b) => a.year - b.year);
-      case 'rating':
-        return filtered.sort((a, b) => b.rating - a.rating);
+        return carsToSort.sort((a, b) => a.year - b.year);
       default:
-        return filtered;
+        return carsToSort;
     }
-  }, [appliedFilters, sortBy, sidebarFilters]);
+  }, [displayCars, sortBy]);
 
-  const handleFilterChange = (key: string, value: string | { startDate: string; endDate: string }) => {
+  const handleFilterChange = (key: string, value: string) => {
+    console.log('settings the filter: key = ', key, ' ; value = ', value)
     setFilters(prev => {
       const newFilters = { ...prev, [key]: value };
 
       // If make is being changed, reset model if it's not valid for the new make
       if (key === 'make') {
-        const newMake = value as string;
-        if (newMake && prev.model) {
-          const validModels = makeToModels[newMake] || [];
-          const currentModelValid = validModels.some(model =>
-            model.toLowerCase() === prev.model.toLowerCase()
-          );
-          if (!currentModelValid) {
-            newFilters.model = '';
-          }
-        } else if (!newMake) {
-          // If make is cleared, also clear model
+        const newMake = value;
+
+        // Load models from DB when make changes
+        if (newMake) {
+          handleFetchCarsModel(newMake);
+        } else {
+          setModels([]);
+        }
+
+        // Reset model if invalid for new make
+        if (prev.model) {
           newFilters.model = '';
         }
       }
-
+      console.log('the new filters: ', newFilters)
       return newFilters;
     });
     setApplyError('');
   };
 
-  const handleDateSelect = (selectedDate: string) => {
-    const { startDate, endDate } = filters.dateRange;
-
-    // If no start date, set it as start date
-    if (!startDate) {
-      handleFilterChange('dateRange', { startDate: selectedDate, endDate: '' });
-      return;
-    }
-
-    // If start date exists but no end date yet
-    if (!endDate) {
-      // If selected date is before start date, reset start date
-      if (selectedDate < startDate) {
-        handleFilterChange('dateRange', { startDate: selectedDate, endDate: '' });
-      }
-      // If selected date is on or after start date, set as end date
-      else if (selectedDate >= startDate) {
-        handleFilterChange('dateRange', { startDate, endDate: selectedDate });
-        setTimeout(() => closeAllDropdowns(), 200);
-      }
-    }
-    // If both dates exist, allow changing them
-    else {
-      // If clicking before start date, set new start date
-      if (selectedDate < startDate) {
-        handleFilterChange('dateRange', { startDate: selectedDate, endDate: '' });
-      }
-      // If clicking between start and end, or after end, set new end date
-      else {
-        handleFilterChange('dateRange', { startDate, endDate: selectedDate });
-        setTimeout(() => closeAllDropdowns(), 200);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      validateRanges(filters);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [filters]);
-
-  const validateRanges = (currentFilters: typeof filters) => {
-    // No validation needed for simplified filters
-    setValidationErrors({
-      yearRange: false,
-      priceRange: false,
-      kilometersRange: false,
-    });
-  };
-
   const resetFilters = () => {
     setFilters({
       make: '',
-      model: '',
-      location: '',
-      dateRange: { startDate: '', endDate: '' }
+      model: ''
     });
     setAppliedFilters({
       make: '',
-      model: '',
-      location: '',
-      dateRange: { startDate: '', endDate: '' }
+      model: ''
     });
-    setSidebarFilters({
-      rentalType: 'Any',
-      priceRange: [priceRange.min, priceRange.max],
-      yearRange: [yearRangeData.min, yearRangeData.max],
-      transmission: 'Any',
-      fuelType: 'Any',
-      seats: 'Any',
-      vehicleCondition: 'All',
-      availability: 'Any'
-    });
-    setValidationErrors({
-      yearRange: false,
-      priceRange: false,
-      kilometersRange: false,
-    });
+    setSidebarFilters(defaultSidebarFilters);
     // Clear URL params
     navigate('/cars', { replace: true });
   };
 
   const handleSidebarFilterChange = (key: string, value: any) => {
+    console.log('changing the sidebar filters: key = ', key, ' ; value = ', value)
+    if (value === 'Any')
+      value = undefined
     setSidebarFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const applyFilters = () => {
+  const applyFilters = (liveFilters: typeof filters) => {
+    console.log('making a request to get the cars from the filters')
+    console.log('applying the filters: ', liveFilters)
+
+    console.log('sidebarFilters: ', sidebarFilters)
+
     // Validate that at least one filter is set
     const hasFilters =
-      filters.make ||
-      filters.model ||
-      filters.location ||
-      filters.dateRange.startDate ||
-      filters.dateRange.endDate;
+      liveFilters.make ||
+      liveFilters.model;
 
     if (!hasFilters) {
       setApplyError('Vă rugăm să selectați cel puțin un filtru pentru căutare.');
@@ -491,30 +360,29 @@ export const Cars: React.FC = () => {
     }
 
     setApplyError('');
-    setAppliedFilters({ ...filters });
+    setAppliedFilters({
+      make: liveFilters.make,
+      model: liveFilters.model,
+    });
+
     closeAllDropdowns();
 
     // Update URL with search parameters
     const params = new URLSearchParams();
 
-    if (filters.make) {
-      params.set('make', filters.make);
+    if (liveFilters.make) {
+      params.set('make', liveFilters.make);
     }
-    if (filters.model) {
-      params.set('model', filters.model);
-    }
-    if (filters.location) {
-      params.set('location', filters.location);
-    }
-    if (filters.dateRange.startDate) {
-      params.set('startDate', filters.dateRange.startDate);
-    }
-    if (filters.dateRange.endDate) {
-      params.set('endDate', filters.dateRange.endDate);
+    if (liveFilters.model) {
+      params.set('model', liveFilters.model);
     }
 
     const queryString = params.toString();
     navigate(`/cars${queryString ? `?${queryString}` : ''}`, { replace: true });
+
+    // Trigger filtered fetch
+    // console.log('should fetch cars after the filters')
+    handleFetchFilteredCars(liveFilters);
   };
 
 
@@ -651,8 +519,8 @@ export const Cars: React.FC = () => {
                         {filters.make && (() => {
                           const logoPath = getMakeLogo(filters.make.toLowerCase());
                           return logoPath ? (
-                            <img 
-                              src={logoPath} 
+                            <img
+                              src={logoPath}
                               alt={filters.make}
                               className={`${getLogoSizeClass(filters.make)} object-contain brightness-0 invert`}
                               onError={(e) => {
@@ -696,8 +564,8 @@ export const Cars: React.FC = () => {
                                   >
                                     <div className="w-6 flex items-center justify-start flex-shrink-0">
                                       {logoPath && (
-                                        <img 
-                                          src={logoPath} 
+                                        <img
+                                          src={logoPath}
                                           alt={make}
                                           className={`${getLogoSizeClass(make)} object-contain`}
                                           onError={(e) => {
@@ -725,7 +593,7 @@ export const Cars: React.FC = () => {
                     <div className="relative overflow-visible">
                       <div
                         className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : filters.model ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
-                        onClick={() => filters.make && openDropdown('model')}
+                        onClick={() => filters.make && models && openDropdown('model')}
                       >
                         {!filters.make ? 'Selectează marca' : (filters.model || 'Selectează modelul')}
                       </div>
@@ -747,10 +615,10 @@ export const Cars: React.FC = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="py-1">
-                              {availableModels.length > 0 ? (
-                                availableModels.map((model, index) => {
+                              {models.length > 0 ? (
+                                models.map((model, index) => {
                                   const isFirst = index === 0;
-                                  const isLast = index === availableModels.length - 1;
+                                  const isLast = index === models.length - 1;
                                   return (
                                     <div
                                       key={model}
@@ -776,184 +644,10 @@ export const Cars: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Location */}
-                  <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
-                    <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.location ? 'text-white' : 'text-white/80'}`}>
-                      Locație
-                    </label>
-                    <div className="relative overflow-visible">
-                      <div
-                        className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.location ? 'text-white' : 'text-white/70'}`}
-                        onClick={() => openDropdown('location')}
-                      >
-                        {filters.location || 'Selectează locația'}
-                      </div>
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-
-                      {/* Location Dropdown */}
-                      <AnimatePresence>
-                        {showLocationDropdown && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="py-1">
-                              <div
-                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau Airport' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                onClick={() => {
-                                  handleFilterChange('location', 'Chisinau Airport');
-                                  closeAllDropdowns();
-                                }}
-                              >
-                                Chisinau Airport
-                              </div>
-                              <div
-                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${filters.location === 'Chisinau' ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                onClick={() => {
-                                  handleFilterChange('location', 'Chisinau');
-                                  closeAllDropdowns();
-                                }}
-                              >
-                                Chisinau
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-
-                  {/* Date Range */}
-                  <div className="flex-1 relative border-b-0 md:border-b lg:border-b-0 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
-                    <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/80'}`}>
-                      Perioadă
-                    </label>
-                    <div className="relative overflow-visible">
-                      <div
-                        className={`text-base font-medium cursor-pointer transition-colors pr-8 ${filters.dateRange.startDate || filters.dateRange.endDate ? 'text-white' : 'text-white/70'}`}
-                        onClick={() => openDropdown('date')}
-                      >
-                        {formatDateRange(filters.dateRange) || 'Selectează perioada'}
-                      </div>
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-
-                      {/* Calendar Dropdown */}
-                      <AnimatePresence>
-                        {showDateCalendar && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {/* Instruction Message */}
-                            <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                              <p className="text-xs text-gray-600">
-                                {!filters.dateRange.startDate
-                                  ? 'Selectează data de început'
-                                  : !filters.dateRange.endDate
-                                    ? 'Selectează data de sfârșit'
-                                    : 'Clic pentru a schimba perioada'}
-                              </p>
-                            </div>
-                            <div className="flex items-center justify-between mb-3">
-                              <button
-                                onClick={() => {
-                                  const currentDate = filters.dateRange.startDate || todayDate;
-                                  const newDate = new Date(currentDate);
-                                  newDate.setMonth(newDate.getMonth() - 1);
-                                  setFilters(prev => ({
-                                    ...prev,
-                                    dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                                  }));
-                                }}
-                                className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                              >
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                              </button>
-                              <div className="text-sm font-medium text-gray-700">
-                                {new Date(filters.dateRange.startDate || todayDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                              </div>
-                              <button
-                                onClick={() => {
-                                  const currentDate = filters.dateRange.startDate || todayDate;
-                                  const newDate = new Date(currentDate);
-                                  newDate.setMonth(newDate.getMonth() + 1);
-                                  setFilters(prev => ({
-                                    ...prev,
-                                    dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                                  }));
-                                }}
-                                className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                              >
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </button>
-                            </div>
-                            <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                                <div key={day} className="text-gray-500 font-medium">{day}</div>
-                              ))}
-                            </div>
-                            <div className="grid grid-cols-7 gap-1">
-                              {generateCalendarDays(new Date(filters.dateRange.startDate || todayDate)).map((day, index) => {
-                                if (!day) return <div key={index}></div>;
-
-                                const dayDate = new Date(day);
-                                const dayString = day;
-                                const isStartDate = filters.dateRange.startDate && isSameDay(dayDate, new Date(filters.dateRange.startDate));
-                                const isEndDate = filters.dateRange.endDate && isSameDay(dayDate, new Date(filters.dateRange.endDate));
-                                const isInRange = filters.dateRange.startDate && filters.dateRange.endDate &&
-                                  dayString >= filters.dateRange.startDate &&
-                                  dayString <= filters.dateRange.endDate;
-                                const isSelected = isStartDate || isEndDate;
-
-                                return (
-                                  <div
-                                    key={index}
-                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
-                                      } ${isSelected
-                                        ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                        : isInRange
-                                          ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                          : 'hover:bg-gray-100'
-                                      }`}
-                                    onClick={() => {
-                                      handleDateSelect(day);
-                                    }}
-                                  >
-                                    {new Date(day).getDate()}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-
                   {/* Search Button */}
                   <div className="px-4 py-3 md:px-6 md:py-5 flex-[1.5] lg:flex-[1]">
                     <button
-                      onClick={applyFilters}
+                      onClick={() => applyFilters(filters)}
                       className="w-full py-3.5 md:py-4 lg:py-3.5 bg-gradient-to-r from-theme-500 to-theme-600 hover:from-theme-600 hover:to-theme-700 text-white font-bold px-6 md:px-8 rounded-2xl text-sm md:text-base flex items-center justify-center gap-2.5 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                     >
                       <Search className="w-4 h-4 md:w-5 md:h-5 stroke-[2.5]" />
@@ -1013,7 +707,7 @@ export const Cars: React.FC = () => {
                         resetFilters();
                         setShowAdvancedFilters(false);
                       }}
-                      className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                      className="text-lg font-medium text-gray-500 hover:text-gray-900 transition-colors"
                     >
                       Clear all
                     </button>
@@ -1023,72 +717,68 @@ export const Cars: React.FC = () => {
                     {/* Price Range */}
                     <div>
                       <label className="text-sm font-medium text-gray-900 mb-4 block">Price Range</label>
+
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="font-semibold text-gray-900">${sidebarFilters.priceRange[0]}</span>
-                          <span className="text-gray-400">—</span>
-                          <span className="font-semibold text-gray-900">${sidebarFilters.priceRange[1]}</span>
-                        </div>
-                        <div className="relative h-1.5 bg-gray-100 rounded-full">
-                          <div
-                            className="absolute h-1.5 bg-theme-500 rounded-full"
-                            style={{
-                              left: `${((sidebarFilters.priceRange[0] - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
-                              width: `${((sidebarFilters.priceRange[1] - sidebarFilters.priceRange[0]) / (priceRange.max - priceRange.min)) * 100}%`
-                            }}
-                          />
+                        <div className="flex justify-between items-center text-sm gap-2">
                           <input
-                            type="range"
-                            min={priceRange.min}
-                            max={priceRange.max}
+                            type="number"
+                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
                             value={sidebarFilters.priceRange[0]}
-                            onChange={(e) => handleSidebarFilterChange('priceRange', [parseInt(e.target.value), sidebarFilters.priceRange[1]])}
-                            className="absolute w-full h-1.5 opacity-0 cursor-pointer z-10"
+                            onChange={(e) =>
+                              setSidebarFilters({
+                                ...sidebarFilters,
+                                priceRange: [Number(e.target.value), sidebarFilters.priceRange[1]],
+                              })
+                            }
                           />
+
+                          <span className="text-gray-400">—</span>
+
                           <input
-                            type="range"
-                            min={priceRange.min}
-                            max={priceRange.max}
+                            type="number"
+                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
                             value={sidebarFilters.priceRange[1]}
-                            onChange={(e) => handleSidebarFilterChange('priceRange', [sidebarFilters.priceRange[0], parseInt(e.target.value)])}
-                            className="absolute w-full h-1.5 opacity-0 cursor-pointer z-10"
+                            onChange={(e) =>
+                              setSidebarFilters({
+                                ...sidebarFilters,
+                                priceRange: [sidebarFilters.priceRange[0], Number(e.target.value)],
+                              })
+                            }
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Year */}
+                    {/* Year Range */}
                     <div>
                       <label className="text-sm font-medium text-gray-900 mb-4 block">Year</label>
+
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="font-semibold text-gray-900">{sidebarFilters.yearRange[0]}</span>
-                          <span className="text-gray-400">—</span>
-                          <span className="font-semibold text-gray-900">{sidebarFilters.yearRange[1]}</span>
-                        </div>
-                        <div className="relative h-1.5 bg-gray-100 rounded-full">
-                          <div
-                            className="absolute h-1.5 bg-theme-500 rounded-full"
-                            style={{
-                              left: `${((sidebarFilters.yearRange[0] - yearRangeData.min) / (yearRangeData.max - yearRangeData.min)) * 100}%`,
-                              width: `${((sidebarFilters.yearRange[1] - sidebarFilters.yearRange[0]) / (yearRangeData.max - yearRangeData.min)) * 100}%`
-                            }}
-                          />
+                        <div className="flex justify-between items-center text-sm gap-2">
                           <input
-                            type="range"
-                            min={yearRangeData.min}
-                            max={yearRangeData.max}
+                            type="number"
+                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
                             value={sidebarFilters.yearRange[0]}
-                            onChange={(e) => handleSidebarFilterChange('yearRange', [parseInt(e.target.value), sidebarFilters.yearRange[1]])}
-                            className="absolute w-full h-1.5 opacity-0 cursor-pointer z-10"
+                            onChange={(e) =>
+                              setSidebarFilters({
+                                ...sidebarFilters,
+                                yearRange: [Number(e.target.value), sidebarFilters.yearRange[1]],
+                              })
+                            }
                           />
+
+                          <span className="text-gray-400">—</span>
+
                           <input
-                            type="range"
-                            min={yearRangeData.min}
-                            max={yearRangeData.max}
+                            type="number"
+                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
                             value={sidebarFilters.yearRange[1]}
-                            onChange={(e) => handleSidebarFilterChange('yearRange', [sidebarFilters.yearRange[0], parseInt(e.target.value)])}
-                            className="absolute w-full h-1.5 opacity-0 cursor-pointer z-10"
+                            onChange={(e) =>
+                              setSidebarFilters({
+                                ...sidebarFilters,
+                                yearRange: [sidebarFilters.yearRange[0], Number(e.target.value)],
+                              })
+                            }
                           />
                         </div>
                       </div>
@@ -1098,18 +788,23 @@ export const Cars: React.FC = () => {
                     <div>
                       <label className="text-sm font-medium text-gray-900 mb-4 block">Transmission</label>
                       <div className="flex flex-wrap gap-2">
-                        {['Any', 'Manual', 'Automatic'].map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleSidebarFilterChange('transmission', type)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.transmission === type
+                        {['Any', 'Manual', 'Automatic'].map((type) => {
+                          const value = type === 'Any' ? undefined : type; // store undefined for "Any"
+                          const isActive = sidebarFilters.transmission === value || value === undefined && sidebarFilters.transmission === 'Any';
+
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => handleSidebarFilterChange('transmission', value)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
                                 ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                          >
-                            {type}
-                          </button>
-                        ))}
+                                }`}
+                            >
+                              {type}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1117,37 +812,44 @@ export const Cars: React.FC = () => {
                     <div>
                       <label className="text-sm font-medium text-gray-900 mb-4 block">Fuel Type</label>
                       <div className="flex flex-wrap gap-2">
-                        {['Any', 'Petrol', 'Diesel', 'Electric', 'Hybrid'].map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleSidebarFilterChange('fuelType', type)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.fuelType === type
+                        {(['Any', ...Object.keys(FUEL_TYPE_MAP)] as FuelTypeUI[]).map((type) => {
+                          const value = type === 'Any' ? undefined : type; // lowercase to match your filters
+                          const isActive = sidebarFilters.fuelType === value || value === undefined && sidebarFilters.fuelType === 'Any';
+
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => handleSidebarFilterChange('fuelType', value)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
                                 ? 'bg-theme-500 text-white hover:bg-theme-600'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                          >
-                            {type}
-                          </button>
-                        ))}
+                                }`}
+                            >
+                              {type}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
                     {/* Seats */}
                     <div>
                       <label className="text-sm font-medium text-gray-900 mb-4 block">Seats</label>
-                      <div className="flex flex-wrap gap-2">
-                        {['Any', '2', '4', '5', '7'].map((seat) => (
-                          <button
-                            key={seat}
-                            onClick={() => handleSidebarFilterChange('seats', seat)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.seats === seat
-                                ? 'bg-theme-500 text-white hover:bg-theme-600'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                          >
-                            {seat === 'Any' ? 'Any' : `${seat} Seater`}
-                          </button>
-                        ))}
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center text-sm gap-2">
+                          <input
+                            type="number"
+                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
+                            value={sidebarFilters.seats}
+                            onChange={(e) =>
+                              setSidebarFilters({
+                                ...sidebarFilters,
+                                seats: parseInt((e.target.value)),
+                              })
+                            }
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1159,263 +861,70 @@ export const Cars: React.FC = () => {
 
         {/* Main Layout */}
         <div className="w-full mt-8">
-          {/* Cars Grid */}
-          {filteredCars.length > 0 ? (
-            <motion.div
-              ref={ref}
-              variants={staggerContainer}
-              initial="initial"
-              animate={isInView ? "animate" : "initial"}
-              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
-            >
-              {filteredCars.map((car, index) => (
-                <CarCard key={car.id} car={car} index={index} />
-              ))}
-            </motion.div>
+          {/* Loading State */}
+          {loading ? (
+            <div className="text-center py-16 px-4">
+              <div className="w-16 h-16 mx-auto mb-4 border-4 border-theme-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-600">Se încarcă mașinile...</p>
+            </div>
           ) : (
-            // Check if any filters are applied
-            (appliedFilters.make || appliedFilters.model || appliedFilters.location ||
-              appliedFilters.dateRange.startDate || appliedFilters.dateRange.endDate ||
-              Object.values(sidebarFilters).some(value => {
-                if (Array.isArray(value)) {
-                  return value[0] !== (value[1] === 2025 ? 2020 : 0) || value[1] !== 2025;
-                }
-                return value !== 'Any' && value !== 'All';
-              })) ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center py-16 px-4"
-              >
-                <div className="max-w-md mx-auto">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Search className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    Nu s-au găsit mașini
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Nu am găsit mașini care să corespundă criteriilor dvs. de filtrare. Vă rugăm să încercați să modificați filtrele.
-                  </p>
-                  <button
-                    onClick={resetFilters}
-                    className="px-6 py-3 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-xl transition-colors"
+            <>
+              {/* Cars Grid */}
+              {cars.length > 0 ? (
+                <motion.div
+                  ref={ref}
+                  variants={staggerContainer}
+                  initial="initial"
+                  animate={isInView ? "animate" : "initial"}
+                  className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
+                >
+                  {cars.map((car, index) => (
+                    <CarCard key={car.id} car={car} index={index} />
+                  ))}
+                </motion.div>
+              ) : (
+                // Check if any filters are applied
+                (appliedFilters.make || appliedFilters.model ||
+                  Object.values(sidebarFilters).some(value => {
+                    if (Array.isArray(value)) {
+                      return value[0] !== (value[1] === 2025 ? 2020 : 0) || value[1] !== 2025;
+                    }
+                    return value !== 'Any';
+                  })) ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center py-16 px-4"
                   >
-                    Resetează filtrele
-                  </button>
-                </div>
-              </motion.div>
-            ) : null
+                    <div className="max-w-md mx-auto">
+                      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+                        <Search className="w-10 h-10 text-gray-400" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                        Nu s-au găsit mașini
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        Nu am găsit mașini care să corespundă criteriilor dvs. de filtrare. Vă rugăm să încercați să modificați filtrele.
+                      </p>
+                      <button
+                        onClick={resetFilters}
+                        className="px-6 py-3 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-xl transition-colors"
+                      >
+                        Resetează filtrele
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : null
+              )}
+            </>
           )}
 
           {/* Rental Options Section */}
-          <div className="mt-16 bg-white rounded-lg border border-gray-200 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Opțiuni de închiriere</h2>
-
-            <p className="text-gray-700 leading-relaxed mb-8">
-              O varietate de opțiuni disponibile pentru activare extinde semnificativ posibilitățile în cadrul închirierii unei mașini de la AUTOHUB. De exemplu, puteți activa asigurarea CASCO, care acoperă toate tipurile de daune ale vehiculului, iar prin activarea serviciului Priority Service beneficiați de procesare prioritară a documentelor și suport prioritar pe tot parcursul închirierii. De asemenea, sunt disponibile opțiuni precum: închirierea scaunelor auto pentru copii, asistență rutieră, livrare la adresa indicată și multe altele.
-            </p>
-
-            <div className="space-y-6">
-              {/* Delivery Option */}
-              <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                  <Car className="w-5 h-5 text-theme-500" />
-                  Preluarea automobilului la adresa convenabilă pentru dvs./dumneavoastră
-                </h3>
-                <p className="text-gray-600 text-sm">Costul se calculează separat și depinde de locul livrării</p>
-              </div>
-
-              {/* Return Option */}
-              <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                  <Car className="w-5 h-5 text-theme-500" />
-                  Returnarea mașinii la adresa convenabilă pentru dumneavoastră
-                </h3>
-                <p className="text-gray-600 text-sm">Prețul se negociază separat și depinde de locul returnării</p>
-              </div>
-
-              {/* Options Grid */}
-              <div className="grid md:grid-cols-2 gap-4 mt-6">
-                {/* Unlimited KM */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                      <Gauge className="w-5 h-5 text-theme-500" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Kilometraj nelimitat</h4>
-                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 50% mai mare</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Speed Limit Increase */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-theme-500" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Creșterea limitei de viteză</h4>
-                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Personal Driver */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <UserRound className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Șofer personal</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 800 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Priority Service */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Star className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Priority Service</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 1000 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tire Insurance */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-theme-500" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Asigurare pentru anvelope și parbriz</h4>
-                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Child Seat */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Baby className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Scaun auto pentru copii</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SIM Card */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Wifi className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Cartelă SIM cu internet</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Roadside Assistance */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Wrench className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Asistență rutieră</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 500 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <RentalOptionsSection />
 
           {/* Contract Section */}
-          <div className="mt-8 bg-white rounded-lg border border-gray-200 p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Contract</h2>
+          <ContractSection />
 
-            <p className="text-gray-700 leading-relaxed mb-6">
-              Compania noastră oferă servicii de închiriere auto pe teritoriul Republicii Moldova, respectând cu strictețe legislația în vigoare. Interacțiunea cu clienții se bazează pe Contractul de închiriere, care garantează protecția juridică a intereselor acestora.
-            </p>
-
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Condiții și cerințe</h3>
-            <p className="text-gray-700 mb-4">
-              Pentru a închiria o mașină, trebuie îndeplinite următoarele cerințe și acceptate următoarele condiții:
-            </p>
-
-            <ul className="space-y-3 text-gray-700">
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Vârsta minimă a șoferului: 21 ani.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Permis de conducere valabil, categoria B.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Experiență de conducere de cel puțin 3 ani.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Deținerea buletinului de identitate.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Achitarea integrală (100%) a taxei de închiriere pentru mașina selectată.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Depunerea unui depozit conform valorii stabilite în Contract. Depozitul reprezintă o asigurare a îndeplinirii obligațiilor de către Chiriaș și este returnat după 10 zile de la predarea mașinii, în absența încălcărilor majore.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Toate amenzile primite în timpul utilizării vehiculului revin în responsabilitatea șoferului.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>În lipsa poliței CASCO, responsabilitatea pentru accidente revine șoferului.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Limita zilnică de parcurs este de 200 km. În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Plata se poate efectua în numerar, prin transfer bancar sau cu cardul.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Clientul are dreptul la recalcularea costului în caz de returnare anticipată a vehiculului.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Prelungirea Contractului de închiriere este posibilă în format la distanță, dar nu este garantată.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Este posibilă livrarea sau returnarea mașinii la adresa convenabilă. Costul se confirmă la telefon +373 79 75-22-22.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Înainte de semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 0 lei. După semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 500 lei.</span>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>

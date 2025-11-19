@@ -711,7 +711,7 @@
         },
         "requests": {
             "title": "Gestionează cererile de închiriere ale clienților",
-            "description": "Gestionează cererile de închiriere ale clienților și aprobările",
+            "description": "Gestionează cererile de închiriere ale clienților ",
             "rentalRequests": "Cereri de Închiriere",
             "pending": "În așteptare",
             "approved": "Aprobat",

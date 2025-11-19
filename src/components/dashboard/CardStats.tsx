@@ -33,7 +33,7 @@ export const CardStats: React.FC<CardStatsProps> = ({ title, value, spark, subti
             className="relative group"
         >
             <div className="absolute inset-0 bg-red-500/10 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 hover:border-red-500/50 rounded-xl p-6 transition-all duration-300 shadow-lg">
+            <div className="relative bg-white/10 backdrop-blur-xl border top-2 lg:top-0 border-white/20 hover:border-red-500/50 rounded-xl p-6 transition-all duration-300 shadow-lg">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                         <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">{title}</p>
