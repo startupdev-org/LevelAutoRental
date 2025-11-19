@@ -93,11 +93,16 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     // Calculate base price with discount (same logic as Calculator page and Admin)
     const calculateBasePrice = () => {
         if (!rentalCalculation) return 0;
-        const pricePerDay = car.pricePerDay;
+        // Get price with car discount applied first
+        const basePricePerDay = (car as any).pricePerDay || car.pricePerDay || 0;
+        const carDiscount = (car as any).discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
         const rentalDays = rentalCalculation.days; // Use full days for discount calculation
         const totalDays = rentalDays + (rentalCalculation.hours / 24); // Use total days for final calculation
         
-        // Base price calculation (same as Calculator.tsx and Admin)
+        // Base price calculation (same as Calculator.tsx and Admin) - using discounted price
         let basePrice = 0;
         
         if (rentalDays >= 8) {
@@ -164,9 +169,15 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const totalCost = calculateTotalCost();
     
     // Calculate additional costs separately for display
-    const baseCarPrice = car.pricePerDay;
     const rentalDays = rentalCalculation?.days || 0;
     let additionalCosts = 0;
+    
+    // Get discounted price for additional services
+    const basePricePerDay = (car as any).pricePerDay || car.pricePerDay || 0;
+    const carDiscount = (car as any).discount_percentage || 0;
+    const baseCarPrice = carDiscount > 0 
+        ? basePricePerDay * (1 - carDiscount / 100)
+        : basePricePerDay;
     
     // Percentage-based options (calculated as percentage of base car price * days)
     if (options.unlimitedKm) {

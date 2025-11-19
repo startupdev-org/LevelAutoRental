@@ -64,29 +64,43 @@ import {
     createBorrowRequest,
     processStatusTransitions,
     cancelRentalOrder,
-    redoRentalOrder
+    redoRentalOrder,
+    fetchAllOrders
 } from '../../lib/orders';
 import { NotificationToaster, useNotification } from '../../components/ui/NotificationToaster';
 import { supabaseAdmin } from '../../lib/supabase';
+import { OrderDetailsModal } from '../../components/modals/OrderDetailsModal';
 
 // Dashboard View Component
 const DashboardView: React.FC = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { showSuccess, showError } = useNotification();
     const [cars, setCars] = useState<CarType[]>([]);
+    const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
+    const [processingOrder, setProcessingOrder] = useState<string | null>(null);
 
     useEffect(() => {
-        const loadCars = async () => {
+        const loadData = async () => {
             try {
                 const fetchedCars = await fetchCars();
                 setCars(fetchedCars);
+                
+                // Load orders after cars are loaded
+                if (fetchedCars.length > 0) {
+                    const fetchedOrders = await fetchAllOrders(fetchedCars);
+                    setOrders(fetchedOrders);
+                }
             } catch (error) {
-                console.error('Error loading cars:', error);
+                console.error('Error loading data:', error);
             } finally {
                 setLoading(false);
             }
         };
-        loadCars();
+        loadData();
     }, []);
 
     // Calculate car rental status (based on database status field)
@@ -104,6 +118,210 @@ const DashboardView: React.FC = () => {
     };
 
     const { freeCars, rentedCars } = getCarRentalStatus();
+
+    // Calculate chart data from orders based on time period
+    const calculateChartData = useMemo(() => {
+        // Filter only rental orders (completed or active) for sales calculation
+        const rentalOrders = orders.filter(order => 
+            order.type === 'rental' && 
+            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        );
+
+        const generateChartDataForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
+            const now = new Date();
+            const data: { day: number; sales: number; baseline: number }[] = [];
+            
+            // Calculate date ranges
+            let startDate: Date;
+            let intervals: number;
+            let intervalMs: number;
+            
+            switch (period) {
+                case '24H':
+                    startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    intervals = 24;
+                    intervalMs = 60 * 60 * 1000; // 1 hour
+                    break;
+                case '7D':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    intervals = 7;
+                    intervalMs = 24 * 60 * 60 * 1000; // 1 day
+                    break;
+                case '30D':
+                    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    intervals = 30;
+                    intervalMs = 24 * 60 * 60 * 1000; // 1 day
+                    break;
+                case 'WEEKS':
+                    startDate = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+                    intervals = 4;
+                    intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 week
+                    break;
+                case '12M':
+                    startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    intervals = 12;
+                    intervalMs = 30 * 24 * 60 * 60 * 1000; // ~1 month
+                    break;
+            }
+
+            // Group orders by time interval
+            for (let i = 0; i < intervals; i++) {
+                const intervalStart = new Date(startDate.getTime() + i * intervalMs);
+                const intervalEnd = new Date(startDate.getTime() + (i + 1) * intervalMs);
+                
+                const intervalOrders = rentalOrders.filter(order => {
+                    if (!order.createdAt) return false;
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= intervalStart && orderDate < intervalEnd;
+                });
+                
+                const sales = intervalOrders.reduce((sum, order) => {
+                    const amount = order.amount || parseFloat(order.total_amount) || 0;
+                    return sum + amount;
+                }, 0);
+                
+                // Baseline is 70% of average sales for visual reference
+                const avgSales = rentalOrders.length > 0 
+                    ? (rentalOrders.reduce((sum, o) => sum + (o.amount || parseFloat(o.total_amount) || 0), 0) / rentalOrders.length) * 0.7
+                    : 0;
+                
+                data.push({
+                    day: i + 1,
+                    sales: Math.round(sales),
+                    baseline: Math.round(avgSales)
+                });
+            }
+            
+            return data;
+        };
+
+        return {
+            '24H': generateChartDataForPeriod('24H'),
+            '7D': generateChartDataForPeriod('7D'),
+            '30D': generateChartDataForPeriod('30D'),
+            'WEEKS': generateChartDataForPeriod('WEEKS'),
+            '12M': generateChartDataForPeriod('12M')
+        };
+    }, [orders]);
+
+    // Calculate statistics from orders
+    const calculateStats = useMemo(() => {
+        // Filter only rental orders (completed or active) for sales calculation
+        const rentalOrders = orders.filter(order => 
+            order.type === 'rental' && 
+            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        );
+        
+        // Total sales: sum of all rental amounts
+        const totalSales = rentalOrders.reduce((sum, order) => {
+            const amount = order.amount || parseFloat(order.total_amount) || 0;
+            return sum + amount;
+        }, 0);
+        
+        // Total orders: count of rental orders only (not requests)
+        const totalOrders = rentalOrders.length;
+        
+        // Average order price: total sales / number of rental orders
+        const avgOrderPrice = rentalOrders.length > 0 
+            ? totalSales / rentalOrders.length 
+            : 0;
+        
+        // Format numbers with thousand separators
+        const formatNumber = (num: number, decimals: number = 2) => {
+            return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        };
+        
+        return {
+            totalSales,
+            totalOrders,
+            avgOrderPrice,
+            formattedTotalSales: formatNumber(totalSales),
+            formattedAvgOrderPrice: formatNumber(avgOrderPrice)
+        };
+    }, [orders]);
+
+    // Calculate sales and change for a specific period
+    const calculatePeriodStats = useMemo(() => {
+        const rentalOrders = orders.filter(order => 
+            order.type === 'rental' && 
+            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        );
+
+        const calculateForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
+            const now = new Date();
+            let periodStart: Date;
+            let previousPeriodStart: Date;
+            let previousPeriodEnd: Date;
+            
+            switch (period) {
+                case '24H':
+                    periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    break;
+                case '7D':
+                    periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30D':
+                    periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'WEEKS':
+                    periodStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 56 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+                    break;
+                case '12M':
+                    periodStart = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    previousPeriodStart = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
+                    previousPeriodEnd = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    break;
+            }
+
+            const currentPeriodOrders = rentalOrders.filter(order => {
+                if (!order.createdAt) return false;
+                const orderDate = new Date(order.createdAt);
+                return orderDate >= periodStart && orderDate <= now;
+            });
+
+            const previousPeriodOrders = rentalOrders.filter(order => {
+                if (!order.createdAt) return false;
+                const orderDate = new Date(order.createdAt);
+                return orderDate >= previousPeriodStart && orderDate < previousPeriodEnd;
+            });
+
+            const currentSales = currentPeriodOrders.reduce((sum, order) => {
+                const amount = order.amount || parseFloat(order.total_amount) || 0;
+                return sum + amount;
+            }, 0);
+
+            const previousSales = previousPeriodOrders.reduce((sum, order) => {
+                const amount = order.amount || parseFloat(order.total_amount) || 0;
+                return sum + amount;
+            }, 0);
+
+            const change = previousSales > 0 
+                ? ((currentSales - previousSales) / previousSales) * 100 
+                : (currentSales > 0 ? 100 : 0);
+
+            return {
+                sales: currentSales,
+                change: change,
+                isPositive: change >= 0
+            };
+        };
+
+        return {
+            '24H': calculateForPeriod('24H'),
+            '7D': calculateForPeriod('7D'),
+            '30D': calculateForPeriod('30D'),
+            'WEEKS': calculateForPeriod('WEEKS'),
+            '12M': calculateForPeriod('12M')
+        };
+    }, [orders]);
 
     if (loading) {
         return (
@@ -128,7 +346,7 @@ const DashboardView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <CardStats
                     title={t('admin.dashboard.totalSales')}
-                    value="2,114.40 MDL"
+                    value={`${calculateStats.formattedTotalSales} MDL`}
                     trend="up"
                     trendValue="2.4%"
                     valueSize="md"
@@ -145,9 +363,10 @@ const DashboardView: React.FC = () => {
                 />
                 <CardStats
                     title={t('admin.dashboard.totalOrders')}
-                    value={24}
+                    value={calculateStats.totalOrders}
                     trend="up"
                     trendValue="8.6%"
+                    valueSize="md"
                     spark={(
                         // @ts-ignore - recharts type compatibility issue
                         <ResponsiveContainer width="100%" height={48}>
@@ -162,9 +381,10 @@ const DashboardView: React.FC = () => {
                 <div className="hidden md:block">
                     <CardStats
                         title={t('admin.dashboard.avgOrderValue')}
-                        value="88.10 MDL"
+                        value={`${calculateStats.formattedAvgOrderPrice} MDL`}
                         trend="up"
                         trendValue="6.0%"
+                        valueSize="md"
                         spark={(
                             // @ts-ignore - recharts type compatibility issue
                             <ResponsiveContainer width="100%" height={48}>
@@ -180,6 +400,7 @@ const DashboardView: React.FC = () => {
                 <CardStats
                     title={t('admin.dashboard.fleetStatus')}
                     value={`${freeCars.length}/${cars.length}`}
+                    valueSize="md"
                     subtitle={
                         <div className="flex items-center gap-3 text-xs">
                             <span className="text-emerald-400">{freeCars.length} {t('admin.dashboard.available')}</span>
@@ -222,7 +443,12 @@ const DashboardView: React.FC = () => {
                                             className="w-12 h-12 object-cover rounded-md"
                                         />
                                         <p className="text-sm font-medium text-white truncate flex-1">{(car as any).name || `${car.make} ${car.model}`}</p>
-                                        <button className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 text-xs font-semibold rounded-lg transition-all flex-shrink-0">
+                                        <button 
+                                            onClick={() => {
+                                                navigate(`/admin?section=requests&carId=${car.id}`);
+                                            }}
+                                            className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 text-xs font-semibold rounded-lg transition-all flex-shrink-0"
+                                        >
                                             {t('admin.dashboard.book')}
                                         </button>
                                     </div>
@@ -241,7 +467,7 @@ const DashboardView: React.FC = () => {
                                 rentedCars.map((car) => {
                                     const carOrder = orders.find(order =>
                                         parseInt(order.carId) === car.id &&
-                                        (order.status === 'Paid' || order.status === 'Pending')
+                                        (order.status === 'ACTIVE' || order.type === 'rental')
                                     );
                                     return (
                                         <div
@@ -256,10 +482,47 @@ const DashboardView: React.FC = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-white truncate">{(car as any).name || `${car.make} ${car.model}`}</p>
                                                 <p className="text-xs text-gray-400 truncate">
-                                                    {t('admin.dashboard.until')} {carOrder?.returnDate}
+                                                    {carOrder?.returnDate ? (() => {
+                                                        try {
+                                                            const returnDate = new Date(carOrder.returnDate);
+                                                            // Extract time from ISO string if returnTime is not available
+                                                            let returnTime = carOrder.returnTime;
+                                                            if (!returnTime && carOrder.returnDate.includes('T')) {
+                                                                const timeMatch = carOrder.returnDate.match(/T(\d{2}:\d{2})/);
+                                                                if (timeMatch) {
+                                                                    returnTime = timeMatch[1];
+                                                                }
+                                                            }
+                                                            returnTime = returnTime || '17:00';
+                                                            
+                                                            // Format date in Romanian format (e.g., "19 nov. 2025")
+                                                            const formattedDate = returnDate.toLocaleDateString('ro-RO', { 
+                                                                day: 'numeric', 
+                                                                month: 'short', 
+                                                                year: 'numeric' 
+                                                            });
+                                                            
+                                                            // Format time (HH:MM)
+                                                            const formattedTime = returnTime.includes(':') 
+                                                                ? returnTime.split(':').slice(0, 2).join(':')
+                                                                : returnTime;
+                                                            
+                                                            return `${t('admin.dashboard.until')} ${formattedDate}, ${formattedTime}`;
+                                                        } catch (e) {
+                                                            return `${t('admin.dashboard.until')} ${carOrder.returnDate}`;
+                                                        }
+                                                    })() : t('admin.dashboard.rented')}
                                                 </p>
                                             </div>
-                                            <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg transition-all flex-shrink-0">
+                                            <button 
+                                                onClick={() => {
+                                                    if (carOrder) {
+                                                        setSelectedOrder(carOrder);
+                                                        setShowOrderDetailsModal(true);
+                                                    }
+                                                }}
+                                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg transition-all flex-shrink-0"
+                                            >
                                                 {t('admin.dashboard.view')}
                                             </button>
                                         </div>
@@ -282,7 +545,10 @@ const DashboardView: React.FC = () => {
                     transition={{ duration: 0.4, delay: 0.1 }}
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                 >
-                    <SalesChartCard totalSales={8422.6} data={mainChart} />
+                    <SalesChartCard 
+                        allPeriodData={calculateChartData}
+                        periodStats={calculatePeriodStats}
+                    />
                 </motion.div>
 
                 {/* Most Rented Cars */}
@@ -304,11 +570,12 @@ const DashboardView: React.FC = () => {
                                 const carStats = cars.map(car => {
                                     const carOrders = orders.filter(order =>
                                         parseInt(order.carId) === car.id &&
-                                        (order.status === 'Paid' || order.status === 'Pending')
+                                        order.type === 'rental' &&
+                                        (order.status === 'ACTIVE' || order.status === 'COMPLETED')
                                     );
                                     const revenue = carOrders.reduce((sum, order) => {
-                                        const amount = (order as any).amount || parseFloat(order.total_amount || '0');
-                                        return sum + (typeof amount === 'number' ? amount : parseFloat(amount.toString()));
+                                        const amount = order.amount || parseFloat(order.total_amount || '0');
+                                        return sum + (typeof amount === 'number' ? amount : 0);
                                     }, 0);
                                     return {
                                         ...car,
@@ -336,7 +603,7 @@ const DashboardView: React.FC = () => {
                                                     <p className="text-xs text-gray-400">{car.rentals} {car.rentals > 1 ? t('admin.dashboard.rentals') : t('admin.dashboard.rental')}</p>
                                                 </div>
                                             </div>
-                                            <span className="text-sm font-bold text-white">{car.revenue.toFixed(0)} MDL</span>
+                                            <span className="text-sm font-bold text-white">{car.revenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MDL</span>
                                         </div>
                                         <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
                                             <div
@@ -351,6 +618,67 @@ const DashboardView: React.FC = () => {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Order Details Modal */}
+            <OrderDetailsModal
+                isOpen={showOrderDetailsModal}
+                onClose={() => {
+                    setShowOrderDetailsModal(false);
+                    setSelectedOrder(null);
+                }}
+                order={selectedOrder}
+                orderNumber={selectedOrder?.id ? (typeof selectedOrder.id === 'number' ? selectedOrder.id : parseInt(selectedOrder.id.toString(), 10)) : undefined}
+                onCancel={async (order) => {
+                    if (!window.confirm(t('admin.orders.confirmCancelOrder'))) {
+                        return;
+                    }
+                    setProcessingOrder(order.id.toString());
+                    try {
+                        const result = await cancelRentalOrder(order.id.toString());
+                        if (result.success) {
+                            showSuccess(t('admin.orders.orderCancelled'));
+                            // Reload orders to update the dashboard
+                            const fetchedOrders = await fetchAllOrders(cars);
+                            setOrders(fetchedOrders);
+                            setShowOrderDetailsModal(false);
+                            setSelectedOrder(null);
+                        } else {
+                            showError(`${t('admin.orders.orderCancelFailed')} ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error('Error cancelling order:', error);
+                        showError(t('admin.orders.orderCancelErrorOccurred'));
+                    } finally {
+                        setProcessingOrder(null);
+                    }
+                }}
+                onRedo={async (order) => {
+                    if (!window.confirm(t('admin.orders.confirmRestoreOrder'))) {
+                        return;
+                    }
+                    setProcessingOrder(order.id.toString());
+                    try {
+                        const result = await redoRentalOrder(order.id.toString());
+                        if (result.success) {
+                            showSuccess(t('admin.orders.orderRestored'));
+                            // Reload orders to update the dashboard
+                            const fetchedOrders = await fetchAllOrders(cars);
+                            setOrders(fetchedOrders);
+                            setShowOrderDetailsModal(false);
+                            setSelectedOrder(null);
+                        } else {
+                            showError(`${t('admin.orders.orderRestoreFailed')} ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error('Error restoring order:', error);
+                        showError(t('admin.orders.orderRestoreErrorOccurred'));
+                    } finally {
+                        setProcessingOrder(null);
+                    }
+                }}
+                isProcessing={processingOrder === selectedOrder?.id.toString()}
+                cars={cars}
+            />
         </motion.div>
     );
 };
@@ -1125,7 +1453,28 @@ const CarsView: React.FC = () => {
                                                     {car.category}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-white font-semibold">{car.price_per_day} MDL</td>
+                                            <td className="px-6 py-4">
+                                                {(() => {
+                                                    const basePrice = car.price_per_day || 0;
+                                                    const discount = car.discount_percentage || 0;
+                                                    const finalPrice = discount > 0 
+                                                        ? basePrice * (1 - discount / 100)
+                                                        : basePrice;
+                                                    
+                                                    return (
+                                                        <div className="flex flex-col">
+                                                            {discount > 0 ? (
+                                                                <>
+                                                                    <span className="text-white font-semibold">{finalPrice.toFixed(2)} MDL</span>
+                                                                    <span className="text-gray-400 text-xs line-through">{basePrice} MDL</span>
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-white font-semibold">{basePrice} MDL</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </td>
                                             <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                             <td className="px-6 py-4">
                                                 <span
@@ -1228,6 +1577,8 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                     setFormData({
                         ...fetchedCar,
                         name: fetchedCar.name || '',
+                        discountPercentage: fetchedCar.discount_percentage,
+                        discount_percentage: fetchedCar.discount_percentage,
                     } as any);
                 }
             } catch (error) {
@@ -1402,7 +1753,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     ...prev,
                                     name: e.target.value
                                 } as any))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                 required
                             />
                         </div>
@@ -1414,7 +1772,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     type="number"
                                     value={formData.year || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -1424,7 +1789,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     type="number"
                                     value={formData.seats || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, seats: parseInt(e.target.value) }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -1435,7 +1807,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <select
                                 value={formData.category || 'luxury'}
                                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as CarType['category'] }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             >
                                 <option value="suv">{t('admin.cars.categorySuv')}</option>
                                 <option value="sports">{t('admin.cars.categorySports')}</option>
@@ -1453,7 +1832,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     pricePerDay: parseFloat(e.target.value),
                                     price_per_day: parseFloat(e.target.value)
                                 }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                 required
                             />
                         </div>
@@ -1474,21 +1860,49 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     }));
                                 }}
                                 placeholder="0"
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             />
                             <p className="text-xs text-gray-400 mt-1">{t('admin.cars.discountPercentageHint')}</p>
-                            {((formData as any).discountPercentage !== undefined && (formData as any).discountPercentage > 0) || (formData.discount_percentage !== undefined && formData.discount_percentage > 0) ? (
-                                <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                                    <p className="text-xs text-emerald-400 font-medium">
-                                        {t('admin.cars.discountedPrice')}: {(() => {
-                                            const basePrice = (formData as any).pricePerDay || formData.price_per_day || 0;
-                                            const discount = (formData as any).discountPercentage || formData.discount_percentage || 0;
-                                            const discountedPrice = basePrice * (1 - discount / 100);
-                                            return `${discountedPrice.toFixed(2)} MDL`;
-                                        })()}
-                                    </p>
-                                </div>
-                            ) : null}
+                            {(() => {
+                                // Get base price - handle both naming conventions
+                                const pricePerDay = (formData as any).pricePerDay;
+                                const price_per_day = formData.price_per_day;
+                                const basePriceValue = pricePerDay !== undefined && pricePerDay !== null
+                                    ? pricePerDay
+                                    : (price_per_day !== undefined && price_per_day !== null ? price_per_day : 0);
+                                const basePrice = typeof basePriceValue === 'number' ? basePriceValue : parseFloat(String(basePriceValue)) || 0;
+                                
+                                // Get discount - handle both naming conventions and null/undefined
+                                const discountPercentage = (formData as any).discountPercentage;
+                                const discount_percentage = formData.discount_percentage;
+                                const discountValue = discountPercentage !== undefined && discountPercentage !== null
+                                    ? discountPercentage
+                                    : (discount_percentage !== undefined && discount_percentage !== null ? discount_percentage : 0);
+                                const discount = typeof discountValue === 'number' ? discountValue : parseFloat(String(discountValue)) || 0;
+                                
+                                // Check if we have valid values
+                                const hasValidPrice = !isNaN(basePrice) && basePrice > 0;
+                                const hasValidDiscount = !isNaN(discount) && discount > 0 && discount <= 100;
+                                
+                                if (hasValidPrice && hasValidDiscount) {
+                                    const discountedPrice = basePrice * (1 - discount / 100);
+                                    return (
+                                        <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                                            <p className="text-xs text-emerald-400 font-medium">
+                                                {t('admin.cars.discountedPrice')}: {discountedPrice.toFixed(2)} MDL
+                                            </p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
                         </div>
                     </div>
 
@@ -1501,7 +1915,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <select
                                 value={formData.body || 'Sedan'}
                                 onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value as CarType['body'] }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             >
                                 <option value="Coupe">Coupe</option>
                                 <option value="Sedan">Sedan</option>
@@ -1514,7 +1935,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                             <select
                                 value={formData.transmission || 'Automatic'}
                                 onChange={(e) => setFormData(prev => ({ ...prev, transmission: e.target.value as CarType['transmission'] }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             >
                                 <option value="Automatic">Automatic</option>
                                 <option value="Manual">Manual</option>
@@ -1530,7 +1958,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                     fuelType: e.target.value as CarType['fuel_type'],
                                     fuel_type: e.target.value as CarType['fuel_type']
                                 }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             >
                                 <option value="gasoline">Gasoline</option>
                                 <option value="diesel">Diesel</option>
@@ -1547,7 +1982,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 value={formData.drivetrain || ''}
                                 onChange={(e) => setFormData(prev => ({ ...prev, drivetrain: e.target.value }))}
                                 placeholder={t('admin.placeholders.drivetrain')}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             />
                         </div>
                     </div>
@@ -1695,7 +2137,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 max="5"
                                 value={formData.rating || ''}
                                 onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             />
                         </div>
                         <div>
@@ -1704,7 +2153,14 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                                 type="number"
                                 value={formData.reviews || ''}
                                 onChange={(e) => setFormData(prev => ({ ...prev, reviews: parseInt(e.target.value) }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                             />
                         </div>
                     </div>
@@ -2024,7 +2480,14 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                             (updated as any).name = e.target.value;
                                             return updated;
                                         })}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                         required
                                     />
                                 </div>
@@ -2039,7 +2502,14 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                             (updated as any).make = e.target.value;
                                             return updated;
                                         })}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                         required
                                     />
                                 </div>
@@ -2054,7 +2524,14 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                             (updated as any).model = e.target.value;
                                             return updated;
                                         })}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                         required
                                     />
                                 </div>
@@ -2064,7 +2541,14 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                     <select
                                         value={formData.category || 'luxury'}
                                         onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as CarType['category'] }))}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     >
                                         <option value="suv">{t('admin.cars.categorySuv')}</option>
                                         <option value="sports">{t('admin.cars.categorySports')}</option>
@@ -2078,7 +2562,14 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                         type="number"
                                         value={formData.year || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                         required
                                     />
                                 </div>
@@ -2089,7 +2580,14 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                         type="number"
                                         value={formData.seats || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, seats: parseInt(e.target.value) }))}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                         required
                                     />
                                 </div>
@@ -2100,7 +2598,14 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                         type="number"
                                         value={(formData as any).pricePerDay || formData.price_per_day || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, price_per_day: parseFloat(e.target.value), pricePerDay: parseFloat(e.target.value) } as any))}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                         required
                                     />
                                 </div>
@@ -2121,21 +2626,49 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                                             } as any));
                                         }}
                                         placeholder="0"
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     />
                                     <p className="text-xs text-gray-400 mt-1">{t('admin.cars.discountPercentageHint')}</p>
-                                    {((formData as any).discountPercentage !== undefined && (formData as any).discountPercentage > 0) || (formData.discount_percentage !== undefined && formData.discount_percentage > 0) ? (
-                                        <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                                            <p className="text-xs text-emerald-400 font-medium">
-                                                {t('admin.cars.discountedPrice')}: {(() => {
-                                                    const basePrice = (formData as any).pricePerDay || formData.price_per_day || 0;
-                                                    const discount = (formData as any).discountPercentage || formData.discount_percentage || 0;
-                                                    const discountedPrice = basePrice * (1 - discount / 100);
-                                                    return `${discountedPrice.toFixed(2)} MDL`;
-                                                })()}
-                                            </p>
-                                        </div>
-                                    ) : null}
+                                    {(() => {
+                                        // Get base price - handle both naming conventions
+                                        const pricePerDay = (formData as any).pricePerDay;
+                                        const price_per_day = formData.price_per_day;
+                                        const basePriceValue = pricePerDay !== undefined && pricePerDay !== null
+                                            ? pricePerDay
+                                            : (price_per_day !== undefined && price_per_day !== null ? price_per_day : 0);
+                                        const basePrice = typeof basePriceValue === 'number' ? basePriceValue : parseFloat(String(basePriceValue)) || 0;
+                                        
+                                        // Get discount - handle both naming conventions and null/undefined
+                                        const discountPercentage = (formData as any).discountPercentage;
+                                        const discount_percentage = formData.discount_percentage;
+                                        const discountValue = discountPercentage !== undefined && discountPercentage !== null
+                                            ? discountPercentage
+                                            : (discount_percentage !== undefined && discount_percentage !== null ? discount_percentage : 0);
+                                        const discount = typeof discountValue === 'number' ? discountValue : parseFloat(String(discountValue)) || 0;
+                                        
+                                        // Check if we have valid values
+                                        const hasValidPrice = !isNaN(basePrice) && basePrice > 0;
+                                        const hasValidDiscount = !isNaN(discount) && discount > 0 && discount <= 100;
+                                        
+                                        if (hasValidPrice && hasValidDiscount) {
+                                            const discountedPrice = basePrice * (1 - discount / 100);
+                                            return (
+                                                <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                                                    <p className="text-xs text-emerald-400 font-medium">
+                                                        {t('admin.cars.discountedPrice')}: {discountedPrice.toFixed(2)} MDL
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -2275,6 +2808,7 @@ const RequestsView: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const requestId = searchParams.get('requestId');
+    const carId = searchParams.get('carId');
     const { showSuccess, showError } = useNotification();
     const [requests, setRequests] = useState<OrderDisplay[]>([]);
     const [loading, setLoading] = useState(true);
@@ -2284,6 +2818,7 @@ const RequestsView: React.FC = () => {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [showRejected, setShowRejected] = useState(false);
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
+    const [selectedCarIdForRental, setSelectedCarIdForRental] = useState<string | undefined>(undefined);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
     const [selectedRequest, setSelectedRequest] = useState<OrderDisplay | null>(null);
     const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
@@ -2301,6 +2836,18 @@ const RequestsView: React.FC = () => {
         };
         loadCars();
     }, []);
+
+    // Open modal if carId is in URL params
+    useEffect(() => {
+        if (carId && cars.length > 0) {
+            setSelectedCarIdForRental(carId);
+            setShowAddRentalModal(true);
+            // Remove carId from URL to avoid reopening on refresh
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('carId');
+            setSearchParams(newParams, { replace: true });
+        }
+    }, [carId, cars.length, searchParams, setSearchParams]);
 
     useEffect(() => {
         if (cars.length > 0) {
@@ -2880,6 +3427,7 @@ const RequestsView: React.FC = () => {
             {showAddRentalModal && (
                 <CreateRentalModal
                     cars={cars}
+                    initialCarId={selectedCarIdForRental}
                     onSave={async (rentalData) => {
                         try {
                             const result = await createBorrowRequest(
@@ -2901,6 +3449,7 @@ const RequestsView: React.FC = () => {
                             if (result.success) {
                                 showSuccess('Request created successfully!');
                                 setShowAddRentalModal(false);
+                                setSelectedCarIdForRental(undefined);
                                 await loadRequests();
                             } else {
                                 showError(`Failed to create request: ${result.error || 'Unknown error'}`);
@@ -2910,7 +3459,10 @@ const RequestsView: React.FC = () => {
                             showError('An error occurred while creating the request.');
                         }
                     }}
-                    onClose={() => setShowAddRentalModal(false)}
+                    onClose={() => {
+                        setShowAddRentalModal(false);
+                        setSelectedCarIdForRental(undefined);
+                    }}
                 />
             )}
 
@@ -3826,6 +4378,7 @@ interface CreateRentalModalProps {
     onSave: (rentalData: Partial<OrderDisplay>) => void;
     onClose: () => void;
     cars: CarType[];
+    initialCarId?: string;
 }
 
 // Country codes for phone selector
@@ -3852,11 +4405,14 @@ const COUNTRY_CODES = [
     { code: '+90', flag: '🇹🇷', country: 'Turkey' },
 ];
 
-const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, cars }) => {
+const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, cars, initialCarId }) => {
     const { t } = useTranslation();
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
+
+    // Find initial car if provided
+    const initialCar = initialCarId ? cars.find(c => c.id.toString() === initialCarId) : null;
 
     const [formData, setFormData] = useState<Partial<OrderDisplay> & {
         firstName?: string;
@@ -3874,8 +4430,8 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         customerEmail: '',
         customerPhone: '',
         customerAge: '',
-        carId: '',
-        carName: '',
+        carId: initialCarId || '',
+        carName: initialCar ? ((initialCar as any)?.name || `${initialCar.make} ${initialCar.model}`) : '',
         startDate: today.toISOString().split('T')[0],
         startTime: '09:00',
         endDate: tomorrow.toISOString().split('T')[0],
@@ -3990,26 +4546,33 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         const rentalDays = days;
         const totalDays = days + (hours / 24);
 
-        // Base price calculation (same as Calculator.tsx and Admin)
+        // Get price with car discount applied first
+        const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
+        const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
+
+        // Base price calculation (same as Calculator.tsx and Admin) - using discounted price
         let basePrice = 0;
 
         if (rentalDays >= 8) {
-            basePrice = selectedCar.price_per_day * 0.96 * rentalDays; // -4% discount
+            basePrice = pricePerDay * 0.96 * rentalDays; // -4% discount
         } else if (rentalDays >= 4) {
-            basePrice = selectedCar.price_per_day * 0.98 * rentalDays; // -2% discount
+            basePrice = pricePerDay * 0.98 * rentalDays; // -2% discount
         } else {
-            basePrice = selectedCar.price_per_day * rentalDays;
+            basePrice = pricePerDay * rentalDays;
         }
 
         // Add hours portion
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * selectedCar.price_per_day;
+            const hoursPrice = (hours / 24) * pricePerDay;
             basePrice += hoursPrice;
         }
 
         // Calculate additional costs from options
         let additionalCosts = 0;
-        const baseCarPrice = selectedCar.price_per_day;
+        const baseCarPrice = pricePerDay;
 
         // Percentage-based options (calculated on totalDays)
         if (options.unlimitedKm) {
@@ -4171,7 +4734,14 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     type="text"
                                     value={formData.firstName || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -4181,7 +4751,14 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     type="text"
                                     value={formData.lastName || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -4193,7 +4770,14 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
                                     min="18"
                                     max="100"
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -4249,7 +4833,14 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     value={formData.customerEmail || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
                                     placeholder={t('admin.placeholders.email')}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                 />
                             </div>
                         </div>
@@ -4263,15 +4854,30 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                             <select
                                 value={formData.carId || ''}
                                 onChange={(e) => handleCarChange(e.target.value)}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                 required
                             >
                                 <option value="">{t('admin.requests.selectACar')}</option>
-                                {cars.map(car => (
-                                    <option key={car.id} value={car.id.toString()}>
-                                        {(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'} - {car.price_per_day || 0} MDL/day
-                                    </option>
-                                ))}
+                                {cars.map(car => {
+                                    const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
+                                    const discount = (car as any).discount_percentage || car.discount_percentage || 0;
+                                    const finalPrice = discount > 0 
+                                        ? basePrice * (1 - discount / 100)
+                                        : basePrice;
+                                    const carName = (car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car';
+                                    return (
+                                        <option key={car.id} value={car.id.toString()}>
+                                            {carName} - {finalPrice.toFixed(0)} MDL/zi{discount > 0 ? ` (-${discount}%)` : ''}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
                     </div>
@@ -4850,6 +5456,13 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                 const selectedCar = cars.find(c => c.id.toString() === formData.carId);
                                 if (!selectedCar) return null;
 
+                                // Get price with car discount applied first
+                                const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
+                                const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
+                                const pricePerDay = carDiscount > 0 
+                                    ? basePricePerDay * (1 - carDiscount / 100)
+                                    : basePricePerDay;
+
                                 const startDate = new Date(formData.startDate || '');
                                 const endDate = new Date(formData.endDate || '');
                                 const startTime = formData.startTime || '09:00';
@@ -4876,23 +5489,24 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                 let basePrice = 0;
                                 let discountPercent = 0;
 
+                                // Apply rental duration discounts to already-discounted price
                                 if (rentalDays >= 8) {
                                     discountPercent = 4;
-                                    basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
+                                    basePrice = pricePerDay * 0.96 * rentalDays;
                                 } else if (rentalDays >= 4) {
                                     discountPercent = 2;
-                                    basePrice = selectedCar.price_per_day * 0.98 * rentalDays;
+                                    basePrice = pricePerDay * 0.98 * rentalDays;
                                 } else {
-                                    basePrice = selectedCar.price_per_day * rentalDays;
+                                    basePrice = pricePerDay * rentalDays;
                                 }
 
                                 if (hours > 0) {
-                                    const hoursPrice = (hours / 24) * selectedCar.price_per_day;
+                                    const hoursPrice = (hours / 24) * pricePerDay;
                                     basePrice += hoursPrice;
                                 }
 
                                 let additionalCosts = 0;
-                                const baseCarPrice = selectedCar.price_per_day;
+                                const baseCarPrice = pricePerDay;
 
                                 if (options.unlimitedKm) {
                                     additionalCosts += baseCarPrice * totalDays * 0.5;
@@ -4925,17 +5539,28 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                     <>
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-300">Preț pe zi</span>
-                                            <span className="text-white font-medium">{selectedCar.price_per_day.toLocaleString()} MDL</span>
+                                            <div className="flex flex-col items-end gap-0.5">
+                                                <span className="text-white font-medium">{pricePerDay.toFixed(0)} MDL</span>
+                                                {carDiscount > 0 && (
+                                                    <span className="text-gray-400 text-xs line-through">{basePricePerDay.toFixed(0)} MDL</span>
+                                                )}
+                                            </div>
                                         </div>
+                                        {carDiscount > 0 && (
+                                            <div className="flex items-center justify-between text-sm text-emerald-400">
+                                                <span>Reducere mașină</span>
+                                                <span className="font-medium">-{carDiscount}%</span>
+                                            </div>
+                                        )}
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-300">Număr zile</span>
-                                            <span className="text-white font-medium">{rentalDays}</span>
-
-
+                                            <span className="text-gray-300">Durată</span>
+                                            <span className="text-white font-medium">
+                                                {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}{hours > 0 ? `, ${hours} ${hours === 1 ? 'oră' : 'ore'}` : ''}
+                                            </span>
                                         </div>
                                         {discountPercent > 0 && (
                                             <div className="flex items-center justify-between text-sm text-emerald-400">
-                                                <span>Reducere</span>
+                                                <span>Reducere durată</span>
                                                 <span className="font-medium">-{discountPercent}%</span>
                                             </div>
                                         )}
@@ -4983,7 +5608,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                                         )}
                                                         {options.priorityService && (
                                                             <div className="flex justify-between">
-                                                                <span className="text-gray-300">Priority Service</span>
+                                                                <span className="text-gray-300">Serviciu prioritar</span>
                                                                 <span className="text-white font-medium">{1000 * rentalDays} MDL</span>
                                                             </div>
                                                         )}
@@ -5280,21 +5905,28 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         const rentalDays = days;
         const totalDays = days + (hours / 24);
 
+        // Get price with car discount applied first
+        const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
+        const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
+
         let basePrice = 0;
         if (rentalDays >= 8) {
-            basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
+            basePrice = pricePerDay * 0.96 * rentalDays;
         } else if (rentalDays >= 4) {
-            basePrice = selectedCar.price_per_day * 0.98 * rentalDays;
+            basePrice = pricePerDay * 0.98 * rentalDays;
         } else {
-            basePrice = selectedCar.price_per_day * rentalDays;
+            basePrice = pricePerDay * rentalDays;
         }
 
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * selectedCar.price_per_day;
+            const hoursPrice = (hours / 24) * pricePerDay;
             basePrice += hoursPrice;
         }
 
-        const baseCarPrice = selectedCar.price_per_day;
+        const baseCarPrice = pricePerDay;
         let additionalCosts = 0;
 
         if (options.unlimitedKm) {
@@ -5392,7 +6024,14 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     type="text"
                                     value={formData.firstName || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value, customerFirstName: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -5402,7 +6041,14 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     type="text"
                                     value={formData.lastName || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value, customerLastName: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -5414,7 +6060,14 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     max="100"
                                     value={formData.age || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value, customerAge: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                     required
                                 />
                             </div>
@@ -5469,7 +6122,14 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     type="email"
                                     value={formData.customerEmail || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '12px',
+                                    paddingRight: '40px'
+                                }}
                                 />
                             </div>
                         </div>
@@ -5799,7 +6459,14 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     carName: selectedCar ? ((selectedCar as any).name || `${selectedCar.make} ${selectedCar.model}`) : ''
                                 }));
                             }}
-                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 12px center',
+                                backgroundSize: '12px',
+                                paddingRight: '40px'
+                            }}
                             required
                         >
                             <option value="">Selectează automobil</option>
@@ -6045,6 +6712,13 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                 const selectedCar = cars.find(c => c.id.toString() === formData.carId);
                                 if (!selectedCar) return null;
 
+                                // Get price with car discount applied first
+                                const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
+                                const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
+                                const pricePerDay = carDiscount > 0 
+                                    ? basePricePerDay * (1 - carDiscount / 100)
+                                    : basePricePerDay;
+
                                 const startDate = new Date(formData.startDate || '');
                                 const endDate = new Date(formData.endDate || '');
                                 const startTime = formData.startTime || '09:00';
@@ -6071,23 +6745,24 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                 let basePrice = 0;
                                 let discountPercent = 0;
 
+                                // Apply rental duration discounts to already-discounted price
                                 if (rentalDays >= 8) {
                                     discountPercent = 4;
-                                    basePrice = selectedCar.price_per_day * 0.96 * rentalDays;
+                                    basePrice = pricePerDay * 0.96 * rentalDays;
                                 } else if (rentalDays >= 4) {
                                     discountPercent = 2;
-                                    basePrice = selectedCar.price_per_day * 0.98 * rentalDays;
+                                    basePrice = pricePerDay * 0.98 * rentalDays;
                                 } else {
-                                    basePrice = selectedCar.price_per_day * rentalDays;
+                                    basePrice = pricePerDay * rentalDays;
                                 }
 
                                 if (hours > 0) {
-                                    const hoursPrice = (hours / 24) * selectedCar.price_per_day;
+                                    const hoursPrice = (hours / 24) * pricePerDay;
                                     basePrice += hoursPrice;
                                 }
 
                                 let additionalCosts = 0;
-                                const baseCarPrice = selectedCar.price_per_day;
+                                const baseCarPrice = pricePerDay;
 
                                 if (options.unlimitedKm) {
                                     additionalCosts += baseCarPrice * totalDays * 0.5;
@@ -6120,15 +6795,28 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                     <>
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-300">Preț pe zi</span>
-                                            <span className="text-white font-medium">{selectedCar.price_per_day.toLocaleString()} MDL</span>
+                                            <div className="flex flex-col items-end gap-0.5">
+                                                <span className="text-white font-medium">{pricePerDay.toFixed(0)} MDL</span>
+                                                {carDiscount > 0 && (
+                                                    <span className="text-gray-400 text-xs line-through">{basePricePerDay.toFixed(0)} MDL</span>
+                                                )}
+                                            </div>
                                         </div>
+                                        {carDiscount > 0 && (
+                                            <div className="flex items-center justify-between text-sm text-emerald-400">
+                                                <span>Reducere mașină</span>
+                                                <span className="font-medium">-{carDiscount}%</span>
+                                            </div>
+                                        )}
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-300">Număr zile</span>
-                                            <span className="text-white font-medium">{rentalDays}</span>
+                                            <span className="text-gray-300">Durată</span>
+                                            <span className="text-white font-medium">
+                                                {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}{hours > 0 ? `, ${hours} ${hours === 1 ? 'oră' : 'ore'}` : ''}
+                                            </span>
                                         </div>
                                         {discountPercent > 0 && (
                                             <div className="flex items-center justify-between text-sm text-emerald-400">
-                                                <span>Reducere</span>
+                                                <span>Reducere durată</span>
                                                 <span className="font-medium">-{discountPercent}%</span>
                                             </div>
                                         )}
@@ -6176,7 +6864,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                                         )}
                                                         {options.priorityService && (
                                                             <div className="flex justify-between">
-                                                                <span className="text-gray-300">Priority Service</span>
+                                                                <span className="text-gray-300">Serviciu prioritar</span>
                                                                 <span className="text-white font-medium">{1000 * rentalDays} MDL</span>
                                                             </div>
                                                         )}
@@ -6435,6 +7123,19 @@ export const Admin: React.FC = () => {
                 }
                 .mobile-nav-scroll {
                     -webkit-overflow-scrolling: touch;
+                }
+                /* Fix Safari dropdown styling */
+                select {
+                    -webkit-appearance: none !important;
+                    -moz-appearance: none !important;
+                    appearance: none !important;
+                }
+                select::-ms-expand {
+                    display: none !important;
+                }
+                option {
+                    background-color: #343434 !important;
+                    color: #ffffff !important;
                 }
             `}</style>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
 import { Mail, Lock, AlertCircle } from "lucide-react";
@@ -12,17 +12,53 @@ export const Login: React.FC = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loginSuccess, setLoginSuccess] = useState(false);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const shouldRedirectRef = useRef(false);
 
     const { t } = useTranslation();
-    const { signIn, isAuthenticated, loading: authLoading } = useAuth();
+    const { signIn, isAuthenticated, loading: authLoading, isAdmin, roleLoaded } = useAuth();
     const navigate = useNavigate();
 
     // Redirect if already authenticated
     useEffect(() => {
-        if (!authLoading && isAuthenticated) {
-            navigate("/dashboard", { replace: true });
+        if (!authLoading && isAuthenticated && roleLoaded) {
+            if (isAdmin) {
+                navigate("/admin", { replace: true });
+            } else {
+                navigate("/dashboard", { replace: true });
+            }
         }
-    }, [isAuthenticated, authLoading, navigate]);
+    }, [isAuthenticated, authLoading, isAdmin, roleLoaded, navigate]);
+
+    // Handle redirect after successful login when role is loaded
+    useEffect(() => {
+        if (loginSuccess && isAuthenticated && roleLoaded) {
+            // Clear timeout if it exists
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+            shouldRedirectRef.current = false;
+            
+            if (isAdmin) {
+                navigate("/admin", { replace: true });
+            } else {
+                navigate("/dashboard", { replace: true });
+            }
+            setLoading(false);
+            setLoginSuccess(false);
+        }
+    }, [loginSuccess, isAuthenticated, roleLoaded, isAdmin, navigate]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     // Show loading while checking authentication
     if (authLoading) {
@@ -36,8 +72,11 @@ export const Login: React.FC = () => {
         );
     }
 
-    // Redirect if authenticated
-    if (isAuthenticated) {
+    // Redirect if authenticated and role is loaded
+    if (isAuthenticated && roleLoaded) {
+        if (isAdmin) {
+            return <Navigate to="/admin" replace />;
+        }
         return <Navigate to="/dashboard" replace />;
     }
 
@@ -55,11 +94,31 @@ export const Login: React.FC = () => {
                 return;
             }
 
-            // Successful login - redirect to dashboard
-            navigate("/dashboard");
+            // Mark login as successful - useEffect will handle redirect when role is loaded
+            setLoginSuccess(true);
+            shouldRedirectRef.current = true;
+            
+            // Set a timeout fallback in case role doesn't load within 3 seconds
+            timeoutRef.current = setTimeout(() => {
+                // Check if we should still redirect (haven't redirected yet)
+                if (shouldRedirectRef.current) {
+                    // Fallback: redirect to dashboard if role doesn't load
+                    navigate("/dashboard");
+                    setLoading(false);
+                    setLoginSuccess(false);
+                    shouldRedirectRef.current = false;
+                }
+                timeoutRef.current = null;
+            }, 3000);
         } catch (err) {
             setError("An unexpected error occurred. Please try again.");
             setLoading(false);
+            setLoginSuccess(false);
+            shouldRedirectRef.current = false;
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
         }
     };
 

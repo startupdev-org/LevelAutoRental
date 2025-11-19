@@ -8,6 +8,20 @@ interface SalesChartCardProps {
     totalSales?: string | number;
     change?: string;
     data?: { day: number; sales: number; baseline: number }[];
+    allPeriodData?: {
+        '24H'?: { day: number; sales: number; baseline: number }[];
+        '7D'?: { day: number; sales: number; baseline: number }[];
+        '30D'?: { day: number; sales: number; baseline: number }[];
+        'WEEKS'?: { day: number; sales: number; baseline: number }[];
+        '12M'?: { day: number; sales: number; baseline: number }[];
+    };
+    periodStats?: {
+        '24H'?: { sales: number; change: number; isPositive: boolean };
+        '7D'?: { sales: number; change: number; isPositive: boolean };
+        '30D'?: { sales: number; change: number; isPositive: boolean };
+        'WEEKS'?: { sales: number; change: number; isPositive: boolean };
+        '12M'?: { sales: number; change: number; isPositive: boolean };
+    };
 }
 
 const generateChartData = (period: TimePeriod) => {
@@ -118,12 +132,18 @@ const calculateChange = (period: TimePeriod, t: (key: string) => string) => {
 export const SalesChartCard: React.FC<SalesChartCardProps> = ({ 
     totalSales: initialTotalSales, 
     change: initialChange, 
-    data: initialData 
+    data: initialData,
+    allPeriodData,
+    periodStats
 }) => {
     const { t } = useTranslation();
     const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30D');
 
     const chartData = useMemo(() => {
+        // Use allPeriodData if provided (real data for all periods)
+        if (allPeriodData && allPeriodData[selectedPeriod]) {
+            return allPeriodData[selectedPeriod]!;
+        }
         // Use provided data if available and period is 30D (default), otherwise generate based on period
         if (initialData && initialData.length > 0 && selectedPeriod === '30D') {
             return initialData;
@@ -152,27 +172,43 @@ export const SalesChartCard: React.FC<SalesChartCardProps> = ({
             return weeklyData;
         }
         return generateChartData(selectedPeriod);
-    }, [selectedPeriod, initialData]);
+    }, [selectedPeriod, initialData, allPeriodData]);
 
     const totalSales = useMemo(() => {
+        // Use periodStats if provided (real data)
+        if (periodStats && periodStats[selectedPeriod]) {
+            return periodStats[selectedPeriod]!.sales;
+        }
         // Use provided totalSales if available, otherwise calculate from chart data
         if (initialTotalSales !== undefined) {
             return typeof initialTotalSales === 'number' ? initialTotalSales : parseFloat(String(initialTotalSales).replace(/[^0-9.-]+/g, '')) || 0;
         }
         return calculateTotalSales(chartData);
-    }, [chartData, initialTotalSales]);
+    }, [chartData, initialTotalSales, selectedPeriod, periodStats]);
 
     const change = useMemo(() => {
+        // Use periodStats if provided (real data)
+        if (periodStats && periodStats[selectedPeriod]) {
+            const stats = periodStats[selectedPeriod]!;
+            const periodLabels: Record<TimePeriod, string> = {
+                '24H': 'ultimele 24 ore',
+                '7D': 'ultimele 7 zile',
+                '30D': 'ultimele 30 zile',
+                'WEEKS': 'ultimele 4 săptămâni',
+                '12M': 'ultimele 12 luni'
+            };
+            return `${stats.isPositive ? '↑' : '↓'} ${Math.abs(stats.change).toFixed(1)}% față de ${periodLabels[selectedPeriod]}`;
+        }
         // Use provided change if available, otherwise calculate based on period
         if (initialChange) {
             return initialChange;
         }
         return calculateChange(selectedPeriod, t);
-    }, [selectedPeriod, initialChange, t]);
+    }, [selectedPeriod, initialChange, t, periodStats]);
 
     const formatTotalSales = (sales: number, period: TimePeriod) => {
-        // Use MDL if we have actual data provided, otherwise use $
-        const currency = (initialData && initialData.length > 0) ? 'MDL' : '$';
+        // Use MDL if we have actual data provided (allPeriodData or periodStats), otherwise use $
+        const currency = (allPeriodData || periodStats || (initialData && initialData.length > 0)) ? 'MDL' : '$';
         
         if (period === '12M') {
             // For 12 months, show in thousands
