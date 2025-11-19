@@ -1,20 +1,17 @@
 import { motion } from 'framer-motion';
-import { Filter, HelpCircle, Leaf, Search, Star, Users, Circle, Zap, Image } from 'lucide-react';
+import { Leaf, Image } from 'lucide-react';
 import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
-import { PiTireFill, PiSpeedometerFill } from "react-icons/pi";
+import { PiSpeedometerFill } from "react-icons/pi";
 import { BiSolidHeart } from "react-icons/bi";
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cars } from '../../data/cars';
 import { useCounter } from '../../hooks/useCounter';
 import { useInView } from '../../hooks/useInView';
 import { Car } from '../../types';
-import { fadeInUp, staggerContainer } from '../../utils/animations';
-import { Button } from '../../components/ui/Button';
+import { fadeInUp } from '../../utils/animations';
 import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { redirect, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 
 interface CarCardProps {
@@ -25,9 +22,9 @@ interface CarCardProps {
 export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { ref, isInView } = useInView();
     const { t } = useTranslation();
-    const animatedPrice = useCounter(car.pricePerDay, 1500, 0);
+    const animatedPrice = useCounter(car.price_per_day, 1500, 0);
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
-    
+
     // Load favorite state from localStorage
     const getFavorites = (): number[] => {
         try {
@@ -134,7 +131,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 const photosToShow = car.photoGallery.slice(0, maxPhotos);
                                 const totalPhotos = car.photoGallery.length;
                                 const remainingPhotos = totalPhotos - maxPhotos;
-                                
+
                                 return photosToShow.map((photo, index) => (
                                     <div
                                         key={index}
@@ -148,7 +145,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                         />
                                         {(() => {
                                             const isLastVisiblePhoto = index === photosToShow.length - 1;
-                                            
+
                                             if (isLastVisiblePhoto && remainingPhotos > 0) {
                                                 return (
                                                     <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
@@ -159,7 +156,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                                     </div>
                                                 );
                                             }
-                                            
+
                                             if (isLastVisiblePhoto && remainingPhotos === 0) {
                                                 return (
                                                     <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
@@ -168,7 +165,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                                     </div>
                                                 );
                                             }
-                                            
+
                                             return null;
                                         })()}
                                     </div>
@@ -210,20 +207,18 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                     {/* Favorite Heart Icon - Top Right */}
                     <div
-                        className={`absolute top-3 right-3 z-10 group/heart transition-opacity duration-300 cursor-pointer ${
-                            isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                        }`}
+                        className={`absolute top-3 right-3 z-10 group/heart transition-opacity duration-300 cursor-pointer ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                            }`}
                         onClick={(e) => {
                             e.stopPropagation();
                             handleFavoriteToggle();
                         }}
                     >
-                        {React.createElement(BiSolidHeart as any, { 
-                            className: `transition-all duration-300 hover:scale-110 ${
-                                isFavorite 
-                                    ? 'w-6 h-6 text-red-500' 
-                                    : 'w-6 h-6 text-gray-400 group-hover/heart:text-red-500'
-                            }`
+                        {React.createElement(BiSolidHeart as any, {
+                            className: `transition-all duration-300 hover:scale-110 ${isFavorite
+                                ? 'w-6 h-6 text-red-500'
+                                : 'w-6 h-6 text-gray-400 group-hover/heart:text-red-500'
+                                }`
                         })}
                     </div>
                 </div>
@@ -234,7 +229,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     <div className="mb-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-700 transition-colors duration-300">
-                                {car.name}
+                                {car.make}{' '}{car.model}
                             </h3>
                             <span className="text-lg font-bold text-gray-600">
                                 {car.year}
@@ -251,6 +246,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             <span className="text-sm font-medium">{t('car.mileageLimit')}</span>
                         </div>
 
+                        {/* Transmission */}
                         <div className="flex items-center justify-end gap-2 text-gray-600">
                             <span className="text-sm font-medium">
                                 {(() => {
@@ -269,19 +265,21 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             </div>
                         </div>
 
+                        {/* Fuel Type */}
                         <div className="flex items-center gap-2 text-gray-600">
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                 {React.createElement(FaGasPump as any, { className: "w-4 h-4 text-gray-600" })}
                             </div>
                             <span className="text-sm font-medium">
-                                {car.fuelType === 'gasoline' ? 'Benzină' :
-                                    car.fuelType === 'diesel' ? 'Diesel' :
-                                        car.fuelType === 'petrol' ? 'Benzină' :
-                                            car.fuelType === 'hybrid' ? 'Hibrid' :
-                                                car.fuelType === 'electric' ? 'Electric' : car.fuelType}
+                                {car.fuel_type === 'gasoline' ? 'Benzină' :
+                                    car.fuel_type === 'diesel' ? 'Diesel' :
+                                        car.fuel_type === 'petrol' ? 'Benzină' :
+                                            car.fuel_type === 'hybrid' ? 'Hibrid' :
+                                                car.fuel_type === 'electric' ? 'Electric' : car.fuelType}
                             </span>
                         </div>
 
+                        {/* Drivetrain */}
                         <div className="flex items-center justify-end gap-2 text-gray-600">
                             <span className="text-sm font-medium">{car.drivetrain || ''}</span>
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -293,7 +291,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     {/* Price and CTA */}
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-gray-800">{car.pricePerDay} MDL</span>
+                            <span className="text-xl font-bold text-gray-800">{car.price_per_day} MDL</span>
                             <span className="text-gray-500 text-sm">/zi</span>
                         </div>
 
