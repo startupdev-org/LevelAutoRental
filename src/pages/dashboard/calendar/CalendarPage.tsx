@@ -101,16 +101,30 @@ export const CalendarPage: React.FC<Props> = () => {
     const makeToModels = useMemo(() => {
         const mapping: Record<string, string[]> = {};
         cars.forEach((car) => {
-            const carName = (car as any).name || '';
-            const parts = carName.split(" ");
-            const firstPart = parts[0];
-            const make = firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
-            const model = parts.slice(1).join(" ");
-            if (!mapping[make]) mapping[make] = [];
-            if (model && !mapping[make].includes(model)) mapping[make].push(model);
+            // Try to get make and model from car object
+            let make = '';
+            let model = '';
+            
+            // First, try to use make and model properties directly
+            if ((car as any).make && (car as any).model) {
+                make = (car as any).make;
+                model = (car as any).model;
+            } else {
+                // Fallback to parsing from name
+                const carName = (car as any).name || `${(car as any).make || ''} ${(car as any).model || ''}`.trim();
+                const parts = carName.split(" ");
+                const firstPart = parts[0];
+                make = firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
+                model = parts.slice(1).join(" ");
+            }
+            
+            if (make) {
+                if (!mapping[make]) mapping[make] = [];
+                if (model && !mapping[make].includes(model)) mapping[make].push(model);
+            }
         });
         return mapping;
-    }, []);
+    }, [cars]);
 
     const availableModels = useMemo(() => {
         if (!filters.make) return [];
@@ -119,12 +133,19 @@ export const CalendarPage: React.FC<Props> = () => {
 
     const uniqueMakes = useMemo(() => {
         const makes = cars.map((car) => {
+            // Try to get make directly from car object
+            if ((car as any).make) {
+                const make = (car as any).make;
+                return make.includes("-") ? make.split("-")[0] : make;
+            }
+            
+            // Fallback to parsing from name
             const carName = (car as any).name || '';
             const firstPart = carName.split(" ")[0];
             return firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
-        });
+        }).filter(make => make); // Filter out empty strings
         return [...new Set(makes)];
-    }, []);
+    }, [cars]);
 
     const handleFilterChange = (key: "make" | "model", value: string) => {
         setFilters((prev) => {
@@ -154,10 +175,22 @@ export const CalendarPage: React.FC<Props> = () => {
             // If only make is selected, set a special object to indicate make-only filter
             if (newFilters.make !== "" && newFilters.model !== "") {
                 const matchingCars = cars.filter((car) => {
-                    const carName = (car as any).name || '';
-                    const parts = carName.split(" ");
-                    const make = parts[0].includes("-") ? parts[0].split("-")[0] : parts[0];
-                    const model = parts.slice(1).join(" ");
+                    // Try to get make and model from car object
+                    let make = '';
+                    let model = '';
+                    
+                    // First, try to use make and model properties directly
+                    if ((car as any).make && (car as any).model) {
+                        make = (car as any).make;
+                        model = (car as any).model;
+                    } else {
+                        // Fallback to parsing from name
+                        const carName = (car as any).name || '';
+                        const parts = carName.split(" ");
+                        const firstPart = parts[0];
+                        make = firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
+                        model = parts.slice(1).join(" ");
+                    }
 
                     const matchesMake = newFilters.make ? make === newFilters.make : true;
                     const matchesModel = newFilters.model ? model === newFilters.model : true;
@@ -330,17 +363,37 @@ export const CalendarPage: React.FC<Props> = () => {
         const pickupsMap = new Map<string, any[]>();
         const returnsMap = new Map<string, any[]>();
 
-        // Filter orders based on make/model filters
-        let filteredOrders = orders;
+        // Filter orders based on make/model filters and exclude completed/cancelled
+        let filteredOrders = orders.filter((o) => {
+            // Exclude completed and cancelled orders
+            const status = (o.status || '').toUpperCase();
+            if (status === 'COMPLETED' || status === 'CANCELLED') {
+                return false;
+            }
+            return true;
+        });
+
         if (filters.make) {
-            filteredOrders = orders.filter((o) => {
+            filteredOrders = filteredOrders.filter((o) => {
                 const car = cars.find(c => c.id.toString() === o.carId.toString());
                 if (!car) return false;
                 
-                const carName = (car as any).name || '';
-                const parts = carName.split(" ");
-                const make = parts[0].includes("-") ? parts[0].split("-")[0] : parts[0];
-                const model = parts.slice(1).join(" ");
+                // Try to get make and model from car object
+                let make = '';
+                let model = '';
+                
+                // First, try to use make and model properties directly
+                if ((car as any).make && (car as any).model) {
+                    make = (car as any).make;
+                    model = (car as any).model;
+                } else {
+                    // Fallback to parsing from name
+                    const carName = (car as any).name || '';
+                    const parts = carName.split(" ");
+                    const firstPart = parts[0];
+                    make = firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
+                    model = parts.slice(1).join(" ");
+                }
 
                 const matchesMake = make === filters.make;
                 const matchesModel = filters.model ? model === filters.model : true;
@@ -443,69 +496,80 @@ export const CalendarPage: React.FC<Props> = () => {
     return (
         <div ref={calendarRef} className="max-w-[1600px] mx-auto px-0 sm:px6 lg:px-8">
             {/* Sort and Filter Row */}
-            <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="mb-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
                 {/* Sort Controls */}
-                <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.calendar.sortBy')}</span>
-                    <button
-                        onClick={() => handleSort('time')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'time'
-                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                            }`}
-                    >
-                        {t('admin.calendar.time')}
-                        {sortBy === 'time' && (
-                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                <div className="flex flex-col lg:flex-row lg:flex-wrap items-start lg:items-center gap-2 lg:gap-2">
+                    {/* Mobile: Sortează după and Șterge Sortarea in same row */}
+                    <div className="lg:hidden flex items-center justify-between gap-2 w-full">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.calendar.sortBy')}</span>
+                        {sortBy && sortBy !== 'time' && (
+                            <button
+                                onClick={() => {
+                                    setSortBy('time');
+                                    setSortOrder('asc');
+                                }}
+                                className="px-2.5 py-0 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+                            >
+                                {t('admin.calendar.clearSort')}
+                            </button>
                         )}
-                        {sortBy !== 'time' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                    </button>
-                    {/* Desktop-only sort options */}
-                    {isDesktop && (
-                        <>
-                            <button
-                                onClick={() => handleSort('car')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'car'
-                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                    }`}
-                            >
-                                {t('admin.calendar.car')}
-                                {sortBy === 'car' && (
-                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                )}
-                                {sortBy !== 'car' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                            </button>
-                            <button
-                                onClick={() => handleSort('status')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'status'
-                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                    }`}
-                            >
-                                {t('admin.calendar.status')}
-                                {sortBy === 'status' && (
-                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                )}
-                                {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                            </button>
-                            {sortBy && (
-                                <button
-                                    onClick={() => {
-                                        setSortBy(null);
-                                        setSortOrder('asc');
-                                    }}
-                                    className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-                                >
-                                    {t('admin.calendar.clearSort')}
-                                </button>
+                    </div>
+                    {/* Desktop: Sortează după label */}
+                    <span className="hidden lg:inline text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.calendar.sortBy')}</span>
+                    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                        <button
+                            onClick={() => handleSort('car')}
+                            className={`flex items-center gap-1 px-2.5 lg:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'car'
+                                ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                }`}
+                        >
+                            <span className="truncate">{t('admin.calendar.car')}</span>
+                            {sortBy === 'car' && (
+                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
                             )}
-                        </>
-                    )}
+                            {sortBy !== 'car' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
+                        </button>
+                        <button
+                            onClick={() => handleSort('status')}
+                            className={`flex items-center gap-1 px-2.5 lg:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'status'
+                                ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                }`}
+                        >
+                            <span className="truncate">{t('admin.calendar.status')}</span>
+                            {sortBy === 'status' && (
+                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
+                            )}
+                            {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
+                        </button>
+                        {/* Desktop: Șterge Sortarea */}
+                        {sortBy && sortBy !== 'time' && (
+                            <button
+                                onClick={() => {
+                                    setSortBy('time');
+                                    setSortOrder('asc');
+                                }}
+                                className="hidden lg:block px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+                            >
+                                {t('admin.calendar.clearSort')}
+                            </button>
+                        )}
+                        {/* Filter button on mobile - in same row */}
+                        {!isDesktop && !selectedCar && (
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white transition-all flex-shrink-0"
+                            >
+                                <Filter className="w-3 h-3" />
+                                <span>{showFilters ? t('admin.calendar.hideFilters') : t('admin.calendar.showFilters')}</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
                 
-                {/* Filter Toggle Button */}
-                <div className="flex items-center gap-2">
+                {/* Filter Toggle Button - Desktop only */}
+                <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
                     {selectedCar && (() => {
                         // If selectedCar has a make property but no id, it's a make-only filter
                         const isMakeOnly = (selectedCar as any).make && !(selectedCar as any).id;
@@ -513,49 +577,68 @@ export const CalendarPage: React.FC<Props> = () => {
                         const carMake = isMakeOnly ? (selectedCar as any).make : getCarMake(displayName);
                         const logoPath = getMakeLogo(carMake);
                         return (
-                            <div className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-medium flex items-center gap-2">
+                            <div className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-medium flex items-center gap-2 max-w-full">
                                 {logoPath && (
                                     <img 
                                         src={logoPath} 
                                         alt={carMake}
-                                        className={`${getLogoSize(carMake)} object-contain brightness-0 invert`}
+                                        className={`${getLogoSize(carMake)} object-contain brightness-0 invert flex-shrink-0`}
                                         onError={(e) => {
                                             // Hide image if it fails to load
                                             (e.target as HTMLImageElement).style.display = 'none';
                                         }}
                                     />
                                 )}
-                                <span>{displayName}</span>
-                                {/* X button for mobile to clear filter */}
-                                {!isDesktop && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setFilters({ make: "", model: "" });
-                                            setSelectedCar(null);
-                                        }}
-                                        className="ml-1 p-0.5 hover:bg-white/20 rounded transition-colors"
-                                        aria-label="Clear filter"
-                                    >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                )}
+                                <span className="truncate">{displayName}</span>
                             </div>
                         );
                     })()}
-                    {/* Hide filter button on mobile when car is selected */}
                     {(!selectedCar || isDesktop) && (
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white transition-all flex-shrink-0"
                         >
                             <Filter className="w-3 h-3" />
-                            {showFilters ? t('admin.calendar.hideFilters') : t('admin.calendar.showFilters')}
+                            <span>{showFilters ? t('admin.calendar.hideFilters') : t('admin.calendar.showFilters')}</span>
                         </button>
                     )}
                 </div>
+
+                {/* Selected Car Badge - Mobile only (when filter button is hidden) */}
+                {!isDesktop && selectedCar && (() => {
+                    const isMakeOnly = (selectedCar as any).make && !(selectedCar as any).id;
+                    const displayName = isMakeOnly ? (selectedCar as any).make : ((selectedCar as any).name || 'Selected Car');
+                    const carMake = isMakeOnly ? (selectedCar as any).make : getCarMake(displayName);
+                    const logoPath = getMakeLogo(carMake);
+                    return (
+                        <div className="px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-medium flex items-center gap-1.5 max-w-full">
+                            {logoPath && (
+                                <img 
+                                    src={logoPath} 
+                                    alt={carMake}
+                                    className={`${getLogoSize(carMake)} object-contain brightness-0 invert flex-shrink-0`}
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                />
+                            )}
+                            <span className="truncate">{displayName}</span>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setFilters({ make: "", model: "" });
+                                    setSelectedCar(null);
+                                }}
+                                className="ml-1 p-0.5 hover:bg-white/20 rounded transition-colors flex-shrink-0"
+                                aria-label="Clear filter"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* Filters Sidebar from Right - Rendered via Portal */}
@@ -645,33 +728,39 @@ export const CalendarPage: React.FC<Props> = () => {
                                 >
                                     Selectează marca
                                 </div>
-                                {uniqueMakes.map((make) => {
-                                    const logoPath = getMakeLogo(make.toLowerCase());
-                                    return (
-                                    <div
-                                        key={make}
-                                            className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white flex items-center gap-2"
-                                        onClick={() => {
-                                            handleFilterChange("make", make);
-                                            closeAllDropdowns();
-                                        }}
-                                    >
-                                            <div className="w-6 flex items-center justify-center flex-shrink-0">
-                                                {logoPath && (
-                                                    <img 
-                                                        src={logoPath} 
-                                                        alt={make}
-                                                        className={`${getLogoSize(make)} object-contain brightness-0 invert`}
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).style.display = 'none';
-                                                        }}
-                                                    />
-                                                )}
-                                            </div>
-                                            <span>{make}</span>
+                                {uniqueMakes.length > 0 ? (
+                                    uniqueMakes.map((make) => {
+                                        const logoPath = getMakeLogo(make.toLowerCase());
+                                        return (
+                                        <div
+                                            key={make}
+                                                className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white flex items-center gap-2"
+                                            onClick={() => {
+                                                handleFilterChange("make", make);
+                                                closeAllDropdowns();
+                                            }}
+                                        >
+                                                <div className="w-6 flex items-center justify-center flex-shrink-0">
+                                                    {logoPath && (
+                                                        <img 
+                                                            src={logoPath} 
+                                                            alt={make}
+                                                            className={`${getLogoSize(make)} object-contain brightness-0 invert`}
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                            }}
+                                                        />
+                                                    )}
+                                                </div>
+                                                <span>{make}</span>
+                                        </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="px-4 py-2 text-white/50 text-sm">
+                                        Nu sunt mașini disponibile
                                     </div>
-                                    );
-                                })}
+                                )}
                             </motion.div>
                                                     </>
                         )}
@@ -716,20 +805,26 @@ export const CalendarPage: React.FC<Props> = () => {
                                     Orice
                                 </div>
                                 )}
-                                {availableModels.map((model) => {
-                                    return (
-                                    <div
-                                        key={model}
-                                            className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
-                                        onClick={() => {
-                                            handleFilterChange("model", model);
-                                            closeAllDropdowns();
-                                        }}
-                                    >
-                                        {model}
+                                {availableModels.length > 0 ? (
+                                    availableModels.map((model) => {
+                                        return (
+                                        <div
+                                            key={model}
+                                                className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
+                                            onClick={() => {
+                                                handleFilterChange("model", model);
+                                                closeAllDropdowns();
+                                            }}
+                                        >
+                                            {model}
+                                        </div>
+                                        );
+                                    })
+                                ) : filters.make ? (
+                                    <div className="px-4 py-2 text-white/50 text-sm">
+                                        Nu sunt modele disponibile
                                     </div>
-                                    );
-                                })}
+                                ) : null}
                             </motion.div>
                                                 </>
                         )}
@@ -1083,7 +1178,7 @@ export const CalendarPage: React.FC<Props> = () => {
                         handleSort={handleSort}
                         sortOrders={sortOrders}
                         clearSort={() => {
-                            setSortBy(null);
+                            setSortBy('time');
                             setSortOrder('asc');
                         }}
                         cars={cars}

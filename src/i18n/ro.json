@@ -939,6 +939,8 @@
             "email": "E-mail",
             "phone": "Telefon",
             "role": "Rol",
+            "sortBy": "Sortează după:",
+            "clearSort": "Șterge Sortarea",
             "rentals": "Închirieri",
             "totalSpent": "Total Cheltuit",
             "showing": "Afișare",
@@ -953,7 +955,7 @@
             "userDetails": "Detalii Utilizator",
             "rentalHistory": "Istoric Închirieri",
             "car": "Mașină",
-            "dates": "Date",
+            "dates": "Dată",
             "amount": "Sumă",
             "viewPastRentals": "Vezi Închirierile Anterioare ale lui {{name}}",
             "noRentalHistory": "Nu s-a găsit istoric de închirieri"
