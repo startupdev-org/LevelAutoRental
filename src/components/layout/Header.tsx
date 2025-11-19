@@ -28,7 +28,6 @@ export const Header: React.FC = () => {
 
   // Force styling for different pages
   const isDifferentPage =
-    (location.pathname === '/not-found') ||
     (location.pathname === '/auth/signup') ||
     (location.pathname === '/contact') ||
     (location.pathname === '/cars') ||

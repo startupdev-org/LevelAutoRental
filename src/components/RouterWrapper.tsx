@@ -63,6 +63,14 @@ const RouterWrapper = () => {
             </AdminProtectedRoute>
           }
         />
+        <Route
+          path="/admin/"
+          element={
+            <AdminProtectedRoute>
+              <Admin />
+            </AdminProtectedRoute>
+          }
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes >

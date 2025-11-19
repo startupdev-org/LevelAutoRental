@@ -52,8 +52,14 @@ export const Calculator: React.FC = () => {
     // Calculate base price with discounts
     const basePrice = useMemo(() => {
         if (!selectedCar) return 0;
-        const pricePerDay = selectedCar.pricePerDay;
+        // Get price with car discount applied first
+        const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
+        const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
         
+        // Then apply rental duration discounts
         if (rentalDays >= 8) {
             return pricePerDay * 0.96 * rentalDays; // -4%
         } else if (rentalDays >= 4) {
@@ -65,7 +71,12 @@ export const Calculator: React.FC = () => {
     // Calculate additional services
     const additionalCosts = useMemo(() => {
         let total = 0;
-        const baseCarPrice = selectedCar?.pricePerDay || 0;
+        // Use discounted price for additional services calculation
+        const basePricePerDay = selectedCar ? ((selectedCar as any).pricePerDay || selectedCar.price_per_day || 0) : 0;
+        const carDiscount = selectedCar ? ((selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0) : 0;
+        const baseCarPrice = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
         
         if (unlimitedKm) total += baseCarPrice * rentalDays * 0.5;
         if (speedLimit) total += baseCarPrice * rentalDays * 0.2;
