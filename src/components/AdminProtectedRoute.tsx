@@ -1,5 +1,5 @@
 import { useAuth } from '../hooks/useAuth';
-import NotFound from '../pages/NotFound';
+import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 
@@ -26,20 +26,20 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     }
   }, [i18n]);
 
-  // Not authenticated → show 404
+  // Not authenticated → redirect to 404
   if (!user) {
-    return <NotFound />;
+    return <Navigate to="/not-found" replace />;
   }
 
-  // Language is not Romanian → show 404 (admin only in Romanian)
+  // Language is not Romanian → redirect to 404 (admin only in Romanian)
   if (i18n.language !== 'ro') {
-    return <NotFound />;
+    return <Navigate to="/not-found" replace />;
   }
 
   // Wait for role to load before checking admin status
-  // If role loaded and user is not admin → show 404
+  // If role loaded and user is not admin → redirect to 404
   if (roleLoaded && !isAdmin) {
-    return <NotFound />;
+    return <Navigate to="/not-found" replace />;
   }
 
   // Role not loaded yet or user is admin → render admin page

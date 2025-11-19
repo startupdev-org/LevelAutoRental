@@ -10,16 +10,16 @@ const NotFound: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Main content with background */}
-      <section
-        className="relative flex-1 bg-cover bg-no-repeat bg-fixed bg-center min-h-screen flex items-center justify-center"
+    /* Main content with background */
+    <section
+        className="relative bg-cover bg-no-repeat bg-fixed bg-center flex items-center justify-center py-32"
         style={{
           backgroundImage: window.innerWidth < 768
             ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')"
             : "url('/LevelAutoRental/backgrounds/bg2-desktop.jpeg')",
           backgroundPosition: 'center center',
-          backgroundSize: 'cover'
+          backgroundSize: 'cover',
+          minHeight: 'calc(100vh - 80px)' // Full viewport minus approximate header height
         }}
       >
         {/* Dark Overlay */}
@@ -28,11 +28,11 @@ const NotFound: React.FC = () => {
         {/* Bottom Gradient Fade */}
         <div className="absolute bottom-0 left-0 w-full h-40 
             bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
-            z-20 pointer-events-none">
+            z-50 pointer-events-none">
         </div>
 
         {/* Content */}
-        <div className="relative z-30 w-full flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="relative z-30 w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
           <motion.div
             variants={fadeInUp}
             initial="initial"
@@ -84,7 +84,6 @@ const NotFound: React.FC = () => {
           </motion.div>
         </div>
       </section>
-    </div>
   );
 };
 
