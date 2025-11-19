@@ -6,7 +6,6 @@ import { PiSpeedometerFill } from "react-icons/pi";
 import { BiSolidHeart } from "react-icons/bi";
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCounter } from '../../hooks/useCounter';
 import { useInView } from '../../hooks/useInView';
 import { Car } from '../../types';
 import { fadeInUp } from '../../utils/animations';
@@ -22,7 +21,6 @@ interface CarCardProps {
 export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { ref, isInView } = useInView();
     const { t } = useTranslation();
-    const animatedPrice = useCounter(car.price_per_day, 1500, 0);
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
     // Load favorite state from localStorage
@@ -275,7 +273,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                     car.fuel_type === 'diesel' ? 'Diesel' :
                                         car.fuel_type === 'petrol' ? 'Benzină' :
                                             car.fuel_type === 'hybrid' ? 'Hibrid' :
-                                                car.fuel_type === 'electric' ? 'Electric' : car.fuelType}
+                                                car.fuel_type === 'electric' ? 'Electric' : car.fuel_type}
                             </span>
                         </div>
 

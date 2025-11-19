@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { About } from '../pages/about/About';
 import { Booking } from '../pages/booking/Booking';
 import { Cars } from '../pages/cars/Cars';
-import { CarDetails } from '../pages/cars/individual/CarDetails';
+import { CarDetails } from '../pages/cars/car-details/CarDetails.tsx';
 import { Reviews } from '../pages/reviews/Reviews.tsx';
 import { Contact } from '../pages/contact/Contact';
 import { Home } from '../pages/home/Home';

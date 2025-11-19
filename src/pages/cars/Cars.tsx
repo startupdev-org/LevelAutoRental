@@ -8,6 +8,10 @@ import { CarCard } from './CarCard';
 import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels } from '../../lib/db/cars-page/cars';
 import { Car as CarType } from '../../types';
 
+import { RentalOptionsSection } from './section/RentalOptionsSection'
+import { ContractSection } from './section/ContractSection';
+import { FUEL_TYPE_MAP, FuelTypeUI } from '../../constants';
+
 // Display Car type for CarCard component
 interface DisplayCar extends CarType {
   name: string;
@@ -16,6 +20,17 @@ interface DisplayCar extends CarType {
   photoGallery?: string[];
   fuelType?: string;
   availability?: string;
+}
+
+interface SidebarFilters {
+  transmission: 'Any' | 'Automatic' | 'Manual';
+  fuelType: FuelTypeUI;
+  make?: string;
+  model?: string;
+  priceRange: [number, number];
+  yearRange: [number, number];
+  seats?: number;
+  status?: string;
 }
 
 export const Cars: React.FC = () => {
@@ -46,7 +61,7 @@ export const Cars: React.FC = () => {
 
 
   async function handleFetchCarsModel(make: string) {
-    setLoading(true);
+    // setLoading(true);
     try {
       const fetchedMakeModels = await fetchCarsModels(make);
       console.log('fetched models are: ', fetchedMakeModels)
@@ -81,22 +96,29 @@ export const Cars: React.FC = () => {
     }
   }
 
-  async function handleFetchFilteredCars() {
+  async function handleFetchFilteredCars(basicFilters: typeof filters) {
     setLoading(true);
     // console.log('fetching the cars after filters: ', filters)
-    // console.log('fetching the cars applied filters: ', appliedFilters)
+    console.log('fetching the cars WITH THIS applied filters: ', basicFilters)
+    console.log('fetching the cars WITH THIS sidebar filters: ', sidebarFilters)
     try {
       // Build filter object from applied filters and sidebar filters
       const filters: CarFilters = {
-        make: appliedFilters.make || undefined,
-        model: appliedFilters.model || undefined,
+        make: basicFilters.make || undefined,
+        model: basicFilters.model || undefined,
         minPrice: sidebarFilters.priceRange[0],
         maxPrice: sidebarFilters.priceRange[1],
         minYear: sidebarFilters.yearRange[0],
         maxYear: sidebarFilters.yearRange[1],
+        fuelType: sidebarFilters.fuelType !== 'Any'
+          ? FUEL_TYPE_MAP[sidebarFilters.fuelType as keyof typeof FUEL_TYPE_MAP]
+          : undefined,
         transmission: sidebarFilters.transmission !== 'Any' ? sidebarFilters.transmission as 'Automatic' | 'Manual' : undefined,
         seats: sidebarFilters.seats !== undefined ? sidebarFilters.seats : undefined,
       };
+
+
+      console.log('the last filters are: ', filters)
 
       const fetchedCars = await fetchFilteredCars(filters);
       setCars(fetchedCars);
@@ -135,6 +157,10 @@ export const Cars: React.FC = () => {
     setShowMakeDropdown(false);
     setShowModelDropdown(false);
   };
+
+  useEffect(() => {
+    console.log('SidebarFilters are: ', sidebarFilters)
+  }, [showAdvancedFilters])
 
   // Handle opening a specific dropdown and closing others
   const openDropdown = (dropdownType: 'make' | 'model') => {
@@ -181,71 +207,16 @@ export const Cars: React.FC = () => {
   }, [showAdvancedFilters]);
 
 
-  // Get min/max values for sliders
-  const priceRange = useMemo(() => {
-    const prices = cars.map(car => car.price_per_day);
-
-    if (prices.length === 0) {
-      return { min: 0, max: 0 };
-    }
-
-    return {
-      min: Math.min(...prices),
-      max: Math.max(...prices),
-    };
-  }, [cars]);
-
-  const yearsRange = useMemo(() => {
-    const years = cars.map(car => car.year);
-
-    if (years.length === 0) {
-      return { min: 0, max: 0 };
-    }
-
-    return {
-      min: Math.min(...years),
-      max: Math.max(...years),
-    };
-  }, [cars]);
-
-
-
-  const yearRangeData = useMemo(() => {
-    const years = cars.map(car => car.year);
-    return { min: Math.min(...years), max: Math.max(...years) };
-  }, []);
-
-  type SidebarFilters = {
-    priceRange: [number, number];
-    yearRange: [number, number];
-    transmission: string;
-    fuelType: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' | string | undefined;
-    seats: number | undefined;
-  };
-
-  // Sidebar filter state
-  const [sidebarFilters, setSidebarFilters] = useState<SidebarFilters>({
+  const defaultSidebarFilters: SidebarFilters = {
     priceRange: [0, 10000],
     yearRange: [new Date().getFullYear() - 10, new Date().getFullYear()],
     transmission: 'Any',
-    fuelType: undefined,
+    fuelType: 'Any',
     seats: undefined,
-  });
+  };
 
-  // Update sidebar filters when priceRange and yearRangeData are available
-  useEffect(() => {
-    if (priceRange.min && priceRange.max && yearRangeData.min && yearRangeData.max) {
-      setSidebarFilters(prev => ({
-        ...prev,
-        priceRange: prev.priceRange[0] === 0 && prev.priceRange[1] === 10000
-          ? [priceRange.min, priceRange.max]
-          : prev.priceRange,
-        yearRange: prev.yearRange[0] === 2010 && prev.yearRange[1] === new Date().getFullYear()
-          ? [yearRangeData.min, yearRangeData.max]
-          : prev.yearRange
-      }));
-    }
-  }, [priceRange.min, priceRange.max, yearRangeData.min, yearRangeData.max]);
+  // Sidebar filter state
+  const [sidebarFilters, setSidebarFilters] = useState<SidebarFilters>(defaultSidebarFilters);
 
   const [applyError, setApplyError] = useState('');
 
@@ -323,35 +294,6 @@ export const Cars: React.FC = () => {
     }
   }, [displayCars, sortBy]);
 
-  // Fetch filtered cars when filters change
-  useEffect(() => {
-    // Only fetch if we have price/year range data initialized
-    if (!priceRange.min || !priceRange.max || !yearRangeData.min || !yearRangeData.max) {
-      return;
-    }
-
-    const hasFilters =
-      appliedFilters.make ||
-      appliedFilters.model ||
-      sidebarFilters.priceRange[0] !== priceRange.min ||
-      sidebarFilters.priceRange[1] !== priceRange.max ||
-      sidebarFilters.yearRange[0] !== yearRangeData.min ||
-      sidebarFilters.yearRange[1] !== yearRangeData.max ||
-      sidebarFilters.transmission !== undefined ||
-      sidebarFilters.fuelType !== undefined ||
-      sidebarFilters.seats !== undefined;
-
-    if (hasFilters) {
-      // handleFetchFilteredCars();
-    } else {
-      handleFetchCars();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedFilters.make, appliedFilters.model,
-  sidebarFilters.priceRange, sidebarFilters.yearRange,
-  sidebarFilters.transmission, sidebarFilters.fuelType, sidebarFilters.seats,
-  priceRange.min, priceRange.max, yearRangeData.min, yearRangeData.max]);
-
   const handleFilterChange = (key: string, value: string) => {
     console.log('settings the filter: key = ', key, ' ; value = ', value)
     setFilters(prev => {
@@ -379,9 +321,6 @@ export const Cars: React.FC = () => {
     setApplyError('');
   };
 
-
-  // Validation removed - handled server-side now
-
   const resetFilters = () => {
     setFilters({
       make: '',
@@ -391,25 +330,24 @@ export const Cars: React.FC = () => {
       make: '',
       model: ''
     });
-    setSidebarFilters({
-      priceRange: [priceRange.min, priceRange.max],
-      yearRange: [yearRangeData.min, yearRangeData.max],
-      transmission: 'Any',
-      fuelType: 'Any',
-      seats: 4
-    });
+    setSidebarFilters(defaultSidebarFilters);
     // Clear URL params
     navigate('/cars', { replace: true });
   };
 
   const handleSidebarFilterChange = (key: string, value: any) => {
+    console.log('changing the sidebar filters: key = ', key, ' ; value = ', value)
+    if (value === 'Any')
+      value = undefined
     setSidebarFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const applyFilters = (liveFilters: typeof filters) => {
     console.log('making a request to get the cars from the filters')
-
     console.log('applying the filters: ', liveFilters)
+
+    console.log('sidebarFilters: ', sidebarFilters)
+
     // Validate that at least one filter is set
     const hasFilters =
       liveFilters.make ||
@@ -422,7 +360,11 @@ export const Cars: React.FC = () => {
     }
 
     setApplyError('');
-    setAppliedFilters({ ...liveFilters });
+    setAppliedFilters({
+      make: liveFilters.make,
+      model: liveFilters.model,
+    });
+
     closeAllDropdowns();
 
     // Update URL with search parameters
@@ -440,7 +382,7 @@ export const Cars: React.FC = () => {
 
     // Trigger filtered fetch
     // console.log('should fetch cars after the filters')
-    handleFetchFilteredCars();
+    handleFetchFilteredCars(liveFilters);
   };
 
 
@@ -651,7 +593,7 @@ export const Cars: React.FC = () => {
                     <div className="relative overflow-visible">
                       <div
                         className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : filters.model ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
-                        onClick={() => filters.make && openDropdown('model')}
+                        onClick={() => filters.make && models && openDropdown('model')}
                       >
                         {!filters.make ? 'Selectează marca' : (filters.model || 'Selectează modelul')}
                       </div>
@@ -846,18 +788,23 @@ export const Cars: React.FC = () => {
                     <div>
                       <label className="text-sm font-medium text-gray-900 mb-4 block">Transmission</label>
                       <div className="flex flex-wrap gap-2">
-                        {['Any', 'Manual', 'Automatic'].map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleSidebarFilterChange('transmission', type)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.transmission === type
-                              ? 'bg-theme-500 text-white hover:bg-theme-600'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                          >
-                            {type}
-                          </button>
-                        ))}
+                        {['Any', 'Manual', 'Automatic'].map((type) => {
+                          const value = type === 'Any' ? undefined : type; // store undefined for "Any"
+                          const isActive = sidebarFilters.transmission === value || value === undefined && sidebarFilters.transmission === 'Any';
+
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => handleSidebarFilterChange('transmission', value)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                ? 'bg-theme-500 text-white hover:bg-theme-600'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                              {type}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -865,18 +812,23 @@ export const Cars: React.FC = () => {
                     <div>
                       <label className="text-sm font-medium text-gray-900 mb-4 block">Fuel Type</label>
                       <div className="flex flex-wrap gap-2">
-                        {['Any', 'Petrol', 'Diesel', 'Electric', 'Hybrid'].map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleSidebarFilterChange('fuelType', type)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sidebarFilters.fuelType === type
-                              ? 'bg-theme-500 text-white hover:bg-theme-600'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                          >
-                            {type}
-                          </button>
-                        ))}
+                        {(['Any', ...Object.keys(FUEL_TYPE_MAP)] as FuelTypeUI[]).map((type) => {
+                          const value = type === 'Any' ? undefined : type; // lowercase to match your filters
+                          const isActive = sidebarFilters.fuelType === value || value === undefined && sidebarFilters.fuelType === 'Any';
+
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => handleSidebarFilterChange('fuelType', value)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                ? 'bg-theme-500 text-white hover:bg-theme-600'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                              {type}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -968,213 +920,11 @@ export const Cars: React.FC = () => {
           )}
 
           {/* Rental Options Section */}
-          <div className="mt-16 bg-white rounded-lg border border-gray-200 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Opțiuni de închiriere</h2>
-
-            <p className="text-gray-700 leading-relaxed mb-8">
-              O varietate de opțiuni disponibile pentru activare extinde semnificativ posibilitățile în cadrul închirierii unei mașini de la AUTOHUB. De exemplu, puteți activa asigurarea CASCO, care acoperă toate tipurile de daune ale vehiculului, iar prin activarea serviciului Priority Service beneficiați de procesare prioritară a documentelor și suport prioritar pe tot parcursul închirierii. De asemenea, sunt disponibile opțiuni precum: închirierea scaunelor auto pentru copii, asistență rutieră, livrare la adresa indicată și multe altele.
-            </p>
-
-            <div className="space-y-6">
-              {/* Delivery Option */}
-              <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                  <Car className="w-5 h-5 text-theme-500" />
-                  Preluarea automobilului la adresa convenabilă pentru dvs./dumneavoastră
-                </h3>
-                <p className="text-gray-600 text-sm">Costul se calculează separat și depinde de locul livrării</p>
-              </div>
-
-              {/* Return Option */}
-              <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                  <Car className="w-5 h-5 text-theme-500" />
-                  Returnarea mașinii la adresa convenabilă pentru dumneavoastră
-                </h3>
-                <p className="text-gray-600 text-sm">Prețul se negociază separat și depinde de locul returnării</p>
-              </div>
-
-              {/* Options Grid */}
-              <div className="grid md:grid-cols-2 gap-4 mt-6">
-                {/* Unlimited KM */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                      <Gauge className="w-5 h-5 text-theme-500" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Kilometraj nelimitat</h4>
-                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 50% mai mare</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Speed Limit Increase */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-theme-500" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Creșterea limitei de viteză</h4>
-                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Personal Driver */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <UserRound className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Șofer personal</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 800 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Priority Service */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Star className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Priority Service</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 1000 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tire Insurance */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-theme-500" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Asigurare pentru anvelope și parbriz</h4>
-                      <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Child Seat */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Baby className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Scaun auto pentru copii</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SIM Card */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Wifi className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Cartelă SIM cu internet</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Roadside Assistance */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Wrench className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Asistență rutieră</h4>
-                      <p className="text-gray-700 font-semibold text-sm">din 500 MDL pe zi</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <RentalOptionsSection />
 
           {/* Contract Section */}
-          <div className="mt-8 bg-white rounded-lg border border-gray-200 p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Contract</h2>
+          <ContractSection />
 
-            <p className="text-gray-700 leading-relaxed mb-6">
-              Compania noastră oferă servicii de închiriere auto pe teritoriul Republicii Moldova, respectând cu strictețe legislația în vigoare. Interacțiunea cu clienții se bazează pe Contractul de închiriere, care garantează protecția juridică a intereselor acestora.
-            </p>
-
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Condiții și cerințe</h3>
-            <p className="text-gray-700 mb-4">
-              Pentru a închiria o mașină, trebuie îndeplinite următoarele cerințe și acceptate următoarele condiții:
-            </p>
-
-            <ul className="space-y-3 text-gray-700">
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Vârsta minimă a șoferului: 21 ani.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Permis de conducere valabil, categoria B.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Experiență de conducere de cel puțin 3 ani.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Deținerea buletinului de identitate.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Achitarea integrală (100%) a taxei de închiriere pentru mașina selectată.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Depunerea unui depozit conform valorii stabilite în Contract. Depozitul reprezintă o asigurare a îndeplinirii obligațiilor de către Chiriaș și este returnat după 10 zile de la predarea mașinii, în absența încălcărilor majore.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Toate amenzile primite în timpul utilizării vehiculului revin în responsabilitatea șoferului.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>În lipsa poliței CASCO, responsabilitatea pentru accidente revine șoferului.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Limita zilnică de parcurs este de 200 km. În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Plata se poate efectua în numerar, prin transfer bancar sau cu cardul.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Clientul are dreptul la recalcularea costului în caz de returnare anticipată a vehiculului.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Prelungirea Contractului de închiriere este posibilă în format la distanță, dar nu este garantată.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Este posibilă livrarea sau returnarea mașinii la adresa convenabilă. Costul se confirmă la telefon +373 79 75-22-22.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-theme-500 mt-2"></span>
-                <span>Înainte de semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 0 lei. După semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 500 lei.</span>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>

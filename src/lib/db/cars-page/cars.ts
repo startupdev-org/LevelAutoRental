@@ -13,7 +13,7 @@ export interface CarFilters {
     maxYear?: number;
     drivetrain?: string;
     transmission?: 'Automatic' | 'Manual';
-    fuelType?: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol';
+    fuelType?: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' | undefined;
     seats?: number;
     status?: string;
 }
@@ -77,7 +77,7 @@ export async function fetchCarsMake() {
  */
 export async function fetchCarsModels(make: string): Promise<string[]> {
     try {
-        console.log('fetching model for car make: ', make);
+        // console.log('fetching model for car make: ', make);
         const { data, error } = await supabase
             .from("Cars")
             .select("model")
@@ -88,7 +88,7 @@ export async function fetchCarsModels(make: string): Promise<string[]> {
             return [];
         }
 
-        console.log('the fetched models are: ', data)
+        // console.log('the fetched models are: ', data)
 
         return data?.map(item => item.model) ?? [];
     } catch (err) {
@@ -126,7 +126,7 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
         if (filters.model) {
             // Since model is stored as part of make field (e.g., "Mercedes AMG C43"),
             // we search in the make field for the model
-            query = query.ilike('make', `%${filters.model}%`);
+            query = query.ilike('model', `%${filters.model}%`);
         }
 
         // Apply price range filter
@@ -176,9 +176,11 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
         }
 
         // Apply seats filter
-        if (filters.seats !== undefined) {
+        if (typeof filters.seats === 'number' &&
+            Number.isFinite(filters.seats)) {
             query = query.eq('seats', filters.seats);
         }
+
 
         // Apply status filter (if specific status requested)
         if (filters.status && filters.status !== 'Any' && filters.status !== 'All') {
