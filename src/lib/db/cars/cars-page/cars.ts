@@ -98,7 +98,6 @@ export async function fetchCarsModels(make: string): Promise<string[]> {
     }
 }
 
-
 export async function fetchFilteredCarsWithPhotos(filters: CarFilters): Promise<(Car & { mainImage?: string })[]> {
     try {
         const filteredCars = await fetchFilteredCars(filters);
@@ -231,5 +230,32 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
         console.error('Unexpected error in fetchFilteredCars:', err);
         return [];
     }
+}
+
+
+export async function fetchCarsWithPhotos(numberOfCars: number): Promise<(Car[])> {
+    const { data: cars, error } = await supabase
+        .from("Cars")
+        .select("*")
+        .limit(numberOfCars);
+
+    if (error || !cars) {
+        console.error(error);
+        return [];
+    }
+    const carsWithImages = await Promise.all(
+        cars.map(async (car) => {
+            // Assume folder name is based on the car name in lowercase and dash-separated
+            const carName = car.make + ' ' + car.model;
+            const { mainImage, photoGallery } = await fetchImagesByCarName(carName)
+            return {
+                ...car,
+                image_url: mainImage,
+                photo_gallery: photoGallery
+            };
+        })
+    );
+
+    return carsWithImages;
 }
 

@@ -10,12 +10,12 @@ import {
     Clock
 } from 'lucide-react';
 import { BiSolidHeart } from "react-icons/bi";
-import { CarNotFound } from './CarNotFound';
+import { CarNotFound } from '../sections/CarNotFound';
 import { RentalRequestModal } from '../../../components/modals/RentalRequestModal';
-import { ContractSection } from '../section/ContractSection';
+import { ContractSection } from '../sections/ContractSection';
 import { Car } from '../../../types';
 import { fetchCarById } from '../../../lib/cars';
-import { RentalOptionsSection } from '../section/RentalOptionsSection';
+import { RentalOptionsSection } from '../sections/RentalOptionsSection';
 
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();

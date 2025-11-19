@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useInView } from '../../hooks/useInView';
 import { Car } from '../../types';
 import { fadeInUp } from '../../utils/animations';
-import { Card } from '../../components/ui/Card';
+import { Card } from '../ui/Card';
 import { useNavigate } from 'react-router-dom';
 
 

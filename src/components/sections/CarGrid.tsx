@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useInView } from '../../hooks/useInView';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Button } from '../ui/Button';
-import { CarCard } from '../../pages/cars/CarCard';
+import { CarCard } from '../car/CarCard';
 import { Car } from '../../types';
 
 

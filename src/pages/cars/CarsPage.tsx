@@ -4,12 +4,12 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Search, Filter, X } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
-import { CarCard } from './CarCard';
+import { CarCard } from '../../components/car/CarCard';
 import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels, fetchFilteredCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
 import { Car as CarType } from '../../types';
 
-import { RentalOptionsSection } from './section/RentalOptionsSection'
-import { ContractSection } from './section/ContractSection';
+import { RentalOptionsSection } from './sections/RentalOptionsSection'
+import { ContractSection } from './sections/ContractSection';
 import { FUEL_TYPE_MAP, FuelTypeUI } from '../../constants';
 
 // Display Car type for CarCard component
