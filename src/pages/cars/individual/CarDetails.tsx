@@ -214,30 +214,37 @@ export const CarDetails: React.FC = () => {
         const rentalDays = days; // Use full days for discount calculation
         const totalDays = days + (hours / 24); // Use total days for final calculation
         
-        // Base price calculation (same as Calculator.tsx)
+        // Get price with car discount applied first
+        const basePricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
+        const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
+        
+        // Base price calculation (same as Calculator.tsx) - using discounted price
         let basePrice = 0;
         
         if (rentalDays >= 8) {
-            basePrice = car.pricePerDay * 0.96 * rentalDays; // -4% discount
+            basePrice = pricePerDay * 0.96 * rentalDays; // -4% discount
         } else if (rentalDays >= 4) {
-            basePrice = car.pricePerDay * 0.98 * rentalDays; // -2% discount
+            basePrice = pricePerDay * 0.98 * rentalDays; // -2% discount
         } else {
-            basePrice = car.pricePerDay * rentalDays;
+            basePrice = pricePerDay * rentalDays;
         }
         
         // Add hours portion if there are extra hours
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * car.pricePerDay;
+            const hoursPrice = (hours / 24) * pricePerDay;
             basePrice += hoursPrice;
         }
         
         const totalPrice = Math.round(basePrice);
-        const pricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : car.pricePerDay;
+        const finalPricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : pricePerDay;
 
         return {
             days,
             hours,
-            pricePerDay: pricePerDay,
+            pricePerDay: finalPricePerDay,
             totalPrice
         };
     };
@@ -650,12 +657,29 @@ export const CarDetails: React.FC = () => {
                             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                                 {/* Price Display */}
                                 <div className="mb-4">
-                                    <div className="text-4xl font-bold text-gray-900 mb-2">
-                                        {car.pricePerDay.toLocaleString('ro-RO')} MDL <span className="text-lg font-normal text-gray-600">pe zi</span>
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                        {(car.pricePerDay / 19.82).toFixed(2)} EUR / {(car.pricePerDay / 17.00).toFixed(2)} USD pe zi
-                                    </div>
+                                    {(() => {
+                                        const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
+                                        const discount = (car as any).discount_percentage || car.discount_percentage || 0;
+                                        const finalPrice = discount > 0 
+                                            ? basePrice * (1 - discount / 100)
+                                            : basePrice;
+                                        
+                                        return (
+                                            <>
+                                                <div className="text-4xl font-bold text-gray-900 mb-2">
+                                                    {finalPrice.toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MDL <span className="text-lg font-normal text-gray-600">pe zi</span>
+                                                </div>
+                                                {discount > 0 && (
+                                                    <div className="text-sm text-gray-400 line-through mb-1">
+                                                        {basePrice.toLocaleString('ro-RO')} MDL
+                                                    </div>
+                                                )}
+                                                <div className="text-sm text-gray-500">
+                                                    {(finalPrice / 19.82).toFixed(2)} EUR / {(finalPrice / 17.00).toFixed(2)} USD pe zi
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Title */}

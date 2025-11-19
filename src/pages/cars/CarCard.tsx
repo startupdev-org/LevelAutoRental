@@ -292,9 +292,29 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                     {/* Price and CTA */}
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-gray-800">{car.pricePerDay} MDL</span>
-                            <span className="text-gray-500 text-sm">/zi</span>
+                        <div className="flex flex-col gap-0.5">
+                            {(() => {
+                                const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
+                                const discount = (car as any).discount_percentage || car.discount_percentage || 0;
+                                const finalPrice = discount > 0 
+                                    ? basePrice * (1 - discount / 100)
+                                    : basePrice;
+                                
+                                return discount > 0 ? (
+                                    <>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-xl font-bold text-gray-800">{finalPrice.toFixed(0)} MDL</span>
+                                            <span className="text-gray-500 text-sm">/zi</span>
+                                        </div>
+                                        <span className="text-sm text-gray-400 line-through">{basePrice} MDL</span>
+                                    </>
+                                ) : (
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-xl font-bold text-gray-800">{basePrice} MDL</span>
+                                        <span className="text-gray-500 text-sm">/zi</span>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Rating */}
