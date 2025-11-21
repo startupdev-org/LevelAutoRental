@@ -5,7 +5,7 @@ import { Search, Filter, X } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from '../../components/car/CarCard';
-import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels, fetchFilteredCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
+import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels, fetchFilteredCarsWithPhotos, fetchCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
 import { Car as CarType } from '../../types';
 
 import { RentalOptionsSection } from './sections/RentalOptionsSection'
@@ -45,6 +45,22 @@ export const Cars: React.FC = () => {
 
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
 
+  const NUMBER_OF_CARS = 4; // or whatever number you want
+
+  async function handleFetchCarsWithPhotos() {
+    setLoading(true);
+    try {
+      const fetchedCars = await fetchCarsWithPhotos(NUMBER_OF_CARS);
+      setCars(fetchedCars);
+      console.log('Fetched cars with photos:', fetchedCars);
+    } catch (error) {
+      console.error('Error fetching cars with photos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
   async function handleFetchCarsModel(make: string) {
     // setLoading(true);
     try {
@@ -57,7 +73,6 @@ export const Cars: React.FC = () => {
       setLoading(false);
     }
   }
-
 
   async function handleFetchCars() {
     setLoading(true);
@@ -113,7 +128,8 @@ export const Cars: React.FC = () => {
   }
 
   useEffect(() => {
-    handleFetchCars();
+    handleFetchCarsWithPhotos();
+    // handleFetchCars();
     handleFetchCarsMake();
   }, []);
 
@@ -296,6 +312,8 @@ export const Cars: React.FC = () => {
     setSidebarFilters(defaultSidebarFilters);
     // Clear URL params
     navigate('/cars', { replace: true });
+
+    handleFetchCarsWithPhotos()
   };
 
   const handleSidebarFilterChange = (key: string, value: any) => {
@@ -347,7 +365,6 @@ export const Cars: React.FC = () => {
     // console.log('should fetch cars after the filters')
     handleFetchFilteredCars(liveFilters);
   };
-
 
   return (
     <div className="min-h-screen bg-gray-50">
