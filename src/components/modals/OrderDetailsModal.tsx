@@ -7,6 +7,7 @@ import { cars as staticCars } from '../../data/cars';
 import { generateContractFromOrder } from '../../lib/contract';
 import { ContractCreationModal } from './ContractCreationModal';
 import { fetchCars } from '../../lib/cars';
+import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
 
@@ -47,23 +48,50 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         }
     };
     const [cars, setCars] = useState<Car[]>(carsProp || []);
+    const [car, setCar] = useState<Car | undefined>(undefined);
 
     // Fetch cars if not provided as prop
     useEffect(() => {
-        if (!carsProp && isOpen) {
-            const loadCars = async () => {
-                try {
+        const loadCars = async () => {
+            try {
+                let carsToUse: Car[] = [];
+                
+                if (carsProp && carsProp.length > 0) {
+                    // Use cars from prop (they should already have images)
+                    carsToUse = carsProp;
+                } else if (isOpen) {
+                    // Fetch cars from database
                     const fetchedCars = await fetchCars();
-                    setCars(fetchedCars.length > 0 ? fetchedCars : staticCars);
-                } catch (error) {
-                    console.error('Error loading cars:', error);
-                    setCars(staticCars);
+                    carsToUse = fetchedCars.length > 0 ? fetchedCars : staticCars;
+                } else {
+                    return; // Don't load if modal is closed and no prop provided
                 }
-            };
-            loadCars();
-        } else if (carsProp) {
-            setCars(carsProp);
-        }
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    carsToUse.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+                setCars(carsProp || staticCars);
+            }
+        };
+        
+        loadCars();
     }, [carsProp, isOpen]);
 
     // Fetch original request options if request_id exists
@@ -182,40 +210,98 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         }
     }, [isOpen, order]);
 
-    if (!order) return null;
-
     // Find car by matching carId (handle both string and number types)
-    const car = cars.find(c => {
-        if (!order.carId) return false;
-        
-        // Normalize both IDs to numbers for comparison
-        const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
-        const orderCarIdNum = typeof order.carId === 'number' 
-            ? order.carId 
-            : parseInt(order.carId.toString(), 10);
-        
-        // Compare as numbers
-        if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
-            return true;
+    useEffect(() => {
+        if (!order) {
+            setCar(undefined);
+            return;
         }
         
-        // Fallback: compare as strings
-        const carIdStr = c.id.toString();
-        const orderCarIdStr = order.carId.toString();
-        return carIdStr === orderCarIdStr;
-    });
-    
-    // Debug logging
-    if (!car && order.carId && cars.length > 0) {
-        console.warn('OrderDetailsModal: Car not found', {
-            orderCarId: order.carId,
-            orderCarIdType: typeof order.carId,
-            orderCarIdValue: order.carId,
-            availableCarIds: cars.map(c => ({ id: c.id, idType: typeof c.id, idValue: c.id })),
-            carsLength: cars.length,
-            orderCarName: order.carName
-        });
-    }
+        const findCar = async () => {
+            // First, try to find in cars array
+            let foundCar = cars.find(c => {
+                if (!order.carId) return false;
+                
+                // Normalize both IDs to numbers for comparison
+                const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
+                const orderCarIdNum = typeof order.carId === 'number' 
+                    ? order.carId 
+                    : parseInt(order.carId.toString(), 10);
+                
+                // Compare as numbers
+                if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
+                    return true;
+                }
+                
+                // Fallback: compare as strings
+                const carIdStr = c.id.toString();
+                const orderCarIdStr = order.carId.toString();
+                return carIdStr === orderCarIdStr;
+            });
+            
+            // If car not found in cars array, fetch from database
+            if (!foundCar && order.carId) {
+                console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
+                    orderCarId: order.carId,
+                    orderCarName: order.carName
+                });
+                
+                try {
+                    const { supabase } = await import('../../lib/supabase');
+                    const carIdMatch = typeof order.carId === 'number' 
+                        ? order.carId 
+                        : parseInt(order.carId.toString(), 10);
+                    
+                    const { data: carData, error } = await supabase
+                        .from('Cars')
+                        .select('*')
+                        .eq('id', carIdMatch)
+                        .single();
+                    
+                    if (!error && carData) {
+                        // Map database row to Car type
+                        foundCar = {
+                            id: carData.id,
+                            make: carData.make,
+                            model: carData.model,
+                            name: carData.name || undefined,
+                            year: carData.year || new Date().getFullYear(),
+                            price_per_day: carData.price_per_day,
+                            discount_percentage: carData.discount_percentage || undefined,
+                            category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
+                            image_url: carData.image_url || undefined,
+                            photo_gallery: carData.photo_gallery || undefined,
+                            seats: carData.seats || undefined,
+                            transmission: carData.transmission as 'Automatic' | 'Manual' || undefined,
+                            body: carData.body as 'Coupe' | 'Sedan' | 'SUV' || undefined,
+                            fuel_type: carData.fuel_type as 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' || undefined,
+                            features: carData.features || undefined,
+                            rating: carData.rating || undefined,
+                            reviews: carData.reviews || undefined,
+                            status: carData.status || undefined,
+                            drivetrain: carData.drivetrain || undefined,
+                        } as Car & { name?: string };
+                        
+                        // Fetch images from storage for this car
+                        if (foundCar) {
+                            const carName = (foundCar as any).name || `${foundCar.make} ${foundCar.model}`;
+                            const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                            foundCar.image_url = mainImage || foundCar.image_url;
+                            foundCar.photo_gallery = photoGallery.length > 0 ? photoGallery : foundCar.photo_gallery;
+                        }
+                    }
+                } catch (err) {
+                    console.error(`OrderDetailsModal: Error fetching car ${order.carId} from database:`, err);
+                }
+            }
+            
+            setCar(foundCar);
+        };
+        
+        findCar();
+    }, [order, cars, order?.carId]);
+
+    if (!order) return null;
     const startDate = new Date(order.pickupDate);
     const endDate = new Date(order.returnDate);
 
