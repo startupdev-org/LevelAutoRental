@@ -742,9 +742,60 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
 
     const orders: OrderDisplay[] = [];
 
-    // Process borrow requests
-    requests.forEach((request) => {
-      const car = cars.find((c) => c.id.toString() === request.car_id);
+    // Process borrow requests - use Promise.all to handle async car fetching
+    const processedRequests = await Promise.all(requests.map(async (request) => {
+      const carIdMatch = typeof request.car_id === 'number' 
+        ? request.car_id 
+        : parseInt(request.car_id.toString(), 10);
+
+      let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === request.car_id?.toString());
+      
+      // If car not found (might be deleted), fetch it directly from database
+      if (!car && request.car_id) {
+        try {
+          const { data: carData, error } = await supabase
+            .from('Cars')
+            .select('*')
+            .eq('id', carIdMatch)
+            .single();
+          
+          if (!error && carData) {
+            // Map database row to Car type
+            car = {
+              id: carData.id,
+              make: carData.make,
+              model: carData.model,
+              name: carData.name || undefined,
+              year: carData.year || new Date().getFullYear(),
+              price_per_day: carData.price_per_day,
+              discount_percentage: carData.discount_percentage || undefined,
+              category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
+              image_url: carData.image_url || undefined,
+              photo_gallery: carData.photo_gallery || undefined,
+              seats: carData.seats || undefined,
+              transmission: carData.transmission as 'Automatic' | 'Manual' || undefined,
+              body: carData.body as 'Coupe' | 'Sedan' | 'SUV' || undefined,
+              fuel_type: carData.fuel_type as 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' || undefined,
+              features: carData.features || undefined,
+              rating: carData.rating || undefined,
+              reviews: carData.reviews || undefined,
+              status: carData.status || undefined,
+              drivetrain: carData.drivetrain || undefined,
+            } as Car & { name?: string };
+            
+            // Fetch images from storage for this car
+            if (car) {
+              const carName = (car as any).name || `${car.make} ${car.model}`;
+              console.log(`[fetchAllOrders] Fetching images for car: "${carName}" (id: ${car.id})`);
+              const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+              car.image_url = mainImage || car.image_url;
+              car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching car ${carIdMatch} from database:`, err);
+        }
+      }
       const profile = profiles.get(request.user_id);
       const email = profile?.email || request.user?.email || '';
       const firstName = profile?.firstName || '';
@@ -756,7 +807,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
           : (email ? email.split('@')[0] : '')
           || `User ${request.user_id.slice(0, 8)}`;
 
-      orders.push({
+      return {
         id: request.id,
         type: 'request',
         customerName: userName,
@@ -773,8 +824,10 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: request.created_at,
         carId: request.car_id,
         userId: request.user_id,
-      });
-    });
+      };
+    }));
+    
+    orders.push(...processedRequests);
 
     // Process rentals - use Promise.all to handle async car fetching
     const processedRentals = await Promise.all(rentals.map(async (rental) => {
@@ -906,9 +959,60 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
 
     const orders: OrderDisplay[] = [];
 
-    // Process borrow requests
-    requests.forEach((request, index) => {
-      const car = cars.find((c) => c.id.toString() === request.car_id);
+    // Process borrow requests - use Promise.all to handle async car fetching
+    const processedRequests = await Promise.all(requests.map(async (request) => {
+      const carIdMatch = typeof request.car_id === 'number' 
+        ? request.car_id 
+        : parseInt(request.car_id.toString(), 10);
+
+      let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === request.car_id?.toString());
+      
+      // If car not found (might be deleted), fetch it directly from database
+      if (!car && request.car_id) {
+        try {
+          const { data: carData, error } = await supabase
+            .from('Cars')
+            .select('*')
+            .eq('id', carIdMatch)
+            .single();
+          
+          if (!error && carData) {
+            // Map database row to Car type
+            car = {
+              id: carData.id,
+              make: carData.make,
+              model: carData.model,
+              name: carData.name || undefined,
+              year: carData.year || new Date().getFullYear(),
+              price_per_day: carData.price_per_day,
+              discount_percentage: carData.discount_percentage || undefined,
+              category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
+              image_url: carData.image_url || undefined,
+              photo_gallery: carData.photo_gallery || undefined,
+              seats: carData.seats || undefined,
+              transmission: carData.transmission as 'Automatic' | 'Manual' || undefined,
+              body: carData.body as 'Coupe' | 'Sedan' | 'SUV' || undefined,
+              fuel_type: carData.fuel_type as 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' || undefined,
+              features: carData.features || undefined,
+              rating: carData.rating || undefined,
+              reviews: carData.reviews || undefined,
+              status: carData.status || undefined,
+              drivetrain: carData.drivetrain || undefined,
+            } as Car & { name?: string };
+            
+            // Fetch images from storage for this car
+            if (car) {
+              const carName = (car as any).name || `${car.make} ${car.model}`;
+              console.log(`[fetchBorrowRequestsForDisplay] Fetching images for car: "${carName}" (id: ${car.id})`);
+              const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+              car.image_url = mainImage || car.image_url;
+              car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching car ${carIdMatch} from database:`, err);
+        }
+      }
       
       // Use customer data directly from request (new schema) or fall back to profile/user data
       const email = (request as any).customer_email || request.user?.email || '';
@@ -950,7 +1054,7 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
         }
       }
 
-      orders.push({
+      return {
         id: request.id,
         type: 'request',
         customerName: userName,
@@ -973,8 +1077,10 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
         userId: request.user_id,
         comment: (request as any).comment || undefined,
         options: options || {},
-      } as OrderDisplay & { comment?: string; options?: any });
-    });
+      } as OrderDisplay & { comment?: string; options?: any };
+    }));
+    
+    orders.push(...processedRequests);
 
     // Sort by creation date (newest first)
     return orders.sort((a, b) =>
