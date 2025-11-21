@@ -7,6 +7,7 @@ import {
     subMonths,
 } from "date-fns";
 import { fetchCars } from "../../../lib/cars";
+import { fetchImagesByCarName } from "../../../lib/db/cars/cars";
 import { Car } from "../../../types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, User, Clock, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
@@ -52,12 +53,30 @@ export const CalendarPage: React.FC<Props> = () => {
     const [sortBy, setSortBy] = useState<'time' | 'customer' | 'car' | 'status' | null>('time');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-    // Fetch cars from Supabase
+    // Fetch cars from Supabase and load images from storage
     useEffect(() => {
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                setCars(fetchedCars);
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
             }
@@ -1194,6 +1213,7 @@ export const CalendarPage: React.FC<Props> = () => {
                     setSelectedOrder(null);
                 }}
                 order={selectedOrder}
+                cars={cars}
             />
         </div>
     );

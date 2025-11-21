@@ -10,6 +10,7 @@ import { Save, X, Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { fetchCars } from '../../../lib/cars';
+import { fetchImagesByCarName } from '../../../lib/db/cars/cars';
 import { Car } from '../../../types';
 import { useNotification } from '../../../components/ui/NotificationToaster';
 import { useTranslation } from 'react-i18next';
@@ -309,7 +310,26 @@ export const OrdersViewSection: React.FC = () => {
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                setCars(fetchedCars.length > 0 ? fetchedCars : staticCars);
+                const carsToUse = fetchedCars.length > 0 ? fetchedCars : staticCars;
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    carsToUse.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
                 setCars(staticCars);
