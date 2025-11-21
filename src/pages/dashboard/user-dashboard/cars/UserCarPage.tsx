@@ -356,6 +356,12 @@ const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: onExit }
 
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
+    const mainImage = selectedIndex !== null
+        ? car.photo_gallery?.[selectedIndex]   // optional chaining înainte de index
+        : car.photo_gallery?.[0];
+
+
+
 
     return (
         <div className="space-y-6">
@@ -463,25 +469,40 @@ const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: onExit }
                         </div>
                     </div>
                 </div>
+
                 {/* Images */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
-                    <div className="flex flex-wrap gap-2">
-                        {car.photo_gallery && car.photo_gallery.length > 0 && (
-                            car.photo_gallery.map((url, index) => (
+                {mainImage && (
+                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
+
+                        {/* Preview mare */}
+                        <div className="w-full flex justify-center mb-4">
+                            <img
+                                src={mainImage}
+                                srcSet={`${mainImage}?w=320 320w, ${mainImage}?w=640 640w, ${mainImage}?w=800 800w`}
+                                sizes="(max-width: 768px) 320px, (max-width: 1024px) 480px, 640px"
+                                alt="Selected car image"
+                                className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-cover rounded-lg border border-white/20"
+                            />
+                        </div>
+
+                        {/* Gallery mică */}
+                        <div className="flex flex-wrap gap-2 justify-center">
+                            {car.photo_gallery && car.photo_gallery.length > 0 && car.photo_gallery.map((url, index) => (
                                 <img
                                     key={index}
                                     src={url}
                                     srcSet={`${url}?w=160 160w, ${url}?w=320 320w, ${url}?w=480 480w`}
                                     sizes="(max-width: 768px) 64px, (max-width: 1024px) 96px, 120px"
                                     alt={`Gallery image ${index + 1}`}
-                                    className={`w-20 h-20 md:w-32 md:h-32 lg:w-30 lg:h-30 object-cover rounded-lg border ${selectedIndex === index ? "border-blue-500 ring-2 ring-blue-400" : "border-white/10"}`}
+                                    className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-cover rounded-lg border 
+                    ${selectedIndex === index ? "border-blue-500 ring-2 ring-blue-400" : "border-white/10"}`}
                                     onClick={() => setSelectedIndex(index)}
                                 />
-                            ))
-                        )}
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Features */}
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
@@ -538,20 +559,6 @@ const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: onExit }
                     </button>
                 </div>
             </form >
-
-            {selectedIndex !== null && car.photo_gallery && car.photo_gallery.length > 0 && (
-                <div className="mt-4">
-                    <p className="text-gray-300">Selected Image:</p>
-                    <img
-                        src={car.photo_gallery[selectedIndex]}
-                        srcSet={`${car.photo_gallery[selectedIndex]}?w=320 320w, ${car.photo_gallery[selectedIndex]}?w=640 640w`}
-                        sizes="(max-width: 768px) 128px, (max-width: 1024px) 256px, 320px"
-                        alt={`Selected gallery image`}
-                        className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-lg border border-white/20 mt-2"
-                    />
-                </div>
-            )}
-
         </div >
     );
 };
