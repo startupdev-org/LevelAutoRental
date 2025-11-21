@@ -1,6 +1,6 @@
 import { supabase } from '../../../supabase';
-import { Car } from '../../../../types';
-import { fetchImagesByCarName } from '../cars';
+import { Car, CarFilterOptions } from '../../../../types';
+import { fetchCarWithImagesById, fetchImagesByCarName } from '../cars';
 
 /**
  * Filter interface for car queries
@@ -232,18 +232,37 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
     }
 }
 
+/**
+ * Fetch cars just with the main image
+ * @returns 
+ */
+export async function fetchCarsWithMainImage(): Promise<(Car[])> {
+    const cars = await fetchCars();
 
-export async function fetchCarsWithPhotos(numberOfCars: number): Promise<(Car[])> {
-    const { data: cars, error } = await supabase
-        .from("Cars")
-        .select("*")
-        .order('reviews', { ascending: true }) // temporary (should be deleted or modified)
-        .limit(numberOfCars);
+    const carsWithImages = await Promise.all(
+        cars.map(async (car) => {
+            // Assume folder name is based on the car name in lowercase and dash-separated
+            const carName = car.make + ' ' + car.model;
+            const { mainImage } = await fetchImagesByCarName(carName)
+            return {
+                ...car,
+                image_url: mainImage,
+            };
+        })
+    );
 
-    if (error || !cars) {
-        console.error(error);
-        return [];
-    }
+    console.log('cars with main image: ', carsWithImages)
+
+    return carsWithImages;
+}
+
+/**
+ * Fetch cars just with full photo gallery
+ *  
+ */
+export async function fetchCarsWithPhotos(): Promise<(Car[])> {
+    const cars = await fetchCars();
+
     const carsWithImages = await Promise.all(
         cars.map(async (car) => {
             // Assume folder name is based on the car name in lowercase and dash-separated
@@ -257,6 +276,52 @@ export async function fetchCarsWithPhotos(numberOfCars: number): Promise<(Car[])
         })
     );
 
+    console.log('cars with images: ', carsWithImages)
     return carsWithImages;
 }
 
+export async function fetchCarsWithMainImageFiltered(filters: CarFilterOptions): Promise<Car[]> {
+    console.log('the filters are: ', filters)
+
+    let query = supabase.from('Cars').select('*');
+
+    if (filters.searchQuery) {
+        const search = `%${filters.searchQuery}%`;
+        query = query.or(`make.ilike.${search},model.ilike.${search}`);
+    }
+
+    if (filters.status !== null) {
+        query = query.eq("status", filters.status)
+    }
+
+    // Apply sorting
+    if (filters.sortBy === "price") {
+        query = query.order("price_per_day", { ascending: filters.sortOrder === "asc" });
+    }
+
+    if (filters.sortBy === "year") {
+        query = query.order("year", { ascending: filters.sortOrder === "asc" });
+    }
+
+    const { data: cars, error } = await query;
+
+    if (error) {
+        console.error('Error fetching filtered cars:', error);
+        return [];
+    }
+
+    // Attach images
+    const carsWithImages = await Promise.all(
+        cars.map(async (car) => {
+            const carName = `${car.make} ${car.model}`;
+            const { mainImage } = await fetchImagesByCarName(carName);
+
+            return {
+                ...car,
+                image_url: mainImage,
+            };
+        })
+    );
+
+    return carsWithImages;
+}

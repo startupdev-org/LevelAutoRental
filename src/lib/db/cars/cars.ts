@@ -4,7 +4,7 @@ import { Car } from '../../../types';
 /**
  * Fetch car by id
  */
-export async function fetchCarById(carId: number): Promise<Car | null> {
+export async function fetchCarById(carId: string): Promise<Car | null> {
     console.log('fetching car by id from database');
     try {
         const { data, error } = await supabase
@@ -106,7 +106,6 @@ export async function fetchImages() {
     }
 }
 
-
 /**
  * Fetch main image + gallery images for a given car name.
  * Example carName: "Audi Q7"
@@ -175,7 +174,23 @@ export async function fetchImagesByCarName(
     }
 }
 
+export async function fetchCarWithImagesById(
+    carId: string
+): Promise<Car> {
+    const car = await fetchCarById(carId);
 
+    if (!car) {
+        throw new Error(`Car with id ${carId} not found`);
+    }
+
+    const carName = `${car.make} ${car.model}`;
+    const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+
+    car.image_url = mainImage;
+    car.photo_gallery = photoGallery;
+
+    return car;
+}
 
 
 /**

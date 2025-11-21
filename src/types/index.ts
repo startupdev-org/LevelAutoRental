@@ -83,6 +83,12 @@ export interface Orders {
 
   total_amount: string,
 
-
   status: string
+}
+
+export interface CarFilterOptions {
+  searchQuery?: string;
+  sortBy: 'price' | 'year' | 'status' | null;
+  sortOrder: 'asc' | 'desc';
+  status: 'available' | 'borrowed' | null;
 }

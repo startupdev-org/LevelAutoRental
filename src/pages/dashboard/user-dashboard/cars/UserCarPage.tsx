@@ -1,105 +1,57 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Search,
-    X,
     ArrowUpDown,
     ArrowUp,
     ArrowDown,
     Car as CarIcon,
 } from 'lucide-react';
-import { Car, Car as CarType } from '../../../../types';
-
-import { fetchCars, fetchImages, fetchMainImages } from "../../../../lib/db/cars/cars";
+import { Car, CarFilterOptions, Car as CarType } from '../../../../types';
+import { fetchCarsWithMainImageFiltered, fetchCarsWithPhotos } from '../../../../lib/db/cars/cars-page/cars';
+import { fetchCarWithImagesById } from '../../../../lib/db/cars/cars';
 
 
 // Cars Management View Component
 export const CarsView: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
-    const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState<string>('all');
-    const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | null>(null);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [viewingCar, setViewingCarDetials] = useState<CarType | null>(null);
+    const [viewingCar, setViewingCarDetails] = useState<Car | null>(null);
     const [cars, setCars] = useState<CarType[]>([]);
 
-    const [imageURL, setImageURL] = useState('');
-    const [imagesURLs, setImagesURLs] = useState([]);
-    const [mainImagesURLs, setMainImagesURLs] = useState<string[]>([]);
+    const [status, setStatus] = useState<'available' | 'borrowed' | null>(null);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+
 
 
     async function handleFetchCars() {
-        const cars = await fetchCars();
+        const cars = await fetchCarsWithPhotos();
         setCars(cars);
     }
 
-    async function handleFetchMainImages() {
-        const mainImagesURLs = await fetchMainImages();
-        // console.log('main images: ', mainImagesURLs)
-        setMainImagesURLs(mainImagesURLs)
-    }
+    async function handleFetchCarsWithSortByFilters() {
+        const filters = getCurrentFilters();
+        console.log('fetching info with current filters: ', filters)
 
-    async function handelFetchImage() {
-        const result = await fetchImages();
-        // console.log('image URLs: ', result)
-        // console.log('result.url: ', result.publicUrl)
-        // setImageURL(result);
+        const cars = await fetchCarsWithMainImageFiltered(filters);
+        setCars(cars);
     }
 
     useEffect(() => {
         console.log('fetching data')
         handleFetchCars();
-        handelFetchImage();
-        handleFetchMainImages();
     }, []);
 
-    const getCarStatus = (car: CarType): number => {
-        if (car.status !== 'available') return 1;
-        else return 1; // Reserved
-        return 0; // Available
-    };
+    useEffect(() => {
+        handleFetchCarsWithSortByFilters();
+    }, [filterCategory, sortBy, sortOrder, searchQuery, status]);
 
-
-    // Filter and sort cars
-    const filteredCars = useMemo(() => {
-        let filtered = cars.filter(car => {
-            // Safe search by make + model
-            const carLabel = `${car.make ?? ""} ${car.model ?? ""}`.toLowerCase();
-            const search = (searchQuery ?? "").toLowerCase();
-
-            const matchesSearch = carLabel.includes(search);
-            const matchesCategory =
-                filterCategory === "all" ||
-                (car.category ?? "") === filterCategory;
-
-            return matchesSearch && matchesCategory;
-        });
-
-        // Sorting
-        filtered.sort((a, b) => {
-            if (sortBy === "price") {
-                const diff = (a.price_per_day ?? 0) - (b.price_per_day ?? 0);
-                return sortOrder === "asc" ? diff : -diff;
-            } else if (sortBy === "year") {
-                const diff = (a.year ?? 0) - (b.year ?? 0);
-                return sortOrder === "asc" ? diff : -diff;
-            } else if (sortBy === "status") {
-                const statusA = getCarStatus(a);
-                const statusB = getCarStatus(b);
-                const diff = statusA - statusB;
-                return sortOrder === "asc" ? diff : -diff;
-            } else {
-                // Default: sort by status (status)
-                const statusA = getCarStatus(a);
-                const statusB = getCarStatus(b);
-                return statusA - statusB;
-            }
-        });
-
-        return filtered;
-    }, [cars, searchQuery, filterCategory, sortBy, sortOrder]);
 
     const handleSort = (field: 'price' | 'year' | 'status') => {
         if (sortBy === field) {
@@ -112,42 +64,46 @@ export const CarsView: React.FC = () => {
         }
     };
 
-
-
-    const handleViewCarDetails = (car: CarType) => {
-        setViewingCarDetials(car);
-        setSearchParams({ section: 'cars', carId: car.id.toString() });
+    const getCurrentFilters = (): CarFilterOptions => {
+        return {
+            searchQuery: searchQuery.trim(),
+            sortBy,
+            sortOrder,
+            status
+        };
     };
 
-    // If carId is in URL, show car details
-    if (carId) {
-        const car = cars.find(c => c.id.toString() === carId);
-        if (car) {
-            return <CarDetailsView car={car} onCancel={() => setSearchParams({ section: 'cars' })} />;
+
+    async function handleFetchCarInfo(carId: string) {
+        return await fetchCarWithImagesById(carId);
+
+    }
+
+    const handleViewCarDetails = async (car: CarType) => {
+        try {
+            // Fetch full details including images
+            const fullCar = await fetchCarWithImagesById(car.id.toString());
+            setViewingCarDetails(fullCar);
+
+            // Update URL
+            setSearchParams({ section: 'cars', carId: car.id.toString() });
+        } catch (error) {
+            console.error('Error fetching car details:', error);
         }
+    };
+
+    // If a car is selected for viewing, show the details view
+    if (viewingCar) {
+        return (
+            <CarDetailsView
+                car={viewingCar}
+                onCancel={() => setViewingCarDetails(null)}
+            />
+        );
     }
 
-    // Helper to get the image for a specific car
-    function toKebabCase(str: string) {
-        return str.trim().replace(/\s+/g, '-').toLowerCase();
-    }
 
 
-    function getCarImageMap(cars: Car[], mainImagesURLs: string[]): Record<string, string> {
-        const map: Record<string, string> = {};
-
-        cars.forEach(car => {
-            const folderName = toKebabCase(`${car.make} ${car.model}`);
-            const imageUrl = mainImagesURLs.find(url => url.includes(folderName)) || '/placeholder.jpg';
-            map[folderName] = imageUrl;
-        });
-
-        return map;
-    }
-
-    const carImageMap = getCarImageMap(cars, mainImagesURLs);
-
-    // console.log('car:url: ', getCarImageMap(cars, mainImagesURLs))
 
     return (
         <motion.div
@@ -156,6 +112,8 @@ export const CarsView: React.FC = () => {
             transition={{ duration: 0.4 }}
             className="space-y-6"
         >
+
+
             {/* Cars Table Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
                 {/* Header */}
@@ -183,52 +141,78 @@ export const CarsView: React.FC = () => {
                                 </div>
                             </div>
                             {/* Sort Controls */}
+                            {/* Sort + Status Controls */}
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
+
+                                {/* Price & Year buttons */}
+                                {['price', 'year'].map((field) => {
+                                    const isActive = sortBy === field;
+                                    const arrowColor = isActive
+                                        ? sortOrder === 'asc'
+                                            ? 'text-green-400'
+                                            : 'text-red-400'
+                                        : 'opacity-50 text-gray-400';
+
+                                    return (
+                                        <button
+                                            key={field}
+                                            onClick={() => handleSort(field as 'price' | 'year')}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${isActive
+                                                ? 'bg-white/10 border-white/20'
+                                                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:text-white text-gray-300'
+                                                }`}
+                                        >
+                                            {field.charAt(0).toUpperCase() + field.slice(1)}
+                                            {isActive ? (
+                                                sortOrder === 'asc' ? <ArrowUp className={`w-3 h-3 ${arrowColor}`} /> : <ArrowDown className={`w-3 h-3 ${arrowColor}`} />
+                                            ) : (
+                                                <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+
+                                {/* Status button */}
                                 <button
-                                    onClick={() => handleSort('price')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'price'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    onClick={() => {
+                                        // Toggle through three states: null -> available -> borrowed -> null
+                                        setStatus((prev) => {
+                                            if (prev === null) return 'available';
+                                            if (prev === 'available') return 'borrowed';
+                                            return null;
+                                        });
+                                        handleFetchCars(); // fetch with new status filter
+                                    }}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${status === 'available'
+                                        ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                                        : status === 'borrowed'
+                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    Price
-                                    {sortBy === 'price' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'price' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                                    {/* Show current value or default */}
+                                    {status === 'available'
+                                        ? 'Available'
+                                        : status === 'borrowed'
+                                            ? 'Borrowed'
+                                            : 'Status'}
+
+                                    {/* Arrow indicators */}
+                                    {/* {status === 'available' && <span className="ml-1 text-green-400 text-xs">↑</span>}
+                                    {status === 'borrowed' && <span className="ml-1 text-red-400 text-xs">↓</span>}
+                                    {status === null && <span className="ml-1 text-gray-400 text-xs">–</span>} */}
                                 </button>
-                                <button
-                                    onClick={() => handleSort('year')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'year'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    Year
-                                    {sortBy === 'year' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'year' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                <button
-                                    onClick={() => handleSort('status')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${sortBy === 'status'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    Status
-                                    {sortBy === 'status' && (
-                                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                    )}
-                                    {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                                </button>
-                                {sortBy && (
+
+
+                                {/* Clear Sort */}
+                                {(sortBy || status) && (
                                     <button
                                         onClick={() => {
                                             setSortBy(null);
                                             setSortOrder('asc');
+                                            setStatus(null);
+                                            handleFetchCars();
                                         }}
                                         className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                     >
@@ -236,6 +220,9 @@ export const CarsView: React.FC = () => {
                                     </button>
                                 )}
                             </div>
+
+
+
                         </div>
                     </div>
                 </div>
@@ -293,8 +280,8 @@ export const CarsView: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10">
-                            {filteredCars.length > 0 ? (
-                                filteredCars.map((car) => {
+                            {cars.length > 0 ? (
+                                cars.map((car) => {
                                     return (
                                         <tr
                                             key={car.id}
@@ -305,7 +292,7 @@ export const CarsView: React.FC = () => {
                                                 <div className="flex items-center gap-3">
 
                                                     <img
-                                                        src={carImageMap[toKebabCase(`${car.make} ${car.model}`)]}
+                                                        src={car.image_url || ''}
                                                         alt={`${car.make}-${car.model}`.toLowerCase()}
 
                                                         className="w-12 h-12 object-cover rounded-md border border-white/10"
@@ -325,7 +312,7 @@ export const CarsView: React.FC = () => {
                                             <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                             <td className="px-6 py-4">
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${car.status === 'BORROWED'
+                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${car.status === 'borrowed'
                                                         ? 'bg-red-500/20 text-red-300 border-red-500/50'
                                                         : car.status === 'MAINTENANCE'
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
@@ -333,9 +320,9 @@ export const CarsView: React.FC = () => {
                                                         }
                                                     `}
                                                 >
-                                                    {car.status === 'BORROWED'
+                                                    {car.status === 'borrowed'
                                                         ? 'Borrowed'
-                                                        : car.status === 'MAINTENANCE'
+                                                        : car.status === 'maintenance'
                                                             ? 'Maintenance'
                                                             : 'Available'}
                                                 </span>
@@ -360,19 +347,19 @@ export const CarsView: React.FC = () => {
 };
 
 // Car Details/Edit View Component
-interface CarDetailsEditViewProps {
+interface CarDetailsViewProps {
     car: Car;
     onCancel: () => void;
 }
 
-const CarDetailsView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel: onExit }) => {
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-    };
+const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: onExit }) => {
+
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
 
     return (
         <div className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Basic Information */}
                     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
@@ -382,7 +369,7 @@ const CarDetailsView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel: onEx
                             <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
                             <input
                                 type="text"
-                                value={(car.make || '') + (car.model || '')}
+                                value={(car.make || '') + ' ' + (car.model || '')}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
@@ -476,20 +463,23 @@ const CarDetailsView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel: onEx
                         </div>
                     </div>
                 </div>
-
                 {/* Images */}
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Images</h3>
-
-                    {/* <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Main Image</label>
-                        {car.image && (
-                            <img src={car.image} alt="Preview" className="mt-2 w-32 h-20 object-cover rounded-lg border border-white/10" />
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
+                    <div className="flex flex-wrap gap-2">
+                        {car.photo_gallery && car.photo_gallery.length > 0 && (
+                            car.photo_gallery.map((url, index) => (
+                                <img
+                                    key={index}
+                                    src={url}
+                                    srcSet={`${url}?w=160 160w, ${url}?w=320 320w, ${url}?w=480 480w`}
+                                    sizes="(max-width: 768px) 64px, (max-width: 1024px) 96px, 120px"
+                                    alt={`Gallery image ${index + 1}`}
+                                    className={`w-20 h-20 md:w-32 md:h-32 lg:w-30 lg:h-30 object-cover rounded-lg border ${selectedIndex === index ? "border-blue-500 ring-2 ring-blue-400" : "border-white/10"}`}
+                                    onClick={() => setSelectedIndex(index)}
+                                />
+                            ))
                         )}
-                    </div> */}
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
                     </div>
                 </div>
 
@@ -547,7 +537,21 @@ const CarDetailsView: React.FC<CarDetailsEditViewProps> = ({ car, onCancel: onEx
                         Exit
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+
+            {selectedIndex !== null && car.photo_gallery && car.photo_gallery.length > 0 && (
+                <div className="mt-4">
+                    <p className="text-gray-300">Selected Image:</p>
+                    <img
+                        src={car.photo_gallery[selectedIndex]}
+                        srcSet={`${car.photo_gallery[selectedIndex]}?w=320 320w, ${car.photo_gallery[selectedIndex]}?w=640 640w`}
+                        sizes="(max-width: 768px) 128px, (max-width: 1024px) 256px, 320px"
+                        alt={`Selected gallery image`}
+                        className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-lg border border-white/20 mt-2"
+                    />
+                </div>
+            )}
+
+        </div >
     );
 };
