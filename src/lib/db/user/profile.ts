@@ -1,5 +1,5 @@
-import { User } from '../../types';
-import { supabase } from '../supabase';
+import { User } from '../../../types';
+import { supabase } from '../../supabase';
 
 /**
  * update user profile info
