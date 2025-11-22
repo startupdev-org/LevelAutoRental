@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { sparkData, mainChart, orders } from '../../data/index';
 import { fetchCars, fetchCarById, createCar, updateCar, deleteCar } from '../../lib/cars';
+import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { SalesChartCard } from '../../components/dashboard/Chart';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -88,11 +89,29 @@ const DashboardView: React.FC = () => {
         const loadData = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                setCars(fetchedCars);
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
                 
                 // Load orders after cars are loaded
-                if (fetchedCars.length > 0) {
-                    const fetchedOrders = await fetchAllOrders(fetchedCars);
+                if (carsWithImages.length > 0) {
+                    const fetchedOrders = await fetchAllOrders(carsWithImages);
                     setOrders(fetchedOrders);
                 }
             } catch (error) {
@@ -106,14 +125,32 @@ const DashboardView: React.FC = () => {
 
     // Calculate car rental status (based on database status field)
     const getCarRentalStatus = () => {
+        // Log all car statuses for debugging
+        console.log('[Dashboard] Car statuses:', cars.map(car => ({
+            id: car.id,
+            name: (car as any).name || `${car.make} ${car.model}`,
+            status: car.status,
+            statusLower: car.status?.toLowerCase()
+        })));
+
         const freeCars = cars.filter(car => {
-            const carStatus = car.status?.toLowerCase() || 'available';
-            return carStatus === 'available';
+            // Normalize status: handle null, empty string, and different cases
+            const rawStatus = car.status?.trim() || '';
+            const carStatus = rawStatus.toLowerCase();
+            
+            // Consider available if status is null, empty, 'available', or not explicitly 'booked'/'borrowed'/'maintenance'
+            return carStatus === '' || carStatus === 'available' || 
+                   (carStatus !== 'booked' && carStatus !== 'borrowed' && carStatus !== 'maintenance' && carStatus !== 'deleted');
         });
+        
         const rentedCars = cars.filter(car => {
-            const carStatus = car.status?.toLowerCase() || 'available';
-            return carStatus === 'booked';
+            const rawStatus = car.status?.trim() || '';
+            const carStatus = rawStatus.toLowerCase();
+            // Handle both 'booked' and 'borrowed' as rented status
+            return carStatus === 'booked' || carStatus === 'borrowed';
         });
+
+        console.log(`[Dashboard] Free cars: ${freeCars.length}, Rented cars: ${rentedCars.length}`);
 
         return { freeCars, rentedCars };
     };
@@ -705,7 +742,25 @@ const OrderDetailsView: React.FC<{ orderId: string }> = ({ orderId }) => {
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                setCars(fetchedCars);
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
             }
@@ -1058,13 +1113,30 @@ const CarsView: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const { showSuccess, showError } = useNotification();
 
-    // Fetch cars from Supabase
+    // Fetch cars from Supabase and load images from storage
     useEffect(() => {
         const loadCars = async () => {
             try {
                 setLoading(true);
                 const fetchedCars = await fetchCars();
-                setLocalCars(fetchedCars);
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        console.log(`[Admin] Loading images for car: "${carName}" (make: "${car.make}", model: "${car.model}")`);
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                setLocalCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
             } finally {
@@ -1076,18 +1148,21 @@ const CarsView: React.FC = () => {
 
     // Get car status for sorting (based on database status field)
     const getCarStatus = (car: CarType): number => {
-        const carStatus = car.status?.toLowerCase() || 'available';
-        // 0 = Available, 1 = Maintenance, 2 = Booked (lower number = higher priority)
-        if (carStatus === 'booked') return 2;
+        // Normalize status: handle null, empty string, and different cases
+        const rawStatus = car.status?.trim() || '';
+        const carStatus = rawStatus.toLowerCase();
+        // 0 = Available, 1 = Maintenance, 2 = Booked/Borrowed (lower number = higher priority)
+        if (carStatus === 'booked' || carStatus === 'borrowed') return 2;
         if (carStatus === 'maintenance') return 1;
-        return 0;
+        return 0; // Default to available for null/empty/unknown statuses
     };
 
     // Filter and sort cars
     const filteredCars = useMemo(() => {
         let filtered = localCars.filter(car => {
             // Hide cars with deleted status
-            const carStatus = car.status?.toLowerCase() || '';
+            const rawStatus = car.status?.trim() || '';
+            const carStatus = rawStatus.toLowerCase();
             if (carStatus === 'deleted') return false;
 
             const carName = (car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || '';
@@ -1377,8 +1452,9 @@ const CarsView: React.FC = () => {
                         {/* Mobile Card View */}
                         <div className="block md:hidden p-4 space-y-4">
                             {filteredCars.map((car) => {
-                                const carStatus = car.status?.toLowerCase() || 'available';
-                                const isBooked = carStatus === 'booked';
+                                const rawStatus = car.status?.trim() || '';
+                                const carStatus = rawStatus.toLowerCase() || 'available';
+                                const isBooked = carStatus === 'booked' || carStatus === 'borrowed';
                                 const isMaintenance = carStatus === 'maintenance';
                                 const basePrice = car.price_per_day || 0;
                                 const discount = car.discount_percentage || 0;
@@ -1410,7 +1486,7 @@ const CarsView: React.FC = () => {
                                                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                                         }`}
                                                 >
-                                                    {carStatus === 'booked' ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
+                                                    {(carStatus === 'booked' || carStatus === 'borrowed') ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
                                                 </span>
                                             </div>
                                         </div>
@@ -1520,8 +1596,9 @@ const CarsView: React.FC = () => {
                                 </thead>
                                 <tbody className="divide-y divide-white/10">
                                     {filteredCars.map((car) => {
-                                        const carStatus = car.status?.toLowerCase() || 'available';
-                                        const isBooked = carStatus === 'booked';
+                                        const rawStatus = car.status?.trim() || '';
+                                        const carStatus = rawStatus.toLowerCase() || 'available';
+                                        const isBooked = carStatus === 'booked' || carStatus === 'borrowed';
                                         const isMaintenance = carStatus === 'maintenance';
                                         return (
                                             <tr
@@ -1579,7 +1656,7 @@ const CarsView: React.FC = () => {
                                                                 : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                                             }`}
                                                     >
-                                                        {carStatus === 'booked' ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
+                                                        {(carStatus === 'booked' || carStatus === 'borrowed') ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -1666,12 +1743,18 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
             try {
                 const fetchedCar = await fetchCarById(car.id);
                 if (fetchedCar) {
+                    // Fetch images from storage
+                    const carName = (fetchedCar as any).name || `${fetchedCar.make} ${fetchedCar.model}`;
+                    const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                    
                     // Ensure name field is included
                     setFormData({
                         ...fetchedCar,
                         name: fetchedCar.name || '',
                         discountPercentage: fetchedCar.discount_percentage,
                         discount_percentage: fetchedCar.discount_percentage,
+                        image_url: mainImage || fetchedCar.image_url,
+                        photo_gallery: photoGallery.length > 0 ? photoGallery : fetchedCar.photo_gallery,
                     } as any);
                 }
             } catch (error) {
@@ -1718,13 +1801,28 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
             .replace(/^-+|-+$/g, '');
     };
 
+    // Helper function to extract model part from car name for file naming
+    // Example: "BMW X4" → "x4", "Mercedes C43" → "c43", "Mercedes CLS 350" → "cls-350"
+    const getModelPart = (carName: string): string => {
+        const parts = carName.trim().split(/\s+/);
+        if (parts.length < 2) return 'car';
+        // Take everything after the first word (make) as the model
+        const modelParts = parts.slice(1);
+        return modelParts
+            .join('-')
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    };
+
     // Function for uploading main image to Supabase storage
     const handleMainImageUpload = async (file: File) => {
         setUploadingMainImage(true);
         try {
             const carName = (formData as any).name || (car as any).name || 'car';
             const folderName = createFolderName(carName);
-            const fileName = `${folderName}-main.jpg`;
+            const modelPart = getModelPart(carName);
+            const fileName = `${modelPart}-main.jpg`;
             const filePath = `${folderName}/${fileName}`;
 
             // Upload to Supabase storage
@@ -1766,8 +1864,25 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
         try {
             const carName = (formData as any).name || (car as any).name || 'car';
             const folderName = createFolderName(carName);
-            const timestamp = Date.now();
-            const fileName = `${folderName}-${timestamp}.jpg`;
+            const modelPart = getModelPart(carName);
+            
+            // Get existing gallery images to determine next number
+            const currentGallery = (formData as any).photoGallery || formData.photo_gallery || [];
+            // Try to find the highest number in existing gallery images
+            let nextNumber = 2; // Start from 2 (1 would be the main image)
+            if (currentGallery.length > 0) {
+                const numbers = currentGallery
+                    .map((url: string) => {
+                        const match = url.match(/-(\d+)\.(jpg|jpeg|png)/i);
+                        return match ? parseInt(match[1], 10) : 0;
+                    })
+                    .filter((n: number) => n > 0);
+                if (numbers.length > 0) {
+                    nextNumber = Math.max(...numbers) + 1;
+                }
+            }
+            
+            const fileName = `${modelPart}-${nextNumber}.jpg`;
             const filePath = `${folderName}/${fileName}`;
 
             // Upload to Supabase storage
@@ -1787,8 +1902,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 .from('cars')
                 .getPublicUrl(filePath);
 
-            // Update form data with the public URL
-            const currentGallery = (formData as any).photoGallery || formData.photo_gallery || [];
+            // Update form data with the public URL (reuse currentGallery from above)
             setFormData(prev => ({
                 ...prev,
                 photoGallery: [...currentGallery, publicUrl],
@@ -2480,13 +2594,28 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
             .replace(/^-+|-+$/g, '');
     };
 
+    // Helper function to extract model part from car name for file naming
+    // Example: "BMW X4" → "x4", "Mercedes C43" → "c43", "Mercedes CLS 350" → "cls-350"
+    const getModelPart = (carName: string): string => {
+        const parts = carName.trim().split(/\s+/);
+        if (parts.length < 2) return 'car';
+        // Take everything after the first word (make) as the model
+        const modelParts = parts.slice(1);
+        return modelParts
+            .join('-')
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    };
+
     // Function for uploading main image to Supabase storage
     const handleMainImageUpload = async (file: File) => {
         setUploadingMainImage(true);
         try {
             const carName = (formData as any).name || 'car';
             const folderName = createFolderName(carName);
-            const fileName = `${folderName}-main.jpg`;
+            const modelPart = getModelPart(carName);
+            const fileName = `${modelPart}-main.jpg`;
             const filePath = `${folderName}/${fileName}`;
 
             // Upload to Supabase storage
@@ -2922,7 +3051,25 @@ const RequestsView: React.FC = () => {
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                setCars(fetchedCars);
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
             }
@@ -7129,7 +7276,25 @@ export const Admin: React.FC = () => {
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                setCars(fetchedCars);
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
             }
