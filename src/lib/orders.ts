@@ -11,31 +11,31 @@ import { fetchImagesByCarName } from './db/cars/cars';
 export async function updateCarStatusBasedOnRentals(carId: number | string): Promise<void> {
   try {
     const dbCarId = typeof carId === 'number' ? carId : parseInt(carId.toString(), 10);
-    
+
     // Check if there are any ACTIVE rentals for this car
     const { data: activeRentals, error: checkError } = await supabase
       .from('Rentals')
       .select('id')
       .eq('car_id', dbCarId)
       .eq('rental_status', 'ACTIVE');
-    
+
     if (checkError) {
       console.error('Error checking active rentals for car:', checkError);
       return;
     }
-    
+
     // If there are active rentals, set car to "booked", otherwise set to "available"
     const newStatus = (activeRentals && activeRentals.length > 0) ? 'booked' : 'available';
-    
+
     // Update car status using admin client to bypass RLS
     const { error: updateError } = await supabaseAdmin
       .from('Cars')
-      .update({ 
+      .update({
         status: newStatus,
         updated_at: new Date().toISOString()
       })
       .eq('id', dbCarId);
-    
+
     if (updateError) {
       console.error('Error updating car status:', updateError);
     }
@@ -76,7 +76,7 @@ export interface Rental {
   start_time: string;
   end_date: string;
   end_time: string;
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  rental_status: string;
   total_amount?: number;
   created_at: string;
   updated_at: string;
@@ -377,8 +377,8 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
     // Process rentals only - use Promise.all to handle async car fetching
     const processedOrders = await Promise.all(rentals.map(async (rental) => {
       // Handle both string and number car_id
-      const carIdMatch = typeof rental.car_id === 'number' 
-        ? rental.car_id 
+      const carIdMatch = typeof rental.car_id === 'number'
+        ? rental.car_id
         : parseInt(rental.car_id);
 
       let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === rental.car_id?.toString());
@@ -514,7 +514,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         pickupTime: rental.start_time || '09:00',
         returnDate: formatDate(rental.end_date),
         returnTime: rental.end_time || '17:00',
-        status: rental.status || (rental as any).rental_status || 'CONTRACT',
+        status: rental.rental_status || (rental as any).rental_status || 'CONTRACT',
         total_amount: amount.toString(),
         amount: amount,
         createdAt: rental.created_at || new Date().toISOString(),
@@ -912,7 +912,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         pickupTime: rental.start_time,
         returnDate: rental.end_date,
         returnTime: rental.end_time,
-        status: rental.status || (rental as any).rental_status,
+        status: rental.rental_status || (rental as any).rental_status,
         total_amount: amount.toString(),
         amount: amount,
         createdAt: rental.created_at,
@@ -1019,10 +1019,10 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
       const phone = (request as any).customer_phone || '';
       const firstName = (request as any).customer_first_name || '';
       const lastName = (request as any).customer_last_name || '';
-      const customerName = (request as any).customer_name || 
+      const customerName = (request as any).customer_name ||
         (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '');
-      
-      const userName = customerName || 
+
+      const userName = customerName ||
         (email ? email.split('@')[0] : '') ||
         `User ${request.user_id.slice(0, 8)}`;
 
@@ -1137,8 +1137,8 @@ export async function rejectBorrowRequest(requestId: string, reason?: string): P
   try {
     const { error } = await supabase
       .from('BorrowRequest')
-      .update({ 
-        status: 'REJECTED', 
+      .update({
+        status: 'REJECTED',
         updated_at: new Date().toISOString(),
         // Store rejection reason if there's a notes/comment field
       })
@@ -1162,8 +1162,8 @@ export async function undoRejectBorrowRequest(requestId: string): Promise<{ succ
   try {
     const { error } = await supabase
       .from('BorrowRequest')
-      .update({ 
-        status: 'PENDING', 
+      .update({
+        status: 'PENDING',
         updated_at: new Date().toISOString()
       })
       .eq('id', requestId);
@@ -1337,7 +1337,7 @@ export async function createRentalManually(
     const start = new Date(startDate);
     const end = new Date(endDate);
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-    
+
     // Calculate subtotal if not provided
     const subtotal = options?.subtotal || (pricePerDay * days);
     // Calculate taxes (10% of subtotal) if not provided
@@ -1437,9 +1437,9 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
         // Update request status to EXECUTED
         const { error: updateError } = await supabase
           .from('BorrowRequest')
-          .update({ 
-            status: 'EXECUTED', 
-            updated_at: new Date().toISOString() 
+          .update({
+            status: 'EXECUTED',
+            updated_at: new Date().toISOString()
           })
           .eq('id', request.id);
 
@@ -1498,14 +1498,14 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
             console.error(`Error creating rental for request ${request.id}:`, rentalError);
             continue;
           }
-          
+
           // Update car status to "booked" when rental becomes ACTIVE
           await updateCarStatusBasedOnRentals(request.car_id);
         } else {
           // Update existing rental to ACTIVE when pickup time arrives
           const { error: updateRentalError } = await supabase
             .from('Rentals')
-            .update({ 
+            .update({
               rental_status: 'ACTIVE',
               updated_at: new Date().toISOString()
             })
@@ -1515,7 +1515,7 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
             console.error(`Error updating rental for request ${request.id}:`, updateRentalError);
             continue;
           }
-          
+
           // Update car status to "booked" when rental becomes ACTIVE
           await updateCarStatusBasedOnRentals(request.car_id);
         }
@@ -1558,9 +1558,9 @@ export async function processCompletedOrders(): Promise<{ success: boolean; proc
         // Update rental status to COMPLETED
         const { error: updateError } = await supabase
           .from('Rentals')
-          .update({ 
+          .update({
             rental_status: 'COMPLETED',
-            updated_at: new Date().toISOString() 
+            updated_at: new Date().toISOString()
           })
           .eq('id', rental.id);
 
@@ -1568,7 +1568,7 @@ export async function processCompletedOrders(): Promise<{ success: boolean; proc
           console.error(`Error updating rental ${rental.id} to COMPLETED:`, updateError);
           continue;
         }
-        
+
         // Update car status - check if there are other ACTIVE rentals
         await updateCarStatusBasedOnRentals(rental.car_id);
 
@@ -1629,23 +1629,23 @@ export async function cancelRentalOrder(rentalId: string): Promise<{ success: bo
       .select('car_id')
       .eq('id', rentalId)
       .single();
-    
+
     if (fetchError || !rental) {
       return { success: false, error: 'Rental not found' };
     }
-    
+
     const { error } = await supabase
       .from('Rentals')
-      .update({ 
+      .update({
         rental_status: 'CANCELLED',
-        updated_at: new Date().toISOString() 
+        updated_at: new Date().toISOString()
       })
       .eq('id', rentalId);
 
     if (error) {
       return { success: false, error: error.message };
     }
-    
+
     // Update car status - check if there are other ACTIVE rentals
     await updateCarStatusBasedOnRentals(rental.car_id);
 
@@ -1663,9 +1663,9 @@ export async function redoRentalOrder(rentalId: string): Promise<{ success: bool
   try {
     const { error } = await supabase
       .from('Rentals')
-      .update({ 
+      .update({
         rental_status: 'CONTRACT',
-        updated_at: new Date().toISOString() 
+        updated_at: new Date().toISOString()
       })
       .eq('id', rentalId);
 
