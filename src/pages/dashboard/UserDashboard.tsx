@@ -227,7 +227,10 @@ export const UserDashboard: React.FC = () => {
                   <AnimatePresence>
 
                     {activeTab === 'overview' && (
-                      <OverviewTab setActiveTab={setActiveTab} />
+                      <OverviewTab
+                        setActiveTab={setActiveTab}
+                        t={t}
+                      />
                     )}
 
 

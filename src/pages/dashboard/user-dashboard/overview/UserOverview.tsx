@@ -8,6 +8,7 @@ import { TabType } from '../../UserDashboard';
 import { Rental } from '../../../../lib/orders';
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
+import BasicInfoComponent from '../../../../components/dashboard/user-dashboard/overview/BasicInfoComponent';
 
 export interface Booking {
     id: string;
@@ -22,11 +23,10 @@ export interface Booking {
 
 interface OverviewTabProps {
     setActiveTab: React.Dispatch<React.SetStateAction<TabType>>;
+    t: (key: string) => string;
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
-    const { t } = useTranslation();
-
+export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => {
 
     const [rentals, setRentals] = useState<Rental[] | null>(null);
     const [recentRentals, setRecentRentals] = useState<Rental[] | null>(null);
@@ -105,63 +105,50 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
             className="space-y-6"
         >
             <div>
-                <h2 className="text-4xl font-bold text-white">{t('dashboard.overview.title')}</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold text-white">{t('dashboard.overview.title')}</h2>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Calendar className="text-red-600" size={24} />
-                        <h3 className="font-bold text-2xl mb-2">Info Rezervari</h3>
-                    </div>
-                    <p className="text-3xl font-bold text-red-600">Total rezervari: {rentals?.length ?? 0}</p>
-                    <p className="text-3xl font-bold text-red-600">Rezervari finisate: {rentals?.length ?? 0}</p>
-                    <p className="text-3xl font-bold text-red-600">Rezervari finisate: {rentals?.length ?? 0}</p>
-                    <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeBookings')}</p>
-                </div>
-
+                <BasicInfoComponent rentals={rentals} t={t} />
                 <FavoriteCarComponent favoriteCar={favoriteCar} />
             </div>
 
             {/* Recent Bookings */}
             <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-3xl font-bold">{t('dashboard.overview.recentBookings')}</h3>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h3 className="text-2xl sm:text-3xl font-bold">{t('dashboard.overview.recentBookings')}</h3>
+
                     <button
                         onClick={() => setActiveTab('bookings')}
-                        className="text-red-600 hover:text-red-500 transition-colors duration-300"
+                        className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
                     >
-                        <button
-                            className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            {/* {getStatusIcon(rental.rental_status)} */}
-                            <h3 className="text-lg font-semibold">{t('dashboard.overview.viewAll')}</h3>
-                        </button>
+                        <Plus className="w-4 h-4" />
+                        <span className="text-lg font-semibold">{t('dashboard.overview.viewAll')}</span>
                     </button>
                 </div>
-                <div className="space-y-4">
+
+                <div className="flex flex-col gap-4">
                     {recentRentals?.map((rental) => (
                         <div
                             key={rental.id}
-                            className="flex items-center gap-6 p-4 bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 shadow-sm"
+                            className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-4 bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 shadow-sm"
                         >
-                            {/* CAR IMAGE */}
+                            {/* Car Image */}
                             <img
                                 src={rental.car?.image_url || '/placeholder-car.jpg'}
                                 alt={rental.car?.make}
-                                className="w-40 h-30 rounded-lg object-contain bg-black/10"
+                                className="w-full sm:w-40 h-40 sm:h-30 rounded-lg object-contain bg-black/10"
                                 loading="lazy"
                             />
 
-                            {/* CAR DETAILS */}
-                            <div className="flex-1 flex flex-col justify-between gap-1">
+                            {/* Car Details */}
+                            <div className="flex-1 flex flex-col justify-between gap-2 w-full">
                                 <h4 className="font-bold text-white text-lg">
                                     {rental.car?.make} {rental.car?.model}
                                 </h4>
 
-                                <div className="flex flex-col sm:flex-row sm:gap-4 text-gray-300 text-m">
+                                <div className="flex flex-col sm:flex-row sm:gap-4 text-gray-300 text-sm">
                                     <p>
                                         <span className="font-semibold text-white">From:</span> {formatDate(rental.start_date)} {rental.start_time}
                                     </p>
@@ -170,28 +157,24 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                     </p>
                                 </div>
 
-                                {/* OPTIONAL: Price / Duration if available */}
                                 {rental.total_amount && (
-                                    <p className="text-gray-300 text-m mt-1">
+                                    <p className="text-gray-300 text-sm mt-1">
                                         <span className="font-semibold text-white">Total price: </span>{rental.total_amount} MDL
                                     </p>
                                 )}
                             </div>
 
-                            {/* STATUS BADGE */}
+                            {/* Status Badge */}
                             <button
-                                className={`px-4 py-2 ${getStatusColor(rental.rental_status)} font-semibold rounded-lg transition-all text-sm whitespace-nowrap flex items-center gap-2`}
+                                className={`px-4 py-2 mt-2 sm:mt-0 ${getStatusColor(rental.rental_status)} font-semibold rounded-lg transition-all text-sm whitespace-nowrap flex items-center gap-2`}
                             >
-                                {/* <Plus className="w-4 h-4" /> */}
-                                {/* {getStatusIcon(rental.rental_status)} */}
                                 <span className="capitalize">{rental.rental_status}</span>
                             </button>
-
                         </div>
                     ))}
-
                 </div>
-            </div >
-        </motion.div >
+            </div>
+        </motion.div>
+
     );
 };
