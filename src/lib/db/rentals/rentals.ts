@@ -167,6 +167,56 @@ export async function fetchRentalsHistory(
 }
 
 
+export async function fetchRentalsCalendarPage(
+    carId?: string,
+    month?: Date,
+    status?: string
+): Promise<Rental[]> {
+    const user = await getLoggedUser();
+    if (!user) return [];
+
+    let query = supabase
+        .from("Rentals")
+        .select("*")
+        .eq("user_id", user.id);
+
+    // Filter by month (expects "YYYY-MM")
+    if (month) {
+        const year = month.getFullYear();
+        const m = month.getMonth(); // 0-based
+
+        const firstDay = new Date(year, m, 1).toISOString();
+        const nextMonthFirst = new Date(year, m + 1, 1).toISOString();
+
+        // PostgreSQL will interpret this correctly
+        query = query
+            .gte("start_date", firstDay) // >= first day of month
+            .lt("start_date", nextMonthFirst); // < first day of next month
+    }
+
+    if (carId) {
+        query = query.eq('car_id', carId)
+    }
+
+    if (status) {
+        query = query.eq("rental_status", status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching rentals calendar:", error);
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((row: any) =>
+            toRentalDTO(row, row.car_id)
+        )
+    );
+}
+
+
 
 async function toRentalDTO(rental: Rental, carId: string): Promise<Rental> {
 
