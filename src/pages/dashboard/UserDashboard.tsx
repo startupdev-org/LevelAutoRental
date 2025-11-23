@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Car,
   Calendar,
@@ -28,13 +28,13 @@ import {
 } from 'lucide-react';
 import { UserDashboardSidebar } from '../../components/dashboard/sidebar/UserDashboardSidebar';
 import CalendarPage from './calendar/CalendarPage';
+import { Header } from '../../components/layout/Header';
 
 import { orders } from '../../data/index'
 import { UserOrdersSection } from './user-dashboard/orders/UserOrdersSection';
 
 import { CarsView } from './user-dashboard/cars/UserCarPage'
-import ProfileTab from './profile/UserProfile';
-import { SettingsTab } from './user-dashboard/settings/UserSettings';
+import { ProfileSettingsTab } from './user-dashboard/profile-settings/ProfileSettingsTab';
 import { OverviewTab } from './user-dashboard/overview/UserOverview';
 import UserCalendarPage from './user-dashboard/calendar/UserCalendarPage';
 
@@ -56,7 +56,9 @@ export const UserDashboard: React.FC = () => {
   const { t } = useTranslation();
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'overview');
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -134,6 +136,20 @@ export const UserDashboard: React.FC = () => {
     });
   };
 
+  // Update URL when tab changes
+  useEffect(() => {
+    if (activeTab) {
+      setSearchParams({ tab: activeTab }, { replace: true });
+    }
+  }, [activeTab, setSearchParams]);
+
+  // Update active tab when URL changes
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
   // SECURITY: Redirect to login if not authenticated
   useEffect(() => {
     // Only redirect if we're sure there's no user and loading is complete
@@ -186,29 +202,34 @@ export const UserDashboard: React.FC = () => {
 
       {/* Dashboard Content */}
       {!isLoading && (
-        <section className="relative py-12 pt-32 md:pt-40 overflow-hidden min-h-screen">
+        <section className="relative min-h-screen">
           <div
-            className="absolute inset-0 bg-cover bg-center bg-fixed"
+            className="fixed inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: "url('/LevelAutoRental/lvl_bg.png')"
+              backgroundImage: "url('/LevelAutoRental/lvl_bg.png')",
+              backgroundAttachment: 'fixed',
+              zIndex: 0
             }}
           />
-          <div className="absolute inset-0 bg-black/80"></div>
+          <div className="fixed inset-0 bg-black/80" style={{ zIndex: 1 }}></div>
 
+          <div className="relative" style={{ zIndex: 1 }}>
+            <Header forceRender={true} />
+          </div>
 
           {/* Dashboard box */}
-          <div className="relative z-10 container mx-auto px-4 max-w-7xl">
+          <div className="relative container mx-auto px-4 max-w-7xl pt-12 pb-12" style={{ zIndex: 1 }}>
 
 
             {/* Dashboard Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8">
 
               {/* Sidebar */}
               <motion.div
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.8 }}
-                className="lg:col-span-1"
+                className="lg:col-span-3 lg:flex lg:justify-end"
               >
                 <UserDashboardSidebar
                   activeTab={activeTab}
@@ -218,101 +239,50 @@ export const UserDashboard: React.FC = () => {
               </motion.div>
 
               {/* Main Content */}
-              <motion.div
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 shadow-lg lg:col-span-3"
-              >
-                <div className="space-y-6">
-                  <AnimatePresence>
+              <div className="lg:col-span-9">
+                {activeTab === 'overview' && (
+                  <OverviewTab
+                    setActiveTab={setActiveTab}
+                    t={t}
+                  />
+                )}
 
-                    {activeTab === 'overview' && (
-                      <OverviewTab
-                        setActiveTab={setActiveTab}
-                        t={t}
-                      />
-                    )}
+                {/* Bookings Tab */}
+                {activeTab === 'bookings' && (
+                  <div className="space-y-6">
+                    <UserOrdersSection />
+                  </div>
+                )}
 
+                {/* Profile & Settings Tab */}
+                {(activeTab === 'profile' || activeTab === 'settings') && (
+                  <ProfileSettingsTab
+                    t={t}
+                    activeTab={activeTab}
+                    passwordForm={passwordForm}
+                    setPasswordForm={setPasswordForm}
+                    notificationSettings={notificationSettings}
+                    handleNotificationToggle={handleNotificationToggle}
+                  />
+                )}
 
-                    {/* Bookings Tab */}
-                    {activeTab === 'bookings' && (
-                      <motion.div
-                        key="bookings"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <UserOrdersSection />
-                      </motion.div>
-                    )}
+                {/* Cars Tab */}
+                {activeTab === 'cars' && (
+                  <div className="space-y-6">
+                    <CarsView />
+                  </div>
+                )}
 
-                    {/* Profile Tab */}
-                    {activeTab === 'profile' && (
-                      <motion.div
-                        key="profile"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <ProfileTab
-                          activeTab={activeTab}
-                          t={t}
-                        />
-                      </motion.div>
-                    )}
-
-                    {/* Cars Tab */}
-                    {activeTab === 'cars' && (
-                      <motion.div
-                        key="cars"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-
-                        <CarsView />
-
-                      </motion.div>
-                    )}
-
-                    {/* Calendar Tab */}
-                    {activeTab === 'calendar' && (
-                      <motion.div
-                        key="calendar"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <UserCalendarPage />
-                      </motion.div>
-                    )}
-
-                    {/* Settings Tab */}
-                    {activeTab === 'settings' && (
-                      <SettingsTab
-                        t={t}
-                        passwordForm={passwordForm}
-                        setPasswordForm={setPasswordForm}
-                        notificationSettings={notificationSettings}
-                        handleNotificationToggle={handleNotificationToggle}
-                      />
-                    )}
-
-                  </AnimatePresence>
-                </div>
-              </motion.div>
+                {/* Calendar Tab */}
+                {activeTab === 'calendar' && (
+                  <div className="space-y-6">
+                    <UserCalendarPage />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </section >
+        </section>
       )}
     </div >
   );

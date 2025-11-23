@@ -38,10 +38,9 @@ export const CalendarPage: React.FC = () => {
     }
 
     return (
-        <div className="max-w-[1600px] mx-auto px-0 sm:px-6 lg:px-8">
-            {/* Header: Title + Filter Button */}
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-4xl font-bold text-white">Car Calendar</h2>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">Car Calendar</h2>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-s font-medium rounded-lg border bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white transition-all flex-shrink-0"
@@ -49,11 +48,6 @@ export const CalendarPage: React.FC = () => {
                     <Filter className="w-4 h-4" />
                     <span>{showFilters ? t('admin.calendar.hideFilters') : t('admin.calendar.showFilters')}</span>
                 </button>
-            </div>
-
-            {/* Optional spacer or other controls */}
-            <div className="mb-4 flex flex-col lg:flex-row lg:items-center lg:justify-end gap-3 lg:gap-4">
-                {/* any additional controls can go here */}
             </div>
 
             {/* Filters Sidebar */}

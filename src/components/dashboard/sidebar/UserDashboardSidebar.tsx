@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, LogOut, Home, Calendar, Settings, Car } from 'lucide-react';
+import { User, LogOut, Home, Calendar, Settings, Car, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../hooks/useAuth';
 import { TabType } from '../../../pages/dashboard/UserDashboard';
@@ -27,10 +27,9 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
 
     const sidebarItems: SidebarItem[] = [
         { id: 'overview', label: t('dashboard.sidebar.overview'), icon: Home },
-        { id: 'bookings', label: t('dashboard.sidebar.myBookings'), icon: Car },
+        { id: 'bookings', label: t('dashboard.sidebar.myBookings'), icon: FileText },
         { id: 'cars', label: t('dashboard.sidebar.cars'), icon: Car },
         { id: 'calendar', label: t('dashboard.sidebar.calendar'), icon: Calendar },
-        { id: 'profile', label: t('dashboard.sidebar.profile'), icon: User },
         { id: 'settings', label: t('dashboard.sidebar.settings'), icon: Settings },
     ];
 
@@ -39,9 +38,9 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
-            className="lg:col-span-1 xl:col-span-1.5"
+            className="w-full"
         >
-            <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 border border-white/10 w-full max-w-[300px] mx-auto">
+            <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 lg:p-6 border border-white/10 w-full lg:max-w-[320px] lg:mx-0">
                 {/* User Info */}
                 <div className="flex items-center gap-4 mb-8 pb-6 border-b border-white/10">
                     <div className="w-14 h-14 bg-red-600/20 rounded-full flex items-center justify-center">

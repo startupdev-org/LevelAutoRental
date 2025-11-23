@@ -1,6 +1,5 @@
 // OverviewTab.tsx
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Calendar, DollarSign, Star, Truck, Check, Clock, FileText, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { fetchFavoriteCar, fetchRecentRentals, getUserRentals as fetchUsersRentals } from '../../../../lib/db/rentals/rentals';
@@ -63,27 +62,30 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
         });
     };
 
-    const getStatusColor = (status?: Booking['status']) => {
+    const getStatusColor = (status?: string) => {
         if (!status) {
-            return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
+            return 'bg-gray-500/20 text-gray-400';
         }
 
         const lowerCaseStatus = status.toLowerCase();
 
         switch (lowerCaseStatus) {
             case 'upcoming':
-                return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+            case 'pending':
+                return 'bg-yellow-500/20 text-yellow-400';
             case 'active':
-                return 'bg-green-500/20 text-green-400 border border-green-500/30';
+                return 'bg-green-500/20 text-green-400';
             case 'completed':
-                return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                return 'bg-gray-500/20 text-gray-400';
             default:
                 return 'bg-gray-500/20 text-gray-400';
         }
     };
 
-    const getStatusIcon = (status: Booking['status']) => {
-        switch (status) {
+    const getStatusIcon = (status?: string) => {
+        if (!status) return <FileText className="w-3 h-3" />;
+        const lowerStatus = status.toLowerCase();
+        switch (lowerStatus) {
             case 'pending':
                 return <Clock className="w-3 h-3" />;
             case 'active':
@@ -96,85 +98,92 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
     };
 
     return (
-        <motion.div
-            key="overview"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-        >
+        <div className="space-y-6">
             <div>
-                <h2 className="text-3xl sm:text-4xl font-bold text-white">{t('dashboard.overview.title')}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">{t('dashboard.overview.title')}</h2>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <BasicInfoComponent rentals={rentals} t={t} />
+            </div>
+
+            {/* Favorite Car */}
+            <div className="mb-8">
                 <FavoriteCarComponent favoriteCar={favoriteCar} />
             </div>
 
             {/* Recent Bookings */}
             <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h3 className="text-2xl sm:text-3xl font-bold">{t('dashboard.overview.recentBookings')}</h3>
-
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-white">{t('dashboard.overview.recentBookings')}</h3>
                     <button
                         onClick={() => setActiveTab('bookings')}
-                        className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                        className="text-red-600 hover:text-red-500 transition-colors duration-300 text-sm font-medium"
                     >
-                        <Plus className="w-4 h-4" />
-                        <span className="text-lg font-semibold">{t('dashboard.overview.viewAll')}</span>
+                        {t('dashboard.overview.viewAll')}
                     </button>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                    {recentRentals?.map((rental) => (
-                        <div
-                            key={rental.id}
-                            className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-4 bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 shadow-sm"
-                        >
-                            {/* Car Image */}
-                            <img
-                                src={rental.car?.image_url || '/placeholder-car.jpg'}
-                                alt={rental.car?.make}
-                                className="w-full sm:w-40 h-40 sm:h-30 rounded-lg object-contain bg-black/10"
-                                loading="lazy"
-                            />
-
-                            {/* Car Details */}
-                            <div className="flex-1 flex flex-col justify-between gap-2 w-full">
-                                <h4 className="font-bold text-white text-lg">
-                                    {rental.car?.make} {rental.car?.model}
-                                </h4>
-
-                                <div className="flex flex-col sm:flex-row sm:gap-4 text-gray-300 text-sm">
-                                    <p>
-                                        <span className="font-semibold text-white">From:</span> {formatDate(rental.start_date)} {rental.start_time}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold text-white">To:</span> {formatDate(rental.end_date)} {rental.end_time}
-                                    </p>
-                                </div>
-
-                                {rental.total_amount && (
-                                    <p className="text-gray-300 text-sm mt-1">
-                                        <span className="font-semibold text-white">Total price: </span>{rental.total_amount} MDL
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Status Badge */}
-                            <button
-                                className={`px-4 py-2 mt-2 sm:mt-0 ${getStatusColor(rental.rental_status)} font-semibold rounded-lg transition-all text-sm whitespace-nowrap flex items-center gap-2`}
+                <div className="flex flex-col gap-3">
+                    {recentRentals && recentRentals.length > 0 ? (
+                        recentRentals.slice(0, 2).map((rental) => (
+                            <div
+                                key={rental.id}
+                                className="flex items-center gap-4 p-3 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300"
                             >
-                                <span className="capitalize">{rental.rental_status}</span>
+                                {/* Car Image */}
+                                <img
+                                    src={rental.car?.image_url || '/placeholder-car.jpg'}
+                                    alt={rental.car?.make}
+                                    className="w-14 h-14 rounded-lg object-cover"
+                                    loading="lazy"
+                                />
+
+                                {/* Car Details */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold text-sm text-white truncate">
+                                                {rental.car?.make} {rental.car?.model}
+                                            </p>
+                                            <p className="text-gray-400 text-xs">
+                                                {formatDate(rental.start_date)} - {formatDate(rental.end_date)}
+                                            </p>
+                                        </div>
+                                        <div className="text-right ml-4">
+                                            {rental.total_amount && (
+                                                <span className="text-red-600 font-bold text-base mr-2 block">
+                                                    {rental.total_amount} MDL
+                                                </span>
+                                            )}
+                                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(rental.rental_status)}`}>
+                                                {getStatusIcon(rental.rental_status)}
+                                                <span className="capitalize">{rental.rental_status?.toLowerCase()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Calendar className="text-gray-400" size={24} />
+                            </div>
+                            <h4 className="text-gray-300 font-medium mb-2">No bookings yet</h4>
+                            <p className="text-gray-400 text-sm mb-4">Start renting to see your booking history here</p>
+                            <button
+                                onClick={() => setActiveTab('cars')}
+                                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 text-sm text-white"
+                            >
+                                <Calendar size={16} />
+                                Browse Cars
                             </button>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
-        </motion.div>
-
+        </div>
     );
 };
