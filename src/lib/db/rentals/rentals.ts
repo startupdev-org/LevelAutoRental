@@ -167,6 +167,56 @@ export async function fetchRentalsHistory(
 }
 
 
+export async function fetchRentalsCalendarPage(
+    carId?: string,
+    month?: Date,
+    status?: string
+): Promise<Rental[]> {
+    const user = await getLoggedUser();
+    if (!user) return [];
+
+    let query = supabase
+        .from("Rentals")
+        .select("*")
+        .eq("user_id", user.id);
+
+    // Filter by month (expects "YYYY-MM")
+    if (month) {
+        const year = month.getFullYear();
+        const m = month.getMonth();
+
+        const firstDay = formatDateForSQL(year, m, 1);
+        const nextMonthFirst = formatDateForSQL(year, m + 1, 1);
+
+        query = query
+            .lt("start_date", nextMonthFirst)
+            .gte("end_date", firstDay);
+    }
+
+
+    if (carId) {
+        query = query.eq('car_id', carId)
+    }
+
+    if (status) {
+        query = query.eq("rental_status", status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching rentals calendar:", error);
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((row: any) =>
+            toRentalDTO(row, row.car_id)
+        )
+    );
+}
+
+
 
 async function toRentalDTO(rental: Rental, carId: string): Promise<Rental> {
 
@@ -175,4 +225,12 @@ async function toRentalDTO(rental: Rental, carId: string): Promise<Rental> {
     rental.car = carWithImage;
 
     return rental;
+}
+
+
+function formatDateForSQL(year: number, month: number, day: number): string {
+    // month is 0-based, so increase by 1
+    const m = (month + 1).toString().padStart(2, "0");
+    const d = day.toString().padStart(2, "0");
+    return `${year}-${m}-${d} 00:00:00`;
 }

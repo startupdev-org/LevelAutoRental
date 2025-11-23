@@ -346,3 +346,58 @@ export async function fetchCarIdsByQuery(queryString: string): Promise<number[]>
         return [];
     }
 }
+
+export async function fetchCarsPaginated(
+    page: number = 1,
+    limit: number = 10,
+    search?: string
+): Promise<{ cars: Car[]; total: number; totalPages: number }> {
+    try {
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        let query = supabase
+            .from("Cars")
+            .select("*", { count: "exact" }) // get total count
+            .order("id", { ascending: true }) // change to name/make if needed
+            .range(from, to);
+
+        if (search && search.trim().length > 0) {
+            const term = `%${search.trim()}%`;
+            query = query.or(`make.ilike.${term},model.ilike.${term}`);
+        }
+
+        const { data, count, error } = await query;
+
+        if (error && data === null) {
+            console.error("Error fetching paginated cars:", error);
+            return { cars: [], total: 0, totalPages: 0 };
+        }
+
+        const cars = await Promise.all(
+            data.map((car: Car) => toCarDTO(car))
+        );
+
+        const total = count ?? 0;
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            cars,
+            total,
+            totalPages
+        };
+    } catch (err) {
+        console.error("Unexpected error in fetchCarsPaginated:", err);
+        return { cars: [], total: 0, totalPages: 0 };
+    }
+}
+export async function toCarDTO(car: Car): Promise<Car> {
+    const carName = car.make + ' ' + car.model;
+    const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+
+    // Mutate/enrich the original car object
+    car.image_url = mainImage;
+    car.photo_gallery = photoGallery;
+
+    return car;
+}
