@@ -92,3 +92,9 @@ export interface CarFilterOptions {
   sortOrder: 'asc' | 'desc';
   status: 'available' | 'borrowed' | null;
 }
+
+export interface FavoriteCar {
+  car: Car | null;
+  lastRental: string | null;
+  borrowCount: number | null;
+}

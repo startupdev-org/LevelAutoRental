@@ -117,7 +117,7 @@ export async function fetchImages() {
  */
 function normalizeCarNameToFolder(carName: string): string {
     if (!carName) return "";
-    
+
     // Remove common prefixes and normalize
     let normalized = carName
         .toLowerCase()
@@ -131,7 +131,7 @@ function normalizeCarNameToFolder(carName: string): string {
         .replace(/[^a-z0-9-]/g, "") // Remove special characters
         .replace(/-+/g, "-") // Replace multiple hyphens with single
         .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-    
+
     return normalized;
 }
 
@@ -161,7 +161,7 @@ export async function fetchImagesByCarName(
                 const make = parts[0].replace(/mercedes-amg/gi, "mercedes").replace(/amg/gi, "");
                 const model = parts.slice(1).join("-");
                 const altFolder = `${make}-${model}`.replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
-                
+
                 if (altFolder !== folder) {
                     const altResult = await supabase.storage.from("cars").list(altFolder);
                     if (!altResult.error && altResult.data && altResult.data.length > 0) {
@@ -282,8 +282,8 @@ export async function fetchMainImages() {
         }
 
         // Filter out non-folder items and the "contracts" folder
-        const carFolders = folders.filter(folder => 
-            folder.name !== "contracts" && 
+        const carFolders = folders.filter(folder =>
+            folder.name !== "contracts" &&
             !folder.name.includes('.') // Exclude files at root level
         );
 
@@ -317,3 +317,32 @@ export async function fetchMainImages() {
     }
 }
 
+
+/**
+ * Fetch car IDs based on a search query
+ * @param queryString - The search string to match against make or model
+ * @returns Promise<number[]> - Array of car IDs
+ */
+export async function fetchCarIdsByQuery(queryString: string): Promise<number[]> {
+    try {
+        if (!queryString) return [];
+
+        const search = `%${queryString}%`;
+
+        const { data, error } = await supabase
+            .from('Cars')
+            .select('id')
+            .or(`make.ilike.${search},model.ilike.${search}`);
+
+        if (error) {
+            console.error('Error fetching car IDs:', error);
+            return [];
+        }
+
+        // Return an array of IDs
+        return data?.map(car => car.id) ?? [];
+    } catch (err) {
+        console.error('Unexpected error in fetchCarIdsByQuery:', err);
+        return [];
+    }
+}

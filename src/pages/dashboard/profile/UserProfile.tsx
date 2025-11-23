@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { Edit3, Mail, Phone, Loader2, AlertTriangle, X } from 'lucide-react';
-import { getProfile, updateProfile } from '../../../lib/db/profile';
+import { getProfile, updateProfile } from '../../../lib/db/user/profile';
 import { User } from '../../../types';
 
 interface ProfileTabProps {

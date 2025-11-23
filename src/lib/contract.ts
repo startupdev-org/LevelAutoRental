@@ -80,7 +80,7 @@ const convertRomanianToASCII = (text: string): string => {
     'ț': 't', 'Ț': 'T',
     'ţ': 't', 'Ţ': 'T'
   };
-  
+
   return text.replace(/[ăĂâÂîÎșȘțȚţŢ]/g, char => replacements[char] || char);
 };
 
@@ -146,7 +146,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
 
     // Header design - logo on left, info right-aligned
     const headerTopY = 10;
-    
+
     // Load and add company logo - on left, positioned higher
     let logoLoaded = false;
     const logoWidth = 25;
@@ -164,29 +164,29 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
 
     // Company information - positioned lower, right-aligned block
     const infoX = pageWidth - margin;
-    
+
     // Calculate text block height
     doc.setFontSize(11);
     doc.setFont('times', 'bold');
     const companyName = 'LEVEL AUTO RENTAL S.R.L.';
     const companyNameHeight = 11 * 0.35; // Approximate line height
-    
+
     doc.setFontSize(8);
     doc.setFont('times', 'normal');
     const lineHeight = 8 * 0.35; // Approximate line height for smaller text
     const totalTextHeight = companyNameHeight + (lineHeight * 2); // Company name + 2 lines
-    
+
     // Start text block - positioned between center and bottom of logo
     const logoCenterY = headerTopY + logoHeight / 2;
     const infoStartY = logoCenterY - (totalTextHeight / 2) + 3; // Slightly lower than center
-    
+
     // Company name
     doc.setFontSize(11);
     doc.setFont('times', 'bold');
     doc.setTextColor(0, 0, 0);
     const companyNameWidth = doc.getTextWidth(companyName);
     doc.text(companyName, infoX - companyNameWidth, infoStartY);
-    
+
     // Address info - left-aligned within right block
     doc.setFont('times', 'normal');
     doc.setFontSize(8);
@@ -212,7 +212,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.setTextColor(0, 0, 0);
     const contractTitleY = lineY + 12;
     doc.text(convertRomanianToASCII('CONTRACT DE LOCATIUNE'), pageWidth / 2, contractTitleY, { align: 'center' });
-    
+
     // Contract Number and Date - centered
     doc.setFontSize(10);
     doc.setFont('times', 'normal');
@@ -233,11 +233,11 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     const partyText1 = convertRomanianToASCII('Compania LEVEL AUTO RENTAL S.R.L., cu sediul in Republica Moldova, mun. Chisinau, or. Chisinau,');
     const partyText2 = convertRomanianToASCII('str. Mircea cel Batran 13/1, cod fiscal 1024606013124, (denumita in continuare "Locator"), reprezentata de Levițchi');
     const partyText3 = convertRomanianToASCII('Victorin, in calitate de administrator, care actioneaza in baza statutului, pe de o parte,');
-    
+
     doc.text(partyText1, margin, y);
     y += 5;
     doc.text(partyText2, margin, y);
@@ -273,47 +273,47 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     // Helper function to add text with bold formatting for key terms and point numbers
     const addTextWithBreakSection1 = (text: string, spacing: number = 5) => {
       const textCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
       y = textCheck.y;
       currentPage = textCheck.currentPage;
-      
+
       const normalizedText = convertRomanianToASCII(text);
-      
+
       // Pattern to match point numbers (e.g., 5.1, 6.1.1, 11.1.20)
       const pointPattern = /\d+\.\d+(?:\.\d+)?/g;
       // Key terms to make bold (case insensitive)
       const keyTerms = ['Locator', 'Locatar', 'autovehicul', 'Contract', 'Anexa', 'Locatorului', 'Locatarului', 'Autovehiculului', 'Contractului', 'Anexei'];
-      
+
       // Build segments array with bold flags
-      const segments: Array<{text: string, isBold: boolean}> = [];
+      const segments: Array<{ text: string, isBold: boolean }> = [];
       let lastIndex = 0;
-      
+
       // Find all point numbers and key terms
-      const allMatches: Array<{index: number, length: number, isBold: boolean}> = [];
-      
+      const allMatches: Array<{ index: number, length: number, isBold: boolean }> = [];
+
       // Find point numbers
       let match;
       while ((match = pointPattern.exec(normalizedText)) !== null) {
-        allMatches.push({index: match.index, length: match[0].length, isBold: true});
+        allMatches.push({ index: match.index, length: match[0].length, isBold: true });
       }
-      
+
       // Find key terms
       for (const term of keyTerms) {
         const termPattern = new RegExp(`\\b${term}\\b`, 'gi');
         let termMatch;
         while ((termMatch = termPattern.exec(normalizedText)) !== null) {
-          allMatches.push({index: termMatch.index, length: termMatch[0].length, isBold: true});
+          allMatches.push({ index: termMatch.index, length: termMatch[0].length, isBold: true });
         }
       }
-      
+
       // Sort matches by index
       allMatches.sort((a, b) => a.index - b.index);
-      
+
       // Remove overlapping matches (keep first)
-      const nonOverlapping: Array<{index: number, length: number, isBold: boolean}> = [];
+      const nonOverlapping: Array<{ index: number, length: number, isBold: boolean }> = [];
       for (let i = 0; i < allMatches.length; i++) {
         const current = allMatches[i];
         let overlaps = false;
@@ -327,20 +327,20 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
           nonOverlapping.push(current);
         }
       }
-      
+
       // Build segments
       for (const match of nonOverlapping) {
         if (match.index > lastIndex) {
-          segments.push({text: normalizedText.substring(lastIndex, match.index), isBold: false});
+          segments.push({ text: normalizedText.substring(lastIndex, match.index), isBold: false });
         }
-        segments.push({text: normalizedText.substring(match.index, match.index + match.length), isBold: true});
+        segments.push({ text: normalizedText.substring(match.index, match.index + match.length), isBold: true });
         lastIndex = match.index + match.length;
       }
-      
+
       if (lastIndex < normalizedText.length) {
-        segments.push({text: normalizedText.substring(lastIndex), isBold: false});
+        segments.push({ text: normalizedText.substring(lastIndex), isBold: false });
       }
-      
+
       // If no segments (no matches), add whole text
       if (segments.length === 0) {
         doc.setFont('times', 'normal');
@@ -354,12 +354,12 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
           xPos += doc.getTextWidth(segment.text);
         }
       }
-      
+
       // Reset font to normal
       doc.setFont('times', 'normal');
       y += spacing;
     };
-    
+
     addTextWithBreakSection1('1.1 Locatorul da in folosinta, iar Locatarul primeste in folosinta autovehiculul descris');
     addTextWithBreakSection1('in pct. 1.2 din prezentul contract (denumit in continuare "autovehicul"), in schimbul');
     addTextWithBreakSection1('achitarii de catre Locatar a pretului, in conditiile Capitolului V al prezentului contract.', 6);
@@ -373,7 +373,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const mileage = data.vehicleDetails?.mileage || (data.car as any)?.kilometers || data.car?.mileage || 0;
     const carYear = data.car?.year || 0;
     const fuelType = (data as any).carFuelType || data.car?.fuel_type || '';
-    
+
     // Convert fuel type to Romanian
     let fuelTypeRomanian = '';
     if (fuelType === 'gasoline' || fuelType === 'petrol') {
@@ -387,7 +387,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     } else {
       fuelTypeRomanian = fuelType || '';
     }
-    
+
     const vehicleInfo = [
       ['MARCA:', convertRomanianToASCII(carMake)],
       ['MODEL:', convertRomanianToASCII(carModel)],
@@ -424,12 +424,12 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     // Fill table with data
     vehicleInfo.forEach(([label, value], idx) => {
       const rowY = vehicleTableStartY + (idx * vehicleRowHeight);
-      
+
       // Label in left column
       doc.setFont('times', 'bold');
       doc.setFontSize(9);
       doc.text(label, margin + 2, rowY + vehicleRowHeight / 2 + 2);
-      
+
       // Value in right column
       doc.setFont('times', 'normal');
       doc.setFontSize(9);
@@ -446,7 +446,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const check = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = check.y;
     currentPage = check.currentPage;
-    
+
     // Add footer to page 1
     addPageFooter(doc, currentPage, pageWidth, pageHeight, margin);
 
@@ -468,38 +468,38 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     let pageCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = pageCheck.y;
     currentPage = pageCheck.currentPage;
-    
+
     // Helper function for section II
     const addTextWithBreakSection2 = (text: string, spacing: number = 5) => {
       const textCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
       y = textCheck.y;
       currentPage = textCheck.currentPage;
-      
+
       const normalizedText = convertRomanianToASCII(text);
-      
+
       // Pattern to match point numbers
       const pointPattern = /\d+\.\d+(?:\.\d+)?/g;
       const keyTerms = ['Locator', 'Locatar', 'autovehicul', 'Contract', 'Anexa', 'Locatorului', 'Locatarului', 'Autovehiculului', 'Contractului', 'Anexei'];
-      
-      const segments: Array<{text: string, isBold: boolean}> = [];
+
+      const segments: Array<{ text: string, isBold: boolean }> = [];
       let lastIndex = 0;
-      const allMatches: Array<{index: number, length: number, isBold: boolean}> = [];
-      
+      const allMatches: Array<{ index: number, length: number, isBold: boolean }> = [];
+
       let match;
       while ((match = pointPattern.exec(normalizedText)) !== null) {
-        allMatches.push({index: match.index, length: match[0].length, isBold: true});
+        allMatches.push({ index: match.index, length: match[0].length, isBold: true });
       }
-      
+
       for (const term of keyTerms) {
         const termPattern = new RegExp(`\\b${term}\\b`, 'gi');
         let termMatch;
         while ((termMatch = termPattern.exec(normalizedText)) !== null) {
-          allMatches.push({index: termMatch.index, length: termMatch[0].length, isBold: true});
+          allMatches.push({ index: termMatch.index, length: termMatch[0].length, isBold: true });
         }
       }
-      
+
       allMatches.sort((a, b) => a.index - b.index);
-      const nonOverlapping: Array<{index: number, length: number, isBold: boolean}> = [];
+      const nonOverlapping: Array<{ index: number, length: number, isBold: boolean }> = [];
       for (let i = 0; i < allMatches.length; i++) {
         const current = allMatches[i];
         let overlaps = false;
@@ -513,19 +513,19 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
           nonOverlapping.push(current);
         }
       }
-      
+
       for (const match of nonOverlapping) {
         if (match.index > lastIndex) {
-          segments.push({text: normalizedText.substring(lastIndex, match.index), isBold: false});
+          segments.push({ text: normalizedText.substring(lastIndex, match.index), isBold: false });
         }
-        segments.push({text: normalizedText.substring(match.index, match.index + match.length), isBold: true});
+        segments.push({ text: normalizedText.substring(match.index, match.index + match.length), isBold: true });
         lastIndex = match.index + match.length;
       }
-      
+
       if (lastIndex < normalizedText.length) {
-        segments.push({text: normalizedText.substring(lastIndex), isBold: false});
+        segments.push({ text: normalizedText.substring(lastIndex), isBold: false });
       }
-      
+
       if (segments.length === 0) {
         doc.setFont('times', 'normal');
         doc.text(normalizedText, margin, y);
@@ -537,11 +537,11 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
           xPos += doc.getTextWidth(segment.text);
         }
       }
-      
+
       doc.setFont('times', 'normal');
       y += spacing;
     };
-    
+
     addTextWithBreakSection2('2.1 Termenul minim de inchiriere a Bunului este de 2 (doua) zile calendaristice (24 ore).', 5);
     addTextWithBreakSection2('2.2 Termenul contractului poate fi modificat prin acordul partilor.');
     y += 8;
@@ -561,41 +561,41 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
       const textCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
       y = textCheck.y;
       currentPage = textCheck.currentPage;
-      
+
       const normalizedText = convertRomanianToASCII(text);
-      
+
       // Pattern to match point numbers (e.g., 5.1, 6.1.1, 11.1.20)
       const pointPattern = /\d+\.\d+(?:\.\d+)?/g;
       // Key terms to make bold (case insensitive)
       const keyTerms = ['Locator', 'Locatar', 'autovehicul', 'Contract', 'Anexa', 'Locatorului', 'Locatarului', 'Autovehiculului', 'Contractului', 'Anexei'];
-      
+
       // Build segments array with bold flags
-      const segments: Array<{text: string, isBold: boolean}> = [];
+      const segments: Array<{ text: string, isBold: boolean }> = [];
       let lastIndex = 0;
-      
+
       // Find all point numbers and key terms
-      const allMatches: Array<{index: number, length: number, isBold: boolean}> = [];
-      
+      const allMatches: Array<{ index: number, length: number, isBold: boolean }> = [];
+
       // Find point numbers
       let match;
       while ((match = pointPattern.exec(normalizedText)) !== null) {
-        allMatches.push({index: match.index, length: match[0].length, isBold: true});
+        allMatches.push({ index: match.index, length: match[0].length, isBold: true });
       }
-      
+
       // Find key terms
       for (const term of keyTerms) {
         const termPattern = new RegExp(`\\b${term}\\b`, 'gi');
         let termMatch;
         while ((termMatch = termPattern.exec(normalizedText)) !== null) {
-          allMatches.push({index: termMatch.index, length: termMatch[0].length, isBold: true});
+          allMatches.push({ index: termMatch.index, length: termMatch[0].length, isBold: true });
         }
       }
-      
+
       // Sort matches by index
       allMatches.sort((a, b) => a.index - b.index);
-      
+
       // Remove overlapping matches (keep first)
-      const nonOverlapping: Array<{index: number, length: number, isBold: boolean}> = [];
+      const nonOverlapping: Array<{ index: number, length: number, isBold: boolean }> = [];
       for (let i = 0; i < allMatches.length; i++) {
         const current = allMatches[i];
         let overlaps = false;
@@ -609,20 +609,20 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
           nonOverlapping.push(current);
         }
       }
-      
+
       // Build segments
       for (const match of nonOverlapping) {
         if (match.index > lastIndex) {
-          segments.push({text: normalizedText.substring(lastIndex, match.index), isBold: false});
+          segments.push({ text: normalizedText.substring(lastIndex, match.index), isBold: false });
         }
-        segments.push({text: normalizedText.substring(match.index, match.index + match.length), isBold: true});
+        segments.push({ text: normalizedText.substring(match.index, match.index + match.length), isBold: true });
         lastIndex = match.index + match.length;
       }
-      
+
       if (lastIndex < normalizedText.length) {
-        segments.push({text: normalizedText.substring(lastIndex), isBold: false});
+        segments.push({ text: normalizedText.substring(lastIndex), isBold: false });
       }
-      
+
       // If no segments (no matches), add whole text
       if (segments.length === 0) {
         doc.setFont('times', 'normal');
@@ -636,12 +636,12 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
           xPos += doc.getTextWidth(segment.text);
         }
       }
-      
+
       // Reset font to normal
       doc.setFont('times', 'normal');
       y += spacing;
     };
-    
+
     addTextWithBreak('3.1 Autovehiculul poate fi condus in timpul perioadei de inchiriere numai de catre Locatar');
     addTextWithBreak('si/sau persoanele indicate in fisa cu numele conducatorilor auto anexata la contractul');
     addTextWithBreak('de inchiriere - Anexa Nr.1 (in continuare: "soferi aditionali").', 6);
@@ -664,7 +664,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionCheck.y;
     currentPage = sectionCheck.currentPage;
-    
+
     // Add footer to current page
     addPageFooter(doc, currentPage, pageWidth, pageHeight, margin);
 
@@ -704,14 +704,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionVCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionVCheck.y;
     currentPage = sectionVCheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('V. PRETUL CONTRACTULUI'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('5.1 Locatarul va plati Locatorului pentru inchirierea autovehiculului suma specificata in Anexa Nr.1 la momentul');
     addTextWithBreak('incheierii contractului.', 6);
     addTextWithBreak('5.2 Metodele de achitare a serviciilor acceptate de catre Locator sunt: prin card bancar, transfer bancar sau cash.', 6);
@@ -764,14 +764,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionVICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionVICheck.y;
     currentPage = sectionVICheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('VI. DREPTURILE, OBLIGATIILE SI RASPUNDEREA LOCATARULUI'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('6.1 Locatarul nu are dreptul sa:', 6);
     addTextWithBreak('6.1.1 conduca sau sa permita conducerea autovehiculului cu viteza mai mare de 130 km/h; in caz contrar se aplica');
     addTextWithBreak('penalitate de 2000 MDL;', 6);
@@ -870,14 +870,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionVIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionVIICheck.y;
     currentPage = sectionVIICheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('VII. OBLIGATIILE LOCATORULUI'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('7.1 Locatorul va pune la dispozitia Locatarului autovehiculul intr-o stare sigura pentru conducere;', 6);
     addTextWithBreak('7.2 Autovehiculul va fi predat Locatarului impreuna cu toate cele necesare: cheie, certificat de inmatriculare,');
     addTextWithBreak('Asigurare RCA, rezervor plin de combustibil, anvelope de iarna (in sezonul rece) si de vara (in sezonul cald) si alte');
@@ -896,14 +896,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionVIIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionVIIICheck.y;
     currentPage = sectionVIIICheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('VIII. REPARATII SI ACCIDENTE MECANICE'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('8.1 in cazul in care autovehiculul este implicat intr-un accident, este deteriorat, distrus sau necesita lucrari de reparatie');
     addTextWithBreak('sau salvare, indiferent de cauza, Locatarul va notifica imediat prin telefon Locatorul despre toate circumstantele.', 6);
     addTextWithBreak('8.2 Locatarul nu va organiza si nu va efectua lucrari de reparatii sau salvare a autovehiculului inchiriat fara');
@@ -929,14 +929,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionIXCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionIXCheck.y;
     currentPage = sectionIXCheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('IX. RETURNAREA AUTOVEHICULUI'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('9.1 In momentul sau inainte de expirarea termenului de inchiriere, Locatarul va aduce autovehiculul la locul convenit');
     addTextWithBreak('descris in Anexa Nr.1 sau va obtine acordul Locatorului pentru continuarea inchirierii (in acest caz Locatarul va plati');
     addTextWithBreak('pretul de inchiriere suplimentar pentru termenul de inchiriere prelungit).', 6);
@@ -960,14 +960,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionXCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionXCheck.y;
     currentPage = sectionXCheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('X. ASIGURARE'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('10.1 Autovehiculul este asigurat, asigurarea fiind operabila in conditiile legii si a prezentului Contract;', 6);
     addTextWithBreak('10.2 Prima de asigurare RCA este inclusa in taxa de inchiriere;', 6);
     addTextWithBreak('10.3 In cazul producerii unui eveniment stipulat in Capitolul XI, si alte deteriorari cauzate din vina Locatarului,');
@@ -984,14 +984,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionXICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionXICheck.y;
     currentPage = sectionXICheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('XI. EVENIMENTE NEACOPERITE DE ASIGURARE'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('11.1 Locatarul cunoaste si accepta ca asigurarea RCA a autovehiculului NU este aplicabila in urmatoarele');
     addTextWithBreak('circumstante:', 6);
     addTextWithBreak('11.1.1 conducerea autovehiculului sub influenta alcoolului sau a oricarui drog;', 6);
@@ -1050,14 +1050,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionXIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionXIICheck.y;
     currentPage = sectionXIICheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('XII. INCALCAREA REGULAMENTULUI CIRCULATIEI RUTIERE'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('12.1 Toate penalitatile legate de incalcarile in trafic si/sau parcare neregulamentara sunt sub responsabilitatea');
     addTextWithBreak('Locatarului;', 6);
     addTextWithBreak('12.2 Locatorul se angajeaza, in cazul in care primeste o notificare cu privire la orice incalcari in trafic si/sau parcare');
@@ -1079,14 +1079,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionXIIICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionXIIICheck.y;
     currentPage = sectionXIIICheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('XIII. INCETAREA CONTRACTULUI'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('13.1 Locatorul are dreptul de a rezilia Contractul de locatiune si de a intra in posesia imediata a autovehiculului, in');
     addTextWithBreak('cazul in care Locatarul nu respecta oricare dintre termenii si conditiile Contractului de locatiune, sau in cazul in care');
     addTextWithBreak('autovehiculul este deteriorat;');
@@ -1102,14 +1102,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionXIVCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionXIVCheck.y;
     currentPage = sectionXIVCheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('XIV. REZERVARI / ACHITARI'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('14.1 Rezervarea autovehiculului se considera valida din momentul intrarii sumei aferente rezervarii pe contul sau in');
     addTextWithBreak('casieria Locatorului;', 6);
     addTextWithBreak('14.2 Anularea sau modificarea rezervarii poate fi efectuata prin apel telefonic/ e-mail/ Whatsapp/ Telegram/ Viber/');
@@ -1126,14 +1126,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionXVCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionXVCheck.y;
     currentPage = sectionXVCheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('XV. CLAUZA DE PENALITATE IN CAZUL REFUZULUI DE A RETURNA AUTOVEHICULUL'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('15.1 In cazul in care, Locatarul nu va restitui autovehiculul inchiriat la ora si data prevazuta in Anexa Nr.1, iar');
     addTextWithBreak('intarzierea este imputabila Locatarului, acesta din urma se considera a fi in intarziere, fara a fi necesara o notificare');
     addTextWithBreak('prealabila;', 6);
@@ -1157,14 +1157,14 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const sectionXVICheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = sectionXVICheck.y;
     currentPage = sectionXVICheck.currentPage;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('XVI. CONFIDENTIALITATEA'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('16.1 Notiunea de confidentialitate include fara limitari orice informatie, indiferent de forma acesteia, dar care, in cazul');
     addTextWithBreak('formei scrise sau electronice a fost in mod clar desemnata de oricare din parti ca fiind confidentiala, iar in cazul');
     addTextWithBreak('comunicarii orale, este identificata in momentul dezvaluirii ca fiind confidentiala, inclusiv informatiile confidentiale');
@@ -1192,49 +1192,49 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     currentPage++;
     doc.addPage();
     y = margin;
-    
+
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text(convertRomanianToASCII('NOTA IN ADRESA LOCATARULUI'), margin, y);
     y += 6;
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
-    
+
     addTextWithBreak('NOTA: Locatorul trebuie sa ofere Locatarului cel putin un exemplar al Contractului de locatiune, care urmeaza');
     addTextWithBreak('pastrat in autovehicul pe toata perioada locatiunii si prezentat organelor competente.', 6);
     addTextWithBreak('Acte anexate la prezentul contract: Anexa Nr.1- Perioada, Pretul locatiunii, Garantia, Fransiza si Soferii aditionali');
     addTextWithBreak('Anexa Nr.2- Act de predare-primire');
     y += 8;
-    
+
     // Signatures section
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     doc.text('LOCATOR', margin, y);
     doc.text('LOCATAR', pageWidth - margin - 50, y);
     y += 8;
-    
+
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
     doc.text('LEVEL AUTO RENTAL S.R.L.', margin, y);
     doc.text(convertRomanianToASCII(data.customer.fullName || '__________________________'), pageWidth - margin - 50, y);
     y += 5;
-    
+
     doc.text('Cod fiscal: 1024606013124', margin, y);
     y += 5;
-    
+
     doc.text(convertRomanianToASCII('MD-2075, mun. Chisinau, or. Chisinau Str. Mircea cel Batran 13/1, of. 1K B.C Victoriabank SA'), margin, y);
     y += 5;
     doc.text('IBAN MDL: MD65VI022512000000429', margin, y);
     y += 5;
     doc.text('Cod bancar: VICBMD2X', margin, y);
     y += 10;
-    
+
     doc.line(margin, y, margin + 60, y);
     doc.line(pageWidth - margin - 50, y, pageWidth - margin, y);
     y += 5;
     doc.text(convertRomanianToASCII('(Semnatura)'), margin, y);
     doc.text(convertRomanianToASCII('(Semnatura)'), pageWidth - margin - 50, y);
-    
+
     addPageFooter(doc, currentPage, pageWidth, pageHeight, margin);
 
     // ============================================
@@ -1284,7 +1284,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     // Draw black header bar
     doc.setFillColor(0, 0, 0);
     doc.rect(margin, anexa1TableStartY, tableEndX - margin, anexa1RowHeight, 'F');
-    
+
     // Header text in white
     doc.setTextColor(255, 255, 255);
     doc.setFont('times', 'bold');
@@ -1292,7 +1292,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.text('DATA', margin + col1Width + 2, anexa1TableStartY + 5);
     doc.text('ORA', margin + col1Width + col2Width + 2, anexa1TableStartY + 5);
     doc.text('LOCUL', margin + col1Width + col2Width + col3Width + 2, anexa1TableStartY + 5);
-    
+
     // Reset text color
     doc.setTextColor(0, 0, 0);
     y = anexa1TableStartY + anexa1RowHeight;
@@ -1359,7 +1359,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     // Draw black header bar (covering entire width including label column)
     doc.setFillColor(0, 0, 0);
     doc.rect(margin, priceTableStartY, priceTableEndX - margin, priceRowHeight, 'F');
-    
+
     // Header text in white (first column empty, then data columns)
     doc.setTextColor(255, 255, 255);
     doc.setFont('times', 'bold');
@@ -1369,7 +1369,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.text('Subtotal', margin + priceLabelColWidth + priceCol1Width + priceCol2Width + 2, priceTableStartY + 4.5);
     doc.text('Reducere', margin + priceLabelColWidth + priceCol1Width + priceCol2Width + priceCol3Width + 2, priceTableStartY + 4.5);
     doc.text('Total', margin + priceLabelColWidth + priceCol1Width + priceCol2Width + priceCol3Width + priceCol4Width + 2, priceTableStartY + 4.5);
-    
+
     doc.setTextColor(0, 0, 0);
     y = priceTableStartY + priceRowHeight;
 
@@ -1400,12 +1400,12 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
       // Grey background for label column only
       doc.setFillColor(200, 200, 200);
       doc.rect(margin, rowY, priceLabelColWidth, priceRowHeight, 'F');
-      
+
       doc.setFont('times', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(0, 0, 0); // Black text on grey background
       doc.text(row.label, margin + 2, rowY + 4.5);
-      
+
       // Fill values for Autovehicul row (first row)
       if (idx === 0) {
         doc.setFont('times', 'normal');
@@ -1470,7 +1470,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.setFontSize(9);
     doc.text('DEPOZIT', margin + depozitCol1Width / 2, depozitTableStartY + depozitRowHeight / 2 + 2, { align: 'center' });
     doc.setTextColor(0, 0, 0);
-    
+
     // Other cells with content
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
@@ -1481,7 +1481,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.text('MDL', underlineX + 35, underlineY); // MDL to the right of amount
     doc.text(convertRomanianToASCII('Mod achitare garantie:'), margin + depozitCol1Width + depozitCol2Width + 2, depozitTableStartY + depozitRowHeight / 2 + 2);
     doc.text(convertRomanianToASCII((data.rentalDetails as any).depositPaymentMethod || data.rentalDetails.paymentMethod || '___________________'), margin + depozitCol1Width + depozitCol2Width + depozitCol3Width + 2, depozitTableStartY + depozitRowHeight / 2 + 2);
-    
+
     y = depozitTableStartY + depozitRowHeight + 10;
 
     // ŞOFERI ADIȚIONALI Section
@@ -1500,7 +1500,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     // Draw black header bar
     doc.setFillColor(0, 0, 0);
     doc.rect(margin, driversTableStartY, driversTableEndX - margin, driversRowHeight, 'F');
-    
+
     // Header text in white
     doc.setTextColor(255, 255, 255);
     doc.setFont('times', 'bold');
@@ -1543,7 +1543,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
         // Empty cells
       }
     }
-    
+
     y = driversTableStartY + (driversRowHeight * numDriverRows) + 10;
 
     // Signature Area - bottom left
@@ -1592,7 +1592,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
 
     const rowHeight = 4;
     const tableStartY = y;
-    
+
     // Left table: Vehicle details
     const vehicleRows = [
       ['Data(ziua.luna.anul)', formatDateRO(data.rentalDetails.startDate), formatDateRO(data.rentalDetails.endDate)],
@@ -1604,7 +1604,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
       ['Asigurare RCA', 'X', ''],
       [convertRomanianToASCII('Stare(spalatorie)'), 'X', '']
     ];
-    
+
     // Right table: Accessories
     const accessoriesList = [
       'Extinctor',
@@ -1615,7 +1615,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
       convertRomanianToASCII('Pompa pentru roti'),
       convertRomanianToASCII('Chei si cric pentru roti')
     ];
-    
+
     // LEFT TABLE: Vehicle details (adjusted to fit on page)
     const leftTableLabelX = margin;
     const leftTablePredareX = margin + 40;
@@ -1623,7 +1623,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const leftTableEndX = margin + 90;
     const leftTableRows = vehicleRows.length;
     const leftTableEndY = tableStartY + (leftTableRows * rowHeight) + rowHeight;
-    
+
     // Draw left table borders
     doc.setLineWidth(0.1);
     doc.line(leftTableLabelX, tableStartY, leftTableEndX, tableStartY); // Top
@@ -1634,19 +1634,19 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.line(leftTableReturnareX, tableStartY, leftTableReturnareX, leftTableEndY); // Vertical line
     const leftHeaderRowY = tableStartY + rowHeight;
     doc.line(leftTableLabelX, leftHeaderRowY, leftTableEndX, leftHeaderRowY); // Header separator
-    
+
     // Draw left table horizontal lines
     for (let i = 1; i <= leftTableRows; i++) {
       const rowY = leftHeaderRowY + (i * rowHeight);
       doc.line(leftTableLabelX, rowY, leftTableEndX, rowY);
     }
-    
+
     // Left table headers
     doc.setFont('times', 'bold');
     doc.setFontSize(8);
     doc.text('PREDARE', leftTablePredareX + 3, tableStartY + 3);
     doc.text('RETURNARE', leftTableReturnareX + 3, tableStartY + 3);
-    
+
     // Left table content
     doc.setFont('times', 'normal');
     doc.setFontSize(8);
@@ -1656,7 +1656,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
       doc.text(row[1], leftTablePredareX + 3, rowY);
       doc.text(row[2], leftTableReturnareX + 3, rowY);
     });
-    
+
     // RIGHT TABLE: Accessories (adjusted to fit on page)
     const rightTableLabelX = margin + 95;
     const rightTablePredareX = margin + 130;
@@ -1666,7 +1666,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const rightTableReturnareX = rightTablePredareX + (totalColumnsWidth / 2); // Equal width columns
     const rightTableRows = accessoriesList.length;
     const rightTableEndY = tableStartY + (rightTableRows * rowHeight) + rowHeight;
-    
+
     // Draw right table borders
     doc.line(rightTableLabelX, tableStartY, rightTableEndX, tableStartY); // Top
     doc.line(rightTableLabelX, rightTableEndY, rightTableEndX, rightTableEndY); // Bottom
@@ -1676,13 +1676,13 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.line(rightTableReturnareX, tableStartY, rightTableReturnareX, rightTableEndY); // Vertical line
     const rightHeaderRowY = tableStartY + rowHeight;
     doc.line(rightTableLabelX, rightHeaderRowY, rightTableEndX, rightHeaderRowY); // Header separator
-    
+
     // Draw right table horizontal lines
     for (let i = 1; i <= rightTableRows; i++) {
       const rowY = rightHeaderRowY + (i * rowHeight);
       doc.line(rightTableLabelX, rowY, rightTableEndX, rowY);
     }
-    
+
     // Right table headers - center both texts in their equal-width cells
     doc.setFont('times', 'bold');
     doc.setFontSize(8);
@@ -1694,7 +1694,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const returnareCellWidth = rightTableEndX - rightTableReturnareX;
     const returnareTextX = rightTableReturnareX + (returnareCellWidth / 2) - (returnareTextWidth / 2);
     doc.text('RETURNARE', returnareTextX, tableStartY + 3);
-    
+
     // Right table content
     doc.setFont('times', 'normal');
     doc.setFontSize(8);
@@ -1703,7 +1703,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
       doc.text(convertRomanianToASCII(accessory), rightTableLabelX + 2, rowY);
       // Empty cells for PREDARE and RETURNARE
     });
-    
+
     // Use the taller table's end position
     y = Math.max(leftTableEndY, rightTableEndY);
 
@@ -1750,11 +1750,11 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.text(lipsaDefectiuniText, lipsaDefectiuniX, headerY);
     // Calculate text width to center checkbox
     const lipsaDefectiuniTextWidth = doc.getTextWidth(lipsaDefectiuniText);
-    
+
     const mentiuniPredareText = convertRomanianToASCII('MENTIUNI PREDARE');
     doc.text(mentiuniPredareText, mentiuniPredareX, headerY);
     const mentiuniPredareTextWidth = doc.getTextWidth(mentiuniPredareText);
-    
+
     const mentiuniReturnareText = convertRomanianToASCII('MENTIUNI RETURNARE');
     doc.text(mentiuniReturnareText, mentiuniReturnareX, headerY);
     const mentiuniReturnareTextWidth = doc.getTextWidth(mentiuniReturnareText);
@@ -1773,16 +1773,16 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
       exteriorPageCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
       y = exteriorPageCheck.y;
       currentPage = exteriorPageCheck.currentPage;
-      
+
       // If we're on a new page, reset text position to margin (no image on new pages)
       const currentTextStartX = (y === margin) ? margin : textStartX;
-      
+
       doc.setFont('times', 'bold');
       doc.setFontSize(9);
       // Move PARTEA titles to the left (no sectionOffset)
       doc.text(side.name, currentTextStartX, y);
       y += 6;
-      
+
       doc.setFont('times', 'normal');
       doc.setFontSize(8);
       side.items.forEach(item => {
@@ -1792,7 +1792,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
         const checkboxX = lipsaDefectiuniX + (lipsaDefectiuniTextWidth / 2) - (checkboxSize / 2);
         const checkboxY = y - 1.5;
         doc.rect(checkboxX, checkboxY, checkboxSize, checkboxSize);
-        
+
         // Format: • Item (with bullet point, moved to the left with PARTEA titles)
         const itemTextX = currentTextStartX; // No sectionOffset, aligned with PARTEA titles
         doc.text(`• ${item}`, itemTextX, y);
@@ -1806,7 +1806,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
         doc.text('___________________', returnareUnderscoreX, y);
         y += 2;
       });
-      
+
       y += 3;
     });
 
@@ -1823,7 +1823,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const noteCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = noteCheck.y;
     currentPage = noteCheck.currentPage;
-    
+
     doc.setFont('times', 'italic');
     doc.setFontSize(7);
     const noteText = convertRomanianToASCII('Nota: Aceasta reprezentare grafica este una simbolica. Automobilul inchiriat poate arata diferit, in dependenta de model si dotari.');
@@ -1838,7 +1838,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     // Signatures
     doc.setFont('times', 'normal');
     doc.setFontSize(8);
-    
+
     // Check before each signature line
     signatureCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = signatureCheck.y;
@@ -1846,7 +1846,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.text('=> Predat de LOCATOR _____________________', margin, y);
     doc.text('=> Returnat de LOCATAR _____________________', margin + 100, y);
     y += 4;
-    
+
     signatureCheck = checkPageBreak(doc, y, pageHeight, margin, currentPage, pageWidth);
     y = signatureCheck.y;
     currentPage = signatureCheck.currentPage;
@@ -1859,7 +1859,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     // Generate PDF as blob for upload to Supabase
     const filename = `Contract_Locatiune_${data.contractNumber}.pdf`;
     const pdfBlob = doc.output('blob');
-    
+
     // Return both blob and filename for upload
     return { pdfBlob, filename };
   } catch (error) {
@@ -1878,18 +1878,18 @@ export const uploadContractToStorage = async (
 ): Promise<string | null> => {
   try {
     const { supabaseAdmin } = await import('./supabase');
-    
+
     // Verify service key is available
     const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
     if (!serviceKey) {
       console.error('VITE_SUPABASE_SERVICE_KEY is not set. Cannot upload to storage.');
       throw new Error('Service key not configured');
     }
-    
+
     // Create folder structure: contracts/rental-{id}/
     const folderPath = `rental-${rentalId}`;
     const filePath = `${folderPath}/${filename}`;
-    
+
     // Upload to Supabase storage
     const { error: uploadError } = await supabaseAdmin.storage
       .from('contracts')
@@ -1953,13 +1953,13 @@ export const createContractDataFromOrder = (
   const startDate = new Date(order.pickupDate);
   const endDate = new Date(order.returnDate);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-  
+
   // Calculate pricing - handle both naming conventions
   const pricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
   const subtotal = pricePerDay * days;
   let discount = 0;
   let discountAmount = 0;
-  
+
   // Apply discount based on days (same as calculator)
   if (days >= 8) {
     discount = 4;
@@ -1968,7 +1968,7 @@ export const createContractDataFromOrder = (
     discount = 2;
     discountAmount = subtotal * 0.02;
   }
-  
+
   const total = parseFloat(order.total_amount) > 0 ? parseFloat(order.total_amount) : (subtotal - discountAmount);
 
   // Parse customer name - OrderDisplay doesn't have customerName, need to check what fields are available
@@ -1978,7 +1978,7 @@ export const createContractDataFromOrder = (
   // If car is missing make/model, try to extract from name or use defaults
   let carMake = car.make || '';
   let carModel = car.model || '';
-  
+
   // If make/model are missing, try to extract from name field
   if ((!carMake || !carModel) && (car as any).name) {
     const nameParts = (car as any).name.split(' ');
@@ -1987,7 +1987,7 @@ export const createContractDataFromOrder = (
       carModel = carModel || nameParts.slice(1).join(' ');
     }
   }
-  
+
   const carWithDefaults = {
     ...car,
     make: carMake,
@@ -2012,7 +2012,7 @@ export const createContractDataFromOrder = (
       start_time: order.pickupTime,
       end_date: order.returnDate,
       end_time: order.returnTime,
-      status: order.status as any,
+      rental_status: order.status as any,
       total_amount: total,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -2059,7 +2059,7 @@ export const createContractDataFromOrder = (
     carColor: (additionalData?.carColor && additionalData.carColor.trim().length > 0) ? additionalData.carColor.trim() : ((car as any).color || ''),
     carFuelType: (additionalData?.carFuelType && additionalData.carFuelType.trim().length > 0) ? additionalData.carFuelType.trim() : (car.fuel_type || ''),
   } as ContractData & { carColor?: string; carFuelType?: string };
-  
+
   // Override car properties with manual data if provided
   if (additionalData?.carColor) {
     (result.car as any).color = additionalData.carColor;
@@ -2074,7 +2074,7 @@ export const createContractDataFromOrder = (
   if (additionalData?.carFuelType) {
     result.car.fuel_type = additionalData.carFuelType as any;
   }
-  
+
   // Ensure car has all required properties (already set above, but double-check)
   if (!result.car.make) {
     result.car.make = carWithDefaults.make || '';
@@ -2085,7 +2085,7 @@ export const createContractDataFromOrder = (
   if (!result.car.year) {
     result.car.year = carWithDefaults.year || 0;
   }
-  
+
   return result;
 };
 
@@ -2101,7 +2101,7 @@ export const generateContractFromOrder = async (
 ) => {
   const contractNum = contractNumber || `CT-${order.id.toString().slice(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
   const contractDate = new Date().toISOString().split('T')[0];
-  
+
   const contractData = createContractDataFromOrder(
     order,
     car,
@@ -2115,7 +2115,7 @@ export const generateContractFromOrder = async (
   try {
     const { supabase } = await import('./supabase');
     const { createRentalManually } = await import('./orders');
-    
+
     // Check if rental already exists
     const { data: existingRental } = await supabase
       .from('Rentals')
@@ -2137,7 +2137,7 @@ export const generateContractFromOrder = async (
     const customerPhone = (order as any).customerPhone || '';
     const customerFirstName = customerName.split(' ')[0] || '';
     const customerLastName = customerName.split(' ').slice(1).join(' ') || '';
-    
+
     // Get car make and model for historical record
     const carMake = car.make || '';
     const carModel = car.model || '';
@@ -2162,14 +2162,14 @@ export const generateContractFromOrder = async (
         car_model: carModel || null,
         updated_at: new Date().toISOString(),
       };
-      
+
       // Update request_id if it exists in the order and is not already set
       if ((order as any).request_id && !(existingRental as any).request_id) {
-        updateData.request_id = typeof (order as any).request_id === 'string' 
-          ? parseInt((order as any).request_id) 
+        updateData.request_id = typeof (order as any).request_id === 'string'
+          ? parseInt((order as any).request_id)
           : (order as any).request_id;
       }
-      
+
       await supabase
         .from('Rentals')
         .update(updateData)
@@ -2201,7 +2201,7 @@ export const generateContractFromOrder = async (
           requestId: (order as any).request_id, // Pass request_id if it exists
         }
       );
-      
+
       // Use the returned rentalId if available
       if (result.success && result.rentalId) {
         rentalId = result.rentalId;
@@ -2214,17 +2214,17 @@ export const generateContractFromOrder = async (
 
   // Generate PDF
   const { pdfBlob, filename } = await generateContractPDF(contractData);
-  
+
   // Upload PDF to Supabase storage
   const contractUrl = await uploadContractToStorage(pdfBlob, filename, rentalId);
-  
+
   // Update rental with contract URL and set status to ACTIVE if upload was successful
   if (contractUrl) {
     try {
       const { supabase } = await import('./supabase');
       // Ensure rentalId is a number for the database
       const dbRentalId = typeof rentalId === 'number' ? rentalId : parseInt(rentalId.toString(), 10);
-      
+
       const { data: updateData, error: updateError } = await supabase
         .from('Rentals')
         .update({
@@ -2234,12 +2234,12 @@ export const generateContractFromOrder = async (
         })
         .eq('id', dbRentalId)
         .select();
-      
+
       if (updateError) {
         console.error('Error updating rental with contract URL:', updateError);
         throw updateError;
       }
-      
+
       if (!updateData || updateData.length === 0) {
         console.error('No rental was updated. Rental ID might not exist:', dbRentalId);
       } else {
@@ -2259,7 +2259,7 @@ export const generateContractFromOrder = async (
       // Continue even if URL update fails
     }
   }
-  
+
   // Also trigger download for user
   const url = URL.createObjectURL(pdfBlob);
   const link = document.createElement('a');

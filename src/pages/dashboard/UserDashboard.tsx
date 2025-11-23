@@ -35,6 +35,7 @@ import { UserOrdersSection } from './user-dashboard/orders/UserOrdersSection';
 import { CarsView } from './user-dashboard/cars/UserCarPage'
 import ProfileTab from './profile/UserProfile';
 import { SettingsTab } from './user-dashboard/settings/UserSettings';
+import { OverviewTab } from './user-dashboard/overview/UserOverview';
 
 interface Booking {
   id: string;
@@ -225,82 +226,13 @@ export const UserDashboard: React.FC = () => {
                 <div className="space-y-6">
                   <AnimatePresence>
 
-                    {/* Overview Tab */}
                     {activeTab === 'overview' && (
-                      <motion.div
-                        key="overview"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <div>
-                          <h2 className="text-4xl font-bold text-white">{t('dashboard.overview.title')}</h2>
-                        </div>
-
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                            <div className="flex items-center gap-3 mb-2">
-                              <Calendar className="text-red-600" size={24} />
-                              <h3 className="font-semibold">{t('dashboard.overview.totalBookings')}</h3>
-                            </div>
-                            <p className="text-3xl font-bold text-red-600">{orders.length}</p>
-                            <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeBookings')}</p>
-                          </div>
-
-                          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                            <div className="flex items-center gap-3 mb-2">
-                              <DollarSign className="text-red-600" size={24} />
-                              <h3 className="font-semibold">{t('dashboard.overview.totalSpent')}</h3>
-                            </div>
-                            {/* <p className="text-3xl font-bold text-red-600">€{orders.reduce((sum, b) => sum + b.totalPrice, 0)}</p> */}
-                            <p className="text-gray-400 text-sm">{t('dashboard.overview.lifetimeSpending')}</p>
-                          </div>
-
-                          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                            <div className="flex items-center gap-3 mb-2">
-                              <Star className="text-red-600" size={24} />
-                              <h3 className="font-semibold">{t('dashboard.overview.loyaltyPoints')}</h3>
-                            </div>
-                            <p className="text-3xl font-bold text-red-600">150</p>
-                            <p className="text-gray-400 text-sm">{t('dashboard.overview.availablePoints')}</p>
-                          </div>
-                        </div>
-
-                        {/* Recent Bookings */}
-                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                          <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold">{t('dashboard.overview.recentBookings')}</h3>
-                            <button
-                              onClick={() => setActiveTab('bookings')}
-                              className="text-red-600 hover:text-red-500 transition-colors duration-300"
-                            >
-                              {t('dashboard.overview.viewAll')}
-                            </button>
-                          </div>
-                          <div className="space-y-4">
-                            {orders.slice(0, 2).map((booking) => (
-                              <div key={booking.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300">
-                                <img src={booking.carId} alt={booking.carId} className="w-20 h-20 rounded-lg object-cover" />
-                                <div className="flex-1">
-                                  {/* <h4 className="font-semibold text-white">{booking.carName}</h4> */}
-                                  {/* <p className="text-gray-400 text-sm">{formatDate(booking.startDate)}</p> */}
-                                </div>
-                                <div className="text-right">
-                                  {/* <div className="text-lg font-bold text-red-600">€{booking.totalPrice}</div> */}
-                                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(booking.status)}`}>
-                                    {getStatusIcon(booking.status)}
-                                    <span className="capitalize">{t(`dashboard.status.${booking.status}`)}</span>
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
+                      <OverviewTab
+                        setActiveTab={setActiveTab}
+                        t={t}
+                      />
                     )}
+
 
                     {/* Bookings Tab */}
                     {activeTab === 'bookings' && (

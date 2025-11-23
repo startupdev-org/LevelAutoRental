@@ -321,3 +321,5 @@ export async function fetchCarsWithMainImageFiltered(filters: CarFilterOptions):
 
     return carsWithImages;
 }
+
+
