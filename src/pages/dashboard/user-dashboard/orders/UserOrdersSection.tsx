@@ -72,7 +72,6 @@ export const UserOrdersSection: React.FC = () => {
                     setOrderNumber(undefined);
                 }}
                 order={selectedOrder}
-                orderNumber={orderNumber}
             />
         </>
 

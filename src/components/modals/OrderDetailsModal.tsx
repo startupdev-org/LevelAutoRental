@@ -1,25 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car as CarIcon, DollarSign, User, Mail, Download, FileText, Phone, Loader2, XCircle, RefreshCw, Plus } from 'lucide-react';
-import { OrderDisplay, Rental } from '../../lib/orders';
-import { cars as staticCars } from '../../data/cars';
+import { X, Calendar, Clock, Car as DollarSign, FileText, Plus } from 'lucide-react';
+import { Rental } from '../../lib/orders';
 import { generateContractFromOrder } from '../../lib/contract';
-import { ContractCreationModal } from './ContractCreationModal';
-import { fetchCars } from '../../lib/cars';
-import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { calculateRentalDuration } from '../../utils/date';
 
 interface OrderDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     order: Rental | null;
-    orderNumber?: number;
     onCancel?: (order: Rental) => void;
     onRedo?: (order: Rental) => void;
     isProcessing?: boolean;
-    cars?: Car[]; // Optional prop to pass cars from parent
     onOpenContractModal?: () => void; // Callback to open contract modal from parent
 }
 
@@ -27,11 +22,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     isOpen,
     onClose,
     order,
-    orderNumber,
-    onCancel,
-    onRedo,
-    isProcessing = false,
-    cars: carsProp,
     onOpenContractModal,
 }) => {
     const { t } = useTranslation();
@@ -47,326 +37,25 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             setShowContractModal(true);
         }
     };
-    const [cars, setCars] = useState<Car[]>(carsProp || []);
-    const [car, setCar] = useState<Car | undefined>(undefined);
-
-    // Fetch cars if not provided as prop
-    useEffect(() => {
-        const loadCars = async () => {
-            try {
-                let carsToUse: Car[] = [];
-
-                if (carsProp && carsProp.length > 0) {
-                    // Use cars from prop (they should already have images)
-                    carsToUse = carsProp;
-                } else if (isOpen) {
-                    // Fetch cars from database
-                    const fetchedCars = await fetchCars();
-                    carsToUse = fetchedCars.length > 0 ? fetchedCars : staticCars;
-                } else {
-                    return; // Don't load if modal is closed and no prop provided
-                }
-
-                // Fetch images from storage for each car
-                const carsWithImages = await Promise.all(
-                    carsToUse.map(async (car) => {
-                        // Try name field first, then fall back to make + model
-                        let carName = (car as any).name;
-                        if (!carName || carName.trim() === '') {
-                            carName = `${car.make} ${car.model}`;
-                        }
-                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-                        return {
-                            ...car,
-                            image_url: mainImage || car.image_url,
-                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
-                        };
-                    })
-                );
-
-                setCars(carsWithImages);
-            } catch (error) {
-                console.error('Error loading cars:', error);
-                setCars(carsProp || staticCars);
-            }
-        };
-
-        loadCars();
-    }, [carsProp, isOpen]);
-
-    // Fetch original request options if request_id exists
-    useEffect(() => {
-        const fetchRequestOptions = async () => {
-            if (!order) {
-                setRequestOptions(null);
-                return;
-            }
-
-            const requestId = (order as any).request_id;
-            console.log('OrderDetailsModal: Checking for request_id. Order:', {
-                id: order.id,
-                request_id: requestId,
-                orderKeys: Object.keys(order),
-                fullOrder: order
-            });
-
-            if (!requestId) {
-                console.log('OrderDetailsModal: No request_id found in order. Trying to find request by matching data...');
-
-                // Try to find the request by matching user_id, car_id, and dates
-                try {
-                    const { supabase } = await import('../../lib/supabase');
-                    const { data: matchingRequests, error: searchError } = await supabase
-                        .from('BorrowRequest')
-                        .select('id, options, user_id, car_id, start_date, end_date')
-                        .eq('user_id', order.user_id)
-                        .eq('car_id', order.car_id)
-                        .eq('start_date', order.start_date)
-                        .eq('end_date', order.end_date)
-                        .limit(1);
-
-                    if (!searchError && matchingRequests && matchingRequests.length > 0) {
-                        const matchingRequest = matchingRequests[0];
-                        console.log('OrderDetailsModal: Found matching request:', matchingRequest);
-
-                        if (matchingRequest.options) {
-                            let parsedOptions: any = {};
-                            if (typeof matchingRequest.options === 'string') {
-                                try {
-                                    parsedOptions = JSON.parse(matchingRequest.options);
-                                } catch (e) {
-                                    parsedOptions = {};
-                                }
-                            } else {
-                                parsedOptions = matchingRequest.options;
-                            }
-
-                            if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
-                                console.log('OrderDetailsModal: Using options from matching request:', parsedOptions);
-                                setRequestOptions(parsedOptions);
-                                return;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('OrderDetailsModal: Error searching for matching request:', error);
-                }
-
-                setRequestOptions(null);
-                return;
-            }
-
-            try {
-                const { supabase } = await import('../../lib/supabase');
-                console.log('OrderDetailsModal: Fetching request options for request_id:', requestId);
-
-                const { data: request, error } = await supabase
-                    .from('BorrowRequest')
-                    .select('options, id, status')
-                    .eq('id', requestId)
-                    .single();
-
-                if (error) {
-                    console.error('OrderDetailsModal: Error fetching request:', error);
-                    setRequestOptions(null);
-                    return;
-                }
-
-                console.log('OrderDetailsModal: Fetched request:', request);
-
-                if (request && request.options) {
-                    let parsedOptions: any = {};
-                    if (typeof request.options === 'string') {
-                        try {
-                            parsedOptions = JSON.parse(request.options);
-                        } catch (e) {
-                            console.error('OrderDetailsModal: Error parsing options string:', e);
-                            parsedOptions = {};
-                        }
-                    } else {
-                        parsedOptions = request.options;
-                    }
-
-                    // Check if options is not empty (not just {})
-                    if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
-                        console.log('OrderDetailsModal: Parsed options from request:', parsedOptions);
-                        setRequestOptions(parsedOptions);
-                    } else {
-                        console.log('OrderDetailsModal: Request has empty options object');
-                        setRequestOptions(null);
-                    }
-                } else {
-                    console.log('OrderDetailsModal: Request has no options field');
-                    setRequestOptions(null);
-                }
-            } catch (error) {
-                console.error('OrderDetailsModal: Error fetching request options:', error);
-                setRequestOptions(null);
-            }
-        };
-
-        if (isOpen && order) {
-            fetchRequestOptions();
-        }
-    }, [isOpen, order]);
-
-    // Find car by matching carId (handle both string and number types)
-    useEffect(() => {
-        if (!order) {
-            setCar(undefined);
-            return;
-        }
-
-        const findCar = async () => {
-            // First, try to find in cars array
-            let foundCar = cars.find(c => {
-                if (!order.car?.id) return false;
-
-                // Normalize both IDs to numbers for comparison
-                const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id, 10);
-                const orderCarIdNum = typeof order.car.id === 'number'
-                    ? order.car.id
-                    : parseInt(order.car.id, 10);
-
-                // Compare as numbers
-                if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
-                    return true;
-                }
-
-                // Fallback: compare as strings
-                const carIdStr = c.id.toString();
-                const orderCarIdStr = order.car.id.toString();
-                return carIdStr === orderCarIdStr;
-            });
-
-            // If car not found in cars array, fetch from database
-            if (!foundCar && order.car?.id) {
-                console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
-                    orderCarId: order.car?.id,
-                    orderCarName: order.car?.make + ' ' + order.car?.model
-                });
-
-                try {
-                    const { supabase } = await import('../../lib/supabase');
-                    const carIdMatch = typeof order.car?.id === 'number'
-                        ? order.car?.id
-                        : parseInt(order.car?.id, 10);
-
-                    const { data: carData, error } = await supabase
-                        .from('Cars')
-                        .select('*')
-                        .eq('id', carIdMatch)
-                        .single();
-
-                    if (!error && carData) {
-                        // Map database row to Car type
-                        foundCar = {
-                            id: carData.id,
-                            make: carData.make,
-                            model: carData.model,
-                            name: carData.name || undefined,
-                            year: carData.year || new Date().getFullYear(),
-                            price_per_day: carData.price_per_day,
-                            discount_percentage: carData.discount_percentage || undefined,
-                            category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
-                            image_url: carData.image_url || undefined,
-                            photo_gallery: carData.photo_gallery || undefined,
-                            seats: carData.seats || undefined,
-                            transmission: carData.transmission as 'Automatic' | 'Manual' || undefined,
-                            body: carData.body as 'Coupe' | 'Sedan' | 'SUV' || undefined,
-                            fuel_type: carData.fuel_type as 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' || undefined,
-                            features: carData.features || undefined,
-                            rating: carData.rating || undefined,
-                            reviews: carData.reviews || undefined,
-                            status: carData.status || undefined,
-                            drivetrain: carData.drivetrain || undefined,
-                        } as Car & { name?: string };
-
-                        // Fetch images from storage for this car
-                        if (foundCar) {
-                            const carName = (foundCar as any).name || `${foundCar.make} ${foundCar.model}`;
-                            const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-                            foundCar.image_url = mainImage || foundCar.image_url;
-                            foundCar.photo_gallery = photoGallery.length > 0 ? photoGallery : foundCar.photo_gallery;
-                        }
-                    }
-                } catch (err) {
-                    console.error(`OrderDetailsModal: Error fetching car ${order.carId} from database:`, err);
-                }
-            }
-
-            setCar(foundCar);
-        };
-
-        findCar();
-    }, [order, cars, order?.carId]);
+    const car = order?.car;
 
     if (!order) return null;
-    const startDate = new Date(order.pickupDate);
-    const endDate = new Date(order.returnDate);
 
-    // Parse times and combine with dates for accurate calculation
-    const formatTime = (timeString: string): string => {
-        if (!timeString) return '09:00';
-        // If already in HH:MM format, ensure it's padded
-        if (timeString.includes(':')) {
-            const [hours, minutes] = timeString.split(':');
-            return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
-        }
-        return '09:00';
-    };
+    const { days, hours, totalHours } = calculateRentalDuration(
+        order.start_date,
+        order.start_time,
+        order.end_date,
+        order.end_time
+    );
 
-    const pickupTime = formatTime(order.pickupTime);
-    const returnTime = formatTime(order.returnTime);
-    const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
-    const [returnHour, returnMin] = returnTime.split(':').map(Number);
+    // Now use days, hours for pricing
+    const rentalDays = days;
+    const totalDays = days + hours / 24;
 
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(pickupHour, pickupMin, 0, 0);
-
-    const endDateTime = new Date(endDate);
-    // If return time is 00:00, treat it as end of previous day (23:59:59)
-    if (returnHour === 0 && returnMin === 0) {
-        endDateTime.setHours(23, 59, 59, 999);
-    } else {
-        endDateTime.setHours(returnHour, returnMin, 0, 0);
-    }
-
-    const diffTime = endDateTime.getTime() - startDateTime.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-    const days = diffDays;
-    const hours = diffHours >= 0 ? diffHours : 0;
-
-    // Calculate pricing using same system as RequestDetailsModal
-    const rentalDays = days; // Use full days for discount calculation
-    const totalDays = days + (hours / 24); // Use total days for final calculation
 
     // Base price calculation with discounts
     let basePrice = 0;
     let discountPercent = 0;
-
-    if (!car) {
-        // If no car, use simple calculation
-        basePrice = 0;
-    } else {
-        if (rentalDays >= 8) {
-            discountPercent = 4;
-            basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
-        } else if (rentalDays >= 4) {
-            discountPercent = 2;
-            basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
-        } else {
-            basePrice = car.price_per_day * rentalDays;
-        }
-
-        // Add hours portion (hours are charged at full price, no discount)
-        if (hours > 0) {
-            const hoursPrice = (hours / 24) * car.price_per_day;
-            basePrice += hoursPrice;
-        }
-    }
 
     const formatDate = (dateString: string) => {
         try {
@@ -410,52 +99,10 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     const downloadContract = async () => {
         // If contract URL exists, download from bucket
-        if (order.contract_url) {
-            try {
-                const link = document.createElement('a');
-                link.href = order.contract_url;
-                link.download = `Contract_Locatiune_${order.id}.pdf`;
-                link.target = '_blank';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } catch (error) {
-                console.error('Error downloading contract from URL:', error);
-                alert('Failed to download contract. Please try again.');
-            }
-            return;
-        }
 
-        // Otherwise, generate new contract (fallback)
-        if (!car) {
-            alert('Car information not found. Cannot generate contract.');
-            return;
-        }
-
-        setIsGeneratingContract(true);
-        try {
-            const contractNumber = orderNumber
-                ? `CT-${orderNumber.toString().padStart(4, '0')}-${new Date().getFullYear()}`
-                : undefined;
-
-            await generateContractFromOrder(
-                order,
-                car,
-                contractNumber,
-                {
-                    // customerPhone: order.customerPhone,
-                    // Additional data can be added here if available
-                    // customerAddress, customerIdNumber, etc.
-                }
-            );
-        } catch (error) {
-            console.error('Error generating contract:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Failed to generate contract: ${errorMessage}\n\nPlease check the browser console for more details.`);
-        } finally {
-            setIsGeneratingContract(false);
-        }
+        return;
     };
+
 
     if (!isOpen) return null;
 
@@ -484,7 +131,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                     <div>
                                         <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails')}</h2>
                                         <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                                            {t('admin.orders.orderNumber')}{orderNumber ? orderNumber.toString().padStart(4, '0') : 'N/A'}
+                                            {t('admin.orders.orderNumber')}{order.id ? order.id.toString().padStart(4, '0') : 'N/A'}
                                         </p>
                                     </div>
                                     <button
@@ -497,38 +144,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                                 {/* Content */}
                                 <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                                    {/* Customer Information */}
-                                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                            <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                                            <span className="text-sm sm:text-base">{t('admin.orders.customerInformation')}</span>
-                                        </h3>
-                                        <div className="flex items-start gap-3 sm:gap-4">
-                                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-base sm:text-xl font-bold flex-shrink-0">
-                                                {order.customerName ? getInitials(order.customerName) : 'C'}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-white font-semibold text-base sm:text-lg truncate">
-                                                    {order.customerName || t('admin.orders.unknownCustomer')}
-                                                </p>
-                                                {order.customerEmail && (
-                                                    <div className="flex items-center gap-2 mt-2 text-gray-300">
-                                                        <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                                                        <span className="text-xs sm:text-sm truncate">{order.customerEmail}</span>
-                                                    </div>
-                                                )}
-                                                {order.customerPhone && (
-                                                    <a
-                                                        href={`tel:${order.customerPhone.replace(/\s/g, '')}`}
-                                                        className="flex items-center gap-2 mt-2 text-gray-300 hover:text-white transition-colors cursor-pointer"
-                                                    >
-                                                        <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                                                        <span className="text-xs sm:text-sm">{order.customerPhone}</span>
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     {/* Rental Period */}
                                     <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
@@ -538,15 +153,15 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
                                             </h3>
                                             <div className="flex items-center gap-2">
-                                                {(car?.image_url || (car as any)?.image || order.avatar) && (
+                                                {(car?.image_url || (car as any)?.image || order.car?.image_url) && (
                                                     <img
-                                                        src={car?.image_url || (car as any)?.image || order.avatar}
-                                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || order.carName || t('admin.orders.unknownCar')}
+                                                        src={car?.image_url || (car as any)?.image || order.car?.image_url}
+                                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || order.car?.make + ' ' + order.car?.model || t('admin.orders.unknownCar')}
                                                         className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded-md border border-white/10"
                                                     />
                                                 )}
                                                 <span className="text-white font-semibold text-xs sm:text-sm">
-                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (order.carName && order.carName !== 'Unknown Car' ? order.carName : '') || t('admin.orders.unknownCar')}
+                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (order.car?.make + ' ' + order.car?.model && order.car?.make + ' ' + order.car?.model !== 'Unknown Car' ? order.car?.make + ' ' + order.car?.model : '') || t('admin.orders.unknownCar')}
                                                 </span>
                                             </div>
                                         </div>
@@ -555,22 +170,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.pickupDate)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.start_date)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.pickupTime}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{order.start_time}</span>
                                                 </div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.returnDate)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.end_date)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.returnTime}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{order.end_time}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -759,7 +374,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <div className="space-y-3">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.pricePerDay')}</span>
-                                                        <span className="text-white font-semibold text-sm sm:text-base">{car ? `${car.price_per_day.toLocaleString()} MDL` : 'N/A'}</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{order.car ? `${order.car.price_per_day} MDL` : 'N/A'}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.numberOfDays')}</span>
@@ -776,13 +391,28 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">{t('admin.requestDetails.basePrice')}</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round(basePrice).toLocaleString()} MDL</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round(order.subtotal || 0).toLocaleString()} MDL</span>
                                                         </div>
                                                     </div>
+
+                                                    <div className="pt-2 border-t border-white/10">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-white font-medium text-sm sm:text-base">Taxes Fees</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{order.taxes_fees || 0} MDL</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-2 border-t border-white/10">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-white font-medium text-sm sm:text-base">Addition Taxes</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{order.additional_taxes || 0} MDL</span>
+                                                        </div>
+                                                    </div>
+
                                                     {/* Show services section if we have additional costs */}
                                                     {actualAdditionalCosts > 0 && (
                                                         <div className="pt-3 border-t border-white/10">
-                                                            <h4 className="text-sm font-bold text-white mb-3">{t('admin.requestDetails.additionalServices')}</h4>
+                                                            <h4 className="text-sm font-bold text-white mb-3">!!! TODO !!! {t('admin.requestDetails.additionalServices')}</h4>
                                                             <div className="space-y-2 text-sm">
                                                                 {/* Show individual services if we have parsed options with service keys */}
                                                                 {Object.keys(parsedOptions).length > 0 && (
@@ -866,11 +496,12 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                             <div className="pt-2 border-t border-white/10 mt-2">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="text-gray-300 text-sm">{t('admin.requestDetails.totalServices')}</span>
-                                                                    <span className="text-white font-semibold text-sm">{Math.round(actualAdditionalCosts).toLocaleString()} MDL</span>
+                                                                    <span className="text-white font-semibold text-sm">0 MDL</span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     )}
+
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-semibold text-base sm:text-lg">{t('admin.requestDetails.total')}</span>
@@ -888,7 +519,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                                             <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
                                         </h3>
-                                        {order.status === 'CONTRACT' ? (
+                                        {order.rental_status === 'CONTRACT' ? (
                                             <>
                                                 <button
                                                     onClick={handleOpenContractModal}
@@ -904,7 +535,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                                <button
+                                                {/* <button
                                                     onClick={downloadContract}
                                                     disabled={isGeneratingContract || !car}
                                                     className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -934,86 +565,18 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     {order.contract_url
                                                         ? t('admin.orders.downloadExistingOrRecreate')
                                                         : t('admin.orders.generatesCompleteContract')}
-                                                </p>
+                                                </p> */}
+                                                <h1>should be contract</h1>
                                             </>
+
                                         )}
                                     </div>
-
-                                    {/* Action Buttons */}
-                                    {order && (onCancel || onRedo) && (
-                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">{t('admin.orders.actions')}</h3>
-                                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                                {order.status !== 'CANCELLED' && onCancel && (
-                                                    <button
-                                                        onClick={() => {
-                                                            if (order && window.confirm(t('admin.orders.confirmCancelOrder'))) {
-                                                                onCancel(order);
-                                                                onClose();
-                                                            }
-                                                        }}
-                                                        disabled={isProcessing}
-                                                        className="flex-1 px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        {isProcessing ? (
-                                                            <>
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                                <span>{t('admin.orders.processing')}</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <XCircle className="w-4 h-4" />
-                                                                <span>{t('admin.orders.cancelOrder')}</span>
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                )}
-                                                {order.status === 'CANCELLED' && onRedo && (
-                                                    <button
-                                                        onClick={() => {
-                                                            if (order && window.confirm(t('admin.orders.confirmRestoreOrder'))) {
-                                                                onRedo(order);
-                                                                onClose();
-                                                            }
-                                                        }}
-                                                        disabled={isProcessing}
-                                                        className="flex-1 px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        {isProcessing ? (
-                                                            <>
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                                <span>{t('admin.orders.processing')}</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <RefreshCw className="w-4 h-4" />
-                                                                <span>{t('admin.orders.redoOrder')}</span>
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>,
                 document.body
-            )}
-            {car && order && (
-                <ContractCreationModal
-                    isOpen={showContractModal}
-                    onClose={() => setShowContractModal(false)}
-                    order={order}
-                    car={car}
-                    orderNumber={orderNumber}
-                    onContractCreated={() => {
-                        setShowContractModal(false);
-                        // Optionally reload orders or refresh data
-                    }}
-                />
             )}
         </>
     );
