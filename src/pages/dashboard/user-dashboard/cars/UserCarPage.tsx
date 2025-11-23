@@ -106,25 +106,16 @@ export const CarsView: React.FC = () => {
 
 
     return (
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-6"
-        >
-
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">All Cars</h2>
+            </div>
 
             {/* Cars Table Card */}
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden mb-8">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-white/10">
                     <div className="flex flex-col gap-4">
-                        {/* Title and Add Button Row */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl font-bold text-white">All Cars</h2>
-                            </div>
-                        </div>
                         {/* Search and Sort Row */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             {/* Search */}
@@ -342,7 +333,7 @@ export const CarsView: React.FC = () => {
                     </table>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 };
 

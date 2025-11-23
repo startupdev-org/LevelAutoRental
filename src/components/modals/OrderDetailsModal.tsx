@@ -7,6 +7,8 @@ import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { calculateRentalDuration } from '../../utils/date';
+import { fetchCars } from '../../lib/cars';
+import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 
 interface OrderDetailsModalProps {
     isOpen: boolean;
@@ -37,29 +39,28 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             setShowContractModal(true);
         }
     };
-    const [cars, setCars] = useState<Car[]>(carsProp || []);
+    const [cars, setCars] = useState<Car[]>([]);
     const [car, setCar] = useState<Car | undefined>(undefined);
 
-    // Fetch cars if not provided as prop
+    // Fetch cars when modal opens
     useEffect(() => {
-            const loadCars = async () => {
-                try {
-                let carsToUse: Car[] = [];
+        const loadCars = async () => {
+            if (!isOpen) {
+                return; // Don't load if modal is closed
+            }
+            
+            try {
+                // Fetch cars from database
+                const fetchedCars = await fetchCars();
                 
-                if (carsProp && carsProp.length > 0) {
-                    // Use cars from prop (they should already have images)
-                    carsToUse = carsProp;
-                } else if (isOpen) {
-                    // Fetch cars from database
-                    const fetchedCars = await fetchCars();
-                    carsToUse = fetchedCars.length > 0 ? fetchedCars : staticCars;
-                } else {
-                    return; // Don't load if modal is closed and no prop provided
+                if (fetchedCars.length === 0) {
+                    setCars([]);
+                    return;
                 }
                 
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
-                    carsToUse.map(async (car) => {
+                    fetchedCars.map(async (car) => {
                         // Try name field first, then fall back to make + model
                         let carName = (car as any).name;
                         if (!carName || carName.trim() === '') {
@@ -75,14 +76,14 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 );
                 
                 setCars(carsWithImages);
-                } catch (error) {
-                    console.error('Error loading cars:', error);
-                setCars(carsProp || staticCars);
-                }
-            };
+            } catch (error) {
+                console.error('Error loading cars:', error);
+                setCars([]);
+            }
+        };
         
-            loadCars();
-    }, [carsProp, isOpen]);
+        loadCars();
+    }, [isOpen]);
 
     // Fetch original request options if request_id exists
     useEffect(() => {

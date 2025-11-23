@@ -578,8 +578,9 @@
         "refunded": "Rambursat",
         "customer": "Client {{number}}",
         "sidebar": {
-            "overview": "Acasa",
+            "overview": "Acasă",
             "myBookings": "Rezervările mele",
+            "cars": "Mașini",
             "profile": "Profil",
             "calendar": "Calendar",
             "settings": "Setări",
@@ -587,14 +588,20 @@
         },
         "overview": {
             "title": "Panou de control",
+            "rentalsInfo": "Informații Rezervări",
             "totalBookings": "Total rezervări",
+            "finishedBookings": "Rezervări finalizate",
+            "activeBookings": "Rezervări active",
             "lifetimeBookings": "Rezervări de-a lungul timpului",
             "totalSpent": "Total cheltuit",
             "lifetimeSpending": "Cheltuieli de-a lungul timpului",
             "loyaltyPoints": "Puncte loialitate",
             "availablePoints": "Puncte disponibile",
             "recentBookings": "Rezervări recente",
-            "viewAll": "Vezi toate"
+            "viewAll": "Vezi toate",
+            "favoriteCar": "Mașina Preferată",
+            "noFavoriteCar": "Nu ai închiriat nicio mașină, deci nu ai încă o mașină preferată.",
+            "startBorrowing": "Începe să închiriezi"
         },
         "bookings": {
             "title": "Rezervările mele",

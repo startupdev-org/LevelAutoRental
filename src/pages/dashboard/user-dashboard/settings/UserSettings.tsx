@@ -142,17 +142,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     };
 
     return (
-        <motion.div
-            key="settings"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-        >
-            <h2 className="text-4xl font-bold text-white">{t('dashboard.settings.title')}</h2>
-
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+        <div className="space-y-6">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 mb-8">
                 <h3 className="text-xl font-bold mb-4 text-white">{t('dashboard.settings.changePassword')}</h3>
 
                 {/* Animated Error Message */}
@@ -350,7 +341,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </div>
 
             {/* Notification Settings unchanged */}
-        </motion.div>
+        </div>
     );
 };
 

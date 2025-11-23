@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { Edit3, Mail, Phone, Loader2, AlertTriangle, X } from 'lucide-react';
+import { Mail, Phone, Loader2, AlertTriangle, X } from 'lucide-react';
 import { getProfile, updateProfile } from '../../../lib/db/user/profile';
 import { User } from '../../../types';
 
@@ -12,7 +12,7 @@ interface ProfileTabProps {
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(true);
     const [editForm, setEditForm] = useState({
         firstName: '',
         lastName: '',
@@ -61,7 +61,6 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
 
         if (result.success && result.data) {
             setUser(result.data[0]); // update state with new profile
-            setIsEditing(false);
         } else {
             alert('Failed to update profile: ' + result.error);
         }
@@ -107,88 +106,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
     if (activeTab !== 'profile') return null;
 
     return (
-        <motion.div
-            key="profile"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-        >
-            <div className="flex justify-between items-center">
-
-
-                <h2 className="text-4xl font-bold text-white">{t('dashboard.profile.title')}</h2>
-                <button
-                    onClick={() => isEditing ? handleCancelEdit() : setIsEditing(true)}
-                    disabled={initialLoading}
-                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
-                >
-                    <Edit3 size={18} />
-                    {isEditing ? t('dashboard.profile.cancel') : t('dashboard.profile.editProfile')}
-                </button>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 relative min-h-[400px]">
-                {/* Initial Loading Overlay */}
-                <AnimatePresence>
-                    {initialLoading && (
-                        <>
-                            {/* Blurred Background Layer */}
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="absolute inset-0 bg-black/50 backdrop-blur-xl rounded-2xl z-20"
-                            />
-                            {/* Content Overlay */}
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="absolute inset-0 rounded-2xl z-30 flex items-center justify-center pointer-events-none"
-                            >
-                                <motion.div
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0.8, opacity: 0 }}
-                                    transition={{ duration: 0.3, ease: "easeOut" }}
-                                    className="flex flex-col items-center gap-4"
-                                >
-                                    <div className="relative">
-                                        {/* Outer ring */}
-                                        <motion.div
-                                            className="w-16 h-16 rounded-full border-4 border-red-500/20"
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                        />
-                                        {/* Inner spinner */}
-                                        <motion.div
-                                            className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-600 border-r-red-600/50"
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                        />
-                                        {/* Center dot */}
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="w-2 h-2 rounded-full bg-red-600"></div>
-                                        </div>
-                                    </div>
-                                    <motion.p
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.1 }}
-                                        className="text-white/90 font-medium text-sm"
-                                    >
-                                        {t('dashboard.profile.loading') || 'Loading profile...'}
-                                    </motion.p>
-                                </motion.div>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>
-
+        <div className="space-y-6">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 relative mb-8">
                 {/* Save Loading Overlay */}
                 <AnimatePresence>
                     {loading && !initialLoading && (
@@ -251,30 +170,44 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-base font-bold text-gray-200 mb-3">{t('dashboard.profile.firstName')}</label>
-                        <input
-                            type="text"
-                            value={editForm.firstName}
-                            onChange={(e) => {
-                                const value = e.target.value.replace(/[0-9]/g, '');
-                                setEditForm({ ...editForm, firstName: value });
-                            }}
-                            disabled={!isEditing || loading || initialLoading}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={editForm.firstName}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/[0-9]/g, '');
+                                    setEditForm({ ...editForm, firstName: value });
+                                }}
+                                disabled={loading || initialLoading}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                            />
+                            {initialLoading && (
+                                <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
+                                    <div className="h-4 w-24 bg-white/20 rounded animate-pulse"></div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-base font-bold text-gray-200 mb-3">{t('dashboard.profile.lastName')}</label>
-                        <input
-                            type="text"
-                            value={editForm.lastName}
-                            onChange={(e) => {
-                                const value = e.target.value.replace(/[0-9]/g, '');
-                                setEditForm({ ...editForm, lastName: value });
-                            }}
-                            disabled={!isEditing || loading || initialLoading}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={editForm.lastName}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/[0-9]/g, '');
+                                    setEditForm({ ...editForm, lastName: value });
+                                }}
+                                disabled={loading || initialLoading}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
+                            />
+                            {initialLoading && (
+                                <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
+                                    <div className="h-4 w-24 bg-white/20 rounded animate-pulse"></div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div>
@@ -287,6 +220,11 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                                 disabled
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-3 pl-11 pr-4 text-white text-base placeholder-gray-400 disabled:opacity-50"
                             />
+                            {initialLoading && (
+                                <div className="absolute inset-0 flex items-center pl-11 pointer-events-none">
+                                    <div className="h-4 w-32 bg-white/20 rounded animate-pulse"></div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -302,45 +240,34 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                                     const value = e.target.value.replace(/[^0-9+]/g, '');
                                     setEditForm({ ...editForm, phone: value });
                                 }}
-                                disabled={!isEditing || loading || initialLoading}
+                                disabled={loading || initialLoading}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg py-3 pl-11 pr-4 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all duration-300 disabled:opacity-50"
                             />
+                            {initialLoading && (
+                                <div className="absolute inset-0 flex items-center pl-11 pointer-events-none">
+                                    <div className="h-4 w-28 bg-white/20 rounded animate-pulse"></div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {isEditing && (
-                    <div className="flex gap-4 mt-6">
-                        <button
-                            onClick={handleSaveProfile}
-                            disabled={loading}
-                            className="px-3 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg hover:border-green-500/60 transition-all text-m whitespace-nowrap flex items-center gap-2"
-                        >
-                            {loading ? (
-                                <>
-                                    <motion.div
-                                        initial={{ rotate: 0 }}
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                    >
-                                        <Loader2 className="w-5 h-5" />
-                                    </motion.div>
-                                    <span>{t('dashboard.profile.saving') || 'Saving...'}</span>
-                                </>
-                            ) : (
-                                t('dashboard.profile.saveChanges')
-                            )}
-                        </button>
-
-                        <button
-                            onClick={handleCancelEdit}
-                            disabled={loading}
-                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
-                        >
-                            {t('dashboard.profile.cancel')}
-                        </button>
-                    </div>
-                )}
+                <div className="flex gap-4 mt-6">
+                    <button
+                        onClick={handleSaveProfile}
+                        disabled={loading}
+                        className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? (
+                            <span className="flex items-center gap-2">
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                {t('dashboard.profile.saving') || 'Saving...'}
+                            </span>
+                        ) : (
+                            t('dashboard.profile.saveChanges')
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Discard Changes Confirmation Modal */}
@@ -416,7 +343,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ activeTab, t }) => {
                 </AnimatePresence>,
                 document.body
             )}
-        </motion.div>
+        </div>
     );
 };
 

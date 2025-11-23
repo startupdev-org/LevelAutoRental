@@ -129,10 +129,10 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
     };
 
     return (
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden mb-8">
             {/* Header */}
             <div className="px-6 py-4 border-b border-white/10 flex flex-col sm:flex-row justify-between gap-4">
-                <h2 className="text-xl font-bold text-white">{title}</h2>
+                <h3 className="text-xl font-bold text-white">{title}</h3>
                 <button onClick={handleAddOrder} className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg flex items-center gap-2 text-sm">
                     <Plus className="w-4 h-4" />
                     Make a new request
