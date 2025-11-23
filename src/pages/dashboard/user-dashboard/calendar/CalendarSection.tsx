@@ -18,15 +18,13 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
 
     const prevMonth = () => setMonth(subMonths(month, 1));
     const nextMonth = () => setMonth(addMonths(month, 1));
-    const handleSelectDay = (day: string) => setSelectedDate(day);
 
-    const formatTime = (time: string | undefined) => {
-        if (!time) return "--:--";
-        const d = new Date(time);
-        return isNaN(d.getTime()) ? "--:--" : format(d, "HH:mm");
+    const handleSelectDay = (day: string) => {
+        setSelectedDate(day);
     };
 
     const getOrderNumber = (order: Rental) => order.id;
+
     const getStatusDisplay = (status: string) => {
         switch (status) {
             case "pending": return { text: "Pending", className: "bg-yellow-500/30 text-yellow-300" };
@@ -52,55 +50,57 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
         return days;
     };
 
-    console.log('orders: ', orders)
-
-    // Compute pickups/returns for selected day
-    const selectedDayPickups = useMemo(() => {
-        if (!selectedDate) return [];
-        return orders.filter(o => format(new Date(o.start_time), "yyyy-MM-dd") === selectedDate);
-    }, [selectedDate, orders]);
-
-    const selectedDayReturns = useMemo(() => {
-        if (!selectedDate) return [];
-        return orders.filter(o => format(new Date(o.end_time), "yyyy-MM-dd") === selectedDate);
-    }, [selectedDate, orders]);
-
-    // Compute eventsByDay to mark calendar
+    // Prepare sets for all pickup/return dates
     const eventsByDay = useMemo(() => {
         const pickups = new Set<string>();
         const returns = new Set<string>();
 
         orders.forEach(o => {
-            if (o.start_date) {
-                const startDate = new Date(o.start_date);
-                if (!isNaN(startDate.getTime())) {
-                    pickups.add(format(startDate, "yyyy-MM-dd"));
-                }
-            }
-
-            if (o.end_date) {
-                const endDate = new Date(o.end_date);
-                if (!isNaN(endDate.getTime())) {
-                    returns.add(format(endDate, "yyyy-MM-dd"));
-                }
-            }
+            if (o.start_date) pickups.add(format(new Date(o.start_date), "yyyy-MM-dd"));
+            if (o.end_date) returns.add(format(new Date(o.end_date), "yyyy-MM-dd"));
         });
-
 
         return { pickups, returns };
     }, [orders]);
 
-    // console.log('events by day: ', eventsByDay)
+    // Determine all dates to highlight when a day is selected
+    const relatedDates = useMemo(() => {
+        if (!selectedDate) return new Set<string>();
+        const related = new Set<string>();
+
+        orders.forEach(o => {
+            const start = o.start_date ? format(new Date(o.start_date), "yyyy-MM-dd") : null;
+            const end = o.end_date ? format(new Date(o.end_date), "yyyy-MM-dd") : null;
+
+            if (start === selectedDate || end === selectedDate) {
+                if (start) related.add(start);
+                if (end) related.add(end);
+            }
+        });
+
+        return related;
+    }, [selectedDate, orders]);
 
     const displayDateObj = selectedDate ? new Date(selectedDate) : new Date();
 
-    const sortedPickups = selectedDayPickups.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-    const sortedReturns = selectedDayReturns.sort((a, b) => new Date(a.end_time).getTime() - new Date(b.end_time).getTime());
+    const sortedPickups = useMemo(() => {
+        if (!selectedDate) return [];
+        return orders
+            .filter(o => o.start_date && format(new Date(o.start_date), "yyyy-MM-dd") === selectedDate)
+            .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+    }, [selectedDate, orders]);
+
+    const sortedReturns = useMemo(() => {
+        if (!selectedDate) return [];
+        return orders
+            .filter(o => o.end_date && format(new Date(o.end_date), "yyyy-MM-dd") === selectedDate)
+            .sort((a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime());
+    }, [selectedDate, orders]);
 
     const renderOrderCard = (order: Rental, isPickup: boolean) => {
         if (!order || !order.car) return null;
 
-        const carName = order.car.make + " " + order.car.model;
+        const carName = `${order.car.make} ${order.car.model}`;
         const colorClass = isPickup ? "text-yellow-400" : "text-blue-400";
         const statusDisplay = getStatusDisplay(order.rental_status);
 
@@ -134,7 +134,7 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                         <div className="flex items-center gap-2">
                             <Clock className={`w-4 h-4 ${colorClass}/70 flex-shrink-0`} />
                             <span className={`${colorClass} text-lg font-bold tracking-tight`}>
-                                {isPickup ? formatTime(order.start_time) : formatTime(order.end_time)}
+                                {isPickup ? order.start_time : order.end_time}
                             </span>
                         </div>
                     </div>
@@ -155,7 +155,9 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                         <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors">▶</button>
                     </div>
                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                        {["Lu", "Ma", "Mi", "Jo", "Vi", "Sâ", "Du"].map((d, i) => <div key={d} className={`text-gray-400 font-medium ${i >= 5 ? 'text-red-400' : ''}`}>{d}</div>)}
+                        {["Lu", "Ma", "Mi", "Jo", "Vi", "Sâ", "Du"].map((d, i) =>
+                            <div key={d} className={`text-gray-400 font-medium ${i >= 5 ? 'text-red-400' : ''}`}>{d}</div>
+                        )}
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                         {generateCalendarDays(month).map((day, idx) => {
@@ -167,21 +169,28 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                             const today = new Date(); today.setHours(0, 0, 0, 0);
                             const isToday = isSameDay(dayDate, today);
                             const isPast = dayDate < today;
-                            const isSelected = selectedDate === day || (!selectedDate && isToday);
+                            const isSelected = selectedDate === day;
+                            const isRelated = relatedDates.has(day);
 
                             let dayClass = '';
                             if (isToday && isSelected) dayClass = 'bg-red-500 text-white ring-1 ring-white/60 font-semibold';
                             else if (isToday) dayClass = 'bg-red-500 text-white';
-                            else if (isSelected) dayClass = hasEvents ? (isPast ? 'bg-gray-500/40 text-white ring-1 font-semibold' : 'bg-yellow-500/20 text-white ring-1 font-semibold') : 'bg-white/5 ring-1 text-white font-semibold';
+                            else if (isSelected || isRelated) dayClass = hasEvents ? 'bg-blue-500/20 text-white ring-1 font-semibold' : 'bg-white/5 ring-1 text-white font-semibold';
                             else if (hasEvents) dayClass = isPast ? 'bg-gray-500/40 text-white' : 'bg-yellow-500/20 text-white';
                             else dayClass = 'hover:bg-white/10';
 
                             return (
-                                <div key={idx} className={`w-9 h-9 flex items-center justify-center text-xs rounded-xl transition-colors relative cursor-pointer ${!isInCurrentMonth ? 'text-gray-500' : 'text-white'} ${dayClass}`} onClick={() => handleSelectDay(day)}>
+                                <div
+                                    key={idx}
+                                    className={`w-9 h-9 flex items-center justify-center text-xs rounded-xl transition-colors relative cursor-pointer ${!isInCurrentMonth ? 'text-gray-500' : 'text-white'} ${dayClass}`}
+                                    onClick={() => handleSelectDay(day)}
+                                >
                                     {dayDate.getDate()}
-                                    {hasEvents && <div className={`absolute top-0 right-0 w-2 h-2 rounded-full ${isToday ? 'bg-yellow-500' : isPast ? 'bg-gray-500' : 'bg-red-500'}`}></div>}
+                                    {hasEvents && (
+                                        <div className={`absolute top-0 right-0 w-2 h-2 rounded-full ${isToday ? 'bg-yellow-500' : isPast ? 'bg-gray-500' : 'bg-red-500'}`}></div>
+                                    )}
                                 </div>
-                            )
+                            );
                         })}
                     </div>
                 </motion.div>
@@ -191,28 +200,35 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
             <div>
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-0">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-white">{displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        <h3 className="text-xl font-bold text-white">
+                            {displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t("admin.calendar.today")})</span>}
                         </h3>
                         {selectedDate && <button onClick={() => setSelectedDate(null)} className="text-gray-400 hover:text-white transition-colors p-1">✕</button>}
                     </div>
 
                     {/* Pickups */}
-                    {sortedPickups.length > 0 && <div className="mb-6">
-                        <h4 className="text-base font-semibold text-yellow-300 mb-4 uppercase tracking-wide">{t("admin.calendar.pickups")} ({sortedPickups.length})</h4>
-                        <div className="space-y-4">{sortedPickups.map(o => renderOrderCard(o, true))}</div>
-                    </div>}
+                    {sortedPickups.length > 0 && (
+                        <div className="mb-6">
+                            <h4 className="text-base font-semibold text-yellow-300 mb-4 uppercase tracking-wide">{t("admin.calendar.pickups")} ({sortedPickups.length})</h4>
+                            <div className="space-y-4">{sortedPickups.map(o => renderOrderCard(o, true))}</div>
+                        </div>
+                    )}
 
                     {/* Returns */}
-                    {sortedReturns.length > 0 && <div className="mb-6">
-                        <h4 className="text-base font-semibold text-blue-300 mb-4 uppercase tracking-wide">{t("admin.calendar.returns")} ({sortedReturns.length})</h4>
-                        <div className="space-y-4">{sortedReturns.map(o => renderOrderCard(o, false))}</div>
-                    </div>}
+                    {sortedReturns.length > 0 && (
+                        <div className="mb-6">
+                            <h4 className="text-base font-semibold text-blue-300 mb-4 uppercase tracking-wide">{t("admin.calendar.returns")} ({sortedReturns.length})</h4>
+                            <div className="space-y-4">{sortedReturns.map(o => renderOrderCard(o, false))}</div>
+                        </div>
+                    )}
 
                     {/* Empty */}
-                    {sortedPickups.length === 0 && sortedReturns.length === 0 && <div className="text-center py-8 text-gray-400 text-sm">No bookings for this day</div>}
+                    {sortedPickups.length === 0 && sortedReturns.length === 0 && (
+                        <div className="text-center py-8 text-gray-400 font-semibold text-m">No deals for this day</div>
+                    )}
                 </motion.div>
             </div>
         </div>
-    )
-}
+    );
+};

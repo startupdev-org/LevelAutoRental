@@ -73,6 +73,7 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
 
             {/* Sidebar */}
             <motion.div
+                key="calendar-sidebar"
                 initial={{ x: "100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
@@ -100,9 +101,18 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
                             placeholder="Search cars..."
                             value={filters.searchQuery || ""}
                             onChange={(e) => handleFilterChange("searchQuery", e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
+                            className="w-full pl-12 pr-10 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 text-white text-sm placeholder-gray-400"
                         />
+                        {filters.searchQuery && (
+                            <button
+                                onClick={() => handleFilterChange("searchQuery", "")}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors text-sm"
+                            >
+                                ✕
+                            </button>
+                        )}
                     </div>
+
 
                     {/* Cars List */}
                     <div className="flex flex-col gap-3 min-h-[200px]">
@@ -112,10 +122,10 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
                                 <p className="mt-2 text-sm text-gray-400">Loading cars...</p>
                             </div>
                         ) : cars && cars.length > 0 ? (
-                            cars.map((car) => (
+                            cars.map((car, index) => (
                                 <div
-                                    key={car.id}
-                                    onClick={() => handleFilterChange("carId", car.id.toString())}
+                                    key={car.id ? `car-${car.id}` : `car-fallback-${index}`}
+                                    onClick={() => handleFilterChange("carId", car.id?.toString() || "")}
                                     className={`flex items-center gap-4 px-4 py-3 rounded-xl border border-white/20 cursor-pointer hover:bg-white/10 transition-colors ${filters.carId === car.id.toString() ? "bg-red-500/20" : ""}`}
                                 >
                                     <div className="w-16 h-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-700/30 flex items-center justify-center">

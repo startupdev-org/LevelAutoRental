@@ -292,10 +292,6 @@ export const UserDashboard: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="space-y-6"
                       >
-                        <div className="flex justify-between items-center">
-                          <h2 className="text-4xl font-bold text-white">Car Calendar</h2>
-                        </div>
-
                         <UserCalendarPage />
                       </motion.div>
                     )}
