@@ -25,7 +25,6 @@ export interface CarFilters {
  */
 export async function fetchCars(): Promise<Car[]> {
     try {
-        console.log('fetching cars from database');
         const { data, error } = await supabase
             .from("Cars")
             .select("*")
@@ -36,8 +35,6 @@ export async function fetchCars(): Promise<Car[]> {
             console.error('Error fetching cars:', error);
             return [];
         }
-
-        console.log('cars fetched: ', data);
 
         return data ?? [];
     } catch (err) {
@@ -276,7 +273,6 @@ export async function fetchCarsWithPhotos(): Promise<(Car[])> {
         })
     );
 
-    console.log('cars with images: ', carsWithImages)
     return carsWithImages;
 }
 

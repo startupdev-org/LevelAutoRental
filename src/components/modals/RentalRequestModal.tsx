@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check } from 'lucide-react';
+import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check, FileText, Cookie, MapPin, CreditCard, Bell, CheckCircle } from 'lucide-react';
 import { Car as CarType } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { createUserBorrowRequest } from '../../lib/orders';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
@@ -64,18 +68,33 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     const [selectedCountryCode, setSelectedCountryCode] = useState(COUNTRY_CODES[0]);
     const [showCountryCodeDropdown, setShowCountryCodeDropdown] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
+    const [termsModalType, setTermsModalType] = useState<'terms' | 'privacy'>('terms');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<{
+        firstName?: string;
+        lastName?: string;
+        age?: string;
+        email?: string;
+        phone?: string;
+        comment?: string;
+    }>({});
+    const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+    const { t } = useTranslation();
+    const { user } = useAuth();
+    const navigate = useNavigate();
 
     const [options, setOptions] = useState({
-        pickupAtAddress: false,
-        returnAtAddress: false,
         unlimitedKm: false,
-        speedLimitIncrease: false,
         personalDriver: false,
         priorityService: false,
         tireInsurance: false,
         childSeat: false,
         simCard: false,
-        roadsideAssistance: false
+        roadsideAssistance: false,
+        airportDelivery: false
     });
 
     const formatDate = (dateString: string): string => {
@@ -131,9 +150,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         if (options.unlimitedKm) {
             additionalCost += baseCarPrice * rentalDays * 0.5; // 50% of daily rate
         }
-        if (options.speedLimitIncrease) {
-            additionalCost += baseCarPrice * rentalDays * 0.2; // 20% of daily rate
-        }
         if (options.tireInsurance) {
             additionalCost += baseCarPrice * rentalDays * 0.2; // 20% of daily rate
         }
@@ -179,9 +195,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     if (options.unlimitedKm) {
         additionalCosts += baseCarPrice * rentalDays * 0.5; // 50%
     }
-    if (options.speedLimitIncrease) {
-        additionalCosts += baseCarPrice * rentalDays * 0.2; // 20%
-    }
     if (options.tireInsurance) {
         additionalCosts += baseCarPrice * rentalDays * 0.2; // 20%
     }
@@ -216,31 +229,296 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         ? car.price_per_day * (rentalCalculation.days + (rentalCalculation.hours / 24))
         : 0;
 
+    // Validation functions
+    const validateName = (name: string): string | null => {
+        if (!name.trim()) {
+            return 'Acest câmp este obligatoriu.';
+        }
+        if (name.trim().length < 2) {
+            return 'Numele trebuie să aibă minim 2 caractere.';
+        }
+        if (name.trim().length > 50) {
+            return 'Numele nu poate depăși 50 de caractere.';
+        }
+        // Allow letters, spaces, hyphens, and Romanian characters
+        const nameRegex = /^[a-zA-ZăâîșțĂÂÎȘȚ\s\-']+$/;
+        if (!nameRegex.test(name.trim())) {
+            return 'Numele poate conține doar litere, spații și cratime.';
+        }
+        return null;
+    };
+
+    const validateAge = (age: string): string | null => {
+        if (!age.trim()) {
+            return 'Vă rugăm să introduceți vârsta.';
+        }
+        const ageNum = parseInt(age, 10);
+        if (isNaN(ageNum)) {
+            return 'Vă rugăm să introduceți un număr valid.';
+        }
+        if (ageNum < 18) {
+            return 'Vârsta minimă este de 18 ani.';
+        }
+        if (ageNum > 100) {
+            return 'Vă rugăm să introduceți o vârstă validă (maximum 100 ani).';
+        }
+        return null;
+    };
+
+    const validateEmail = (email: string): string | null => {
+        // If user is logged in, email is optional (will use account email)
+        if (user) {
+            // If email is provided, validate format
+            if (email.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email.trim())) {
+                    return 'Vă rugăm să introduceți o adresă de e-mail validă.';
+                }
+                if (email.trim().length > 255) {
+                    return 'Adresa de e-mail nu poate depăși 255 de caractere.';
+                }
+            }
+            return null; // Email is optional for logged-in users
+        }
+        // For logged-out users, email is required
+        if (!email.trim()) {
+            return 'Adresa de e-mail este obligatorie.';
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+            return 'Vă rugăm să introduceți o adresă de e-mail validă.';
+        }
+        if (email.trim().length > 255) {
+            return 'Adresa de e-mail nu poate depăși 255 de caractere.';
+        }
+        return null;
+    };
+
+    const validatePhone = (phone: string): string | null => {
+        if (!phone.trim()) {
+            return 'Numărul de telefon este obligatoriu.';
+        }
+        // Remove spaces, dashes, and parentheses for validation
+        const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+        // Allow only digits
+        if (!/^\d+$/.test(cleanPhone)) {
+            return 'Numărul de telefon poate conține doar cifre, spații și cratime.';
+        }
+        // Check length (minimum 6 digits, maximum 15 digits)
+        if (cleanPhone.length < 6) {
+            return 'Numărul de telefon trebuie să aibă minim 6 cifre.';
+        }
+        if (cleanPhone.length > 15) {
+            return 'Numărul de telefon nu poate depăși 15 cifre.';
+        }
+        return null;
+    };
+
+    const validateComment = (comment: string): string | null => {
+        if (comment.length > 1000) {
+            return 'Comentariul nu poate depăși 1000 de caractere.';
+        }
+        return null;
+    };
+
     const handleInputChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        // Apply input restrictions based on field type
+        let processedValue = value;
+
+        if (field === 'firstName' || field === 'lastName') {
+            // Only allow letters, spaces, hyphens, and Romanian characters
+            processedValue = value.replace(/[^a-zA-ZăâîșțĂÂÎȘȚ\s\-']/g, '');
+            // Limit length
+            if (processedValue.length > 50) {
+                processedValue = processedValue.substring(0, 50);
+            }
+        } else if (field === 'age') {
+            // Only allow digits
+            processedValue = value.replace(/\D/g, '');
+            // Limit to 3 digits (max 100)
+            if (processedValue.length > 3) {
+                processedValue = processedValue.substring(0, 3);
+            }
+        } else if (field === 'email') {
+            // Allow email characters, limit length
+            if (processedValue.length > 255) {
+                processedValue = processedValue.substring(0, 255);
+            }
+        } else if (field === 'phone') {
+            // Allow digits, spaces, dashes, and parentheses
+            processedValue = value.replace(/[^\d\s\-\(\)]/g, '');
+            // Limit length (15 digits max)
+            const digitsOnly = processedValue.replace(/\D/g, '');
+            if (digitsOnly.length > 15) {
+                // Keep formatting but limit digits
+                const formatted = processedValue.substring(0, processedValue.length - (digitsOnly.length - 15));
+                processedValue = formatted;
+            }
+        } else if (field === 'comment') {
+            // Limit comment length
+            if (processedValue.length > 1000) {
+                processedValue = processedValue.substring(0, 1000);
+            }
+        }
+
+        setFormData(prev => ({ ...prev, [field]: processedValue }));
+
+        // Only validate and show errors if user has attempted to submit
+        if (hasAttemptedSubmit) {
+            let error: string | null = null;
+            if (field === 'firstName') {
+                error = validateName(processedValue);
+            } else if (field === 'lastName') {
+                error = validateName(processedValue);
+            } else if (field === 'age') {
+                error = validateAge(processedValue);
+            } else if (field === 'email') {
+                error = validateEmail(processedValue);
+            } else if (field === 'phone') {
+                error = validatePhone(processedValue);
+            } else if (field === 'comment') {
+                error = validateComment(processedValue);
+            }
+
+            setFieldErrors(prev => ({
+                ...prev,
+                [field]: error || undefined
+            }));
+        }
+
+        // Clear submit error when user starts typing
+        if (submitError) {
+            setSubmitError(null);
+        }
     };
 
     const handleOptionChange = (option: string, value: boolean) => {
         setOptions(prev => ({ ...prev, [option]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Mark that user has attempted to submit
+        setHasAttemptedSubmit(true);
+        
+        // Comprehensive validation before submitting
+        const errors: typeof fieldErrors = {};
+        
+        const firstNameError = validateName(formData.firstName);
+        if (firstNameError) errors.firstName = firstNameError;
+        
+        const lastNameError = validateName(formData.lastName);
+        if (lastNameError) errors.lastName = lastNameError;
+        
+        const ageError = validateAge(formData.age);
+        if (ageError) errors.age = ageError;
+        
+        const emailError = validateEmail(formData.email);
+        if (emailError) errors.email = emailError;
+        
+        const phoneError = validatePhone(formData.phone);
+        if (phoneError) errors.phone = phoneError;
+        
+        const commentError = validateComment(formData.comment);
+        if (commentError) errors.comment = commentError;
+        
+        // Set all errors
+        setFieldErrors(errors);
+        
+        // If there are any errors, scroll to the first error field and prevent submission
+        if (Object.keys(errors).length > 0) {
+            const firstErrorField = Object.keys(errors)[0];
+            
+            // Scroll to the first error field
+            setTimeout(() => {
+                const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
+                if (errorElement) {
+                    errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Focus the input field
+                    const input = errorElement.querySelector('input, textarea') as HTMLElement;
+                    if (input) {
+                        input.focus();
+                    }
+                }
+            }, 100);
+            
+            setSubmitError('Vă rugăm să corectați erorile din formular.');
+            return;
+        }
+        
+        // Clear any previous errors and set submitting state
+        setSubmitError(null);
+        setSubmitSuccess(false);
+        setIsSubmitting(true);
+
+        try {
         // Include country code in phone number
-        const fullPhoneNumber = `${selectedCountryCode.code} ${formData.phone}`.trim();
-        console.log('Rental request submitted:', {
-            car,
-            dates: { pickupDate, returnDate, pickupTime, returnTime },
-            formData: {
-                ...formData,
-                phone: fullPhoneNumber
-            },
-            options,
-            totalCost
-        });
-        // Here you would typically send the data to your backend
-        // For now, we'll just close the modal
-        onClose();
+            const fullPhoneNumber = `${selectedCountryCode.code} ${formData.phone.trim()}`;
+            
+            // Format dates for database (YYYY-MM-DD)
+            const formatDateForDB = (dateString: string): string => {
+                const date = new Date(dateString);
+                return date.toISOString().split('T')[0];
+            };
+
+            // Format time for database (HH:MM:SS)
+            const formatTimeForDB = (timeString: string): string => {
+                // If time is in format "HH:MM", ensure it's in "HH:MM:SS" format
+                if (timeString.includes(':')) {
+                    const parts = timeString.split(':');
+                    if (parts.length === 2) {
+                        return `${parts[0]}:${parts[1]}:00`;
+                    }
+                }
+                return timeString;
+            };
+
+            // Prepare options object
+            const optionsData: any = {};
+            if (options.unlimitedKm) optionsData.unlimitedKm = true;
+            if (options.personalDriver) optionsData.personalDriver = true;
+            if (options.priorityService) optionsData.priorityService = true;
+            if (options.tireInsurance) optionsData.tireInsurance = true;
+            if (options.childSeat) optionsData.childSeat = true;
+            if (options.simCard) optionsData.simCard = true;
+            if (options.roadsideAssistance) optionsData.roadsideAssistance = true;
+            if (options.airportDelivery) optionsData.airportDelivery = true;
+
+            // Use user's email from account if logged in, otherwise use form email
+            const emailToUse = user?.email || formData.email;
+            // For user_id, always use email (for logged-in users, use their email; for guests, use their provided email)
+            const userIdForRequest = emailToUse;
+
+            const result = await createUserBorrowRequest(
+                car.id.toString(),
+                formatDateForDB(pickupDate),
+                formatTimeForDB(pickupTime),
+                formatDateForDB(returnDate),
+                formatTimeForDB(returnTime),
+                formData.firstName,
+                formData.lastName,
+                emailToUse,
+                fullPhoneNumber,
+                formData.age || undefined,
+                formData.comment || undefined,
+                Object.keys(optionsData).length > 0 ? optionsData : undefined,
+                totalCost,
+                userIdForRequest // Use email as user_id (for both logged-in users and guests)
+            );
+
+            if (result.success) {
+                setSubmitSuccess(true);
+                // Don't close modal automatically - let user see the success message and registration option
+            } else {
+                setSubmitError(result.error || 'A apărut o eroare la trimiterea cererii. Vă rugăm să încercați din nou.');
+            }
+        } catch (error) {
+            console.error('Error submitting rental request:', error);
+            setSubmitError('A apărut o eroare neașteptată. Vă rugăm să încercați din nou.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Close country code dropdown when clicking outside
@@ -261,6 +539,16 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         };
     }, [showCountryCodeDropdown]);
 
+    // Auto-fill email when user is logged in and modal opens
+    useEffect(() => {
+        if (isOpen && user?.email) {
+            setFormData(prev => ({
+                ...prev,
+                email: user.email || ''
+            }));
+        }
+    }, [isOpen, user]);
+
     // Reset form when modal closes
     useEffect(() => {
         if (!isOpen) {
@@ -272,18 +560,20 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                 email: '',
                 comment: ''
             });
+            setFieldErrors({});
+            setHasAttemptedSubmit(false);
             setOptions({
-                pickupAtAddress: false,
-                returnAtAddress: false,
                 unlimitedKm: false,
-                speedLimitIncrease: false,
                 personalDriver: false,
                 priorityService: false,
                 tireInsurance: false,
                 childSeat: false,
                 simCard: false,
-                roadsideAssistance: false
+                roadsideAssistance: false,
+                airportDelivery: false
             });
+            setSubmitError(null);
+            setSubmitSuccess(false);
         }
     }, [isOpen]);
 
@@ -312,35 +602,94 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                         className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="bg-white rounded-3xl md:rounded-3xl rounded-t-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] md:max-h-[92vh] overflow-hidden md:my-4">
+                        <div className="bg-white rounded-2xl border border-gray-300 shadow-2xl max-w-5xl w-full max-h-[95vh] md:max-h-[92vh] overflow-hidden md:my-4">
                             {/* Header */}
-                            <div className="sticky top-0 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between rounded-t-3xl z-10 backdrop-blur-sm">
+                            <div className="sticky top-0 bg-white border-b border-gray-300 px-6 md:px-8 py-6 flex items-center justify-between rounded-t-2xl z-10">
                                 <div>
-                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Cerere de închiriere</h2>
-                                    <p className="text-xs md:text-sm text-gray-500">{car.make + ' ' + car.model}</p>
+                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">Cerere de închiriere</h2>
+                                    <p className="mt-1 text-sm text-gray-500">{car.make + ' ' + car.model}</p>
                                 </div>
                                 <button
                                     onClick={onClose}
-                                    className="p-2 md:p-2.5 hover:bg-white rounded-xl transition-all hover:shadow-md flex-shrink-0"
+                                    className="p-2 hover:bg-gray-100 rounded-xl transition-all flex-shrink-0"
                                 >
-                                    <X className="w-5 h-5 md:w-6 md:h-6 text-gray-500" />
+                                    <X className="w-5 h-5 text-gray-500" />
                                 </button>
                             </div>
 
                             {/* Content */}
                             <div className="overflow-y-auto max-h-[calc(95vh-200px)] md:max-h-[calc(92vh-200px)]">
+                                {submitSuccess ? (
+                                    /* Success View */
+                                    <div className="px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
+                                        {/* Success Message Card */}
+                                        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 md:p-8">
+                                            <div className="mb-4">
+                                                <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+                                                    Confirmare
+                                                </span>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600 flex-shrink-0">
+                                                    <CheckCircle className="w-7 h-7 text-white" strokeWidth={2.5} />
+                                                </div>
+                                                <div className="flex-1 pt-1">
+                                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight mb-3">
+                                                        Cererea a fost trimisă cu succes!
+                                                    </h2>
+                                                    <p className="text-gray-600 text-base leading-relaxed">
+                                                        În scurt timp vă vom contacta pentru confirmare.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Registration Card - Only show if user is logged out */}
+                                        {!user && (
+                                            <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 md:p-8">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600 flex-shrink-0">
+                                                        <UserRound className="w-5 h-5 text-white" strokeWidth={2} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-xl font-bold text-gray-800 mb-3">
+                                                            Creează cont pentru acces rapid
+                                                        </h3>
+                                                        <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                                                            Pentru a vedea și a avea acces rapid la cererile și comenzile dvs., puteți să vă înregistrați.
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                onClose();
+                                                                navigate('/auth/signup');
+                                                            }}
+                                                            className="w-full py-3.5 px-6 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg text-base"
+                                                        >
+                                                            Creează cont
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
                                 <form onSubmit={handleSubmit} className="px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
                                     {/* Rental Period */}
-                                    <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
-                                        <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2 md:gap-3">
-                                            <div className="p-1.5 md:p-2 bg-gray-100 rounded-lg">
-                                                <Calendar className="w-4 md:w-5 h-4 md:h-5 text-theme-500" />
+                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
+                                        <div className="mb-3 md:mb-4">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                    <Calendar className="w-5 h-5 text-white" />
                                             </div>
+                                                <h3 className="text-base md:text-lg font-bold text-gray-800">
                                             Perioada închirierii
                                         </h3>
-                                        <div className="inline-flex items-center gap-2 px-3 md:px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 mb-4 md:mb-5">
-                                            <Clock className="w-4 h-4 text-gray-600" />
-                                            <span className="text-xs md:text-sm font-semibold text-gray-900">
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 md:space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-600 text-sm md:text-base">
                                                 {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
                                                 {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
                                             </span>
@@ -351,11 +700,11 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             <motion.div
                                                 initial={{ opacity: 0, y: -10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="mb-4 md:mb-5 p-3 md:p-4 bg-theme-50 border border-theme-200 rounded-xl"
-                                            >
-                                                <div className="flex items-center gap-2 md:gap-3 text-gray-900 text-xs md:text-sm font-semibold">
-                                                    <div className="p-1 md:p-1.5 bg-theme-500 rounded-lg flex-shrink-0">
-                                                        <Check className="w-3 md:w-4 h-3 md:h-4 text-white" />
+                                                    className="p-2.5 md:p-3 bg-emerald-50 border border-emerald-200 rounded-xl"
+                                                >
+                                                    <div className="flex items-center gap-2 text-emerald-700 text-xs md:text-sm font-semibold">
+                                                        <div className="p-1 bg-emerald-500/20 rounded-lg flex-shrink-0">
+                                                            <Check className="w-3 h-3 text-emerald-600" />
                                                     </div>
                                                     <span>
                                                         {discountPercentage === 4
@@ -366,51 +715,80 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                             </motion.div>
                                         )}
-                                        <div className="grid grid-cols-2 gap-3 md:gap-4">
-                                            <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
-                                                <div className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 md:mb-2">Data preluării</div>
-                                                <div className="text-sm md:text-base font-bold text-gray-900">{formatDate(pickupDate)}</div>
-                                                <div className="text-xs md:text-sm text-gray-600 mt-0.5 md:mt-1">ora {pickupTime}</div>
+
+                                            <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-gray-300">
+                                                <div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data preluării</p>
+                                                    <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(pickupDate)}</p>
+                                                    <p className="text-gray-500 text-xs md:text-sm">ora {pickupTime}</p>
                                             </div>
-                                            <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
-                                                <div className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 md:mb-2">Data returnării</div>
-                                                <div className="text-sm md:text-base font-bold text-gray-900">{formatDate(returnDate)}</div>
-                                                <div className="text-xs md:text-sm text-gray-600 mt-0.5 md:mt-1">ora {returnTime}</div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data returnării</p>
+                                                    <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(returnDate)}</p>
+                                                    <p className="text-gray-500 text-xs md:text-sm">ora {returnTime}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Contact Information */}
-                                    <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
-                                        <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2 md:gap-3">
-                                            <div className="p-1.5 md:p-2 bg-gray-100 rounded-lg">
-                                                <UserRound className="w-4 md:w-5 h-4 md:h-5 text-theme-500" />
+                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
+                                        <div className="mb-3 md:mb-4">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                    <UserRound className="w-5 h-5 text-white" />
                                             </div>
+                                                <h3 className="text-base md:text-lg font-bold text-gray-800">
                                             Date de contact
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Prenume</label>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
+                                            <div data-field="firstName">
+                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                    Prenume <span className="text-red-500">*</span>
+                                                </label>
                                                 <input
                                                     type="text"
                                                     value={formData.firstName}
                                                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors hover:border-gray-400"
+                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
+                                                        hasAttemptedSubmit && fieldErrors.firstName
+                                                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                            : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
+                                                    }`}
                                                     required
+                                                    maxLength={50}
                                                 />
+                                                {hasAttemptedSubmit && fieldErrors.firstName && (
+                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.firstName}</p>
+                                                )}
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Nume</label>
+                                            <div data-field="lastName">
+                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                    Nume <span className="text-red-500">*</span>
+                                                </label>
                                                 <input
                                                     type="text"
                                                     value={formData.lastName}
                                                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors hover:border-gray-400"
+                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
+                                                        hasAttemptedSubmit && fieldErrors.lastName
+                                                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                            : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
+                                                    }`}
                                                     required
+                                                    maxLength={50}
                                                 />
+                                                {hasAttemptedSubmit && fieldErrors.lastName && (
+                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.lastName}</p>
+                                                )}
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Vârstă</label>
+                                        </div>
+                                        <div className="mb-4" data-field="age">
+                                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                Vârstă <span className="text-red-500">*</span>
+                                            </label>
                                                 <input
                                                     type="number"
                                                     value={formData.age}
@@ -418,12 +796,44 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     placeholder="18"
                                                     min="18"
                                                     max="100"
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors hover:border-gray-400"
+                                                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
+                                                    hasAttemptedSubmit && fieldErrors.age
+                                                        ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                        : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
+                                                }`}
                                                     required
                                                 />
+                                            {hasAttemptedSubmit && fieldErrors.age && (
+                                                <p className="mt-1 text-xs text-red-500">{fieldErrors.age}</p>
+                                            )}
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Telefon</label>
+                                        {!user && (
+                                            <div className="mb-4" data-field="email">
+                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                    E-mail <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="email"
+                                                    value={formData.email}
+                                                    onChange={(e) => handleInputChange('email', e.target.value)}
+                                                    placeholder="email@mail.com"
+                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
+                                                        hasAttemptedSubmit && fieldErrors.email
+                                                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                            : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
+                                                    }`}
+                                                    required
+                                                    maxLength={255}
+                                                />
+                                                {hasAttemptedSubmit && fieldErrors.email && (
+                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div data-field="phone">
+                                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                Telefon <span className="text-red-500">*</span>
+                                            </label>
                                                 <div className="relative">
                                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 country-code-dropdown-container">
                                                         <button
@@ -462,109 +872,39 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         value={formData.phone}
                                                         onChange={(e) => handleInputChange('phone', e.target.value)}
                                                         placeholder="000 00 000"
-                                                        className="w-full pl-24 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors hover:border-gray-400"
+                                                    className={`w-full pl-24 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
+                                                        hasAttemptedSubmit && fieldErrors.phone
+                                                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                            : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
+                                                    }`}
                                                         required
+                                                    maxLength={20}
                                                     />
                                                 </div>
-                                            </div>
-                                            <div className="col-span-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">E-mail <span className="text-gray-400 font-normal">(opțional)</span></label>
-                                                <input
-                                                    type="email"
-                                                    value={formData.email}
-                                                    onChange={(e) => handleInputChange('email', e.target.value)}
-                                                    placeholder="email@mail.com"
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors hover:border-gray-400"
-                                                />
-                                            </div>
+                                            {hasAttemptedSubmit && fieldErrors.phone && (
+                                                <p className="mt-1 text-xs text-red-500">{fieldErrors.phone}</p>
+                                            )}
                                         </div>
                                     </div>
 
                                     {/* Rental Options */}
-                                    <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
-                                        <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2 md:gap-3">
-                                            <div className="p-1.5 md:p-2 bg-gray-100 rounded-lg">
-                                                <Car className="w-4 md:w-5 h-4 md:h-5 text-theme-500" />
+                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
+                                        <div className="mb-3 md:mb-4">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                    <Car className="w-5 h-5 text-white" />
                                             </div>
+                                                <h3 className="text-base md:text-lg font-bold text-gray-800">
                                             Opțiuni de închiriere
                                         </h3>
-
-                                        {/* Pickup and Return */}
-                                        <div className="space-y-2 mb-5 md:mb-6">
-                                            <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Preluarea și returnarea automobilului</h4>
-                                            <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
-                                                <div className="flex items-center gap-3 md:gap-4">
-                                                    <div className="relative flex-shrink-0">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={options.pickupAtAddress}
-                                                            onChange={(e) => handleOptionChange('pickupAtAddress', e.target.checked)}
-                                                            className="sr-only"
-                                                        />
-                                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.pickupAtAddress
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
-                                                            <svg
-                                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.pickupAtAddress ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
-                                                                fill="currentColor"
-                                                                viewBox="0 0 20 20"
-                                                            >
-                                                                <path
-                                                                    fillRule="evenodd"
-                                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                    clipRule="evenodd"
-                                                                />
-                                                            </svg>
                                                         </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium text-gray-900 text-xs md:text-sm">Preluarea la adresă</div>
-                                                        <div className="text-[10px] md:text-xs text-gray-600 mt-0.5">Cost separat</div>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                            <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
-                                                <div className="flex items-center gap-3 md:gap-4">
-                                                    <div className="relative flex-shrink-0">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={options.returnAtAddress}
-                                                            onChange={(e) => handleOptionChange('returnAtAddress', e.target.checked)}
-                                                            className="sr-only"
-                                                        />
-                                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.returnAtAddress
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                            }`}>
-                                                            <svg
-                                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.returnAtAddress ? 'opacity-100' : 'opacity-0'
-                                                                    }`}
-                                                                fill="currentColor"
-                                                                viewBox="0 0 20 20"
-                                                            >
-                                                                <path
-                                                                    fillRule="evenodd"
-                                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                    clipRule="evenodd"
-                                                                />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium text-gray-900 text-xs md:text-sm">Returnarea la adresă</div>
-                                                        <div className="text-[10px] md:text-xs text-gray-600 mt-0.5">Cost separat</div>
-                                                    </div>
-                                                </div>
-                                            </label>
                                         </div>
 
                                         {/* Limits */}
                                         <div className="mb-5 md:mb-6">
                                             <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Limite</h4>
                                             <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="relative flex-shrink-0">
                                                             <input
@@ -574,8 +914,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 className="sr-only"
                                                             />
                                                             <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
                                                                 }`}>
                                                                 <svg
                                                                     className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
@@ -593,40 +933,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         </div>
                                                         <span className="font-medium text-gray-900 text-xs md:text-sm">Kilometraj nelimitat</span>
                                                     </div>
-                                                    <span className="text-xs md:text-sm font-bold text-theme-500 bg-theme-50 px-2 md:px-3 py-1 rounded-lg">+50%</span>
+                                                    <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+50%</span>
                                                 </label>
 
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.speedLimitIncrease}
-                                                                onChange={(e) => handleOptionChange('speedLimitIncrease', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.speedLimitIncrease
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.speedLimitIncrease ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Creșterea limitei de viteză</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-theme-500 bg-theme-50 px-2 md:px-3 py-1 rounded-lg">+20%</span>
-                                                </label>
                                             </div>
                                         </div>
 
@@ -634,7 +943,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                         <div className="mb-5 md:mb-6">
                                             <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Servicii VIP</h4>
                                             <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="relative flex-shrink-0">
                                                             <input
@@ -644,8 +953,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 className="sr-only"
                                                             />
                                                             <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.personalDriver
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
                                                                 }`}>
                                                                 <svg
                                                                     className={`w-3 h-3 text-white transition-opacity duration-200 ${options.personalDriver ? 'opacity-100' : 'opacity-0'
@@ -666,7 +975,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">800 MDL/zi</span>
                                                 </label>
 
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="relative flex-shrink-0">
                                                             <input
@@ -676,8 +985,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 className="sr-only"
                                                             />
                                                             <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.priorityService
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
                                                                 }`}>
                                                                 <svg
                                                                     className={`w-3 h-3 text-white transition-opacity duration-200 ${options.priorityService ? 'opacity-100' : 'opacity-0'
@@ -704,7 +1013,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                         <div className="mb-5 md:mb-6">
                                             <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Asigurare</h4>
                                             <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="relative flex-shrink-0">
                                                             <input
@@ -714,8 +1023,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 className="sr-only"
                                                             />
                                                             <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.tireInsurance
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
                                                                 }`}>
                                                                 <svg
                                                                     className={`w-3 h-3 text-white transition-opacity duration-200 ${options.tireInsurance ? 'opacity-100' : 'opacity-0'
@@ -733,7 +1042,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         </div>
                                                         <span className="font-medium text-gray-900 text-xs md:text-sm">Asigurare anvelope & parbriz</span>
                                                     </div>
-                                                    <span className="text-xs md:text-sm font-bold text-theme-500 bg-theme-50 px-2 md:px-3 py-1 rounded-lg">+20%</span>
+                                                    <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+20%</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -742,7 +1051,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                         <div>
                                             <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Suplimentar</h4>
                                             <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="relative flex-shrink-0">
                                                             <input
@@ -752,8 +1061,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 className="sr-only"
                                                             />
                                                             <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.childSeat
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
                                                                 }`}>
                                                                 <svg
                                                                     className={`w-3 h-3 text-white transition-opacity duration-200 ${options.childSeat ? 'opacity-100' : 'opacity-0'
@@ -774,7 +1083,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
                                                 </label>
 
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="relative flex-shrink-0">
                                                             <input
@@ -784,8 +1093,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 className="sr-only"
                                                             />
                                                             <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.simCard
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
                                                                 }`}>
                                                                 <svg
                                                                     className={`w-3 h-3 text-white transition-opacity duration-200 ${options.simCard ? 'opacity-100' : 'opacity-0'
@@ -806,7 +1115,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
                                                 </label>
 
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="relative flex-shrink-0">
                                                             <input
@@ -816,8 +1125,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 className="sr-only"
                                                             />
                                                             <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.roadsideAssistance
-                                                                ? 'bg-theme-500 border-theme-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-theme-400'
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
                                                                 }`}>
                                                                 <svg
                                                                     className={`w-3 h-3 text-white transition-opacity duration-200 ${options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
@@ -839,40 +1148,101 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </label>
                                             </div>
                                         </div>
+
+                                        {/* Delivery */}
+                                        <div className="mb-5 md:mb-6">
+                                            <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 mt-4 md:mb-3">Livrare</h4>
+                                            <div className="space-y-2">
+                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                    <div className="flex items-center gap-3 md:gap-4">
+                                                        <div className="relative flex-shrink-0">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={options.airportDelivery}
+                                                                onChange={(e) => handleOptionChange('airportDelivery', e.target.checked)}
+                                                                className="sr-only"
+                                                            />
+                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.airportDelivery
+                                                                ? 'bg-red-500 border-red-500'
+                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                }`}>
+                                                                <svg
+                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.airportDelivery ? 'opacity-100' : 'opacity-0'
+                                                                        }`}
+                                                                    fill="currentColor"
+                                                                    viewBox="0 0 20 20"
+                                                                >
+                                                                    <path
+                                                                        fillRule="evenodd"
+                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                        clipRule="evenodd"
+                                                                    />
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Livrare aeroport</span>
+                                                    </div>
+                                                    <span className="text-xs md:text-sm font-bold text-green-600 bg-green-50 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">Gratuit</span>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Comment */}
-                                    <div>
+                                    <div data-field="comment">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Comentariu <span className="text-gray-400 font-normal">(opțional)</span></label>
                                         <textarea
                                             value={formData.comment}
                                             onChange={(e) => handleInputChange('comment', e.target.value)}
                                             rows={3}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 resize-none transition-colors hover:border-gray-400"
+                                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 resize-none transition-colors ${
+                                                hasAttemptedSubmit && fieldErrors.comment
+                                                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                    : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
+                                            }`}
                                             placeholder="Adăugați un comentariu (opțional)"
+                                            maxLength={1000}
                                         />
+                                        {hasAttemptedSubmit && fieldErrors.comment && (
+                                            <p className="mt-1 text-xs text-red-500">{fieldErrors.comment}</p>
+                                        )}
+                                        {formData.comment.length > 0 && (
+                                            <p className="mt-1 text-xs text-gray-500 text-right">
+                                                {formData.comment.length}/1000 caractere
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Price Summary */}
-                                    <div className="bg-gray-50 rounded-lg p-4 md:p-5 border border-gray-200 mt-6">
-                                        <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">Detalii preț</h3>
+                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm mt-6">
+                                        <div className="mb-3 md:mb-4">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                    <Star className="w-5 h-5 text-white" />
+                                                </div>
+                                                <h3 className="text-base md:text-lg font-bold text-gray-800">Detalii preț</h3>
+                                            </div>
+                                        </div>
                                         <div className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center justify-between text-sm md:text-base">
                                                 <span className="text-gray-600">Preț pe zi</span>
                                                 <span className="text-gray-900 font-medium">{car.price_per_day.toLocaleString('ro-RO')} MDL</span>
                                             </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-600">Număr zile</span>
-                                                <span className="text-gray-900 font-medium">{rentalCalculation.days}</span>
+                                            <div className="flex items-center justify-between text-sm md:text-base">
+                                                <span className="text-gray-600">Perioadă</span>
+                                                <span className="text-gray-900 font-medium">
+                                                    {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
+                                                    {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
+                                                </span>
                                             </div>
                                             {discountPercentage > 0 && (
-                                                <div className="flex items-center justify-between text-sm text-green-600">
+                                                <div className="flex items-center justify-between text-sm md:text-base text-green-600">
                                                     <span>Reducere</span>
                                                     <span className="font-medium">-{discountPercentage}%</span>
                                                 </div>
                                             )}
-                                            <div className="pt-2 border-t border-gray-200">
-                                                <div className="flex items-center justify-between text-sm">
+                                            <div className="pt-2 border-t border-gray-300">
+                                                <div className="flex items-center justify-between text-sm md:text-base">
                                                     <span className="text-gray-900 font-medium">Preț de bază</span>
                                                     <span className="text-gray-900 font-medium">{Math.round(basePrice).toLocaleString('ro-RO')} MDL</span>
                                                 </div>
@@ -880,22 +1250,14 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                             {additionalCosts > 0 && (
                                                 <>
-                                                    <div className="pt-3 border-t border-gray-200">
-                                                        <h4 className="text-sm font-bold text-gray-900 mb-3">Servicii suplimentare</h4>
-                                                        <div className="space-y-2 text-sm">
+                                                    <div className="pt-3 border-t border-gray-300">
+                                                        <h4 className="text-sm md:text-base font-bold text-gray-900 mb-3">Servicii suplimentare</h4>
+                                                        <div className="space-y-2 text-sm md:text-base">
                                                             {options.unlimitedKm && (
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-600">Kilometraj nelimitat</span>
                                                                     <span className="text-gray-900 font-medium">
                                                                         {Math.round(car.price_per_day * rentalCalculation.days * 0.5).toLocaleString('ro-RO')} MDL
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                            {options.speedLimitIncrease && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Creșterea limitei de viteză</span>
-                                                                    <span className="text-gray-900 font-medium">
-                                                                        {Math.round(car.price_per_day * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -937,8 +1299,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     <span className="text-gray-900 font-medium">{500 * rentalCalculation.days} MDL</span>
                                                                 </div>
                                                             )}
-                                                            <div className="pt-2 border-t border-gray-200">
-                                                                <div className="flex justify-between font-medium">
+                                                            <div className="pt-2 border-t border-gray-300">
+                                                                <div className="flex justify-between font-medium text-sm md:text-base">
                                                                     <span className="text-gray-900">Total servicii</span>
                                                                     <span className="text-gray-900">{Math.round(additionalCosts).toLocaleString('ro-RO')} MDL</span>
                                                                 </div>
@@ -948,33 +1310,248 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </>
                                             )}
 
-                                            <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
-                                                <span className="text-gray-900 font-bold text-lg">Total</span>
-                                                <span className="text-gray-900 font-bold text-xl">{totalCost.toLocaleString('ro-RO')} MDL</span>
+                                            <div className="pt-3 border-t border-gray-300 flex items-center justify-between">
+                                                <span className="text-gray-900 font-bold text-base md:text-lg">Total</span>
+                                                <span className="text-gray-900 font-bold text-lg md:text-xl">{totalCost.toLocaleString('ro-RO')} MDL</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Submit Button */}
-                                    <div className="flex flex-col gap-1.5 md:gap-2 mt-6">
+                                    <div className="flex flex-col gap-2 mt-6">
+                                        {submitError && (
+                                            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                                <p className="text-sm text-red-800 font-medium text-center">
+                                                    {submitError}
+                                                </p>
+                                            </div>
+                                        )}
                                         <button
                                             type="submit"
                                             onClick={handleSubmit}
-                                            style={{ backgroundColor: '#F4A6A6' }}
-                                            className="w-full font-semibold text-sm md:text-base py-3 md:py-3 px-4 md:px-6 rounded-xl transition-all hover:bg-[#F29999] text-white"
+                                            disabled={isSubmitting || submitSuccess}
+                                            className="w-full font-semibold text-sm md:text-base py-3.5 px-6 rounded-xl transition-all bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Trimite cererea
+                                            {isSubmitting ? 'Se trimite...' : submitSuccess ? 'Trimis cu succes!' : 'Trimite cererea'}
                                         </button>
                                         <p className="text-[10px] md:text-xs text-center text-gray-500 leading-relaxed">
-                                            Făcând clic pe butonul «Trimite cererea», sunteți de acord cu termenii de utilizare și politica de confidențialitate
+                                            Făcând clic pe butonul «Trimite cererea», sunteți de acord cu{' '}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setTermsModalType('terms');
+                                                    setShowTermsModal(true);
+                                                }}
+                                                className="text-red-600 hover:text-red-700 underline"
+                                            >
+                                                termenii de utilizare
+                                            </button>
+                                            {' '}și{' '}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setTermsModalType('privacy');
+                                                    setShowTermsModal(true);
+                                                }}
+                                                className="text-red-600 hover:text-red-700 underline"
+                                            >
+                                                politica de confidențialitate
+                                            </button>
                                         </p>
                                     </div>
                                 </form>
+                                )}
                             </div>
                         </div>
                     </motion.div>
                 </>
             )}
+
+            {/* Terms/Privacy Modal */}
+            <AnimatePresence>
+                {showTermsModal && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000]"
+                            onClick={() => setShowTermsModal(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 z-[10001] flex items-center justify-center p-4"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="bg-white rounded-2xl border border-gray-300 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                                {/* Header */}
+                                <div className="sticky top-0 bg-white border-b border-gray-300 px-6 md:px-8 py-4 flex items-center justify-between rounded-t-2xl z-10">
+                                    <div>
+                                        <h2 className="text-xl md:text-2xl font-bold text-gray-800">
+                                            {termsModalType === 'terms' ? 'Termeni și condiții' : 'Politica de confidențialitate'}
+                                        </h2>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowTermsModal(false)}
+                                        className="p-2 hover:bg-gray-100 rounded-xl transition-all flex-shrink-0"
+                                    >
+                                        <X className="w-5 h-5 text-gray-500" />
+                                    </button>
+                                </div>
+
+                                {/* Content */}
+                                <div className="overflow-y-auto max-h-[calc(90vh-100px)] px-6 md:px-8 py-6">
+                                    {termsModalType === 'terms' ? (
+                                        <div className="space-y-6">
+                                            {/* Intro Section */}
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                                        <FileText className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
+                                                            {t('pages.terms.sections.intro.title')}
+                                                        </h3>
+                                                        <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                                                            {t('pages.terms.sections.intro.description')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Cookies Section */}
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                                        <Cookie className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
+                                                            {t('pages.terms.sections.cookies.title')}
+                                                        </h3>
+                                                        <ul className="space-y-2">
+                                                            {[1, 2, 3, 4].map((num) => (
+                                                                <li key={num} className="flex items-start gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
+                                                                        {t(`pages.terms.sections.cookies.bullet${num}`)}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Payment Section */}
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                                        <CreditCard className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
+                                                            {t('pages.terms.sections.payment.title')}
+                                                        </h3>
+                                                        <ul className="space-y-2">
+                                                            {[1, 2, 3, 4].map((num) => (
+                                                                <li key={num} className="flex items-start gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
+                                                                        {t(`pages.terms.sections.payment.bullet${num}`)}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            {/* Personal Data Section */}
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                                        <Shield className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
+                                                            {t('pages.terms.sections.personal-data.title')}
+                                                        </h3>
+                                                        <ul className="space-y-2">
+                                                            {[1, 2, 3, 4].map((num) => (
+                                                                <li key={num} className="flex items-start gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
+                                                                        {t(`pages.terms.sections.personal-data.bullet${num}`)}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Location Section */}
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                                        <MapPin className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
+                                                            {t('pages.terms.sections.location.title')}
+                                                        </h3>
+                                                        <ul className="space-y-2">
+                                                            {[1, 2, 3, 4].map((num) => (
+                                                                <li key={num} className="flex items-start gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
+                                                                        {t(`pages.terms.sections.location.bullet${num}`)}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Notifications Section */}
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                                        <Bell className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
+                                                            {t('pages.terms.sections.notifications.title')}
+                                                        </h3>
+                                                        <ul className="space-y-2">
+                                                            {[1, 2, 3, 4].map((num) => (
+                                                                <li key={num} className="flex items-start gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
+                                                                        {t(`pages.terms.sections.notifications.bullet${num}`)}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                            </div>
+                        </div>
+                    </motion.div>
+                </>
+            )}
+            </AnimatePresence>
         </AnimatePresence>
     );
 };

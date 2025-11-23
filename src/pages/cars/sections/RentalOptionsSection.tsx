@@ -1,137 +1,121 @@
-import { Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench } from 'lucide-react';
+import { Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, MapPin } from 'lucide-react';
 
 export const RentalOptionsSection: React.FC = () => {
     return (
         <>
-            <div className="mt-16 bg-white rounded-lg border border-gray-200 p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Opțiuni de închiriere</h2>
+            <div className="mt-8 bg-white rounded-2xl border border-gray-300 shadow-sm p-6 md:p-8 mb-8">
+                {/* Section Header */}
+                <div className="mb-8">
+                    <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+                        Servicii Suplimentare
+                    </span>
+                    <h2 className="mt-3 text-3xl font-bold text-gray-800 leading-tight">
+                        Opțiuni de închiriere
+                    </h2>
+                </div>
 
-                <p className="text-gray-700 leading-relaxed mb-8">
-                    O varietate de opțiuni disponibile pentru activare extinde semnificativ posibilitățile în cadrul închirierii unei mașini de la AUTOHUB. De exemplu, puteți activa asigurarea CASCO, care acoperă toate tipurile de daune ale vehiculului, iar prin activarea serviciului Priority Service beneficiați de procesare prioritară a documentelor și suport prioritar pe tot parcursul închirierii. De asemenea, sunt disponibile opțiuni precum: închirierea scaunelor auto pentru copii, asistență rutieră, livrare la adresa indicată și multe altele.
-                </p>
-
-                <div className="space-y-6">
-                    {/* Delivery Option */}
-                    <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                        <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                            <Car className="w-5 h-5 text-theme-500" />
-                            Preluarea automobilului la adresa convenabilă pentru dvs./dumneavoastră
-                        </h3>
-                        <p className="text-gray-600 text-sm">Costul se calculează separat și depinde de locul livrării</p>
+                {/* Options Grid */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Unlimited KM */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <Gauge className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Kilometraj nelimitat</h4>
+                                <p className="text-red-600 font-medium text-xs">Prețul închirierii va fi cu 50% mai mare</p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Return Option */}
-                    <div className="border-l-4 border-theme-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
-                        <h3 className="font-semibold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                            <Car className="w-5 h-5 text-theme-500" />
-                            Returnarea mașinii la adresa convenabilă pentru dumneavoastră
-                        </h3>
-                        <p className="text-gray-600 text-sm">Prețul se negociază separat și depinde de locul returnării</p>
+                    {/* Personal Driver */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <UserRound className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Șofer personal</h4>
+                                <p className="text-gray-700 font-medium text-xs">de la 800 MDL pe zi</p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Options Grid */}
-                    <div className="grid md:grid-cols-2 gap-4 mt-6">
-                        {/* Unlimited KM */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                                    <Gauge className="w-5 h-5 text-theme-500" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Kilometraj nelimitat</h4>
-                                    <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 50% mai mare</p>
-                                </div>
+                    {/* Priority Service */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <Star className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Priority Service</h4>
+                                <p className="text-gray-700 font-medium text-xs">de la 1000 MDL pe zi</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Speed Limit Increase */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                                    <Zap className="w-5 h-5 text-theme-500" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Creșterea limitei de viteză</h4>
-                                    <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                                </div>
+                    {/* Tire Insurance */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <Shield className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Asigurare pentru anvelope și parbriz</h4>
+                                <p className="text-red-600 font-medium text-xs">Prețul închirierii va fi cu 20% mai mare</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Personal Driver */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <UserRound className="w-5 h-5 text-gray-700" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Șofer personal</h4>
-                                    <p className="text-gray-700 font-semibold text-sm">din 800 MDL pe zi</p>
-                                </div>
+                    {/* Child Seat */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <Baby className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Scaun auto pentru copii</h4>
+                                <p className="text-gray-700 font-medium text-xs">de la 100 MDL pe zi</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Priority Service */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <Star className="w-5 h-5 text-gray-700" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Priority Service</h4>
-                                    <p className="text-gray-700 font-semibold text-sm">din 1000 MDL pe zi</p>
-                                </div>
+                    {/* SIM Card */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <Wifi className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Cartelă SIM cu internet</h4>
+                                <p className="text-gray-700 font-medium text-xs">de la 100 MDL pe zi</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Tire Insurance */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-theme-50 flex items-center justify-center">
-                                    <Shield className="w-5 h-5 text-theme-500" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Asigurare pentru anvelope și parbriz</h4>
-                                    <p className="text-theme-500 font-semibold text-sm">Prețul închirierii va fi cu 20% mai mare</p>
-                                </div>
+                    {/* Roadside Assistance */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <Wrench className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Asistență rutieră</h4>
+                                <p className="text-gray-700 font-medium text-xs">de la 500 MDL pe zi</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Child Seat */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <Baby className="w-5 h-5 text-gray-700" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Scaun auto pentru copii</h4>
-                                    <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                                </div>
+                    {/* Airport Delivery */}
+                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                <MapPin className="w-5 h-5 text-white" />
                             </div>
-                        </div>
-
-                        {/* SIM Card */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <Wifi className="w-5 h-5 text-gray-700" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Cartelă SIM cu internet</h4>
-                                    <p className="text-gray-700 font-semibold text-sm">din 100 MDL pe zi</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Roadside Assistance */}
-                        <div className="border border-gray-200 rounded-lg p-5 hover:border-theme-500 transition-colors">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <Wrench className="w-5 h-5 text-gray-700" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">Asistență rutieră</h4>
-                                    <p className="text-gray-700 font-semibold text-sm">din 500 MDL pe zi</p>
-                                </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">Livrare aeroport</h4>
+                                <p className="text-green-600 font-medium text-xs">Gratuit</p>
                             </div>
                         </div>
                     </div>

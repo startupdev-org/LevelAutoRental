@@ -37,7 +37,259 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             setShowContractModal(true);
         }
     };
-    const car = order?.car;
+    const [cars, setCars] = useState<Car[]>(carsProp || []);
+    const [car, setCar] = useState<Car | undefined>(undefined);
+
+    // Fetch cars if not provided as prop
+    useEffect(() => {
+            const loadCars = async () => {
+                try {
+                let carsToUse: Car[] = [];
+                
+                if (carsProp && carsProp.length > 0) {
+                    // Use cars from prop (they should already have images)
+                    carsToUse = carsProp;
+                } else if (isOpen) {
+                    // Fetch cars from database
+                    const fetchedCars = await fetchCars();
+                    carsToUse = fetchedCars.length > 0 ? fetchedCars : staticCars;
+                } else {
+                    return; // Don't load if modal is closed and no prop provided
+                }
+                
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    carsToUse.map(async (car) => {
+                        // Try name field first, then fall back to make + model
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                
+                setCars(carsWithImages);
+                } catch (error) {
+                    console.error('Error loading cars:', error);
+                setCars(carsProp || staticCars);
+                }
+            };
+        
+            loadCars();
+    }, [carsProp, isOpen]);
+
+    // Fetch original request options if request_id exists
+    useEffect(() => {
+        const fetchRequestOptions = async () => {
+            if (!order) {
+                setRequestOptions(null);
+                return;
+            }
+            
+            const requestId = (order as any).request_id;
+            console.log('OrderDetailsModal: Checking for request_id. Order:', {
+                id: order.id,
+                request_id: requestId,
+                orderKeys: Object.keys(order),
+                fullOrder: order
+            });
+            
+            if (!requestId) {
+                console.log('OrderDetailsModal: No request_id found in order. Trying to find request by matching data...');
+                
+                // Try to find the request by matching user_id, car_id, and dates
+                try {
+                    const { supabase } = await import('../../lib/supabase');
+                    const { data: matchingRequests, error: searchError } = await supabase
+                        .from('BorrowRequest')
+                        .select('id, options, user_id, car_id, start_date, end_date')
+                        .eq('user_id', order.userId)
+                        .eq('car_id', order.carId)
+                        .eq('start_date', order.pickupDate)
+                        .eq('end_date', order.returnDate)
+                        .limit(1);
+                    
+                    if (!searchError && matchingRequests && matchingRequests.length > 0) {
+                        const matchingRequest = matchingRequests[0];
+                        console.log('OrderDetailsModal: Found matching request:', matchingRequest);
+                        
+                        if (matchingRequest.options) {
+                            let parsedOptions: any = {};
+                            if (typeof matchingRequest.options === 'string') {
+                                try {
+                                    parsedOptions = JSON.parse(matchingRequest.options);
+                                } catch (e) {
+                                    parsedOptions = {};
+                                }
+                            } else {
+                                parsedOptions = matchingRequest.options;
+                            }
+                            
+                            if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
+                                console.log('OrderDetailsModal: Using options from matching request:', parsedOptions);
+                                setRequestOptions(parsedOptions);
+                                return;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('OrderDetailsModal: Error searching for matching request:', error);
+                }
+                
+                setRequestOptions(null);
+                return;
+            }
+
+            try {
+                const { supabase } = await import('../../lib/supabase');
+                console.log('OrderDetailsModal: Fetching request options for request_id:', requestId);
+                
+                const { data: request, error } = await supabase
+                    .from('BorrowRequest')
+                    .select('options, id, status')
+                    .eq('id', requestId)
+                    .single();
+
+                if (error) {
+                    console.error('OrderDetailsModal: Error fetching request:', error);
+                    setRequestOptions(null);
+                    return;
+                }
+
+                console.log('OrderDetailsModal: Fetched request:', request);
+
+                if (request && request.options) {
+                    let parsedOptions: any = {};
+                    if (typeof request.options === 'string') {
+                        try {
+                            parsedOptions = JSON.parse(request.options);
+                        } catch (e) {
+                            console.error('OrderDetailsModal: Error parsing options string:', e);
+                            parsedOptions = {};
+                        }
+                    } else {
+                        parsedOptions = request.options;
+                    }
+                    
+                    // Check if options is not empty (not just {})
+                    if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
+                        console.log('OrderDetailsModal: Parsed options from request:', parsedOptions);
+                        setRequestOptions(parsedOptions);
+                    } else {
+                        console.log('OrderDetailsModal: Request has empty options object');
+                        setRequestOptions(null);
+                    }
+                } else {
+                    console.log('OrderDetailsModal: Request has no options field');
+                    setRequestOptions(null);
+                }
+            } catch (error) {
+                console.error('OrderDetailsModal: Error fetching request options:', error);
+                setRequestOptions(null);
+            }
+        };
+
+        if (isOpen && order) {
+            fetchRequestOptions();
+        }
+    }, [isOpen, order]);
+
+    // Find car by matching carId (handle both string and number types)
+    useEffect(() => {
+        if (!order) {
+            setCar(undefined);
+            return;
+        }
+        
+        const findCar = async () => {
+            // First, try to find in cars array
+            let foundCar = cars.find(c => {
+        if (!order.carId) return false;
+        
+        // Normalize both IDs to numbers for comparison
+        const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
+        const orderCarIdNum = typeof order.carId === 'number' 
+            ? order.carId 
+            : parseInt(order.carId.toString(), 10);
+        
+        // Compare as numbers
+        if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
+            return true;
+        }
+        
+        // Fallback: compare as strings
+        const carIdStr = c.id.toString();
+        const orderCarIdStr = order.carId.toString();
+        return carIdStr === orderCarIdStr;
+    });
+    
+            // If car not found in cars array, fetch from database
+            if (!foundCar && order.carId) {
+                console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
+            orderCarId: order.carId,
+            orderCarName: order.carName
+        });
+                
+                try {
+                    const { supabase } = await import('../../lib/supabase');
+                    const carIdMatch = typeof order.carId === 'number' 
+                        ? order.carId 
+                        : parseInt(order.carId.toString(), 10);
+                    
+                    const { data: carData, error } = await supabase
+                        .from('Cars')
+                        .select('*')
+                        .eq('id', carIdMatch)
+                        .single();
+                    
+                    if (!error && carData) {
+                        // Map database row to Car type
+                        foundCar = {
+                            id: carData.id,
+                            make: carData.make,
+                            model: carData.model,
+                            name: carData.name || undefined,
+                            year: carData.year || new Date().getFullYear(),
+                            price_per_day: carData.price_per_day,
+                            discount_percentage: carData.discount_percentage || undefined,
+                            category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
+                            image_url: carData.image_url || undefined,
+                            photo_gallery: carData.photo_gallery || undefined,
+                            seats: carData.seats || undefined,
+                            transmission: carData.transmission as 'Automatic' | 'Manual' || undefined,
+                            body: carData.body as 'Coupe' | 'Sedan' | 'SUV' || undefined,
+                            fuel_type: carData.fuel_type as 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' || undefined,
+                            features: carData.features || undefined,
+                            rating: carData.rating || undefined,
+                            reviews: carData.reviews || undefined,
+                            status: carData.status || undefined,
+                            drivetrain: carData.drivetrain || undefined,
+                        } as Car & { name?: string };
+                        
+                        // Fetch images from storage for this car
+                        if (foundCar) {
+                            const carName = (foundCar as any).name || `${foundCar.make} ${foundCar.model}`;
+                            const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                            foundCar.image_url = mainImage || foundCar.image_url;
+                            foundCar.photo_gallery = photoGallery.length > 0 ? photoGallery : foundCar.photo_gallery;
+                        }
+                    }
+                } catch (err) {
+                    console.error(`OrderDetailsModal: Error fetching car ${order.carId} from database:`, err);
+                }
+            }
+            
+            setCar(foundCar);
+        };
+        
+        findCar();
+    }, [order, cars, order?.carId]);
 
     if (!order) return null;
 
