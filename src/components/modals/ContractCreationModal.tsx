@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Plus, Trash2 } from 'lucide-react';
-import { OrderDisplay } from '../../lib/orders';
+import { OrderDisplay, Rental } from '../../lib/orders';
 import { Car } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
 import { useNotification } from '../ui/NotificationToaster';
@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 interface ContractCreationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    order: OrderDisplay;
+    order: Rental;
     car: Car;
     orderNumber?: number;
     onContractCreated?: () => void;
@@ -34,37 +34,37 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
     const { t } = useTranslation();
     const { showSuccess, showError } = useNotification();
     const [isGenerating, setIsGenerating] = useState(false);
-    
+
     // Customer information
     const [customerAddress, setCustomerAddress] = useState('');
     const [customerIdSeries, setCustomerIdSeries] = useState('');
     const [customerIdNumber, setCustomerIdNumber] = useState('');
     const [customerIdnp, setCustomerIdnp] = useState('');
-    
+
     // Vehicle details
     const [carColor, setCarColor] = useState(car.color || '');
     const [carRegistrationNumber, setCarRegistrationNumber] = useState((car as any).license || '');
     const [carMileage, setCarMileage] = useState((car as any).kilometers?.toString() || car.mileage?.toString() || '');
     const [carFuelType, setCarFuelType] = useState(car.fuel_type || '');
-    
+
     // Payment details
     const [paymentMethod, setPaymentMethod] = useState('');
     const [depositAmount, setDepositAmount] = useState('');
     const [depositPaymentMethod, setDepositPaymentMethod] = useState('');
-    
+
     // Locations
     const [pickupLocation, setPickupLocation] = useState('Chișinău, str. Mircea cel Bătrân 13/1');
     const [returnLocation, setReturnLocation] = useState('Chișinău, str. Mircea cel Bătrân 13/1');
-    
+
     // Vehicle condition (for Anexa Nr.2)
     const [pickupOdometer, setPickupOdometer] = useState('');
     const [returnOdometer, setReturnOdometer] = useState('');
     const [pickupFuelLevel, setPickupFuelLevel] = useState('100');
     const [returnFuelLevel, setReturnFuelLevel] = useState('100');
-    
+
     // Additional drivers
     const [additionalDrivers, setAdditionalDrivers] = useState<AdditionalDriver[]>([]);
-    
+
     // Car value (for total loss clause)
     const [carValue, setCarValue] = useState('');
 

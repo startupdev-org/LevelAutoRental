@@ -78,6 +78,9 @@ export interface Rental {
   end_time: string;
   rental_status: string;
   total_amount?: number;
+  subtotal?: number;
+  taxes_fees?: number;
+  additional_taxes?: number;
   created_at: string;
   updated_at: string;
   user?: {
@@ -382,7 +385,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         : parseInt(rental.car_id);
 
       let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === rental.car_id?.toString());
-      
+
       // If car not found (might be deleted), fetch it directly from database
       if (!car && rental.car_id) {
         try {
@@ -391,7 +394,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
             .select('*')
             .eq('id', carIdMatch)
             .single();
-          
+
           if (!error && carData) {
             // Map database row to Car type
             car = {
@@ -415,7 +418,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
               status: carData.status || undefined,
               drivetrain: carData.drivetrain || undefined,
             } as Car & { name?: string };
-            
+
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
@@ -526,7 +529,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         request_id: (rental as any).request_id || undefined,
       };
     }));
-    
+
     orders.push(...processedOrders);
 
     // Sort by creation date (newest first)
@@ -744,12 +747,12 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
 
     // Process borrow requests - use Promise.all to handle async car fetching
     const processedRequests = await Promise.all(requests.map(async (request) => {
-      const carIdMatch = typeof request.car_id === 'number' 
-        ? request.car_id 
+      const carIdMatch = typeof request.car_id === 'number'
+        ? request.car_id
         : parseInt(request.car_id.toString(), 10);
 
       let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === request.car_id?.toString());
-      
+
       // If car not found (might be deleted), fetch it directly from database
       if (!car && request.car_id) {
         try {
@@ -758,7 +761,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
             .select('*')
             .eq('id', carIdMatch)
             .single();
-          
+
           if (!error && carData) {
             // Map database row to Car type
             car = {
@@ -782,7 +785,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
               status: carData.status || undefined,
               drivetrain: carData.drivetrain || undefined,
             } as Car & { name?: string };
-            
+
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
@@ -826,17 +829,17 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         userId: request.user_id,
       };
     }));
-    
+
     orders.push(...processedRequests);
 
     // Process rentals - use Promise.all to handle async car fetching
     const processedRentals = await Promise.all(rentals.map(async (rental) => {
-      const carIdMatch = typeof rental.car_id === 'number' 
-        ? rental.car_id 
+      const carIdMatch = typeof rental.car_id === 'number'
+        ? rental.car_id
         : parseInt(rental.car_id);
 
       let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === rental.car_id?.toString());
-      
+
       // If car not found (might be deleted), fetch it directly from database
       if (!car && rental.car_id) {
         try {
@@ -845,7 +848,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
             .select('*')
             .eq('id', carIdMatch)
             .single();
-          
+
           if (!error && carData) {
             // Map database row to Car type
             car = {
@@ -869,7 +872,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
               status: carData.status || undefined,
               drivetrain: carData.drivetrain || undefined,
             } as Car & { name?: string };
-            
+
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
@@ -920,7 +923,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         userId: rental.user_id,
       };
     }));
-    
+
     orders.push(...processedRentals);
 
     // Sort by creation date (newest first)
@@ -961,12 +964,12 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
 
     // Process borrow requests - use Promise.all to handle async car fetching
     const processedRequests = await Promise.all(requests.map(async (request) => {
-      const carIdMatch = typeof request.car_id === 'number' 
-        ? request.car_id 
+      const carIdMatch = typeof request.car_id === 'number'
+        ? request.car_id
         : parseInt(request.car_id.toString(), 10);
 
       let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === request.car_id?.toString());
-      
+
       // If car not found (might be deleted), fetch it directly from database
       if (!car && request.car_id) {
         try {
@@ -975,7 +978,7 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
             .select('*')
             .eq('id', carIdMatch)
             .single();
-          
+
           if (!error && carData) {
             // Map database row to Car type
             car = {
@@ -999,7 +1002,7 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
               status: carData.status || undefined,
               drivetrain: carData.drivetrain || undefined,
             } as Car & { name?: string };
-            
+
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
@@ -1013,7 +1016,7 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
           console.error(`Error fetching car ${carIdMatch} from database:`, err);
         }
       }
-      
+
       // Use customer data directly from request (new schema) or fall back to profile/user data
       const email = (request as any).customer_email || request.user?.email || '';
       const phone = (request as any).customer_phone || '';
@@ -1079,7 +1082,7 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
         options: options || {},
       } as OrderDisplay & { comment?: string; options?: any };
     }));
-    
+
     orders.push(...processedRequests);
 
     // Sort by creation date (newest first)

@@ -1,7 +1,7 @@
 import { Car, FavoriteCar, User } from '../../../types';
 import { Rental } from '../../orders';
 import { supabase } from '../../supabase';
-import { fetchCarWithImagesById } from '../cars/cars';
+import { fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 import { getLoggedUser, getProfile } from '../user/profile';
 
 
@@ -83,6 +83,90 @@ export async function fetchRecentRentals(): Promise<Rental[]> {
 
     return rentals;
 }
+
+const ACTIVE_RENTAL_STATUS = 'ACTIVE'
+
+export async function fetchActiveRentals(): Promise<Rental[]> {
+
+    const user = await getLoggedUser();
+
+    // count rentals per car
+    const { data, error } = await supabase
+        .from('Rentals')
+        .select()
+        .eq('user_id', user?.id)
+        .eq('rental_status', ACTIVE_RENTAL_STATUS)
+
+    if (error) {
+        console.error('Error fetching active rentals:', error);
+        return [];
+    }
+
+    console.log('sql!!! -> active rentals: ', data)
+
+    // Convert rentals using DTO mapping
+    const rentals: Rental[] = await Promise.all(
+        data.map(async (rentalRow: Rental) => {
+            return toRentalDTO(rentalRow, rentalRow.car_id);
+        })
+    );
+
+    console.log('active rentals after structuring to dtos: ', rentals);
+
+    return rentals;
+}
+
+export async function fetchRentalsHistory(
+    page = 1,
+    pageSize = 10,
+    sortBy: 'start_date' | 'total_amount' | null = 'start_date',
+    sortOrder: 'asc' | 'desc' = 'desc',
+    searchQuery: string = ''
+): Promise<{ rentals: Rental[]; total: number }> {
+    const user = await getLoggedUser();
+    if (!user) return { rentals: [], total: 0 };
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+        .from("Rentals")
+        .select("*", { count: "exact" })
+        .eq("user_id", user.id)
+        .range(from, to);
+
+    // Handle sorting
+    if (sortBy) {
+        query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+    }
+
+    // Handle search query
+    if (searchQuery) {
+        // Get the IDs of cars that match the search
+        const carIds = await fetchCarIdsByQuery(searchQuery);
+        if (carIds.length > 0) {
+            query = query.in('car_id', carIds);
+        } else {
+            // No matching cars, return empty result early
+            return { rentals: [], total: 0 };
+        }
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+        console.error("Error fetching rentals history:", error);
+        return { rentals: [], total: 0 };
+    }
+
+    const rentals: Rental[] = await Promise.all(
+        (data || []).map(async (row: any) => toRentalDTO(row, row.car_id))
+    );
+
+    return { rentals, total: count ?? 0 };
+}
+
+
 
 async function toRentalDTO(rental: Rental, carId: string): Promise<Rental> {
 
