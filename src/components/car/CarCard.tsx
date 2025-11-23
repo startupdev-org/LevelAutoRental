@@ -4,13 +4,14 @@ import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
 import { PiSpeedometerFill } from "react-icons/pi";
 import { BiSolidHeart } from "react-icons/bi";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from '../../hooks/useInView';
 import { Car } from '../../types';
 import { fadeInUp } from '../../utils/animations';
 import { Card } from '../ui/Card';
 import { useNavigate } from 'react-router-dom';
+import { fetchRentals } from '../../lib/orders';
 
 
 interface CarCardProps {
@@ -22,6 +23,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { ref, isInView } = useInView();
     const { t } = useTranslation();
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+    const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
 
     // Load favorite state from localStorage
     const getFavorites = (): number[] => {
@@ -60,6 +62,54 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
         setIsFavorite(newFavoriteState);
         saveFavorite(car.id, newFavoriteState);
     };
+
+    // Fetch rentals and calculate next available date
+    useEffect(() => {
+        const fetchCarAvailability = async () => {
+            if (!car) return;
+            
+            try {
+                const rentals = await fetchRentals();
+                const now = new Date();
+                
+                // Filter rentals for this car that are active or upcoming
+                const carRentals = rentals.filter(rental => {
+                    const rentalCarId = typeof rental.car_id === 'number' 
+                        ? rental.car_id 
+                        : parseInt(rental.car_id?.toString() || '0', 10);
+                    const rentalStatus = (rental as any).rental_status || rental.status || '';
+                    return rentalCarId === car.id && 
+                           (rentalStatus === 'ACTIVE' || rentalStatus === 'CONTRACT' || rentalStatus === 'booked' || rentalStatus === 'borrowed');
+                });
+                
+                // Find the latest return date from active rentals
+                let latestReturnDate: Date | null = null;
+                
+                carRentals.forEach(rental => {
+                    if (rental.end_date) {
+                        const returnDate = new Date(rental.end_date);
+                        // Add return time if available
+                        if (rental.end_time) {
+                            const [hours, minutes] = rental.end_time.split(':').map(Number);
+                            returnDate.setHours(hours || 17, minutes || 0, 0, 0);
+                        } else {
+                            returnDate.setHours(17, 0, 0, 0); // Default return time
+                        }
+                        
+                        if (returnDate > now && (!latestReturnDate || returnDate > latestReturnDate)) {
+                            latestReturnDate = returnDate;
+                        }
+                    }
+                });
+                
+                setNextAvailableDate(latestReturnDate);
+            } catch (error) {
+                console.error('Error fetching car availability:', error);
+            }
+        };
+        
+        fetchCarAvailability();
+    }, [car]);
 
     const navigate = useNavigate();
 
@@ -193,47 +243,35 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         </div>
                     )}
 
-                    {/* Availability Badge */}
-                    {car.status && (
-                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
-                            <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span className="whitespace-nowrap">{car.status}</span>
-                        </div>
-                    )}
-                    {car.status && (
-                        <div
-                            className={`
-                                absolute top-3 left-3 
-                                px-3 py-1.5 
-                                text-xs font-semibold rounded-lg 
-                                flex items-center gap-1.5 
-                                backdrop-blur-md transition-all 
-                                whitespace-nowrap
-                                ${car.status === 'available'
-                                    ? 'bg-green-500/20 border border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500/60'
-                                    : 'bg-red-500/20 border border-red-500/50 text-red-300 hover:bg-red-500/30 hover:border-red-500/60'
-                                }
-                            `}
-                        >
-                            <svg
-                                className="w-3 h-3 flex-shrink-0 opacity-80"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                />
-                            </svg>
-
-                            <span>{car.status}</span>
-                        </div>
-                    )}
+                    {/* Availability Badge - Only show when booked */}
+                    {(() => {
+                        const isAvailable = car.status === 'available' || car.status === 'Available';
+                        const isBooked = !isAvailable && (nextAvailableDate !== null);
+                        
+                        // Don't show badge if available
+                        if (isAvailable || !isBooked || !nextAvailableDate) {
+                            return null;
+                        }
+                        
+                        const formatDateForDisplay = (date: Date): string => {
+                            const day = date.getDate();
+                            const monthNames = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 
+                                               'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+                            const month = monthNames[date.getMonth()];
+                            
+                            // Format date in Romanian: "Liber de pe 30 noiembrie"
+                            return `Liber de pe ${day} ${month}`;
+                        };
+                        
+                        return (
+                            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
+                                <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span className="whitespace-nowrap">{formatDateForDisplay(nextAvailableDate)}</span>
+                            </div>
+                        );
+                    })()}
 
 
 

@@ -149,8 +149,6 @@ export async function fetchImagesByCarName(
         // "Mercedes-AMG C43" → "mercedes-c43", "BMW X4" → "bmw-x4"
         let folder = normalizeCarNameToFolder(carName);
 
-        console.log(`[fetchImagesByCarName] Car name: "${carName}" → Folder: "${folder}"`);
-
         let { data: files, error } = await supabase.storage
             .from("cars")
             .list(folder);
@@ -165,13 +163,11 @@ export async function fetchImagesByCarName(
                 const altFolder = `${make}-${model}`.replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
                 
                 if (altFolder !== folder) {
-                    console.log(`[fetchImagesByCarName] Trying alternative folder: "${altFolder}"`);
                     const altResult = await supabase.storage.from("cars").list(altFolder);
                     if (!altResult.error && altResult.data && altResult.data.length > 0) {
                         folder = altFolder;
                         files = altResult.data;
                         error = null;
-                        console.log(`[fetchImagesByCarName] Found files in alternative folder: "${altFolder}"`);
                     }
                 }
             }
@@ -182,16 +178,12 @@ export async function fetchImagesByCarName(
             return { mainImage: null, photoGallery: [] };
         }
 
-        console.log(`[fetchImagesByCarName] Found ${files.length} files in folder "${folder}"`);
-
         // Keep only valid image files
         const imageFiles = files.filter(
             (file) =>
                 file.name !== ".emptyFolderPlaceholder" &&
                 /\.(jpg|jpeg|png)$/i.test(file.name)
         );
-
-        console.log(`[fetchImagesByCarName] Filtered to ${imageFiles.length} image files`);
 
         if (imageFiles.length === 0) {
             console.warn(`[fetchImagesByCarName] No image files found in folder "${folder}"`);
@@ -202,8 +194,6 @@ export async function fetchImagesByCarName(
         // The folder name is typically "{make}-{model}", so we take everything after the first hyphen
         const folderParts = folder.split("-");
         const modelPart = folderParts.slice(1).join("-"); // Handles cases like "mercedes-cls-350" → "cls-350"
-        
-        console.log(`[fetchImagesByCarName] Model part: "${modelPart}", Available files:`, imageFiles.map(f => f.name));
 
         // Find main file (e.g., "x4-main.jpg", "c43-main.jpg", "ghibli-main.jpg")
         // Try multiple patterns to be more flexible
@@ -223,15 +213,7 @@ export async function fetchImagesByCarName(
             return false;
         }) || null;
 
-        if (!mainFile) {
-            console.warn(`[fetchImagesByCarName] No main file found for model "${modelPart}" in folder "${folder}". Available files:`, imageFiles.map(f => f.name));
-            // Fallback: use the first image file if no main file is found
-            if (imageFiles.length > 0) {
-                console.log(`[fetchImagesByCarName] Using first available file as fallback: "${imageFiles[0].name}"`);
-            }
-        } else {
-            console.log(`[fetchImagesByCarName] Found main file: "${mainFile.name}" for model "${modelPart}"`);
-        }
+        // Fallback: use the first image file if no main file is found
 
         // Generate URLs helper
         const getUrl = (name: string) =>
@@ -239,10 +221,6 @@ export async function fetchImagesByCarName(
 
         // Build mainImage URL - use main file if found, otherwise use first image as fallback
         const mainImage = mainFile ? getUrl(mainFile.name) : (imageFiles.length > 0 ? getUrl(imageFiles[0].name) : null);
-        
-        if (mainImage) {
-            console.log(`[fetchImagesByCarName] Main image URL: ${mainImage}`);
-        }
 
         // Sort gallery images:
         // Filter out main file (or first file if used as fallback), then sort by number (e.g., x4-2.jpg, x4-3.jpg, etc.)

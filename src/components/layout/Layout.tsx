@@ -6,6 +6,7 @@ import { Footer } from './Footer';
 import { Header } from './Header';
 import Loader from './Loader';
 import { FloatingContact } from '../ui/FloatingContact';
+import { Toaster } from 'sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -44,6 +45,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <>
+      {/* Toast Notifications */}
+      <Toaster 
+        position="bottom-right"
+        toastOptions={{
+          duration: 6000,
+          classNames: {
+            toast: 'bg-white border border-gray-200 text-gray-900 shadow-lg rounded-xl',
+            success: 'bg-white border border-green-200 text-gray-900',
+            title: 'text-green-800 font-semibold',
+            description: 'text-green-700',
+          },
+        }}
+      />
+      
       {/* Show loader during page transitions - overlays on top with high z-index */}
       {showLoader && <Loader isTransitioning={isPageTransitioning} />}
       

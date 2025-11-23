@@ -464,7 +464,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       };
 
       // Parse features/options from rental
-      let options = undefined;
+      let options: Record<string, any> | undefined = undefined;
       const features = (rental as any).features;
       if (features) {
         // If features is an array of strings, convert to options object
@@ -474,21 +474,21 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
             // Map feature names to option keys
             const featureLower = feature.toLowerCase();
             if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-              options.unlimitedKm = true;
+              options!.unlimitedKm = true;
             } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
-              options.speedLimitIncrease = true;
+              options!.speedLimitIncrease = true;
             } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-              options.tireInsurance = true;
+              options!.tireInsurance = true;
             } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
-              options.personalDriver = true;
+              options!.personalDriver = true;
             } else if (featureLower.includes('priority')) {
-              options.priorityService = true;
+              options!.priorityService = true;
             } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-              options.childSeat = true;
+              options!.childSeat = true;
             } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-              options.simCard = true;
+              options!.simCard = true;
             } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
-              options.roadsideAssistance = true;
+              options!.roadsideAssistance = true;
             }
           });
         } else if (typeof features === 'string') {
@@ -504,7 +504,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
 
       return {
         id: rental.id,
-        type: 'rental',
+        type: 'rental' as const,
         customerName: userName,
         customerEmail: email,
         customerPhone: phone || '',
@@ -524,7 +524,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         features: features,
         options: options,
         request_id: (rental as any).request_id || undefined,
-      };
+      } as OrderDisplay;
     }));
     
     orders.push(...processedOrders);
@@ -809,7 +809,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
 
       return {
         id: request.id,
-        type: 'request',
+        type: 'request' as const,
         customerName: userName,
         customerEmail: email,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
@@ -824,7 +824,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: request.created_at,
         carId: request.car_id,
         userId: request.user_id,
-      };
+      } as OrderDisplay;
     }));
     
     orders.push(...processedRequests);
@@ -903,7 +903,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
 
       return {
         id: rental.id,
-        type: 'rental',
+        type: 'rental' as const,
         customerName: userName,
         customerEmail: email,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
@@ -918,7 +918,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: rental.created_at,
         carId: rental.car_id,
         userId: rental.user_id,
-      };
+      } as OrderDisplay;
     }));
     
     orders.push(...processedRentals);
@@ -1292,6 +1292,77 @@ export async function createBorrowRequest(
     return { success: true, requestId: data.id.toString() };
   } catch (error) {
     console.error('Error creating borrow request:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Create a new borrow request (by user - status PENDING)
+ */
+export async function createUserBorrowRequest(
+  carId: string,
+  startDate: string,
+  startTime: string,
+  endDate: string,
+  endTime: string,
+  customerFirstName: string,
+  customerLastName: string,
+  customerEmail: string,
+  customerPhone: string,
+  customerAge?: string,
+  comment?: string,
+  options?: any,
+  totalAmount?: number,
+  userId?: string
+): Promise<{ success: boolean; requestId?: string; error?: string }> {
+  try {
+    // Use provided userId (which should be email for logged-in users) or use customerEmail for guest requests
+    // Both logged-in users and guests use email as user_id
+    const finalUserId = userId || customerEmail;
+    
+    // Combine first and last name for customer_name
+    const customerName = `${customerFirstName} ${customerLastName}`.trim();
+
+    const insertData: any = {
+      user_id: finalUserId,
+      car_id: parseInt(carId, 10),
+      start_date: startDate,
+      start_time: startTime,
+      end_date: endDate,
+      end_time: endTime,
+      status: 'PENDING', // User-submitted requests start as PENDING
+      customer_name: customerName,
+      customer_first_name: customerFirstName,
+      customer_last_name: customerLastName,
+      customer_email: customerEmail,
+      customer_phone: customerPhone,
+      requested_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (customerAge) insertData.customer_age = parseInt(customerAge, 10);
+    if (comment) insertData.comment = comment;
+    if (options) {
+      // Ensure options is properly formatted as JSON
+      insertData.options = typeof options === 'string' ? JSON.parse(options) : options;
+    }
+    if (totalAmount !== undefined) insertData.total_amount = totalAmount;
+
+    // Use supabaseAdmin to bypass RLS policies for user-submitted requests
+    const { data, error } = await supabaseAdmin
+      .from('BorrowRequest')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating user borrow request:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, requestId: data.id.toString() };
+  } catch (error) {
+    console.error('Error creating user borrow request:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

@@ -4466,11 +4466,11 @@ interface RequestDetailsViewProps {
 
 const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, cars }) => {
     const car = cars.find(c => c.id.toString() === request.carId);
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image_url);
+    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image_url ?? undefined);
 
     useEffect(() => {
         if (car) {
-            setSelectedImage(car.image_url);
+            setSelectedImage(car.image_url ?? undefined);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [car]);

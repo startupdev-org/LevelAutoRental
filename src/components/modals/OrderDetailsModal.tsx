@@ -52,8 +52,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     // Fetch cars if not provided as prop
     useEffect(() => {
-        const loadCars = async () => {
-            try {
+            const loadCars = async () => {
+                try {
                 let carsToUse: Car[] = [];
                 
                 if (carsProp && carsProp.length > 0) {
@@ -85,13 +85,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 );
                 
                 setCars(carsWithImages);
-            } catch (error) {
-                console.error('Error loading cars:', error);
+                } catch (error) {
+                    console.error('Error loading cars:', error);
                 setCars(carsProp || staticCars);
-            }
-        };
+                }
+            };
         
-        loadCars();
+            loadCars();
     }, [carsProp, isOpen]);
 
     // Fetch original request options if request_id exists
@@ -220,31 +220,31 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         const findCar = async () => {
             // First, try to find in cars array
             let foundCar = cars.find(c => {
-                if (!order.carId) return false;
-                
-                // Normalize both IDs to numbers for comparison
-                const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
-                const orderCarIdNum = typeof order.carId === 'number' 
-                    ? order.carId 
-                    : parseInt(order.carId.toString(), 10);
-                
-                // Compare as numbers
-                if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
-                    return true;
-                }
-                
-                // Fallback: compare as strings
-                const carIdStr = c.id.toString();
-                const orderCarIdStr = order.carId.toString();
-                return carIdStr === orderCarIdStr;
-            });
-            
+        if (!order.carId) return false;
+        
+        // Normalize both IDs to numbers for comparison
+        const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
+        const orderCarIdNum = typeof order.carId === 'number' 
+            ? order.carId 
+            : parseInt(order.carId.toString(), 10);
+        
+        // Compare as numbers
+        if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
+            return true;
+        }
+        
+        // Fallback: compare as strings
+        const carIdStr = c.id.toString();
+        const orderCarIdStr = order.carId.toString();
+        return carIdStr === orderCarIdStr;
+    });
+    
             // If car not found in cars array, fetch from database
             if (!foundCar && order.carId) {
                 console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
-                    orderCarId: order.carId,
-                    orderCarName: order.carName
-                });
+            orderCarId: order.carId,
+            orderCarName: order.carName
+        });
                 
                 try {
                     const { supabase } = await import('../../lib/supabase');
