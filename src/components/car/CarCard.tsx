@@ -11,7 +11,8 @@ import { Car } from '../../types';
 import { fadeInUp } from '../../utils/animations';
 import { Card } from '../ui/Card';
 import { useNavigate } from 'react-router-dom';
-import { fetchRentals } from '../../lib/orders';
+import { fetchImagesByCarName } from '../../lib/db/cars/cars';
+import { supabase } from '../../lib/supabase';
 
 
 interface CarCardProps {
@@ -24,6 +25,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { t } = useTranslation();
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
+    const [carWithImages, setCarWithImages] = useState<Car>(car);
 
     // Load favorite state from localStorage
     const getFavorites = (): number[] => {
@@ -37,7 +39,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
     const [isFavorite, setIsFavorite] = useState(() => {
         const favorites = getFavorites();
-        return favorites.includes(car.id);
+        return favorites.includes(carWithImages.id);
     });
 
     // Save favorites to localStorage
@@ -60,47 +62,232 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const handleFavoriteToggle = () => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
-        saveFavorite(car.id, newFavoriteState);
+        saveFavorite(carWithImages.id, newFavoriteState);
     };
 
-    // Fetch rentals and calculate next available date
+    // Fetch car images from storage
+    useEffect(() => {
+        const fetchCarImages = async () => {
+            if (!car) return;
+            
+            try {
+                // Fetch images from storage for this car
+                let carName = (car as any).name;
+                if (!carName || carName.trim() === '') {
+                    carName = `${car.make} ${car.model}`;
+                }
+                
+                const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                
+                // Update car with images from storage
+                const updatedCar = {
+                    ...car,
+                    image_url: mainImage || car.image_url,
+                    photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                };
+                
+                setCarWithImages(updatedCar);
+            } catch (error) {
+                console.error('Error fetching car images:', error);
+                // Fallback to original car if image fetch fails
+                setCarWithImages(car);
+            }
+        };
+        
+        fetchCarImages();
+    }, [car]);
+
+    // Fetch rentals and calculate next available date - same logic as CarDetails
     useEffect(() => {
         const fetchCarAvailability = async () => {
             if (!car) return;
             
             try {
-                const rentals = await fetchRentals();
-                const now = new Date();
+                const carIdNum = typeof car.id === 'number' ? car.id : parseInt(String(car.id), 10);
                 
-                // Filter rentals for this car that are active or upcoming
-                const carRentals = rentals.filter(rental => {
-                    const rentalCarId = typeof rental.car_id === 'number' 
-                        ? rental.car_id 
-                        : parseInt(rental.car_id?.toString() || '0', 10);
-                    const rentalStatus = (rental as any).rental_status || rental.status || '';
-                    return rentalCarId === car.id && 
-                           (rentalStatus === 'ACTIVE' || rentalStatus === 'CONTRACT' || rentalStatus === 'booked' || rentalStatus === 'borrowed');
+                // Query Rentals table for all current/future rentals (not just CONTRACT/ACTIVE)
+                // Get all rentals for this car, we'll filter for current/future ones
+                const rentalsResult = await supabase
+                    .from('Rentals')
+                    .select('*')
+                    .eq('car_id', carIdNum)
+                    .order('created_at', { ascending: false });
+                
+                // Filter for rentals that are current or future (haven't ended yet)
+                const now = new Date();
+                const rentalsData = (rentalsResult.data || []).filter((rental: any) => {
+                    if (!rental.end_date) return false;
+                    
+                    // Parse end date
+                    const endDateStr = rental.end_date.includes('T')
+                        ? rental.end_date.split('T')[0]
+                        : rental.end_date.split(' ')[0];
+                    const endDate = new Date(endDateStr);
+                    
+                    // Add end time if available
+                    if (rental.end_time) {
+                        const [hours, minutes] = rental.end_time.split(':').map(Number);
+                        endDate.setHours(hours || 17, minutes || 0, 0, 0);
+                    } else {
+                        endDate.setHours(23, 59, 59, 999);
+                    }
+                    
+                    // Include if rental hasn't ended yet
+                    return endDate >= now;
                 });
                 
-                // Find the latest return date from active rentals
+                // Query BorrowRequest table for APPROVED requests
+                let approvedData: any[] = [];
+                
+                try {
+                    const approvedResult = await supabase
+                        .from('BorrowRequest')
+                        .select('*')
+                        .eq('car_id', carIdNum)
+                        .in('status', ['APPROVED', 'EXECUTED'])
+                        .order('requested_at', { ascending: false });
+                    
+                    if (approvedResult.data && approvedResult.data.length > 0) {
+                        approvedData = approvedResult.data;
+                    }
+                } catch (error) {
+                    // Silently fail if query doesn't work (RLS might still be blocking)
+                }
+                
+                // Convert rentals to borrow request format
+                const rentalRequests = rentalsData.map((rental: any) => ({
+                    id: rental.id.toString(),
+                    user_id: rental.user_id,
+                    car_id: rental.car_id.toString(),
+                    start_date: rental.start_date,
+                    start_time: rental.start_time || '09:00:00',
+                    end_date: rental.end_date,
+                    end_time: rental.end_time || '17:00:00',
+                    status: 'EXECUTED' as const,
+                    created_at: rental.created_at,
+                    updated_at: rental.updated_at,
+                }));
+                
+                // Convert approved borrow requests to same format
+                const approvedRequests = approvedData.map((req: any) => ({
+                    id: req.id.toString(),
+                    user_id: req.user_id,
+                    car_id: req.car_id.toString(),
+                    start_date: req.start_date,
+                    start_time: req.start_time || '09:00:00',
+                    end_date: req.end_date,
+                    end_time: req.end_time || '17:00:00',
+                    status: 'APPROVED' as const,
+                    created_at: req.requested_at || req.created_at,
+                    updated_at: req.updated_at,
+                }));
+                
+                // Combine both types
+                const allRequests = [...rentalRequests, ...approvedRequests];
+                
+                // Filter requests - only filter out ones with missing dates
+                const filteredRequests = allRequests.filter((request: any) => {
+                    return request.start_date && request.end_date;
+                });
+                
+                // Calculate nextAvailableDate from combined Rentals + APPROVED requests
+                // This ensures consecutive rentals (including APPROVED) show the correct "Liber" date
+                const currentTime = new Date();
                 let latestReturnDate: Date | null = null;
                 
-                carRentals.forEach(rental => {
-                    if (rental.end_date) {
-                        const returnDate = new Date(rental.end_date);
-                        // Add return time if available
-                        if (rental.end_time) {
-                            const [hours, minutes] = rental.end_time.split(':').map(Number);
-                            returnDate.setHours(hours || 17, minutes || 0, 0, 0);
+                if (filteredRequests.length > 0) {
+                    // Sort all requests (rentals + approved) by start date
+                    const sortedRequests = [...filteredRequests].sort((a, b) => {
+                        const startA = new Date(a.start_date || 0);
+                        const startB = new Date(b.start_date || 0);
+                        return startA.getTime() - startB.getTime();
+                    });
+                    
+                    // Find consecutive requests (no gap between them)
+                    let consecutiveEndDate: Date | null = null;
+                    
+                    for (let i = 0; i < sortedRequests.length; i++) {
+                        const request = sortedRequests[i];
+                        if (!request.end_date) continue;
+                        
+                        // Parse end date
+                        const endDateStr = request.end_date.includes('T')
+                            ? request.end_date.split('T')[0]
+                            : request.end_date.split(' ')[0];
+                        const requestEndDate = new Date(endDateStr);
+                        
+                        // Add end time
+                        if (request.end_time) {
+                            const [hours, minutes] = request.end_time.split(':').map(Number);
+                            requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
                         } else {
-                            returnDate.setHours(17, 0, 0, 0); // Default return time
+                            requestEndDate.setHours(17, 0, 0, 0);
                         }
                         
-                        if (returnDate > now && (!latestReturnDate || returnDate > latestReturnDate)) {
-                            latestReturnDate = returnDate;
+                        // Add 12 hours maintenance period after rental ends
+                        requestEndDate.setHours(requestEndDate.getHours() + 12);
+                        
+                        // Check if this request is consecutive with the previous one
+                        if (i === 0) {
+                            // First request - start the chain
+                            consecutiveEndDate = requestEndDate;
+                        } else {
+                            const prevRequest = sortedRequests[i - 1];
+                            if (!prevRequest.end_date) continue;
+                            
+                            // Parse previous end date
+                            const prevEndDateStr = prevRequest.end_date.includes('T')
+                                ? prevRequest.end_date.split('T')[0]
+                                : prevRequest.end_date.split(' ')[0];
+                            const prevEndDate = new Date(prevEndDateStr);
+                            
+                            if (prevRequest.end_time) {
+                                const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
+                                prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
+                            } else {
+                                prevEndDate.setHours(17, 0, 0, 0);
+                            }
+                            
+                            // Add 12 hours maintenance period after previous rental ends
+                            prevEndDate.setHours(prevEndDate.getHours() + 12);
+                            
+                            // Parse current start date
+                            const startDateStr = request.start_date.includes('T')
+                                ? request.start_date.split('T')[0]
+                                : request.start_date.split(' ')[0];
+                            const requestStartDate = new Date(startDateStr);
+                            
+                            if (request.start_time) {
+                                const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                                requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                            } else {
+                                requestStartDate.setHours(9, 0, 0, 0);
+                            }
+                            
+                            // Check if requests are consecutive (same day or next day with no gap)
+                            const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
+                            const oneDayInMs = 24 * 60 * 60 * 1000;
+                            
+                            // If start of next request is same day or next day (within 25 hours to account for time differences)
+                            if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
+                                // Consecutive - update the end date
+                                consecutiveEndDate = requestEndDate;
+                            } else {
+                                // Gap found - use the previous consecutive end date
+                                if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                                    latestReturnDate = consecutiveEndDate;
+                                }
+                                // Start new chain
+                                consecutiveEndDate = requestEndDate;
+                            }
                         }
                     }
-                });
+                    
+                    // Use the last consecutive end date if it's later than any individual request
+                    if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                        latestReturnDate = consecutiveEndDate;
+                    }
+                }
                 
                 setNextAvailableDate(latestReturnDate);
             } catch (error) {
@@ -141,15 +328,15 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                 {/* Image Container */}
                 <div
                     className="relative overflow-hidden cursor-pointer"
-                    onClick={() => navigate(`/cars/${car.id}`)}
+                    onClick={() => navigate(`/cars/${carWithImages.id}`)}
                     onMouseMove={(e) => {
-                        if (car.photo_gallery && car.photo_gallery.length > 1) {
+                        if (carWithImages.photo_gallery && carWithImages.photo_gallery.length > 1) {
                             const container = e.currentTarget;
                             const rect = container.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const width = rect.width;
                             const maxPhotos = 5;
-                            const photosToShow = Math.min(car.photo_gallery.length, maxPhotos);
+                            const photosToShow = Math.min(carWithImages.photo_gallery.length, maxPhotos);
                             const photoIndex = Math.floor((x / width) * photosToShow);
                             const clampedIndex = Math.max(0, Math.min(photoIndex, photosToShow - 1));
 
@@ -163,7 +350,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         }
                     }}
                     onMouseLeave={(e) => {
-                        if (car.photo_gallery && car.photo_gallery.length > 1) {
+                        if (carWithImages.photo_gallery && carWithImages.photo_gallery.length > 1) {
                             setActivePhotoIndex(0);
                             const imageContainer = e.currentTarget.querySelector('.photo-gallery') as HTMLElement;
                             if (imageContainer) {
@@ -173,11 +360,11 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     }}
                 >
                     <div className="flex transition-transform duration-300 ease-out group-hover:scale-105 photo-gallery">
-                        {car.photo_gallery && car.photo_gallery.length > 1 ? (
+                        {carWithImages.photo_gallery && carWithImages.photo_gallery.length > 1 ? (
                             (() => {
                                 const maxPhotos = 5;
-                                const photosToShow = car.photo_gallery.slice(0, maxPhotos);
-                                const totalPhotos = car.photo_gallery.length;
+                                const photosToShow = carWithImages.photo_gallery.slice(0, maxPhotos);
+                                const totalPhotos = carWithImages.photo_gallery.length;
                                 const remainingPhotos = totalPhotos - maxPhotos;
 
                                 return photosToShow.map((photo, index) => (
@@ -188,7 +375,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                     >
                                         <img
                                             src={photo}
-                                            alt={`${car.make} ${car.model} - Photo ${index + 1}`}
+                                            alt={`${carWithImages.make} ${carWithImages.model} - Photo ${index + 1}`}
                                             className="w-full h-56 object-cover object-center bg-gray-100"
                                         />
                                         {(() => {
@@ -221,17 +408,17 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             })()
                         ) : (
                             <img
-                                src={car.image_url || ''}
-                                alt={car.make + ' ' + car.model}
+                                src={carWithImages.image_url || ''}
+                                alt={carWithImages.make + ' ' + carWithImages.model}
                                 className="w-full h-56 object-cover object-center bg-gray-100"
                             />
                         )}
                     </div>
 
                     {/* Photo Navigation Lines */}
-                    {car.photo_gallery && car.photo_gallery.length > 1 && (
+                    {carWithImages.photo_gallery && carWithImages.photo_gallery.length > 1 && (
                         <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1 px-4">
-                            {Array.from({ length: Math.min(car.photo_gallery.length, 5) }).map((_, index) => (
+                            {Array.from({ length: Math.min(carWithImages.photo_gallery.length, 5) }).map((_, index) => (
                                 <div
                                     key={index}
                                     className={`flex-1 h-0.5 rounded-full transition-colors duration-200 ${index === activePhotoIndex
@@ -245,7 +432,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                     {/* Availability Badge - Only show when booked */}
                     {(() => {
-                        const isAvailable = car.status === 'available' || car.status === 'Available';
+                        const isAvailable = carWithImages.status === 'available' || carWithImages.status === 'Available';
                         const isBooked = !isAvailable && (nextAvailableDate !== null);
                         
                         // Don't show badge if available
@@ -294,15 +481,15 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-5 flex flex-col justify-between flex-1" onClick={() => navigate(`/cars/${car.id}`)}>
+                <div className="p-5 flex flex-col justify-between flex-1" onClick={() => navigate(`/cars/${carWithImages.id}`)}>
                     {/* Car Name and Year */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-700 transition-colors duration-300">
-                                {car.make}{' '}{car.model}
+                                {carWithImages.make}{' '}{carWithImages.model}
                             </h3>
                             <span className="text-lg font-bold text-gray-600">
-                                {car.year}
+                                {carWithImages.year}
                             </span>
                         </div>
                     </div>
@@ -320,7 +507,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         <div className="flex items-center justify-end gap-2 text-gray-600">
                             <span className="text-sm font-medium">
                                 {(() => {
-                                    const trans = car.transmission?.trim() || '';
+                                    const trans = carWithImages.transmission?.trim() || '';
                                     if (trans.toLowerCase() === 'automatic' || trans === 'Automatic') {
                                         return 'Automată';
                                     }
@@ -331,7 +518,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 })()}
                             </span>
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                {renderTransmissionIcon(car.transmission || 'Automatic')}
+                                {renderTransmissionIcon(carWithImages.transmission || 'Automatic')}
                             </div>
                         </div>
 
@@ -341,17 +528,17 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 {React.createElement(FaGasPump as any, { className: "w-4 h-4 text-gray-600" })}
                             </div>
                             <span className="text-sm font-medium">
-                                {car.fuel_type === 'gasoline' ? 'Benzină' :
-                                    car.fuel_type === 'diesel' ? 'Diesel' :
-                                        car.fuel_type === 'petrol' ? 'Benzină' :
-                                            car.fuel_type === 'hybrid' ? 'Hibrid' :
-                                                car.fuel_type === 'electric' ? 'Electric' : car.fuel_type}
+                                {carWithImages.fuel_type === 'gasoline' ? 'Benzină' :
+                                    carWithImages.fuel_type === 'diesel' ? 'Diesel' :
+                                        carWithImages.fuel_type === 'petrol' ? 'Benzină' :
+                                            carWithImages.fuel_type === 'hybrid' ? 'Hibrid' :
+                                                carWithImages.fuel_type === 'electric' ? 'Electric' : carWithImages.fuel_type}
                             </span>
                         </div>
 
                         {/* Drivetrain */}
                         <div className="flex items-center justify-end gap-2 text-gray-600">
-                            <span className="text-sm font-medium">{car.drivetrain || ''}</span>
+                            <span className="text-sm font-medium">{carWithImages.drivetrain || ''}</span>
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                 {React.createElement(TbCar4WdFilled as any, { className: "w-4 h-4 text-gray-600" })}
                             </div>
@@ -362,8 +549,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <div className="flex flex-col gap-0.5">
                             {(() => {
-                                const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
-                                const discount = (car as any).discount_percentage || car.discount_percentage || 0;
+                                const basePrice = (carWithImages as any).pricePerDay || carWithImages.price_per_day || 0;
+                                const discount = (carWithImages as any).discount_percentage || carWithImages.discount_percentage || 0;
                                 const finalPrice = discount > 0
                                     ? basePrice * (1 - discount / 100)
                                     : basePrice;
@@ -387,7 +574,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                         {/* Rating */}
                         <div className="flex items-center gap-1">
-                            <span className="text-sm font-semibold text-gray-900 h-6 flex items-center justify-center">{car.rating}</span>
+                            <span className="text-sm font-semibold text-gray-900 h-6 flex items-center justify-center">{carWithImages.rating}</span>
                             <img src="/LevelAutoRental/assets/star.png" alt="Rating" className="w-6 h-6 flex-shrink-0 ml-2" />
                         </div>
                     </div>

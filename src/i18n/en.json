@@ -11,6 +11,7 @@
         "dashboard": "Dashboard",
         "profile": "Profile",
         "settings": "Settings",
+        "admin": "Admin",
         "signOut": "Sign Out"
     },
     "languages": {

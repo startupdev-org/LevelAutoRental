@@ -101,8 +101,11 @@ export async function fetchFilteredCarsWithPhotos(filters: CarFilters): Promise<
 
         const carsWithImages = await Promise.all(
             filteredCars.map(async (car) => {
-                // Assume folder name is based on the car name in lowercase and dash-separated
-                const carName = car.make + ' ' + car.model;
+                // Fetch images from storage for this car - use name field if available, otherwise construct from make + model
+                let carName = (car as any).name;
+                if (!carName || carName.trim() === '') {
+                    carName = `${car.make} ${car.model}`;
+                }
                 const { mainImage, photoGallery } = await fetchImagesByCarName(carName)
                 return {
                     ...car,
@@ -238,8 +241,11 @@ export async function fetchCarsWithMainImage(): Promise<(Car[])> {
 
     const carsWithImages = await Promise.all(
         cars.map(async (car) => {
-            // Assume folder name is based on the car name in lowercase and dash-separated
-            const carName = car.make + ' ' + car.model;
+            // Fetch images from storage for this car - use name field if available, otherwise construct from make + model
+            let carName = (car as any).name;
+            if (!carName || carName.trim() === '') {
+                carName = `${car.make} ${car.model}`;
+            }
             const { mainImage } = await fetchImagesByCarName(carName)
             return {
                 ...car,
@@ -262,8 +268,11 @@ export async function fetchCarsWithPhotos(): Promise<(Car[])> {
 
     const carsWithImages = await Promise.all(
         cars.map(async (car) => {
-            // Assume folder name is based on the car name in lowercase and dash-separated
-            const carName = car.make + ' ' + car.model;
+            // Fetch images from storage for this car - use name field if available, otherwise construct from make + model
+            let carName = (car as any).name;
+            if (!carName || carName.trim() === '') {
+                carName = `${car.make} ${car.model}`;
+            }
             const { mainImage, photoGallery } = await fetchImagesByCarName(carName)
             return {
                 ...car,
@@ -309,7 +318,11 @@ export async function fetchCarsWithMainImageFiltered(filters: CarFilterOptions):
     // Attach images
     const carsWithImages = await Promise.all(
         cars.map(async (car) => {
-            const carName = `${car.make} ${car.model}`;
+            // Fetch images from storage for this car - use name field if available, otherwise construct from make + model
+            let carName = (car as any).name;
+            if (!carName || carName.trim() === '') {
+                carName = `${car.make} ${car.model}`;
+            }
             const { mainImage } = await fetchImagesByCarName(carName);
 
             return {

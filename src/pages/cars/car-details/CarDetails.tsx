@@ -31,7 +31,8 @@ import { ContractSection } from '../sections/ContractSection';
 import { Car } from '../../../types';
 import { fetchCarById } from '../../../lib/cars';
 import { fetchImagesByCarName } from '../../../lib/db/cars/cars';
-import { fetchRentals } from '../../../lib/orders';
+import { fetchRentals, BorrowRequest } from '../../../lib/orders';
+import { supabase } from '../../../lib/supabase';
 import { RentalOptionsSection } from '../sections/RentalOptionsSection';
 
 export const CarDetails: React.FC = () => {
@@ -64,6 +65,12 @@ export const CarDetails: React.FC = () => {
     const [showImageViewer, setShowImageViewer] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
+    const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<BorrowRequest[]>([]);
+    const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
+    const [minDaysMessage, setMinDaysMessage] = useState<string>('');
+    const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
+    const [pickupCalendarInitialized, setPickupCalendarInitialized] = useState(false);
+    const [returnCalendarInitialized, setReturnCalendarInitialized] = useState(false);
 
     // ───── REFS ─────
     const pickupCalendarRef = useRef<HTMLDivElement>(null);
@@ -130,12 +137,125 @@ export const CarDetails: React.FC = () => {
         return days;
     };
 
-    const generateHours = (): string[] => {
+    const generateHours = (minHour?: number): string[] => {
         const hours: string[] = [];
-        for (let h = 0; h < 24; h++) {
+        const startHour = minHour !== undefined ? minHour : 0;
+        for (let h = startHour; h < 24; h++) {
             hours.push(`${String(h).padStart(2, '0')}:00`);
         }
         return hours;
+    };
+
+    // Check if a date is within an approved/executed borrow request or active rental period (for showing X overlay)
+    // Check if a date/time is in a maintenance period (12 hours after rental ends)
+    const isInMaintenancePeriod = (checkDate: Date, checkTime?: string): boolean => {
+        if (carRentalsForCalendar.length === 0) return false;
+        
+        return carRentalsForCalendar.some(rental => {
+            if (!rental.end_date || !rental.end_time) return false;
+            
+            // Parse rental end date and time
+            const endDateStr = rental.end_date.includes('T')
+                ? rental.end_date.split('T')[0]
+                : rental.end_date.split(' ')[0];
+            const rentalEndDate = new Date(endDateStr);
+            
+            // Parse end time
+            const [endHours, endMinutes] = rental.end_time.split(':').map(Number);
+            rentalEndDate.setHours(endHours || 17, endMinutes || 0, 0, 0);
+            
+            // Calculate maintenance period: 12 hours after rental ends
+            const maintenanceEndDate = new Date(rentalEndDate);
+            maintenanceEndDate.setHours(maintenanceEndDate.getHours() + 12);
+            
+            // If checkTime is provided, check the exact datetime
+            if (checkTime) {
+                const [checkHours, checkMinutes] = checkTime.split(':').map(Number);
+                const checkDateTime = new Date(checkDate);
+                checkDateTime.setHours(checkHours || 0, checkMinutes || 0, 0, 0);
+                
+                // Check if the datetime falls within maintenance period
+                return checkDateTime >= rentalEndDate && checkDateTime < maintenanceEndDate;
+            } else {
+                // If no time provided, check if the date overlaps with maintenance period
+                // Maintenance period spans from rental end to 12 hours later
+                const checkDateStart = new Date(checkDate);
+                checkDateStart.setHours(0, 0, 0, 0);
+                const checkDateEnd = new Date(checkDate);
+                checkDateEnd.setHours(23, 59, 59, 999);
+                
+                // Check if maintenance period overlaps with the check date
+                return maintenanceEndDate > checkDateStart && rentalEndDate < checkDateEnd;
+            }
+        });
+    };
+
+    const isDateInApprovedRequest = (dateString: string): boolean => {
+        // Parse date string to YYYY-MM-DD format for comparison
+        const checkDateStr = dateString.split('T')[0]; // Get just the date part
+        const checkDate = new Date(checkDateStr + 'T00:00:00');
+        checkDate.setHours(0, 0, 0, 0);
+        
+        // Check maintenance periods first (12 hours after each rental)
+        if (isInMaintenancePeriod(checkDate)) {
+            return true;
+        }
+        
+        // Check approved/executed borrow requests
+        if (approvedBorrowRequests.length > 0) {
+            const result = approvedBorrowRequests.some(request => {
+                if (!request.start_date || !request.end_date) return false;
+                
+                // Parse start date - handle both "YYYY-MM-DDTHH:MM:SS" and "YYYY-MM-DD HH:MM:SS" formats
+                const startDateStr = request.start_date.includes('T')
+                    ? request.start_date.split('T')[0]
+                    : request.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                // Parse end date - handle both formats
+                const endDateStr = request.end_date.includes('T')
+                    ? request.end_date.split('T')[0]
+                    : request.end_date.split(' ')[0];
+                const endDate = new Date(endDateStr + 'T23:59:59');
+                endDate.setHours(23, 59, 59, 999);
+                
+                // Check if the date falls within the range (inclusive)
+                const isInRange = checkDate >= startDate && checkDate <= endDate;
+                
+                return isInRange;
+            });
+            
+            if (result) return true;
+        }
+        
+        // Also check active rentals (which come from EXECUTED requests)
+        if (carRentalsForCalendar.length > 0) {
+            const result = carRentalsForCalendar.some(rental => {
+                if (!rental.start_date || !rental.end_date) return false;
+                
+                // Parse start date - handle both "YYYY-MM-DDTHH:MM:SS" and "YYYY-MM-DD HH:MM:SS" formats
+                const startDateStr = rental.start_date.includes('T')
+                    ? rental.start_date.split('T')[0]
+                    : rental.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                // Parse end date - handle both formats
+                const endDateStr = rental.end_date.includes('T')
+                    ? rental.end_date.split('T')[0]
+                    : rental.end_date.split(' ')[0];
+                const endDate = new Date(endDateStr + 'T23:59:59');
+                endDate.setHours(23, 59, 59, 999);
+                
+                // Check if the date falls within the range (inclusive)
+                return checkDate >= startDate && checkDate <= endDate;
+            });
+            
+            if (result) return true;
+        }
+        
+        return false;
     };
 
     // ───── EFFECTS ─────
@@ -195,41 +315,250 @@ export const CarDetails: React.FC = () => {
                 const rentals = await fetchRentals();
                 const now = new Date();
                 
-                // Filter rentals for this car that are active
+                // Filter rentals for this car that are active, contract, or current/future
                 const carRentals = rentals.filter(rental => {
                     const rentalCarId = typeof rental.car_id === 'number' 
                         ? rental.car_id 
                         : parseInt(rental.car_id?.toString() || '0', 10);
-                    return rentalCarId === car.id && rental.status === 'ACTIVE';
-                });
-                
-                // Find the latest return date from active rentals
-                let latestReturnDate: Date | null = null;
-                
-                carRentals.forEach(rental => {
+                    const rentalStatus = (rental as any).status || rental.rental_status || '';
+                    
+                    // Include ACTIVE, CONTRACT, or any rental that hasn't ended yet
+                    if (rentalCarId !== car.id) return false;
+                    
+                    if (rentalStatus === 'ACTIVE' || rentalStatus === 'CONTRACT') {
+                        return true;
+                    }
+                    
+                    // Also include rentals that haven't ended yet (for calendar marking)
                     if (rental.end_date) {
-                        const returnDate = new Date(rental.end_date);
-                        // Add return time if available
+                        const endDate = new Date(rental.end_date);
                         if (rental.end_time) {
                             const [hours, minutes] = rental.end_time.split(':').map(Number);
-                            returnDate.setHours(hours || 17, minutes || 0, 0, 0);
+                            endDate.setHours(hours || 17, minutes || 0, 0, 0);
                         } else {
-                            returnDate.setHours(17, 0, 0, 0); // Default return time
+                            endDate.setHours(23, 59, 59, 999);
                         }
-                        
-                        if (returnDate > now && (!latestReturnDate || returnDate > latestReturnDate)) {
-                            latestReturnDate = returnDate;
-                        }
+                        return endDate >= now;
                     }
+                    
+                    return false;
                 });
                 
-                setNextAvailableDate(latestReturnDate);
+                // Store rentals for calendar marking
+                setCarRentalsForCalendar(carRentals);
             } catch (error) {
                 console.error('Error fetching car availability:', error);
             }
         };
         
         fetchCarAvailability();
+    }, [car, carId]);
+
+    // Fetch approved and executed borrow requests for this car
+    useEffect(() => {
+        const fetchApprovedRequests = async () => {
+            if (!car || !carId) return;
+            
+            try {
+                const carIdNum = typeof car.id === 'number' ? car.id : parseInt(String(car.id), 10);
+                
+                // Query Rentals table for all current/future rentals (not just CONTRACT/ACTIVE)
+                // Get all rentals for this car, we'll filter for current/future ones
+                const rentalsResult = await supabase
+                    .from('Rentals')
+                    .select('*')
+                    .eq('car_id', carIdNum)
+                    .order('created_at', { ascending: false });
+                
+                // Filter for rentals that are current or future (haven't ended yet)
+                const now = new Date();
+                const rentalsData = (rentalsResult.data || []).filter((rental: any) => {
+                    if (!rental.end_date) return false;
+                    
+                    // Parse end date
+                    const endDateStr = rental.end_date.includes('T')
+                        ? rental.end_date.split('T')[0]
+                        : rental.end_date.split(' ')[0];
+                    const endDate = new Date(endDateStr);
+                    
+                    // Add end time if available
+                    if (rental.end_time) {
+                        const [hours, minutes] = rental.end_time.split(':').map(Number);
+                        endDate.setHours(hours || 17, minutes || 0, 0, 0);
+                    } else {
+                        endDate.setHours(23, 59, 59, 999);
+                    }
+                    
+                    // Include if rental hasn't ended yet
+                    return endDate >= now;
+                });
+                
+                // Query BorrowRequest table for APPROVED requests
+                // Note: Requires RLS policy allowing SELECT on APPROVED/EXECUTED status
+                let approvedData: any[] = [];
+                
+                try {
+                    const approvedResult = await supabase
+                        .from('BorrowRequest')
+                        .select('*')
+                        .eq('car_id', carIdNum)
+                        .in('status', ['APPROVED', 'EXECUTED'])
+                        .order('requested_at', { ascending: false });
+                    
+                    if (approvedResult.data && approvedResult.data.length > 0) {
+                        approvedData = approvedResult.data;
+                    }
+                } catch (error) {
+                    // Silently fail if query doesn't work (RLS might still be blocking)
+                }
+                
+                // Convert rentals to borrow request format
+                const rentalRequests = rentalsData.map((rental: any) => ({
+                    id: rental.id.toString(),
+                    user_id: rental.user_id,
+                    car_id: rental.car_id.toString(),
+                    start_date: rental.start_date,
+                    start_time: rental.start_time || '09:00:00',
+                    end_date: rental.end_date,
+                    end_time: rental.end_time || '17:00:00',
+                    status: 'EXECUTED' as const,
+                    created_at: rental.created_at,
+                    updated_at: rental.updated_at,
+                }));
+                
+                // Convert approved borrow requests to same format
+                const approvedRequests = approvedData.map((req: any) => ({
+                    id: req.id.toString(),
+                    user_id: req.user_id,
+                    car_id: req.car_id.toString(),
+                    start_date: req.start_date,
+                    start_time: req.start_time || '09:00:00',
+                    end_date: req.end_date,
+                    end_time: req.end_time || '17:00:00',
+                    status: 'APPROVED' as const,
+                    created_at: req.requested_at || req.created_at,
+                    updated_at: req.updated_at,
+                }));
+                
+                
+                // Combine both types
+                const allRequests = [...rentalRequests, ...approvedRequests];
+                
+                // Filter requests - only filter out ones with missing dates
+                // Don't filter by date for APPROVED/EXECUTED requests - they should all show X marks
+                const filteredRequests = allRequests.filter((request: any) => {
+                    // Only exclude if dates are missing
+                    return request.start_date && request.end_date;
+                });
+                
+                setApprovedBorrowRequests(filteredRequests);
+                
+                // Calculate nextAvailableDate from combined Rentals + APPROVED requests
+                // This ensures consecutive rentals (including APPROVED) show the correct "Liber" date
+                const currentTime = new Date();
+                let latestReturnDate: Date | null = null;
+                
+                if (filteredRequests.length > 0) {
+                    // Sort all requests (rentals + approved) by start date
+                    const sortedRequests = [...filteredRequests].sort((a, b) => {
+                        const startA = new Date(a.start_date || 0);
+                        const startB = new Date(b.start_date || 0);
+                        return startA.getTime() - startB.getTime();
+                    });
+                    
+                    // Find consecutive requests (no gap between them)
+                    let consecutiveEndDate: Date | null = null;
+                    
+                    for (let i = 0; i < sortedRequests.length; i++) {
+                        const request = sortedRequests[i];
+                        if (!request.end_date) continue;
+                        
+                        // Parse end date
+                        const endDateStr = request.end_date.includes('T')
+                            ? request.end_date.split('T')[0]
+                            : request.end_date.split(' ')[0];
+                        const requestEndDate = new Date(endDateStr);
+                        
+                        // Add end time
+                        if (request.end_time) {
+                            const [hours, minutes] = request.end_time.split(':').map(Number);
+                            requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
+                        } else {
+                            requestEndDate.setHours(17, 0, 0, 0);
+                        }
+                        
+                        // Add 12 hours maintenance period after rental ends
+                        requestEndDate.setHours(requestEndDate.getHours() + 12);
+                        
+                        // Check if this request is consecutive with the previous one
+                        if (i === 0) {
+                            // First request - start the chain
+                            consecutiveEndDate = requestEndDate;
+                        } else {
+                            const prevRequest = sortedRequests[i - 1];
+                            if (!prevRequest.end_date) continue;
+                            
+                            // Parse previous end date
+                            const prevEndDateStr = prevRequest.end_date.includes('T')
+                                ? prevRequest.end_date.split('T')[0]
+                                : prevRequest.end_date.split(' ')[0];
+                            const prevEndDate = new Date(prevEndDateStr);
+                            
+                            if (prevRequest.end_time) {
+                                const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
+                                prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
+                            } else {
+                                prevEndDate.setHours(17, 0, 0, 0);
+                            }
+                            
+                            // Add 12 hours maintenance period after previous rental ends
+                            prevEndDate.setHours(prevEndDate.getHours() + 12);
+                            
+                            // Parse current start date
+                            const startDateStr = request.start_date.includes('T')
+                                ? request.start_date.split('T')[0]
+                                : request.start_date.split(' ')[0];
+                            const requestStartDate = new Date(startDateStr);
+                            
+                            if (request.start_time) {
+                                const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                                requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                            } else {
+                                requestStartDate.setHours(9, 0, 0, 0);
+                            }
+                            
+                            // Check if requests are consecutive (same day or next day with no gap)
+                            const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
+                            const oneDayInMs = 24 * 60 * 60 * 1000;
+                            
+                            // If start of next request is same day or next day (within 25 hours to account for time differences)
+                            if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
+                                // Consecutive - update the end date
+                                consecutiveEndDate = requestEndDate;
+                            } else {
+                                // Gap found - use the previous consecutive end date
+                                if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                                    latestReturnDate = consecutiveEndDate;
+                                }
+                                // Start new chain
+                                consecutiveEndDate = requestEndDate;
+                            }
+                        }
+                    }
+                    
+                    // Use the last consecutive end date if it's later than any individual request
+                    if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                        latestReturnDate = consecutiveEndDate;
+                    }
+                }
+                
+                setNextAvailableDate(latestReturnDate);
+            } catch (error) {
+                console.error('Error fetching approved borrow requests:', error);
+            }
+        };
+        
+        fetchApprovedRequests();
     }, [car, carId]);
 
     // Scroll to top on car change
@@ -263,6 +592,32 @@ export const CarDetails: React.FC = () => {
     }, [showImageViewer, gallery.length]);
 
     // Sync calendar months with selected dates
+    // Check if all dates in a month are blocked (have x marks)
+    const isMonthFullyBooked = (monthDate: Date, isReturnCalendar: boolean = false): boolean => {
+        const days = generateCalendarDays(monthDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Get only dates that belong to the current month (not null)
+        const monthDays = days.filter(day => day !== null) as string[];
+        
+        // Check if all dates in the month are blocked
+        const allBlocked = monthDays.every(dayString => {
+            const isPast = dayString < today.toISOString().split('T')[0];
+            const isBeforeAvailable = nextAvailableDate 
+                ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
+                : false;
+            const isInApprovedRequest = isDateInApprovedRequest(dayString);
+            
+            // For return calendar, also check if date is before pickup
+            const isBeforePickup = isReturnCalendar && pickupDate && dayString <= pickupDate;
+            
+            return isPast || isBeforeAvailable || isInApprovedRequest || isBeforePickup;
+        });
+        
+        return allBlocked && monthDays.length > 0;
+    };
+
     useEffect(() => {
         if (pickupDate) setCalendarMonth(prev => ({ ...prev, pickup: new Date(pickupDate) }));
     }, [pickupDate]);
@@ -271,27 +626,86 @@ export const CarDetails: React.FC = () => {
         if (returnDate) {
             setCalendarMonth(prev => ({ ...prev, return: new Date(returnDate) }));
         } else if (pickupDate) {
-            const nextMonth = new Date(pickupDate);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
+            const pickup = new Date(pickupDate);
+            const pickupMonth = pickup.getMonth();
+            const pickupYear = pickup.getFullYear();
+            
+            // Get the last day of the pickup month
+            const lastDayOfMonth = new Date(pickupYear, pickupMonth + 1, 0);
+            const lastDayOfMonthDate = lastDayOfMonth.getDate();
+            
+            // If pickup date is before the last day of the month, open same month
+            // Otherwise, open next month
+            if (pickup.getDate() < lastDayOfMonthDate) {
+                setCalendarMonth(prev => ({ ...prev, return: new Date(pickup) }));
+            } else {
+                const nextMonth = new Date(pickup);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
+            }
         }
     }, [returnDate, pickupDate]);
 
+    // Auto-advance to next month if current month is fully booked when calendar first opens
+    useEffect(() => {
+        if (showPickupCalendar && !pickupCalendarInitialized) {
+            if (isMonthFullyBooked(calendarMonth.pickup, false)) {
+                const nextMonth = new Date(calendarMonth.pickup);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCalendarMonth(prev => ({ ...prev, pickup: nextMonth }));
+            }
+            setPickupCalendarInitialized(true);
+        } else if (!showPickupCalendar) {
+            // Reset when calendar closes so it can auto-advance again on next open
+            setPickupCalendarInitialized(false);
+        }
+    }, [showPickupCalendar, calendarMonth.pickup, nextAvailableDate, approvedBorrowRequests, pickupCalendarInitialized]);
+
+    useEffect(() => {
+        if (showReturnCalendar && !returnCalendarInitialized) {
+            if (isMonthFullyBooked(calendarMonth.return, true)) {
+                const nextMonth = new Date(calendarMonth.return);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
+            }
+            setReturnCalendarInitialized(true);
+        } else if (!showReturnCalendar) {
+            // Reset when calendar closes so it can auto-advance again on next open
+            setReturnCalendarInitialized(false);
+        }
+    }, [showReturnCalendar, calendarMonth.return, nextAvailableDate, approvedBorrowRequests, pickupDate, returnCalendarInitialized]);
+
     // Click outside for calendars & time selectors
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (pickupCalendarRef.current && !pickupCalendarRef.current.contains(event.target as Node))
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+            // Don't close if we're in the middle of a delayed close
+            if (isClosingWithDelay) return;
+            
+            const target = event.target as HTMLElement;
+            // Check if click is on a button that toggles the calendar - if so, don't close
+            const clickedButton = target.closest('button[data-calendar-toggle]');
+            if (clickedButton) {
+                // Don't close if clicking on the toggle button - let the button's onClick handle it
+                return;
+            }
+            
+            // Only close if clicking outside the calendar container and the calendar is open
+            if (showPickupCalendar && pickupCalendarRef.current && !pickupCalendarRef.current.contains(target as Node))
                 setShowPickupCalendar(false);
-            if (returnCalendarRef.current && !returnCalendarRef.current.contains(event.target as Node))
+            if (showReturnCalendar && returnCalendarRef.current && !returnCalendarRef.current.contains(target as Node))
                 setShowReturnCalendar(false);
-            if (pickupTimeRef.current && !pickupTimeRef.current.contains(event.target as Node))
+            if (showPickupTime && pickupTimeRef.current && !pickupTimeRef.current.contains(target as Node))
                 setShowPickupTime(false);
-            if (returnTimeRef.current && !returnTimeRef.current.contains(event.target as Node))
+            if (showReturnTime && returnTimeRef.current && !returnTimeRef.current.contains(target as Node))
                 setShowReturnTime(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        document.addEventListener('touchstart', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [showPickupCalendar, showReturnCalendar, showPickupTime, showReturnTime, isClosingWithDelay]);
 
     // ───── DERIVED DATA ─────
     // gallery is defined earlier before useEffect hooks
@@ -310,6 +724,9 @@ export const CarDetails: React.FC = () => {
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
         const days = Math.floor(diffHours / 24);
         const hours = diffHours % 24;
+        
+        // Minimum rental is 2 days - return null if less than 2 days
+        if (days < 2) return null;
 
         const rentalDays = days;
         const totalDays = days + hours / 24;
@@ -539,15 +956,15 @@ export const CarDetails: React.FC = () => {
 
                                         return (
                                             <>
-                                                <div className="text-3xl font-bold text-gray-900 mb-2">
-                                                    {finalPrice.toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MDL <span className="text-base font-normal text-gray-600">pe zi</span>
+                                                <div className="text-4xl font-bold text-gray-900 mb-2">
+                                                    {finalPrice.toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MDL <span className="text-lg font-normal text-gray-600">pe zi</span>
                                                 </div>
                                                 {discount > 0 && (
                                                     <div className="text-sm text-gray-400 line-through mb-1">
                                                         {basePrice.toLocaleString('ro-RO')} MDL
                                                     </div>
                                                 )}
-                                                <div className="text-sm text-gray-500">
+                                                <div className="text-base text-gray-500">
                                                     {(finalPrice / 19.82).toFixed(2)} EUR / {(finalPrice / 17.00).toFixed(2)} USD pe zi
                                                 </div>
                                             </>
@@ -555,15 +972,10 @@ export const CarDetails: React.FC = () => {
                                     })()}
                                 </div>
 
-                                {/* Title */}
-                                <h2 className="text-base font-semibold text-gray-900 mb-4">
-                                    Închiriere {car.make} {car.model}, {car.year} an
-                                </h2>
-
                                 {/* Phone Button */}
                                 <a
                                     href="tel:+37362000112"
-                                    className="flex items-center justify-center gap-3 w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-3 px-4 rounded-xl mb-3 transition-colors"
+                                    className="flex items-center justify-center gap-3 w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-3.5 px-6 rounded-xl mb-3 transition-colors"
                                 >
                                     <Phone className="w-5 h-5" />
                                     <span>+373 (62) 000-112</span>
@@ -574,35 +986,42 @@ export const CarDetails: React.FC = () => {
                                     href="https://t.me/Level_Auto_Rental"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-3 w-full border-2 border-gray-300 hover:border-gray-400 text-gray-900 font-medium py-3 px-4 rounded-xl mb-3 transition-colors"
+                                    className="flex items-center justify-center gap-3 w-full border-2 border-gray-300 hover:border-gray-400 text-gray-900 font-medium py-3.5 px-6 rounded-xl mb-3 transition-colors"
                                 >
                                     <Send className="w-5 h-5" />
                                     <span>Scrie-ne pe Telegram</span>
                                 </a>
 
                                 {/* Help Text */}
-                                <p className="text-center text-sm text-gray-500 mb-4">
+                                <p className="text-center text-base text-gray-500 mb-4">
                                     Ne puteți scrie sau apela, vă vom ajuta
                                 </p>
 
                                 {/* Date Inputs */}
-                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                <div className="grid grid-cols-[7fr_3fr] gap-3 mb-3">
                                     {/* Pickup Date */}
                                     <div className="relative" ref={pickupCalendarRef}>
                                         <button
-                                            onClick={() => {
-                                                setShowPickupCalendar(!showPickupCalendar);
+                                            data-calendar-toggle="pickup"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                setShowPickupCalendar(prev => !prev);
                                                 setShowReturnCalendar(false);
                                                 setShowPickupTime(false);
                                                 setShowReturnTime(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-2.5 px-3 transition-colors text-xs font-medium ${pickupDate
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${pickupDate
                                                 ? 'border-gray-300 text-gray-900 hover:border-gray-400'
                                                 : 'border-gray-300 text-gray-400 hover:border-gray-400'
                                                 }`}
                                         >
-                                            <Calendar className="w-3.5 h-3.5" />
-                                            <span className="text-xs">{pickupDate ? formatDate(pickupDate) : 'Data primirii'}</span>
+                                            <Calendar className="w-4 h-4" />
+                                            <span>{pickupDate ? formatDate(pickupDate) : 'Data închirierii'}</span>
                                         </button>
                                         <AnimatePresence>
                                             {showPickupCalendar && (
@@ -611,12 +1030,15 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[280px]"
+                                                    className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-[120%]"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex items-center justify-between mb-3">
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.pickup);
                                                                 newDate.setMonth(newDate.getMonth() - 1);
                                                                 setCalendarMonth(prev => ({ ...prev, pickup: newDate }));
@@ -631,7 +1053,8 @@ export const CarDetails: React.FC = () => {
                                                             {calendarMonth.pickup.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                                                         </div>
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.pickup);
                                                                 newDate.setMonth(newDate.getMonth() + 1);
                                                                 setCalendarMonth(prev => ({ ...prev, pickup: newDate }));
@@ -642,6 +1065,14 @@ export const CarDetails: React.FC = () => {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                                             </svg>
                                                         </button>
+                                                    </div>
+                                                    {/* Instruction Message */}
+                                                    <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <p className="text-xs text-gray-600">
+                                                            {!pickupDate 
+                                                                ? 'Selectează data de început' 
+                                                                : 'Clic pentru a schimba data de început'}
+                                                        </p>
                                                     </div>
                                                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
                                                         {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
@@ -661,36 +1092,65 @@ export const CarDetails: React.FC = () => {
                                                             const isBeforeAvailable = nextAvailableDate 
                                                                 ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
                                                                 : false;
-                                                            const isBlocked = isPast || isBeforeAvailable;
+                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
+                                                            const isBlocked = isPast || isBeforeAvailable || isInApprovedRequest;
+                                                            const isSelected = dayString === pickupDate;
+                                                            // Check if this is the return date (visible in pickup calendar)
+                                                            const isReturnDate = returnDate && dayString === returnDate;
+                                                            // Check if date is in range between pickup and return (only if return date is selected)
+                                                            const isInRange = pickupDate && returnDate && 
+                                                                dayString > pickupDate && 
+                                                                dayString < returnDate;
 
                                                             return (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isBlocked ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
-                                                                        } ${dayString === pickupDate
+                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors relative ${
+                                                                        isBlocked 
+                                                                            ? 'text-gray-300 cursor-not-allowed' 
+                                                                            : 'text-gray-700'
+                                                                    } ${isSelected
+                                                                        ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                                                        : isReturnDate
                                                                             ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                                                            : !isBlocked
-                                                                                ? 'hover:bg-gray-100'
-                                                                                : ''
-                                                                        }`}
+                                                                            : isInRange
+                                                                                ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                                                                : !isBlocked
+                                                                                    ? 'hover:bg-gray-100'
+                                                                                    : ''
+                                                                    }`}
                                                                     onClick={() => {
                                                                         if (!isBlocked) {
                                                                             setPickupDate(day);
-                                                                            setShowPickupCalendar(false);
+                                                                            // Clear return date if it's invalid (before pickup or less than 2 days)
                                                                             if (returnDate && day >= returnDate) {
-                                                                                const newReturnDate = new Date(day);
-                                                                                newReturnDate.setDate(newReturnDate.getDate() + 1);
-                                                                                setReturnDate(newReturnDate.toISOString().split('T')[0]);
+                                                                                const returnDay = new Date(returnDate);
+                                                                                const pickupDay = new Date(day);
+                                                                                const diffTime = returnDay.getTime() - pickupDay.getTime();
+                                                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                                                // Clear return date if less than 2 days
+                                                                                if (diffDays < 2) {
+                                                                                    setReturnDate('');
+                                                                                }
                                                                             }
+                                                                            // Close calendar after 0.3s delay so user can see what they clicked
+                                                                            setIsClosingWithDelay(true);
                                                                             setTimeout(() => {
+                                                                                setShowPickupCalendar(false);
+                                                                                setIsClosingWithDelay(false);
                                                                                 if (!pickupTime) {
                                                                                     setShowPickupTime(true);
                                                                                 }
-                                                                            }, 100);
+                                                                            }, 300);
                                                                         }
                                                                     }}
                                                                 >
-                                                                    {dayDate.getDate()}
+                                                                    <span className="relative z-0">{dayDate.getDate()}</span>
+                                                                    {isInApprovedRequest && (
+                                                                        <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                            ✕
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })}
@@ -703,19 +1163,34 @@ export const CarDetails: React.FC = () => {
                                     {/* Pickup Time */}
                                     <div className="relative" ref={pickupTimeRef}>
                                         <button
-                                            onClick={() => {
-                                                setShowPickupTime(!showPickupTime);
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                if (!pickupDate) return; // Disable if pickup date not selected
+                                                setShowPickupTime(prev => !prev);
                                                 setShowReturnTime(false);
                                                 setShowPickupCalendar(false);
                                                 setShowReturnCalendar(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-2.5 px-3 transition-colors text-xs font-medium ${pickupTime
-                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
-                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                                }`}
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
+                                            onTouchStart={(e) => {
+                                                e.stopPropagation();
+                                            }}
+                                            disabled={!pickupDate}
+                                            title={!pickupDate ? 'Selectează mai întâi data de început' : ''}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
+                                                !pickupDate
+                                                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                                    : pickupTime
+                                                        ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                        : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                            }`}
                                         >
-                                            <Clock className="w-3.5 h-3.5" />
-                                            <span className="text-xs">{pickupTime || '__ : __'}</span>
+                                            <Clock className="w-4 h-4" />
+                                            <span>{pickupTime || '__ : __'}</span>
                                         </button>
                                         <AnimatePresence>
                                             {showPickupTime && (
@@ -724,47 +1199,61 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto min-w-[80px]"
+                                                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto w-full"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex flex-col gap-1">
-                                                        {generateHours().map((hour) => {
-                                                            const [hourNum, minuteNum] = hour.split(':').map(Number);
-                                                            const hourDate = pickupDate 
-                                                                ? new Date(`${pickupDate}T${hour}`)
-                                                                : null;
+                                                        {(() => {
+                                                            // Calculate minimum hour if nextAvailableDate is set and matches selected date
+                                                            let minHour: number | undefined = undefined;
+                                                            if (nextAvailableDate && pickupDate) {
+                                                                const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
+                                                                if (pickupDate === nextAvailableDateStr) {
+                                                                    // Car becomes free on this date, only show hours from that time onwards
+                                                                    const availableHour = nextAvailableDate.getHours();
+                                                                    const availableMinutes = nextAvailableDate.getMinutes();
+                                                                    // If there are minutes (e.g., 18:30), show from next hour (19:00)
+                                                                    // If it's exactly on the hour (e.g., 18:00), show from that hour
+                                                                    minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                                }
+                                                            }
                                                             
-                                                            const isHourBlocked = nextAvailableDate && hourDate
-                                                                ? hourDate < nextAvailableDate
-                                                                : false;
+                                                            // Filter out hours that are in maintenance periods
+                                                            const availableHours = generateHours(minHour).filter((hour) => {
+                                                                if (!pickupDate) return true;
+                                                                const checkDate = new Date(pickupDate);
+                                                                return !isInMaintenancePeriod(checkDate, hour);
+                                                            });
                                                             
-                                                            return (
+                                                            return availableHours.map((hour) => (
                                                                 <button
                                                                     key={hour}
-                                                                    onClick={() => {
-                                                                        if (!isHourBlocked) {
-                                                                            setPickupTime(hour);
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setPickupTime(hour);
+                                                                        // Close time picker after 0.3s delay so user can see what they clicked
+                                                                        setIsClosingWithDelay(true);
+                                                                        setTimeout(() => {
                                                                             setShowPickupTime(false);
-                                                                            setTimeout(() => {
-                                                                                if (!returnDate) {
-                                                                                    setShowReturnCalendar(true);
-                                                                                }
-                                                                            }, 100);
-                                                                        }
+                                                                            setIsClosingWithDelay(false);
+                                                                            if (!returnDate) {
+                                                                                setShowReturnCalendar(true);
+                                                                            }
+                                                                        }, 300);
                                                                     }}
-                                                                    disabled={isHourBlocked}
-                                                                    className={`w-full px-3 py-2 text-xs rounded transition-colors text-center ${
-                                                                        isHourBlocked
-                                                                            ? 'text-gray-300 cursor-not-allowed opacity-50'
-                                                                            : pickupTime === hour
-                                                                    ? 'bg-theme-500 text-white font-medium'
-                                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                                    className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${
+                                                                        pickupTime === hour
+                                                                            ? 'bg-theme-500 text-white font-medium'
+                                                                            : 'text-gray-700 hover:bg-gray-100'
                                                                     }`}
                                                                 >
                                                                     {hour}
                                                                 </button>
-                                                            );
-                                                        })}
+                                                            ));
+                                                        })()}
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -772,23 +1261,36 @@ export const CarDetails: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                <div className="grid grid-cols-[7fr_3fr] gap-3 mb-4">
                                     {/* Return Date */}
                                     <div className="relative" ref={returnCalendarRef}>
                                         <button
-                                            onClick={() => {
-                                                setShowReturnCalendar(!showReturnCalendar);
+                                            data-calendar-toggle="return"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                if (!pickupDate || !pickupTime) return; // Disable if pickup date or time not selected
+                                                setShowReturnCalendar(prev => !prev);
                                                 setShowPickupCalendar(false);
                                                 setShowPickupTime(false);
                                                 setShowReturnTime(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-2.5 px-3 transition-colors text-xs font-medium ${returnDate
-                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
-                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                                }`}
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
+                                            disabled={!pickupDate || !pickupTime}
+                                            title={!pickupDate || !pickupTime ? (!pickupDate ? 'Selectează mai întâi data de început' : 'Selectează mai întâi ora de început') : ''}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
+                                                !pickupDate || !pickupTime
+                                                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                                    : returnDate
+                                                        ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                        : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                            }`}
                                         >
-                                            <Calendar className="w-3.5 h-3.5" />
-                                            <span className="text-xs">{returnDate ? formatDate(returnDate) : 'Data returnării'}</span>
+                                            <Calendar className="w-4 h-4" />
+                                            <span>{returnDate ? formatDate(returnDate) : 'Data returnării'}</span>
                                         </button>
                                         <AnimatePresence>
                                             {showReturnCalendar && (
@@ -797,12 +1299,15 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[280px]"
+                                                    className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-[120%]"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex items-center justify-between mb-3">
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.return);
                                                                 newDate.setMonth(newDate.getMonth() - 1);
                                                                 setCalendarMonth(prev => ({ ...prev, return: newDate }));
@@ -817,7 +1322,8 @@ export const CarDetails: React.FC = () => {
                                                             {calendarMonth.return.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                                                         </div>
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.return);
                                                                 newDate.setMonth(newDate.getMonth() + 1);
                                                                 setCalendarMonth(prev => ({ ...prev, return: newDate }));
@@ -828,6 +1334,16 @@ export const CarDetails: React.FC = () => {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                                             </svg>
                                                         </button>
+                                                    </div>
+                                                    {/* Instruction Message */}
+                                                    <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <p className="text-xs text-gray-600">
+                                                            {!pickupDate 
+                                                                ? 'Selectează mai întâi data de început' 
+                                                                : !returnDate
+                                                                    ? 'Selectează data de returnare'
+                                                                    : 'Clic pentru a schimba data de returnare'}
+                                                        </p>
                                                     </div>
                                                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
                                                         {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
@@ -848,36 +1364,80 @@ export const CarDetails: React.FC = () => {
                                                                 ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
                                                                 : false;
                                                             const isBeforePickup = pickupDate && dayString <= pickupDate;
-                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup;
+                                                            // Minimum rental is 2 days - block dates that are less than 2 days after pickup
+                                                            const isLessThanMinDays = pickupDate && (() => {
+                                                                const pickup = new Date(pickupDate);
+                                                                const returnDay = new Date(dayString);
+                                                                const diffTime = returnDay.getTime() - pickup.getTime();
+                                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                                return diffDays < 2;
+                                                            })();
+                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
+                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInApprovedRequest;
                                                             const isSelected = dayString === returnDate;
+                                                            // Check if this is the pickup date (visible in return calendar)
+                                                            const isPickupDate = pickupDate && dayString === pickupDate;
+                                                            // Check if date is in range between pickup and return
+                                                            const isInRange = pickupDate && returnDate && 
+                                                                dayString > pickupDate && 
+                                                                dayString < returnDate;
 
                                                             return (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isBlocked ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
-                                                                        } ${isSelected
+                                                                    className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
+                                                                        isLessThanMinDays
+                                                                            ? 'text-black opacity-50 cursor-not-allowed' 
+                                                                            : isBlocked 
+                                                                                ? 'text-gray-300 cursor-not-allowed' 
+                                                                                : 'text-gray-700 cursor-pointer'
+                                                                    } ${isSelected
+                                                                        ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                                                        : isPickupDate
                                                                             ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                                                            : !isBlocked
-                                                                                ? 'hover:bg-gray-100'
-                                                                                : ''
-                                                                        }`}
+                                                                            : isInRange
+                                                                                ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                                                                : !isBlocked && !isLessThanMinDays
+                                                                                    ? 'hover:bg-gray-100'
+                                                                                    : ''
+                                                                    }`}
                                                                     onClick={() => {
+                                                                        if (isLessThanMinDays) {
+                                                                            setMinDaysMessage('Perioada minimă de închiriere este de 2 zile');
+                                                                            setTimeout(() => setMinDaysMessage(''), 3000);
+                                                                            return;
+                                                                        }
                                                                         if (!isBlocked) {
                                                                             setReturnDate(day);
-                                                                            setShowReturnCalendar(false);
+                                                                            // Close calendar after 0.3s delay so user can see what they clicked
+                                                                            setIsClosingWithDelay(true);
                                                                             setTimeout(() => {
+                                                                                setShowReturnCalendar(false);
+                                                                                setIsClosingWithDelay(false);
                                                                                 if (!returnTime) {
                                                                                     setShowReturnTime(true);
                                                                                 }
-                                                                            }, 100);
+                                                                            }, 300);
                                                                         }
                                                                     }}
                                                                 >
-                                                                    {dayDate.getDate()}
+                                                                    <span className="relative z-0">{dayDate.getDate()}</span>
+                                                                    {isInApprovedRequest && (
+                                                                        <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                            ✕
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })}
                                                     </div>
+                                                    {minDaysMessage && (
+                                                        <div className="mt-3 px-2 py-1.5 bg-blue-50 rounded-xl border border-blue-100">
+                                                            <p className="text-xs text-blue-700">
+                                                                {minDaysMessage}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
@@ -886,19 +1446,34 @@ export const CarDetails: React.FC = () => {
                                     {/* Return Time */}
                                     <div className="relative" ref={returnTimeRef}>
                                         <button
-                                            onClick={() => {
-                                                setShowReturnTime(!showReturnTime);
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                if (!pickupDate || !pickupTime || !returnDate) return; // Disable if previous inputs not selected
+                                                setShowReturnTime(prev => !prev);
                                                 setShowPickupTime(false);
                                                 setShowPickupCalendar(false);
                                                 setShowReturnCalendar(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-2.5 px-3 transition-colors text-xs font-medium ${returnTime
-                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
-                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                                }`}
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
+                                            onTouchStart={(e) => {
+                                                e.stopPropagation();
+                                            }}
+                                            disabled={!pickupDate || !pickupTime || !returnDate}
+                                            title={!pickupDate || !pickupTime || !returnDate ? (!pickupDate ? 'Selectează mai întâi data de început' : !pickupTime ? 'Selectează mai întâi ora de început' : 'Selectează mai întâi data de returnare') : ''}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
+                                                !pickupDate || !pickupTime || !returnDate
+                                                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                                    : returnTime
+                                                        ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                        : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                            }`}
                                         >
-                                            <Clock className="w-3.5 h-3.5" />
-                                            <span className="text-xs">{returnTime || '__ : __'}</span>
+                                            <Clock className="w-4 h-4" />
+                                            <span>{returnTime || '__ : __'}</span>
                                         </button>
                                         <AnimatePresence>
                                             {showReturnTime && (
@@ -907,18 +1482,27 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto min-w-[80px]"
+                                                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto w-full"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex flex-col gap-1">
                                                         {generateHours().map((hour) => (
                                                             <button
                                                                 key={hour}
-                                                                onClick={() => {
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
                                                                     setReturnTime(hour);
-                                                                    setShowReturnTime(false);
+                                                                    // Close time picker after 0.3s delay so user can see what they clicked
+                                                                    setIsClosingWithDelay(true);
+                                                                    setTimeout(() => {
+                                                                        setShowReturnTime(false);
+                                                                        setIsClosingWithDelay(false);
+                                                                    }, 300);
                                                                 }}
-                                                                className={`w-full px-3 py-2 text-xs rounded transition-colors text-center ${returnTime === hour
+                                                                onMouseDown={(e) => e.stopPropagation()}
+                                                                className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${returnTime === hour
                                                                     ? 'bg-theme-500 text-white font-medium'
                                                                     : 'text-gray-700 hover:bg-gray-100'
                                                                     }`}
@@ -954,15 +1538,15 @@ export const CarDetails: React.FC = () => {
 
                                 {/* Pricing Tiers */}
                                 <div className="border-t border-gray-200 pt-4">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-3">Costul închirierii</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-4">Costul închirierii</h3>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         {/* 1 day */}
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">De la 1 zi</span>
+                                            <span className="text-base text-gray-600">De la 1 zi</span>
                                             <div className="text-right">
-                                                <div className="text-base font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-xs font-normal text-gray-600">pe zi</span>
+                                                <div className="text-lg font-bold text-gray-900">
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -970,12 +1554,12 @@ export const CarDetails: React.FC = () => {
                                         {/* 4 days */}
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm text-gray-600">De la 4 zile</span>
+                                                <span className="text-base text-gray-600">De la 4 zile</span>
                                                 <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded">-2%</span>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-base font-bold text-gray-900">
-                                                    {Math.round(car.price_per_day * 0.98).toLocaleString('ro-RO')} MDL <span className="text-xs font-normal text-gray-600">pe zi</span>
+                                                <div className="text-lg font-bold text-gray-900">
+                                                    {Math.round(car.price_per_day * 0.98).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -983,12 +1567,12 @@ export const CarDetails: React.FC = () => {
                                         {/* 8 days */}
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm text-gray-600">De la 8 zile</span>
+                                                <span className="text-base text-gray-600">De la 8 zile</span>
                                                 <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded">-4%</span>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-base font-bold text-gray-900">
-                                                    {Math.round(car.price_per_day * 0.96).toLocaleString('ro-RO')} MDL <span className="text-xs font-normal text-gray-600">pe zi</span>
+                                                <div className="text-lg font-bold text-gray-900">
+                                                    {Math.round(car.price_per_day * 0.96).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1149,7 +1733,7 @@ export const CarDetails: React.FC = () => {
                     </div>
 
                     {/* RIGHT: Booking Widget */}
-                    <aside className="lg:col-start-2">
+                    <aside className="hidden lg:block lg:col-start-2">
                         <div
                             className="sticky"
                             style={{ top: 'calc(6rem + env(safe-area-inset-top))' }}
@@ -1175,7 +1759,7 @@ export const CarDetails: React.FC = () => {
                                                         {basePrice.toLocaleString('ro-RO')} MDL
                                                     </div>
                                                 )}
-                                                <div className="text-sm text-gray-500">
+                                                <div className="text-base text-gray-500">
                                                     {(finalPrice / 19.82).toFixed(2)} EUR / {(finalPrice / 17.00).toFixed(2)} USD pe zi
                                                 </div>
                                             </>
@@ -1184,7 +1768,7 @@ export const CarDetails: React.FC = () => {
                                 </div>
 
                                 {/* Title */}
-                                <h2 className="text-lg font-semibold text-gray-900 mb-6">
+                                <h2 className="text-xl font-semibold text-gray-900 mb-6">
                                     Închiriere {car.make} {car.model}, {car.year} an
                                 </h2>
 
@@ -1209,20 +1793,27 @@ export const CarDetails: React.FC = () => {
                                 </a>
 
                                 {/* Help Text */}
-                                <p className="text-center text-sm text-gray-500 mb-6">
+                                <p className="text-center text-base text-gray-500 mb-6">
                                     Ne puteți scrie sau apela, vă vom ajuta
                                 </p>
 
                                 {/* Date Inputs */}
-                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                <div className="grid grid-cols-[7fr_3fr] gap-3 mb-3">
                                     {/* Pickup Date */}
                                     <div className="relative" ref={pickupCalendarRef}>
                                         <button
-                                            onClick={() => {
-                                                setShowPickupCalendar(!showPickupCalendar);
+                                            data-calendar-toggle="pickup"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                setShowPickupCalendar(prev => !prev);
                                                 setShowReturnCalendar(false);
                                                 setShowPickupTime(false);
                                                 setShowReturnTime(false);
+                                            }}
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
                                             }}
                                             className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${pickupDate
                                                 ? 'border-gray-300 text-gray-900 hover:border-gray-400'
@@ -1239,12 +1830,15 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[280px]"
+                                                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-full"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex items-center justify-between mb-3">
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.pickup);
                                                                 newDate.setMonth(newDate.getMonth() - 1);
                                                                 setCalendarMonth(prev => ({ ...prev, pickup: newDate }));
@@ -1259,7 +1853,8 @@ export const CarDetails: React.FC = () => {
                                                             {calendarMonth.pickup.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                                                         </div>
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.pickup);
                                                                 newDate.setMonth(newDate.getMonth() + 1);
                                                                 setCalendarMonth(prev => ({ ...prev, pickup: newDate }));
@@ -1270,6 +1865,14 @@ export const CarDetails: React.FC = () => {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                                             </svg>
                                                         </button>
+                                                    </div>
+                                                    {/* Instruction Message */}
+                                                    <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <p className="text-xs text-gray-600">
+                                                            {!pickupDate 
+                                                                ? 'Selectează data de început' 
+                                                                : 'Clic pentru a schimba data de început'}
+                                                        </p>
                                                     </div>
                                                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
                                                         {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
@@ -1291,38 +1894,64 @@ export const CarDetails: React.FC = () => {
                                                             const isBeforeAvailable = nextAvailableDate 
                                                                 ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
                                                                 : false;
-                                                            const isBlocked = isPast || isBeforeAvailable;
+                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
+                                                            const isBlocked = isPast || isBeforeAvailable || isInApprovedRequest;
+                                                            // Check if this is the return date (visible in pickup calendar)
+                                                            const isReturnDate = returnDate && dayString === returnDate;
+                                                            // Check if date is in range between pickup and return (only if return date is selected)
+                                                            const isInRange = pickupDate && returnDate && 
+                                                                dayString > pickupDate && 
+                                                                dayString < returnDate;
 
                                                             return (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isBlocked ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
-                                                                        } ${isSelected
+                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors relative ${
+                                                                        isBlocked 
+                                                                            ? 'text-gray-300 cursor-not-allowed' 
+                                                                            : 'text-gray-700'
+                                                                    } ${isSelected
+                                                                        ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                                                        : isReturnDate
                                                                             ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                                                            : !isBlocked
-                                                                                ? 'hover:bg-gray-100'
-                                                                                : ''
-                                                                        }`}
+                                                                            : isInRange
+                                                                                ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                                                                : !isBlocked
+                                                                                    ? 'hover:bg-gray-100'
+                                                                                    : ''
+                                                                    }`}
                                                                     onClick={() => {
                                                                         if (!isBlocked) {
                                                                             setPickupDate(day);
-                                                                            setShowPickupCalendar(false);
-                                                                            // Only adjust return date if it's already set and invalid
+                                                                            // Clear return date if it's invalid (before pickup or less than 2 days)
                                                                             if (returnDate && day >= returnDate) {
-                                                                                const newReturnDate = new Date(day);
-                                                                                newReturnDate.setDate(newReturnDate.getDate() + 1);
-                                                                                setReturnDate(newReturnDate.toISOString().split('T')[0]);
+                                                                                const returnDay = new Date(returnDate);
+                                                                                const pickupDay = new Date(day);
+                                                                                const diffTime = returnDay.getTime() - pickupDay.getTime();
+                                                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                                                // Clear return date if less than 2 days
+                                                                                if (diffDays < 2) {
+                                                                                    setReturnDate('');
+                                                                                }
                                                                             }
-                                                                            // Auto-open pickup time picker after selecting date
+                                                                            // Close calendar after 0.3s delay so user can see what they clicked
+                                                                            setIsClosingWithDelay(true);
                                                                             setTimeout(() => {
+                                                                                setShowPickupCalendar(false);
+                                                                                setIsClosingWithDelay(false);
                                                                                 if (!pickupTime) {
                                                                                     setShowPickupTime(true);
                                                                                 }
-                                                                            }, 100);
+                                                                            }, 300);
                                                                         }
                                                                     }}
                                                                 >
-                                                                    {dayDate.getDate()}
+                                                                    <span className="relative z-0">{dayDate.getDate()}</span>
+                                                                    {isInApprovedRequest && (
+                                                                        <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                            ✕
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })}
@@ -1335,16 +1964,31 @@ export const CarDetails: React.FC = () => {
                                     {/* Pickup Time */}
                                     <div className="relative" ref={pickupTimeRef}>
                                         <button
-                                            onClick={() => {
-                                                setShowPickupTime(!showPickupTime);
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                if (!pickupDate) return; // Disable if pickup date not selected
+                                                setShowPickupTime(prev => !prev);
                                                 setShowReturnTime(false);
                                                 setShowPickupCalendar(false);
                                                 setShowReturnCalendar(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${pickupTime
-                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
-                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                                }`}
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
+                                            onTouchStart={(e) => {
+                                                e.stopPropagation();
+                                            }}
+                                            disabled={!pickupDate}
+                                            title={!pickupDate ? 'Selectează mai întâi data de început' : ''}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
+                                                !pickupDate
+                                                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                                    : pickupTime
+                                                        ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                        : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                            }`}
                                         >
                                             <Clock className="w-4 h-4" />
                                             <span>{pickupTime || '__ : __'}</span>
@@ -1356,49 +2000,61 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto min-w-[80px]"
+                                                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto w-full"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex flex-col gap-1">
-                                                        {generateHours().map((hour) => {
-                                                            // Check if this hour is blocked (before next available date/time)
-                                                            const [hourNum, minuteNum] = hour.split(':').map(Number);
-                                                            const hourDate = pickupDate 
-                                                                ? new Date(`${pickupDate}T${hour}`)
-                                                                : null;
+                                                        {(() => {
+                                                            // Calculate minimum hour if nextAvailableDate is set and matches selected date
+                                                            let minHour: number | undefined = undefined;
+                                                            if (nextAvailableDate && pickupDate) {
+                                                                const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
+                                                                if (pickupDate === nextAvailableDateStr) {
+                                                                    // Car becomes free on this date, only show hours from that time onwards
+                                                                    const availableHour = nextAvailableDate.getHours();
+                                                                    const availableMinutes = nextAvailableDate.getMinutes();
+                                                                    // If there are minutes (e.g., 18:30), show from next hour (19:00)
+                                                                    // If it's exactly on the hour (e.g., 18:00), show from that hour
+                                                                    minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                                }
+                                                            }
                                                             
-                                                            const isHourBlocked = nextAvailableDate && hourDate
-                                                                ? hourDate < nextAvailableDate
-                                                                : false;
+                                                            // Filter out hours that are in maintenance periods
+                                                            const availableHours = generateHours(minHour).filter((hour) => {
+                                                                if (!pickupDate) return true;
+                                                                const checkDate = new Date(pickupDate);
+                                                                return !isInMaintenancePeriod(checkDate, hour);
+                                                            });
                                                             
-                                                            return (
-                                                            <button
-                                                                key={hour}
-                                                                onClick={() => {
-                                                                        if (!isHourBlocked) {
-                                                                    setPickupTime(hour);
-                                                                    setShowPickupTime(false);
-                                                                    // Auto-open return date picker after selecting time
-                                                                    setTimeout(() => {
-                                                                        if (!returnDate) {
-                                                                            setShowReturnCalendar(true);
-                                                                        }
-                                                                    }, 100);
-                                                                        }
+                                                            return availableHours.map((hour) => (
+                                                                <button
+                                                                    key={hour}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setPickupTime(hour);
+                                                                        // Close time picker after 0.3s delay so user can see what they clicked
+                                                                        setIsClosingWithDelay(true);
+                                                                        setTimeout(() => {
+                                                                            setShowPickupTime(false);
+                                                                            setIsClosingWithDelay(false);
+                                                                            if (!returnDate) {
+                                                                                setShowReturnCalendar(true);
+                                                                            }
+                                                                        }, 300);
                                                                     }}
-                                                                    disabled={isHourBlocked}
-                                                                    className={`w-full px-3 py-2 text-xs rounded transition-colors text-center ${
-                                                                        isHourBlocked
-                                                                            ? 'text-gray-300 cursor-not-allowed opacity-50'
-                                                                            : pickupTime === hour
-                                                                    ? 'bg-theme-500 text-white font-medium'
-                                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                                    className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${
+                                                                        pickupTime === hour
+                                                                            ? 'bg-theme-500 text-white font-medium'
+                                                                            : 'text-gray-700 hover:bg-gray-100'
                                                                     }`}
-                                                            >
-                                                                {hour}
-                                                            </button>
-                                                            );
-                                                        })}
+                                                                >
+                                                                    {hour}
+                                                                </button>
+                                                            ));
+                                                        })()}
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -1406,20 +2062,28 @@ export const CarDetails: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                <div className="grid grid-cols-[7fr_3fr] gap-3 mb-4">
                                     {/* Return Date */}
                                     <div className="relative" ref={returnCalendarRef}>
                                         <button
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!pickupDate || !pickupTime) return; // Disable if pickup date or time not selected
                                                 setShowReturnCalendar(!showReturnCalendar);
                                                 setShowPickupCalendar(false);
                                                 setShowPickupTime(false);
                                                 setShowReturnTime(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${returnDate
-                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
-                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                                }`}
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            disabled={!pickupDate || !pickupTime}
+                                            title={!pickupDate || !pickupTime ? (!pickupDate ? 'Selectează mai întâi data de început' : 'Selectează mai întâi ora de început') : ''}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
+                                                !pickupDate || !pickupTime
+                                                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                                    : returnDate
+                                                        ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                        : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                            }`}
                                         >
                                             <Calendar className="w-4 h-4" />
                                             <span>{returnDate ? formatDate(returnDate) : 'Data returnării'}</span>
@@ -1431,12 +2095,15 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[280px]"
+                                                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-full"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex items-center justify-between mb-3">
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.return);
                                                                 newDate.setMonth(newDate.getMonth() - 1);
                                                                 setCalendarMonth(prev => ({ ...prev, return: newDate }));
@@ -1451,7 +2118,8 @@ export const CarDetails: React.FC = () => {
                                                             {calendarMonth.return.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                                                         </div>
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const newDate = new Date(calendarMonth.return);
                                                                 newDate.setMonth(newDate.getMonth() + 1);
                                                                 setCalendarMonth(prev => ({ ...prev, return: newDate }));
@@ -1462,6 +2130,16 @@ export const CarDetails: React.FC = () => {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                                             </svg>
                                                         </button>
+                                                    </div>
+                                                    {/* Instruction Message */}
+                                                    <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <p className="text-xs text-gray-600">
+                                                            {!pickupDate 
+                                                                ? 'Selectează mai întâi data de început' 
+                                                                : !returnDate
+                                                                    ? 'Selectează data de returnare'
+                                                                    : 'Clic pentru a schimba data de returnare'}
+                                                        </p>
                                                     </div>
                                                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
                                                         {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
@@ -1483,37 +2161,80 @@ export const CarDetails: React.FC = () => {
                                                                 ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
                                                                 : false;
                                                             const isBeforePickup = pickupDate && dayString <= pickupDate;
-                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup;
+                                                            // Minimum rental is 2 days - block dates that are less than 2 days after pickup
+                                                            const isLessThanMinDays = pickupDate && (() => {
+                                                                const pickup = new Date(pickupDate);
+                                                                const returnDay = new Date(dayString);
+                                                                const diffTime = returnDay.getTime() - pickup.getTime();
+                                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                                return diffDays < 2;
+                                                            })();
+                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
+                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInApprovedRequest;
                                                             const isSelected = dayString === returnDate;
+                                                            // Check if this is the pickup date (visible in return calendar)
+                                                            const isPickupDate = pickupDate && dayString === pickupDate;
+                                                            // Check if date is in range between pickup and return
+                                                            const isInRange = pickupDate && returnDate && 
+                                                                dayString > pickupDate && 
+                                                                dayString < returnDate;
 
                                                             return (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isBlocked ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'
-                                                                        } ${isSelected
+                                                                    className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
+                                                                        isLessThanMinDays
+                                                                            ? 'text-black opacity-50 cursor-not-allowed' 
+                                                                            : isBlocked 
+                                                                                ? 'text-gray-300 cursor-not-allowed' 
+                                                                                : 'text-gray-700 cursor-pointer'
+                                                                    } ${isSelected
+                                                                        ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
+                                                                        : isPickupDate
                                                                             ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                                                            : !isBlocked
-                                                                                ? 'hover:bg-gray-100'
-                                                                                : ''
-                                                                        }`}
+                                                                            : isInRange
+                                                                                ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                                                                : !isBlocked && !isLessThanMinDays
+                                                                                    ? 'hover:bg-gray-100'
+                                                                                    : ''
+                                                                    }`}
                                                                     onClick={() => {
+                                                                        if (isLessThanMinDays) {
+                                                                            setMinDaysMessage('Perioada minimă de închiriere este de 2 zile');
+                                                                            setTimeout(() => setMinDaysMessage(''), 3000);
+                                                                            return;
+                                                                        }
                                                                         if (!isBlocked) {
                                                                             setReturnDate(day);
-                                                                            setShowReturnCalendar(false);
-                                                                            // Auto-open return time picker after selecting date
+                                                                            // Close calendar after 0.3s delay so user can see what they clicked
+                                                                            setIsClosingWithDelay(true);
                                                                             setTimeout(() => {
+                                                                                setShowReturnCalendar(false);
+                                                                                setIsClosingWithDelay(false);
                                                                                 if (!returnTime) {
                                                                                     setShowReturnTime(true);
                                                                                 }
-                                                                            }, 100);
+                                                                            }, 300);
                                                                         }
                                                                     }}
                                                                 >
-                                                                    {dayDate.getDate()}
+                                                                    <span className="relative z-0">{dayDate.getDate()}</span>
+                                                                    {isInApprovedRequest && (
+                                                                        <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                            ✕
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })}
                                                     </div>
+                                                    {minDaysMessage && (
+                                                        <div className="mt-3 px-2 py-1.5 bg-blue-50 rounded-xl border border-blue-100">
+                                                            <p className="text-xs text-blue-700">
+                                                                {minDaysMessage}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
@@ -1522,16 +2243,31 @@ export const CarDetails: React.FC = () => {
                                     {/* Return Time */}
                                     <div className="relative" ref={returnTimeRef}>
                                         <button
-                                            onClick={() => {
-                                                setShowReturnTime(!showReturnTime);
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                if (!pickupDate || !pickupTime || !returnDate) return; // Disable if previous inputs not selected
+                                                setShowReturnTime(prev => !prev);
                                                 setShowPickupTime(false);
                                                 setShowPickupCalendar(false);
                                                 setShowReturnCalendar(false);
                                             }}
-                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${returnTime
-                                                ? 'border-gray-300 text-gray-900 hover:border-gray-400'
-                                                : 'border-gray-300 text-gray-400 hover:border-gray-400'
-                                                }`}
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
+                                            onTouchStart={(e) => {
+                                                e.stopPropagation();
+                                            }}
+                                            disabled={!pickupDate || !pickupTime || !returnDate}
+                                            title={!pickupDate || !pickupTime || !returnDate ? (!pickupDate ? 'Selectează mai întâi data de început' : !pickupTime ? 'Selectează mai întâi ora de început' : 'Selectează mai întâi data de returnare') : ''}
+                                            className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${
+                                                !pickupDate || !pickupTime || !returnDate
+                                                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                                    : returnTime
+                                                        ? 'border-gray-300 text-gray-900 hover:border-gray-400'
+                                                        : 'border-gray-300 text-gray-400 hover:border-gray-400'
+                                            }`}
                                         >
                                             <Clock className="w-4 h-4" />
                                             <span>{returnTime || '__ : __'}</span>
@@ -1543,18 +2279,27 @@ export const CarDetails: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className="absolute z-50 top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto min-w-[80px]"
+                                                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-[300px] overflow-y-auto w-full"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onTouchStart={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex flex-col gap-1">
                                                         {generateHours().map((hour) => (
                                                             <button
                                                                 key={hour}
-                                                                onClick={() => {
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
                                                                     setReturnTime(hour);
-                                                                    setShowReturnTime(false);
+                                                                    // Close time picker after 0.3s delay so user can see what they clicked
+                                                                    setIsClosingWithDelay(true);
+                                                                    setTimeout(() => {
+                                                                        setShowReturnTime(false);
+                                                                        setIsClosingWithDelay(false);
+                                                                    }, 300);
                                                                 }}
-                                                                className={`w-full px-3 py-2 text-xs rounded transition-colors text-center ${returnTime === hour
+                                                                onMouseDown={(e) => e.stopPropagation()}
+                                                                className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${returnTime === hour
                                                                     ? 'bg-theme-500 text-white font-medium'
                                                                     : 'text-gray-700 hover:bg-gray-100'
                                                                     }`}
@@ -1712,7 +2457,7 @@ export const CarDetails: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.98 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="relative w-full h-full flex flex-col"
+                                className="relative w-full h-full flex flex-col md:items-center md:justify-center"
                                 onKeyDown={(e) => e.stopPropagation()}
                             >
                                 {/* Header Bar */}
@@ -1733,9 +2478,9 @@ export const CarDetails: React.FC = () => {
                                 </div>
 
                                 {/* Main Image Display with smooth slider */}
-                                <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+                                <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-2 relative">
                                     {gallery.length > 0 && (
-                                        <div className="w-full h-full max-w-full max-h-[75vh] flex items-center justify-center">
+                                        <div className="w-full h-full max-w-full max-h-[75vh] flex items-center justify-center md:max-w-6xl md:mx-auto">
                                             <style>{`
                                                 .image-viewer-slider .slick-list {
                                                     height: 100%;
@@ -1752,6 +2497,11 @@ export const CarDetails: React.FC = () => {
                                                     transition: opacity 0.3s ease;
                                                     padding: 0 10px;
                                                 }
+                                                @media (min-width: 768px) {
+                                                    .image-viewer-slider .slick-slide {
+                                                        padding: 0 5px;
+                                                    }
+                                                }
                                                 .image-viewer-slider .slick-slide > div {
                                                     height: 100%;
                                                     display: flex;
@@ -1761,6 +2511,11 @@ export const CarDetails: React.FC = () => {
                                                 }
                                                 .image-viewer-slider .slick-arrow {
                                                     display: none !important;
+                                                }
+                                                @media (min-width: 768px) {
+                                                    .image-viewer-slider .slick-slide > div {
+                                                        justify-content: center !important;
+                                                    }
                                                 }
                                             `}</style>
                                             <Slider
@@ -1779,16 +2534,17 @@ export const CarDetails: React.FC = () => {
                                                 cssEase="cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                                                 useCSS={true}
                                                 useTransform={true}
-                                                className="image-viewer-slider w-full h-full"
+                                                className="image-viewer-slider w-full h-full md:w-full"
                                             >
                                                 {gallery
                                                     .filter((url): url is string => typeof url === 'string' && url.length > 0)
                                                     .map((url, index) => (
-                                                        <div key={index} className="flex items-center justify-center h-full">
+                                                        <div key={index} className="flex items-center justify-center h-full w-full">
                                                             <img
                                                                 src={url}
                                                                 alt={`${car.make} ${car.model} - Image ${index + 1}`}
-                                                                className="max-w-full max-h-[75vh] object-contain rounded-xl select-none"
+                                                                className="max-w-full max-h-[75vh] object-contain rounded-xl select-none md:max-w-[90vw]"
+                                                                style={{ margin: '0 auto' }}
                                                                 draggable={false}
                                                             />
                                                         </div>
@@ -1801,8 +2557,8 @@ export const CarDetails: React.FC = () => {
                                 {/* Photo Grid */}
                                 {gallery.length > 1 && (
                                     <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/40 backdrop-blur-md">
-                                        <div className="px-6 py-4">
-                                            <div className="grid grid-cols-6 gap-3 max-w-4xl mx-auto">
+                                        <div className="px-6 py-4 md:px-3 md:py-2">
+                                            <div className="grid grid-cols-6 gap-3 md:gap-1.5 max-w-4xl mx-auto">
                                                 {gallery.map((url, index) => (
                                                     <button
                                                         key={index}

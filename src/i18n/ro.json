@@ -11,6 +11,7 @@
         "dashboard": "Panou de control",
         "profile": "Profil",
         "settings": "Setări",
+        "admin": "Admin",
         "signOut": "Deconectare"
     },
     "languages": {
