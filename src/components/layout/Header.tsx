@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Globe, User, LogOut, Settings, LayoutDashboard, ChevronDown, FileText } from 'lucide-react';
+import { Menu, X, Globe, User, LogOut, Settings, LayoutDashboard, ChevronDown, FileText, Shield } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   const { i18n, t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, isAdmin } = useAuth();
 
   const shouldRenderHeader = forceRender || !hiddenPaths.some(path => location.pathname.startsWith(path));
 
@@ -41,6 +41,20 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
 
   // Check if we're on auth pages for transparent header
   const isAuthPage = location.pathname === '/auth/login' || location.pathname === '/auth/signup';
+  
+  // Check if we're on the homepage
+  const isHomePage = location.pathname === '/';
+  
+  // Pages with hero sections that need white text when header is transparent
+  const pagesWithHeroSections = [
+    '/',
+    '/about',
+    '/contact',
+    '/how-to-rent',
+    '/reviews',
+    '/terms'
+  ];
+  const hasHeroSection = pagesWithHeroSections.includes(location.pathname);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
@@ -49,6 +63,11 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
   const userDropdownButtonRef = useRef<HTMLButtonElement>(null);
   const [userDropdownPosition, setUserDropdownPosition] = useState<{ top: number; right: number } | null>(null);
+  
+  // Determine if header text should be white
+  // White text when: on auth pages, or on pages with hero sections when not scrolled, or when forceRender is true
+  // Note: hasHeroSection takes priority over isDifferentPage for text color
+  const shouldShowWhiteText = isAuthPage || (hasHeroSection && !isScrolled) || (forceRender && !isScrolled && !isDifferentPage);
 
   // Auto-close language dropdown after 3 seconds
   React.useEffect(() => {
@@ -208,10 +227,10 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
     <header
       className={`${forceRender ? 'relative' : 'fixed top-0 left-0 right-0'} ${forceRender ? 'z-[9999999]' : 'z-50'} transition-all duration-300 font-sans ${isAuthPage
         ? 'bg-transparent shadow-none border-transparent'
-        : (forceRender && !isScrolled)
-          ? 'bg-transparent shadow-none border-transparent' // Transparent when forceRender and not scrolled
-          : isScrolled || isDifferentPage
-            ? 'bg-white border-b border-gray-200' // White on scroll or different page
+        : (hasHeroSection && !isScrolled) || (forceRender && !isScrolled && !isDifferentPage)
+          ? 'bg-transparent shadow-none border-transparent' // Transparent on pages with hero sections when not scrolled
+          : isScrolled || (isDifferentPage && !hasHeroSection)
+            ? 'bg-white border-b border-gray-200' // White on scroll or different page (unless it has hero section)
             : 'bg-transparent shadow-none border-transparent' // Default transparent
         }`}
     >
@@ -222,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
             <img
               src="/LevelAutoRental/logo.png"
               alt="Level Auto Rental Logo"
-              className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${isAuthPage || (forceRender && !isScrolled && !isDifferentPage) ? 'brightness-0 invert' : ''
+              className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${shouldShowWhiteText ? 'brightness-0 invert' : ''
                 }`}
             />
           </Link>
@@ -233,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
               <button
                 key={item.name}
                 onClick={() => handleNavigate(item.href)}
-                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-theme-50 hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500 bg-theme-50' : isAuthPage || (forceRender && !isScrolled && !isDifferentPage) ? 'text-white' : 'text-gray-700'}`}
+                className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-xl hover:bg-theme-50 hover:text-theme-500 ${isActive(item.href) ? 'text-theme-500 bg-theme-50' : shouldShowWhiteText ? 'text-white' : 'text-gray-700'}`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 {item.name}
@@ -249,26 +268,26 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                   ref={userDropdownButtonRef}
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
                   className={`flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-300 ${
-                    isAuthPage || (forceRender && !isScrolled && !isDifferentPage)
+                    shouldShowWhiteText
                       ? 'hover:bg-white/10 text-white'
                       : 'hover:bg-gray-100 text-gray-700'
                   }`}
                 >
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${
-                    isAuthPage || (forceRender && !isScrolled && !isDifferentPage)
+                    shouldShowWhiteText
                       ? 'bg-white/20 text-white'
                       : 'bg-red-600 text-white'
                   }`}>
                     {(user.email?.split('@')[0] || user.email || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left">
-                    <p className={`text-sm font-medium ${isAuthPage || (forceRender && !isScrolled && !isDifferentPage) ? 'text-white' : 'text-gray-700'}`}>
+                    <p className={`text-sm font-medium ${shouldShowWhiteText ? 'text-white' : 'text-gray-700'}`}>
                       {user.email?.split('@')[0] || user.email}
                     </p>
                   </div>
                   <ChevronDown 
                     className={`w-4 h-4 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''} ${
-                      isAuthPage || (forceRender && !isScrolled && !isDifferentPage) ? 'text-white' : 'text-gray-500'
+                      shouldShowWhiteText ? 'text-white' : 'text-gray-500'
                     }`} 
                   />
                 </button>
@@ -318,16 +337,31 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                           <span>{t('dashboard.sidebar.myBookings')}</span>
                         </button>
                         
-                        <button
-                          onClick={() => {
-                            navigate('/dashboard?tab=settings&subTab=settings');
-                            setShowUserDropdown(false);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span>{t('header.settings')}</span>
-                        </button>
+                        {!isAdmin && (
+                          <button
+                            onClick={() => {
+                              navigate('/dashboard?tab=settings&subTab=settings');
+                              setShowUserDropdown(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Settings className="w-4 h-4" />
+                            <span>{t('header.settings')}</span>
+                          </button>
+                        )}
+                        
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              navigate('/admin');
+                              setShowUserDropdown(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Shield className="w-4 h-4" />
+                            <span>{t('header.admin')}</span>
+                          </button>
+                        )}
                       </div>
                       
                       <div className="border-t border-gray-100 py-2">
@@ -390,16 +424,31 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <span>{t('dashboard.sidebar.myBookings')}</span>
                           </button>
                           
-                          <button
-                            onClick={() => {
-                              navigate('/dashboard?tab=settings&subTab=settings');
-                              setShowUserDropdown(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <Settings className="w-4 h-4" />
-                            <span>{t('header.settings')}</span>
-                          </button>
+                          {!isAdmin && (
+                            <button
+                              onClick={() => {
+                                navigate('/dashboard?tab=settings&subTab=settings');
+                                setShowUserDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Settings className="w-4 h-4" />
+                              <span>{t('header.settings')}</span>
+                            </button>
+                          )}
+                          
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                navigate('/admin');
+                                setShowUserDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Shield className="w-4 h-4" />
+                              <span>{t('header.admin')}</span>
+                            </button>
+                          )}
                         </div>
                         
                         <div className="border-t border-gray-100 py-2">
@@ -440,7 +489,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                   // console.log('Current language after the variable: ', currentLanguage)
                   // console.log('Current language after the frameword: ', i18n.language)
                 }}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${forceRender || isScrolled || isDifferentPage ? 'text-gray-700 hover:text-theme-500' : 'text-white hover:bg-white/20'}`}
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${shouldShowWhiteText ? 'text-white hover:bg-white/20' : 'text-gray-700 hover:text-theme-500'}`}
               >
                 <span
                   className={`fi ${currentLanguage === 'en'
@@ -451,7 +500,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                     } w-6 h-4 rounded-sm`}
                 ></span>
 
-                <svg className={`w-4 h-4 transition-colors duration-300 ${forceRender || isScrolled || isDifferentPage ? 'text-gray-400' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-colors duration-300 ${shouldShowWhiteText ? 'text-white' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -495,7 +544,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
             <div className="relative language-dropdown-container">
               <button
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className={`p-3 rounded-lg transition-all duration-200 ${isAuthPage || (forceRender && !isScrolled && !isDifferentPage)
+                className={`p-3 rounded-lg transition-all duration-200 ${shouldShowWhiteText
                   ? 'text-white hover:text-theme-300 hover:bg-white/20'
                   : 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
                   }`}
@@ -536,7 +585,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-3 rounded-lg transition-all duration-200 ${isAuthPage || (forceRender && !isScrolled && !isDifferentPage)
+              className={`p-3 rounded-lg transition-all duration-200 ${shouldShowWhiteText
                 ? 'text-white hover:text-theme-300 hover:bg-white/20'
                 : 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
                 }`}
@@ -655,16 +704,31 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <span>{t('dashboard.sidebar.myBookings')}</span>
                           </button>
                           
-                          <button
-                            onClick={() => {
-                              setIsMenuOpen(false);
-                              navigate('/dashboard?tab=settings&subTab=settings');
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                          >
-                            <Settings className="w-4 h-4" />
-                            <span>{t('header.settings')}</span>
-                          </button>
+                          {!isAdmin && (
+                            <button
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                navigate('/dashboard?tab=settings&subTab=settings');
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                            >
+                              <Settings className="w-4 h-4" />
+                              <span>{t('header.settings')}</span>
+                            </button>
+                          )}
+                          
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                navigate('/admin');
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                            >
+                              <Shield className="w-4 h-4" />
+                              <span>{t('header.admin')}</span>
+                            </button>
+                          )}
                           
                           <button
                             onClick={(e) => {
@@ -829,16 +893,31 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <span>{t('header.profile')}</span>
                             </button>
                             
-                            <button
-                              onClick={() => {
-                                setIsMenuOpen(false);
-                                navigate('/dashboard?tab=settings&subTab=settings');
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                            >
-                              <Settings className="w-4 h-4" />
-                              <span>{t('header.settings')}</span>
-                            </button>
+                            {!isAdmin && (
+                              <button
+                                onClick={() => {
+                                  setIsMenuOpen(false);
+                                  navigate('/dashboard?tab=settings&subTab=settings');
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                              >
+                                <Settings className="w-4 h-4" />
+                                <span>{t('header.settings')}</span>
+                              </button>
+                            )}
+                            
+                            {isAdmin && (
+                              <button
+                                onClick={() => {
+                                  setIsMenuOpen(false);
+                                  navigate('/admin');
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                              >
+                                <Shield className="w-4 h-4" />
+                                <span>{t('header.admin')}</span>
+                              </button>
+                            )}
                             
                             <button
                               onClick={(e) => {

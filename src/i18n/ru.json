@@ -12,6 +12,7 @@
         "dashboard": "Панель управления",
         "profile": "Профиль",
         "settings": "Настройки",
+        "admin": "Админ",
         "signOut": "Выйти"
     },
     "languages": {

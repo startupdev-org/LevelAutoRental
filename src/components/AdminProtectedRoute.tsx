@@ -30,21 +30,6 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     }
   }, [i18n]);
 
-  // Debug logging (remove in production)
-  useEffect(() => {
-    console.log('AdminProtectedRoute State:', {
-      loading,
-      hasUser: !!user,
-      userEmail: user?.email,
-      userId: user?.id,
-      roleLoaded,
-      userRole: userProfile?.role,
-      roleUpper: userProfile?.role?.toUpperCase(),
-      isAdmin,
-      language: i18n.language,
-      languageChanging
-    });
-  }, [loading, user, roleLoaded, userProfile, isAdmin, i18n.language, languageChanging]);
 
   // Show loading while auth is being checked
   if (loading) {
@@ -60,7 +45,6 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
 
   // Not authenticated → redirect to 404
   if (!user) {
-    console.log('AdminProtectedRoute: No user, redirecting to 404');
     return <Navigate to="/not-found" replace />;
   }
 
@@ -80,25 +64,16 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
 
   // Role loaded and user is not admin → redirect to 404
   if (!isAdmin) {
-    console.warn('AdminProtectedRoute: User is not admin, redirecting to 404', {
-      userRole: userProfile?.role,
-      roleUpper: userProfile?.role?.toUpperCase(),
-      isAdmin
-    });
     return <Navigate to="/not-found" replace />;
   }
 
   // Language is not Romanian → redirect to 404 (admin only in Romanian)
   // Only check after language change is complete and role is loaded
   if (i18n.language !== 'ro') {
-    console.warn('AdminProtectedRoute: Language is not Romanian, redirecting to 404', {
-      language: i18n.language
-    });
     return <Navigate to="/not-found" replace />;
   }
 
   // All checks passed → render admin page
-  console.log('AdminProtectedRoute: All checks passed, rendering admin page');
   return <>{children}</>;
 };
 

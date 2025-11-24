@@ -582,9 +582,10 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
+                <React.Fragment key="modal-container">
                     {/* Backdrop */}
                     <motion.div
+                        key="backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -595,6 +596,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                     {/* Modal */}
                     <motion.div
+                        key="modal"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1364,14 +1366,15 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             </div>
                         </div>
                     </motion.div>
-                </>
+                </React.Fragment>
             )}
 
             {/* Terms/Privacy Modal */}
             <AnimatePresence>
                 {showTermsModal && (
-                    <>
+                    <React.Fragment key="terms-container">
                         <motion.div
+                            key="terms-backdrop"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -1379,6 +1382,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             onClick={() => setShowTermsModal(false)}
                         />
                         <motion.div
+                            key="terms-modal"
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1549,8 +1553,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             </div>
                         </div>
                     </motion.div>
-                </>
-            )}
+                    </React.Fragment>
+                )}
             </AnimatePresence>
         </AnimatePresence>
     );

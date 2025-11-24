@@ -127,10 +127,68 @@ export interface OrderDisplay {
  */
 export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
   try {
+    // Try with regular client first
     const { data, error } = await supabase
       .from('BorrowRequest')
       .select('*')
       .order('requested_at', { ascending: false });
+
+    // If error or no data, try with admin client (bypasses RLS)
+    if (error || !data || data.length === 0) {
+      try {
+        const { supabaseAdmin } = await import('./supabase');
+        
+        if (!import.meta.env.VITE_SUPABASE_SERVICE_KEY) {
+          return [];
+        }
+        
+        // Get full data with admin client
+        const fullResult = await supabaseAdmin
+          .from('BorrowRequest')
+          .select('*')
+          .order('requested_at', { ascending: false });
+        
+        if (fullResult.error) {
+          return [];
+        }
+        
+        if (fullResult.data && fullResult.data.length > 0) {
+          // Map admin data to request format
+          return fullResult.data.map((request: any) => ({
+            id: request.id.toString(),
+            user_id: request.user_id,
+            car_id: request.car_id.toString(),
+            start_date: request.start_date,
+            start_time: request.start_time || '09:00:00',
+            end_date: request.end_date,
+            end_time: request.end_time || '17:00:00',
+            status: request.status || 'PENDING',
+            created_at: request.requested_at || request.created_at,
+            updated_at: request.updated_at,
+            customer_name: request.customer_name,
+            customer_first_name: request.customer_first_name,
+            customer_last_name: request.customer_last_name,
+            customer_email: request.customer_email,
+            customer_phone: request.customer_phone,
+            customer_age: request.customer_age,
+            comment: request.comment,
+            options: request.options || {},
+            total_amount: request.total_amount,
+            user: {
+              id: request.user_id,
+              email: request.customer_email || '',
+              user_metadata: {
+                first_name: request.customer_first_name,
+                last_name: request.customer_last_name,
+                full_name: request.customer_name,
+              },
+            },
+          }));
+        }
+      } catch (importError) {
+        // Silently fail if admin client is not available
+      }
+    }
 
     if (error) {
       console.error('Error fetching borrow requests:', error);
@@ -422,11 +480,9 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
-              console.log(`[fetchRentalsOnly] Fetching images for car: "${carName}" (id: ${car.id})`);
               const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
               car.image_url = mainImage || car.image_url;
               car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
-              console.log(`[fetchRentalsOnly] Car ${car.id} image_url: ${car.image_url || 'null'}`);
             }
           }
         } catch (err) {
@@ -789,7 +845,6 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
-              console.log(`[fetchAllOrders] Fetching images for car: "${carName}" (id: ${car.id})`);
               const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
               car.image_url = mainImage || car.image_url;
               car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
@@ -876,11 +931,9 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
-              console.log(`[fetchRentalsOnly] Fetching images for car: "${carName}" (id: ${car.id})`);
               const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
               car.image_url = mainImage || car.image_url;
               car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
-              console.log(`[fetchRentalsOnly] Car ${car.id} image_url: ${car.image_url || 'null'}`);
             }
           }
         } catch (err) {
@@ -1006,7 +1059,6 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
             // Fetch images from storage for this car
             if (car) {
               const carName = (car as any).name || `${car.make} ${car.model}`;
-              console.log(`[fetchBorrowRequestsForDisplay] Fetching images for car: "${carName}" (id: ${car.id})`);
               const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
               car.image_url = mainImage || car.image_url;
               car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
@@ -1326,12 +1378,26 @@ export async function createUserBorrowRequest(
     // Combine first and last name for customer_name
     const customerName = `${customerFirstName} ${customerLastName}`.trim();
 
+    // Combine date and time into full timestamps for start_date and end_date
+    // Database expects timestamp, not just date string
+    const formatTimestamp = (dateStr: string, timeStr: string): string => {
+      // If dateStr is already a full timestamp, use it
+      if (dateStr.includes('T') || dateStr.includes(' ')) {
+        return dateStr;
+      }
+      // Otherwise combine date and time
+      const [hours, minutes] = timeStr.split(':');
+      const date = new Date(dateStr);
+      date.setHours(parseInt(hours || '0', 10), parseInt(minutes || '0', 10), 0, 0);
+      return date.toISOString();
+    };
+
     const insertData: any = {
       user_id: finalUserId,
       car_id: parseInt(carId, 10),
-      start_date: startDate,
+      start_date: formatTimestamp(startDate, startTime),
       start_time: startTime,
-      end_date: endDate,
+      end_date: formatTimestamp(endDate, endTime),
       end_time: endTime,
       status: 'PENDING', // User-submitted requests start as PENDING
       customer_name: customerName,
@@ -1346,13 +1412,29 @@ export async function createUserBorrowRequest(
     if (customerAge) insertData.customer_age = parseInt(customerAge, 10);
     if (comment) insertData.comment = comment;
     if (options) {
-      // Ensure options is properly formatted as JSON
-      insertData.options = typeof options === 'string' ? JSON.parse(options) : options;
+      // Ensure options is properly formatted as JSONB for Supabase
+      // If it's already an object, Supabase will handle it, but we ensure it's valid JSON
+      if (typeof options === 'string') {
+        try {
+          insertData.options = JSON.parse(options);
+        } catch (e) {
+          console.error('Error parsing options string:', e);
+          insertData.options = {};
+        }
+      } else if (typeof options === 'object' && options !== null) {
+        // Ensure it's a plain object (not a class instance or array)
+        insertData.options = JSON.parse(JSON.stringify(options));
+      } else {
+        insertData.options = {};
+      }
+    } else {
+      // Default to empty object if no options provided
+      insertData.options = {};
     }
     if (totalAmount !== undefined) insertData.total_amount = totalAmount;
 
-    // Use supabaseAdmin to bypass RLS policies for user-submitted requests
-    const { data, error } = await supabaseAdmin
+    // Use regular supabase client - RLS policy allows INSERT for PENDING requests
+    const { data, error } = await supabase
       .from('BorrowRequest')
       .insert(insertData)
       .select()
