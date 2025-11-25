@@ -33,6 +33,24 @@ interface CarRow {
 
 // Map database row to Car type
 const mapCarRowToCar = (row: CarRow): Car & { name?: string; color?: string; license?: string; kilometers?: number } => {
+  // Handle category: can be string (single), array (multiple), or JSON string
+  let category: ('suv' | 'sports' | 'luxury') | ('suv' | 'sports' | 'luxury')[] | undefined = undefined;
+  if (row.category) {
+    try {
+      // Try to parse as JSON array first
+      const parsed = JSON.parse(row.category);
+      if (Array.isArray(parsed)) {
+        category = parsed as ('suv' | 'sports' | 'luxury')[];
+      } else {
+        // Single value
+        category = parsed as 'suv' | 'sports' | 'luxury';
+      }
+    } catch {
+      // Not JSON, treat as single string value (backward compatibility)
+      category = row.category as 'suv' | 'sports' | 'luxury';
+    }
+  }
+
   return {
     id: row.id,
     make: row.make,
@@ -41,7 +59,7 @@ const mapCarRowToCar = (row: CarRow): Car & { name?: string; color?: string; lic
     year: row.year || new Date().getFullYear(),
     price_per_day: row.price_per_day,
     discount_percentage: row.discount_percentage || undefined,
-    category: (row.category as 'suv' | 'sports' | 'luxury') || undefined,
+    category: category,
     image_url: row.image_url || undefined,
     photo_gallery: row.photo_gallery || undefined,
     seats: row.seats || undefined,
@@ -114,6 +132,16 @@ export const fetchCarById = async (id: number): Promise<(Car & { name?: string }
 // Create a new car
 export const createCar = async (carData: Partial<Car>): Promise<Car | null> => {
   try {
+    // Handle category: convert array to JSON string, or keep single value as string
+    let categoryValue: string | null = null;
+    if (carData.category) {
+      if (Array.isArray(carData.category)) {
+        categoryValue = JSON.stringify(carData.category);
+      } else {
+        categoryValue = carData.category as string;
+      }
+    }
+
     const insertData: any = {
       make: carData.make || '',
       model: carData.model || '',
@@ -126,7 +154,7 @@ export const createCar = async (carData: Partial<Car>): Promise<Car | null> => {
       transmission: carData.transmission || null,
       drivetrain: carData.drivetrain || null,
       seats: carData.seats || null,
-      category: carData.category || null,
+      category: categoryValue,
       image_url: carData.image_url || null,
       photo_gallery: carData.photo_gallery || [],
       fuel_type: carData.fuel_type || null,
@@ -174,7 +202,14 @@ export const updateCar = async (id: number, carData: Partial<Car>): Promise<Car 
     if (carData.transmission !== undefined) updateData.transmission = carData.transmission;
     if (carData.drivetrain !== undefined) updateData.drivetrain = carData.drivetrain;
     if (carData.seats !== undefined) updateData.seats = carData.seats;
-    if (carData.category !== undefined) updateData.category = carData.category;
+    if (carData.category !== undefined) {
+      // Handle category: convert array to JSON string, or keep single value as string
+      if (Array.isArray(carData.category)) {
+        updateData.category = JSON.stringify(carData.category);
+      } else {
+        updateData.category = carData.category as string;
+      }
+    }
     // Handle both image and image_url fields
     if ((carData as any).image !== undefined || carData.image_url !== undefined) {
       updateData.image_url = (carData as any).image || carData.image_url;

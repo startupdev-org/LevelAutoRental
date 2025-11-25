@@ -1884,7 +1884,16 @@ interface CarDetailsEditViewProps {
 
 const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, onCancel }) => {
     const { t } = useTranslation();
-    const [formData, setFormData] = useState<Partial<CarType>>(car);
+    // Normalize category to array format for form
+    const normalizedCategory = Array.isArray(car.category) 
+        ? car.category 
+        : car.category 
+            ? [car.category] 
+            : [];
+    const [formData, setFormData] = useState<Partial<CarType>>({
+        ...car,
+        category: normalizedCategory,
+    });
     const [loading, setLoading] = useState(false);
     const { showSuccess, showError } = useNotification();
     const [newFeature, setNewFeature] = useState('');
@@ -1903,7 +1912,12 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                     const carName = (fetchedCar as any).name || `${fetchedCar.make} ${fetchedCar.model}`;
                     const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
                     
-                    // Ensure name field is included
+                    // Ensure name field is included and normalize category to array
+                    const normalizedCategory = Array.isArray(fetchedCar.category) 
+                        ? fetchedCar.category 
+                        : fetchedCar.category 
+                            ? [fetchedCar.category] 
+                            : [];
                     setFormData({
                         ...fetchedCar,
                         name: fetchedCar.name || '',
@@ -1911,6 +1925,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                         discount_percentage: fetchedCar.discount_percentage,
                         image_url: mainImage || fetchedCar.image_url,
                         photo_gallery: photoGallery.length > 0 ? photoGallery : fetchedCar.photo_gallery,
+                        category: normalizedCategory,
                     } as any);
                 }
             } catch (error) {
@@ -1924,6 +1939,18 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
         e.preventDefault();
         setLoading(true);
         try {
+            // Validate at least one category is selected
+            const categories = Array.isArray(formData.category) 
+                ? formData.category 
+                : formData.category 
+                    ? [formData.category] 
+                    : [];
+            if (categories.length === 0) {
+                showError(t('admin.cars.categoryRequired') || 'Please select at least one category');
+                setLoading(false);
+                return;
+            }
+
             // Map form data to database fields
             const carDataToSave: Partial<CarType> & { name?: string } = {
                 ...formData,
@@ -1933,6 +1960,7 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
                 price_per_day: (formData as any).pricePerDay || formData.price_per_day,
                 discount_percentage: (formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : formData.discount_percentage,
                 fuel_type: (formData as any).fuelType || formData.fuel_type,
+                category: categories.length === 1 ? categories[0] : categories,
             };
             await onSave(carDataToSave as Partial<CarType>);
             // Show success notification
@@ -2167,22 +2195,55 @@ const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, on
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')}</label>
-                            <select
-                                value={formData.category || 'luxury'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as CarType['category'] }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                            >
-                                <option value="suv">{t('admin.cars.categorySuv')}</option>
-                                <option value="sports">{t('admin.cars.categorySports')}</option>
-                                <option value="luxury">{t('admin.cars.categoryLuxury')}</option>
-                            </select>
+                            <div className="flex flex-col md:flex-row md:gap-4 gap-2">
+                                {['suv', 'sports', 'luxury'].map((cat) => {
+                                    const categories = Array.isArray(formData.category) 
+                                        ? formData.category 
+                                        : formData.category 
+                                            ? [formData.category] 
+                                            : [];
+                                    const isChecked = categories.includes(cat as 'suv' | 'sports' | 'luxury');
+                                    return (
+                                        <label key={cat} className="flex items-center space-x-2 cursor-pointer group">
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={(e) => {
+                                                    const currentCategories = Array.isArray(formData.category) 
+                                                        ? formData.category 
+                                                        : formData.category 
+                                                            ? [formData.category] 
+                                                            : [];
+                                                    if (e.target.checked) {
+                                                        setFormData(prev => ({ 
+                                                            ...prev, 
+                                                            category: [...currentCategories, cat] as ('suv' | 'sports' | 'luxury')[]
+                                                        }));
+                                                    } else {
+                                                        setFormData(prev => ({ 
+                                                            ...prev, 
+                                                            category: currentCategories.filter(c => c !== cat) as ('suv' | 'sports' | 'luxury')[]
+                                                        }));
+                                                    }
+                                                }}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                isChecked
+                                                    ? 'bg-red-500 border-red-500'
+                                                    : 'border-white/30 bg-white/5 group-hover:border-red-400'
+                                            }`}>
+                                                {isChecked && <Check className="w-3 h-3 text-white" />}
+                                            </div>
+                                            <span className="text-white">
+                                                {cat === 'suv' ? t('admin.cars.categorySuv') : 
+                                                 cat === 'sports' ? t('admin.cars.categorySports') : 
+                                                 t('admin.cars.categoryLuxury')}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         <div>
@@ -2690,10 +2751,21 @@ interface CarFormModalProps {
 const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => {
     const [, setSearchParams] = useSearchParams();
     const { t } = useTranslation();
+    // Normalize category to array format for form
+    const initialCategory = car 
+        ? (Array.isArray(car.category) 
+            ? car.category 
+            : car.category 
+                ? [car.category] 
+                : ['luxury'])
+        : ['luxury'];
     const [formData, setFormData] = useState<Partial<CarType>>(
-        car || {
+        car ? {
+            ...car,
+            category: initialCategory,
+        } : {
             name: '',
-            category: 'luxury',
+            category: ['luxury'],
             image: '',
             pricePerDay: 0,
             year: new Date().getFullYear(),
@@ -2710,9 +2782,27 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
         e.preventDefault();
         setLoading(true);
         try {
+            // Validate at least one category is selected
+            const categories = Array.isArray(formData.category) 
+                ? formData.category 
+                : formData.category 
+                    ? [formData.category] 
+                    : [];
+            if (categories.length === 0) {
+                showError(t('admin.cars.categoryRequired') || 'Please select at least one category');
+                setLoading(false);
+                return;
+            }
+
+            // Ensure category is in the correct format
+            const formDataWithCategory = {
+                ...formData,
+                category: categories.length === 1 ? categories[0] : categories,
+            };
+
             if (!car) {
                 // Adding new car
-                const carId = await onSave(formData);
+                const carId = await onSave(formDataWithCategory);
                 if (typeof carId === 'number') {
                     setNewCarId(carId);
                     setCarAdded(true);
@@ -2721,7 +2811,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
                 }
             } else {
                 // Editing existing car
-                await onSave(formData);
+                await onSave(formDataWithCategory);
                 showSuccess(t('admin.cars.carUpdated'));
                 setTimeout(() => {
                     onClose();
@@ -2916,22 +3006,55 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose }) => 
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')} *</label>
-                                    <select
-                                        value={formData.category || 'luxury'}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as CarType['category'] }))}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                    >
-                                        <option value="suv">{t('admin.cars.categorySuv')}</option>
-                                        <option value="sports">{t('admin.cars.categorySports')}</option>
-                                        <option value="luxury">{t('admin.cars.categoryLuxury')}</option>
-                                    </select>
+                                    <div className="flex flex-col md:flex-row md:gap-4 gap-2">
+                                        {['suv', 'sports', 'luxury'].map((cat) => {
+                                            const categories = Array.isArray(formData.category) 
+                                                ? formData.category 
+                                                : formData.category 
+                                                    ? [formData.category] 
+                                                    : [];
+                                            const isChecked = categories.includes(cat as 'suv' | 'sports' | 'luxury');
+                                            return (
+                                                <label key={cat} className="flex items-center space-x-2 cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            const currentCategories = Array.isArray(formData.category) 
+                                                                ? formData.category 
+                                                                : formData.category 
+                                                                    ? [formData.category] 
+                                                                    : [];
+                                                            if (e.target.checked) {
+                                                                setFormData(prev => ({ 
+                                                                    ...prev, 
+                                                                    category: [...currentCategories, cat] as ('suv' | 'sports' | 'luxury')[]
+                                                                }));
+                                                            } else {
+                                                                setFormData(prev => ({ 
+                                                                    ...prev, 
+                                                                    category: currentCategories.filter(c => c !== cat) as ('suv' | 'sports' | 'luxury')[]
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="sr-only"
+                                                    />
+                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                        isChecked
+                                                            ? 'bg-red-500 border-red-500'
+                                                            : 'border-white/30 bg-white/5 group-hover:border-red-400'
+                                                    }`}>
+                                                        {isChecked && <Check className="w-3 h-3 text-white" />}
+                                                    </div>
+                                                    <span className="text-white">
+                                                        {cat === 'suv' ? t('admin.cars.categorySuv') : 
+                                                         cat === 'sports' ? t('admin.cars.categorySports') : 
+                                                         t('admin.cars.categoryLuxury')}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
 
                                 <div>
