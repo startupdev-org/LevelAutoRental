@@ -47,18 +47,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <>
       {/* Toast Notifications - Hidden on admin pages (admin has its own NotificationToaster) */}
       {!isAdminPage && (
-        <Toaster 
-          position="bottom-right"
-          toastOptions={{
-            duration: 6000,
-            classNames: {
-              toast: 'bg-white border border-gray-200 text-gray-900 shadow-lg rounded-xl',
-              success: 'bg-white border border-green-200 text-gray-900',
-              title: 'text-green-800 font-semibold',
-              description: 'text-green-700',
-            },
-          }}
-        />
+      <Toaster 
+        position="bottom-right"
+        toastOptions={{
+          duration: 6000,
+          classNames: {
+            toast: 'bg-white border border-gray-200 text-gray-900 shadow-lg rounded-xl',
+            success: 'bg-white border border-green-200 text-gray-900',
+            title: 'text-green-800 font-semibold',
+            description: 'text-green-700',
+          },
+        }}
+      />
       )}
       
       {/* Show loader during page transitions - overlays on top with high z-index */}

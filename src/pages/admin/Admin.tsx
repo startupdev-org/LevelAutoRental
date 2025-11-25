@@ -1589,7 +1589,7 @@ const CarsView: React.FC = () => {
                                                                     aria-checked={isHidden}
                                                                     aria-label={isHidden ? 'Ascuns' : t('admin.cars.statusAvailable')}
                                                                 >
-                                                                    <span
+                                                <span
                                                                         className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-500 ${
                                                                             isHidden ? 'translate-x-5' : 'translate-x-0.5'
                                                                         }`}
@@ -1603,9 +1603,9 @@ const CarsView: React.FC = () => {
                                                 {isMaintenance && (
                                                     <span
                                                         className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl bg-yellow-500/20 text-yellow-300 border-yellow-500/50`}
-                                                    >
+                                                >
                                                         {t('admin.cars.statusMaintenance')}
-                                                    </span>
+                                                </span>
                                                 )}
                                             </div>
                                         </div>
@@ -1773,7 +1773,7 @@ const CarsView: React.FC = () => {
                                                 <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                                 <td className="px-6 py-4">
                                                     {isMaintenance ? (
-                                                        <span
+                                                    <span
                                                             className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl bg-yellow-500/20 text-yellow-300 border-yellow-500/50`}
                                                         >
                                                             {t('admin.cars.statusMaintenance')}
@@ -1781,7 +1781,7 @@ const CarsView: React.FC = () => {
                                                     ) : hasActiveRental ? (
                                                         <span
                                                             className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl bg-red-500/20 text-red-300 border-red-500/50`}
-                                                        >
+                                                    >
                                                             {t('admin.cars.statusBooked')}
                                                         </span>
                                                     ) : (
@@ -1811,7 +1811,7 @@ const CarsView: React.FC = () => {
                                                             </button>
                                                             <span className="text-xs text-gray-400">
                                                                 {isHidden ? 'Ascuns' : t('admin.cars.statusAvailable')}
-                                                            </span>
+                                                    </span>
                                                         </div>
                                                     )}
                                                 </td>

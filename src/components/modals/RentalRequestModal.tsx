@@ -21,6 +21,20 @@ interface RentalRequestModalProps {
         pricePerDay: number;
         totalPrice: number;
     } | null;
+    approvedBorrowRequests?: Array<{
+        start_date: string;
+        end_date: string;
+        start_time?: string;
+        end_time?: string;
+        status?: string;
+    }>;
+    carRentalsForCalendar?: Array<{
+        start_date: string;
+        end_date: string;
+        start_time?: string;
+        end_time?: string;
+        rental_status?: string;
+    }>;
 }
 
 export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
@@ -31,7 +45,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     returnDate,
     pickupTime,
     returnTime,
-    rentalCalculation
+    rentalCalculation,
+    approvedBorrowRequests = [],
+    carRentalsForCalendar = []
 }) => {
     // Country codes for phone selector
     const COUNTRY_CODES = [
@@ -444,6 +460,149 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
             }, 100);
             
             setSubmitError('Vă rugăm să corectați erorile din formular.');
+            return;
+        }
+        
+        // Check for date overlaps with existing rentals/requests
+        const checkDateOverlap = () => {
+            // Parse selected dates and times
+            const selectedStartDate = new Date(`${pickupDate}T${pickupTime}`);
+            const selectedEndDate = new Date(`${returnDate}T${returnTime}`);
+            
+            // Find the earliest future rental start date
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            let earliestFutureStart: Date | null = null as Date | null;
+            
+            // Check approved/executed borrow requests
+            approvedBorrowRequests.forEach(request => {
+                if (!request.start_date) return;
+                
+                const startDateStr = request.start_date.includes('T')
+                    ? request.start_date.split('T')[0]
+                    : request.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                if (startDate > today) {
+                    if (!earliestFutureStart || startDate < earliestFutureStart) {
+                        earliestFutureStart = startDate;
+                    }
+                }
+            });
+            
+            // Check active rentals
+            carRentalsForCalendar.forEach(rental => {
+                if (!rental.start_date) return;
+                
+                const startDateStr = rental.start_date.includes('T')
+                    ? rental.start_date.split('T')[0]
+                    : rental.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                if (startDate > today) {
+                    if (!earliestFutureStart || startDate < earliestFutureStart) {
+                        earliestFutureStart = startDate;
+                    }
+                }
+            });
+            
+            // Block if selected start date is on or after the earliest future rental
+            if (earliestFutureStart !== null) {
+                const selectedStartDateOnly = new Date(pickupDate);
+                selectedStartDateOnly.setHours(0, 0, 0, 0);
+                
+                if (selectedStartDateOnly >= earliestFutureStart) {
+                    const formatDateForDisplay = (date: Date) => {
+                        return date.toLocaleDateString('ro-RO', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                        });
+                    };
+                    
+                    return `Nu puteți rezerva mașina după data ${formatDateForDisplay(earliestFutureStart)}. Vă rugăm să selectați o perioadă înainte de această dată.`;
+                }
+            }
+            
+            // Combine all existing rentals and approved requests
+            const allExistingBookings = [
+                ...carRentalsForCalendar.map(r => ({
+                    start_date: r.start_date,
+                    end_date: r.end_date,
+                    start_time: r.start_time || '09:00',
+                    end_time: r.end_time || '17:00',
+                    status: r.rental_status || 'ACTIVE'
+                })),
+                ...approvedBorrowRequests.map(r => ({
+                    start_date: r.start_date,
+                    end_date: r.end_date,
+                    start_time: r.start_time || '09:00',
+                    end_time: r.end_time || '17:00',
+                    status: r.status || 'APPROVED'
+                }))
+            ];
+            
+            // Check each existing booking for overlap
+            for (const booking of allExistingBookings) {
+                if (!booking.start_date || !booking.end_date) continue;
+                
+                // Parse booking dates
+                const bookingStartStr = booking.start_date.includes('T')
+                    ? booking.start_date.split('T')[0]
+                    : booking.start_date.split(' ')[0];
+                const bookingEndStr = booking.end_date.includes('T')
+                    ? booking.end_date.split('T')[0]
+                    : booking.end_date.split(' ')[0];
+                
+                // Parse times - handle different formats (HH:MM, HH:MM:SS, etc.)
+                const parseTime = (timeStr: string): string => {
+                    if (!timeStr) return '09:00';
+                    // If already in HH:MM format, return as is
+                    if (timeStr.match(/^\d{2}:\d{2}$/)) return timeStr;
+                    // If in HH:MM:SS format, extract HH:MM
+                    if (timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) return timeStr.substring(0, 5);
+                    // Default to 09:00
+                    return '09:00';
+                };
+                
+                const bookingStartTime = parseTime(booking.start_time || '09:00');
+                const bookingEndTime = parseTime(booking.end_time || '17:00');
+                
+                const bookingStartDate = new Date(`${bookingStartStr}T${bookingStartTime}`);
+                const bookingEndDate = new Date(`${bookingEndStr}T${bookingEndTime}`);
+                
+                // Check for overlap: two periods overlap if they share any common time
+                // Period A overlaps Period B if:
+                // - A starts before B ends AND A ends after B starts
+                const hasOverlap = (
+                    selectedStartDate < bookingEndDate && selectedEndDate > bookingStartDate
+                );
+                
+                if (hasOverlap) {
+                    // Format dates for error message
+                    const formatDateForDisplay = (dateStr: string) => {
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString('ro-RO', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                        });
+                    };
+                    
+                    return `Mașina este deja rezervată în perioada ${formatDateForDisplay(bookingStartStr)} - ${formatDateForDisplay(bookingEndStr)}. Vă rugăm să selectați o altă perioadă.`;
+                }
+            }
+            
+            return null;
+        };
+        
+        const overlapError = checkDateOverlap();
+        if (overlapError) {
+            setSubmitError(overlapError);
+            setIsSubmitting(false);
             return;
         }
         
