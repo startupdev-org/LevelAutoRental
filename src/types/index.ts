@@ -5,7 +5,7 @@ export interface Car {
   year: number;
   price_per_day: number;
   discount_percentage?: number; // optional discount percentage (0-100)
-  category?: 'suv' | 'sports' | 'luxury'; // optional if nullable in DB
+  category?: 'suv' | 'sports' | 'luxury' | ('suv' | 'sports' | 'luxury')[]; // optional if nullable in DB, supports single or multiple categories
   image_url?: string | null;
   photo_gallery?: string[] | null;
   seats?: number;
