@@ -26,6 +26,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
     const [carWithImages, setCarWithImages] = useState<Car>(car);
+    const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<any[]>([]);
+    const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
 
     // Load favorite state from localStorage
     const getFavorites = (): number[] => {
@@ -181,6 +183,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     created_at: req.requested_at || req.created_at,
                     updated_at: req.updated_at,
                 }));
+                
+                // Store for blocking logic
+                setCarRentalsForCalendar(rentalRequests);
+                setApprovedBorrowRequests(approvedRequests);
                 
                 // Combine both types
                 const allRequests = [...rentalRequests, ...approvedRequests];
@@ -430,15 +436,167 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         </div>
                     )}
 
-                    {/* Availability Badge - Only show when booked */}
+                    {/* Availability Badge */}
                     {(() => {
-                        const isAvailable = carWithImages.status === 'available' || carWithImages.status === 'Available';
-                        const isBooked = !isAvailable && (nextAvailableDate !== null);
+                        // Helper function to format date as YYYY-MM-DD (local timezone)
+                        const formatDateLocal = (date: Date): string => {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                        };
                         
-                        // Don't show badge if available
-                        if (isAvailable || !isBooked || !nextAvailableDate) {
+                        // Check if a date/time is in a maintenance period (12 hours after rental ends)
+                        const isInMaintenancePeriod = (checkDate: Date): boolean => {
+                            if (carRentalsForCalendar.length === 0) return false;
+                            
+                            return carRentalsForCalendar.some(rental => {
+                                if (!rental.end_date || !rental.end_time) return false;
+                                
+                                // Parse rental end date and time
+                                const endDateStr = rental.end_date.includes('T')
+                                    ? rental.end_date.split('T')[0]
+                                    : rental.end_date.split(' ')[0];
+                                const endDate = new Date(endDateStr + 'T00:00:00');
+                                
+                                const [endHours, endMinutes] = rental.end_time.split(':').map(Number);
+                                endDate.setHours(endHours || 17, endMinutes || 0, 0, 0);
+                                
+                                // Add 12 hours for maintenance period
+                                const maintenanceEnd = new Date(endDate);
+                                maintenanceEnd.setHours(maintenanceEnd.getHours() + 12);
+                                
+                                // Check if checkDate is within maintenance period
+                                const checkDateOnly = new Date(checkDate);
+                                checkDateOnly.setHours(0, 0, 0, 0);
+                                const endDateOnly = new Date(endDate);
+                                endDateOnly.setHours(0, 0, 0, 0);
+                                const maintenanceEndOnly = new Date(maintenanceEnd);
+                                maintenanceEndOnly.setHours(0, 0, 0, 0);
+                                
+                                // If maintenance spans multiple days, check if checkDate is within range
+                                if (endDateOnly.getTime() === maintenanceEndOnly.getTime()) {
+                                    // Same day - check if checkDate is that day
+                                    return formatDateLocal(checkDateOnly) === formatDateLocal(endDateOnly);
+                                } else {
+                                    // Spans multiple days
+                                    return checkDateOnly >= endDateOnly && checkDateOnly <= maintenanceEndOnly;
+                                }
+                            });
+                        };
+                        
+                        // Check if date is in an actual approved/executed request (for blocking)
+                        // Only checks current/future bookings, not past ones
+                        const isDateInActualApprovedRequest = (dateString: string): boolean => {
+                            const checkDateStr = dateString.split('T')[0];
+                            const checkDate = new Date(checkDateStr + 'T00:00:00');
+                            checkDate.setHours(0, 0, 0, 0);
+                            
+                            // Don't check past dates - only current/future bookings
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            if (checkDate < today) {
+                                return false;
+                            }
+                            
+                            // Check maintenance periods (12 hours after each rental)
+                            if (isInMaintenancePeriod(checkDate)) {
+                                return true;
+                            }
+                            
+                            // Check approved/executed borrow requests
+                            if (approvedBorrowRequests.length > 0) {
+                                const result = approvedBorrowRequests.some(request => {
+                                    if (!request.start_date || !request.end_date) return false;
+                                    
+                                    const startDateStr = request.start_date.includes('T')
+                                        ? request.start_date.split('T')[0]
+                                        : request.start_date.split(' ')[0];
+                                    const startDate = new Date(startDateStr + 'T00:00:00');
+                                    startDate.setHours(0, 0, 0, 0);
+                                    
+                                    const endDateStr = request.end_date.includes('T')
+                                        ? request.end_date.split('T')[0]
+                                        : request.end_date.split(' ')[0];
+                                    const endDate = new Date(endDateStr + 'T23:59:59');
+                                    endDate.setHours(23, 59, 59, 999);
+                                    
+                                    // Only show if the booking is current or future (end date is today or later)
+                                    const isCurrentOrFuture = endDate >= today;
+                                    return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
+                                });
+                                
+                                if (result) return true;
+                            }
+                            
+                            // Check active rentals (which come from EXECUTED requests)
+                            if (carRentalsForCalendar.length > 0) {
+                                const result = carRentalsForCalendar.some(rental => {
+                                    if (!rental.start_date || !rental.end_date) return false;
+                                    
+                                    const startDateStr = rental.start_date.includes('T')
+                                        ? rental.start_date.split('T')[0]
+                                        : rental.start_date.split(' ')[0];
+                                    const startDate = new Date(startDateStr + 'T00:00:00');
+                                    startDate.setHours(0, 0, 0, 0);
+                                    
+                                    const endDateStr = rental.end_date.includes('T')
+                                        ? rental.end_date.split('T')[0]
+                                        : rental.end_date.split(' ')[0];
+                                    const endDate = new Date(endDateStr + 'T23:59:59');
+                                    endDate.setHours(23, 59, 59, 999);
+                                    
+                                    // Only show if the rental is current or future (end date is today or later)
+                                    const isCurrentOrFuture = endDate >= today;
+                                    return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
+                                });
+                                
+                                return result;
+                            }
+                            
+                            return false;
+                        };
+                        
+                        // Find the first available date using the same logic as the calendar
+                        const findFirstAvailableDate = (): Date | null => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const todayString = formatDateLocal(today);
+                            
+                            // Always start checking from TODAY first
+                            let checkDate = new Date(today);
+                            
+                            // Check up to 60 days ahead
+                            for (let i = 0; i < 60; i++) {
+                                const checkDateStr = formatDateLocal(checkDate);
+                                
+                                // Use the same blocking logic as the calendar
+                                const isPast = checkDateStr < todayString;
+                                
+                                const isBeforeAvailable = nextAvailableDate 
+                                    ? (() => {
+                                        const nextAvailDate = new Date(nextAvailableDate);
+                                        nextAvailDate.setHours(0, 0, 0, 0);
+                                        const dayDate = new Date(checkDateStr);
+                                        dayDate.setHours(0, 0, 0, 0);
+                                        // Only block if nextAvailableDate is today or past, and day is before it
+                                        return nextAvailDate <= today && dayDate < nextAvailDate;
+                                    })()
+                                    : false;
+                                
+                                const isInActualRequest = isDateInActualApprovedRequest(checkDateStr);
+                                
+                                // If date is not blocked, this is the first available date
+                                if (!isPast && !isBeforeAvailable && !isInActualRequest) {
+                                    return checkDate;
+                                }
+                                
+                                // Move to next day
+                                checkDate.setDate(checkDate.getDate() + 1);
+                            }
+                            
                             return null;
-                        }
+                        };
                         
                         const formatDateForDisplay = (date: Date): string => {
                             const day = date.getDate();
@@ -450,12 +608,31 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             return `Liber de pe ${day} ${month}`;
                         };
                         
+                        // Find the first available date using calendar logic (always starts from today)
+                        const firstAvailableDate = findFirstAvailableDate();
+                        
+                        // If first available date is today, show "Disponibil"
+                        // Otherwise show the date
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const isAvailableToday = firstAvailableDate && 
+                            formatDateLocal(firstAvailableDate) === formatDateLocal(today);
+                        
+                        const availabilityText = firstAvailableDate 
+                            ? (isAvailableToday 
+                                ? 'Disponibil' 
+                                : formatDateForDisplay(firstAvailableDate))
+                            : (carWithImages.status === 'available' || carWithImages.status === 'Available' ? 'Disponibil' : carWithImages.status || '');
+                        
+                        // Don't show badge if it says "Disponibil" (only show when there's a specific date)
+                        if (!availabilityText || availabilityText === 'Disponibil') return null;
+                        
                         return (
                             <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
                                 <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <span className="whitespace-nowrap">{formatDateForDisplay(nextAvailableDate)}</span>
+                                <span className="whitespace-nowrap">{availabilityText}</span>
                             </div>
                         );
                     })()}

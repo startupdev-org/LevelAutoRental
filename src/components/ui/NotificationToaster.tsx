@@ -47,31 +47,31 @@ const NotificationToaster = ({ ...props }: ToasterProps) => {
           color: rgb(253, 224, 71) !important;
         }
       `}</style>
-      <Sonner
-        theme="dark"
-        className="toaster group"
-        position="bottom-right"
-        toastOptions={{
-          classNames: {
-            toast:
-              "group toast group-[.toaster]:bg-white/10 group-[.toaster]:backdrop-blur-xl group-[.toaster]:border group-[.toaster]:border-white/20 group-[.toaster]:text-white group-[.toaster]:shadow-lg group-[.toaster]:rounded-xl",
-            description: "group-[.toast]:text-white/70",
-            actionButton:
-              "group-[.toast]:bg-red-500/20 group-[.toast]:text-white group-[.toast]:border group-[.toast]:border-red-500/50 group-[.toast]:rounded-lg group-[.toast]:px-4 group-[.toast]:py-2 group-[.toast]:font-medium group-[.toast]:transition-all group-[.toast]:hover:bg-red-500/30",
-            cancelButton:
-              "group-[.toast]:bg-white/10 group-[.toast]:text-white/70 group-[.toast]:rounded-lg group-[.toast]:px-4 group-[.toast]:py-2 group-[.toast]:font-medium group-[.toast]:transition-all group-[.toast]:hover:bg-white/20",
-            success:
+    <Sonner
+      theme="dark"
+      className="toaster group"
+      position="bottom-right"
+      toastOptions={{
+        classNames: {
+          toast:
+            "group toast group-[.toaster]:bg-white/10 group-[.toaster]:backdrop-blur-xl group-[.toaster]:border group-[.toaster]:border-white/20 group-[.toaster]:text-white group-[.toaster]:shadow-lg group-[.toaster]:rounded-xl",
+          description: "group-[.toast]:text-white/70",
+          actionButton:
+            "group-[.toast]:bg-red-500/20 group-[.toast]:text-white group-[.toast]:border group-[.toast]:border-red-500/50 group-[.toast]:rounded-lg group-[.toast]:px-4 group-[.toast]:py-2 group-[.toast]:font-medium group-[.toast]:transition-all group-[.toast]:hover:bg-red-500/30",
+          cancelButton:
+            "group-[.toast]:bg-white/10 group-[.toast]:text-white/70 group-[.toast]:rounded-lg group-[.toast]:px-4 group-[.toast]:py-2 group-[.toast]:font-medium group-[.toast]:transition-all group-[.toast]:hover:bg-white/20",
+          success:
               "group-[.toaster]:bg-white/10 group-[.toaster]:backdrop-blur-xl group-[.toaster]:border-emerald-400/30 group-[.toaster]:text-emerald-300",
-            error:
+          error:
               "group-[.toaster]:bg-white/10 group-[.toaster]:backdrop-blur-xl group-[.toaster]:border-red-400/30 group-[.toaster]:text-red-300",
-            info:
+          info:
               "group-[.toaster]:bg-white/10 group-[.toaster]:backdrop-blur-xl group-[.toaster]:border-blue-400/30 group-[.toaster]:text-blue-300",
-            warning:
+          warning:
               "group-[.toaster]:bg-white/10 group-[.toaster]:backdrop-blur-xl group-[.toaster]:border-yellow-400/30 group-[.toaster]:text-yellow-300",
-          },
-        }}
-        {...props}
-      />
+        },
+      }}
+      {...props}
+    />
     </>
   );
 };

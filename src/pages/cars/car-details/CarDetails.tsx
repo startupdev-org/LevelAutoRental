@@ -115,6 +115,14 @@ export const CarDetails: React.FC = () => {
         return `${day}.${month}.${year}`;
     };
 
+    // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
+    const formatDateLocal = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const generateCalendarDays = (date: Date): (string | null)[] => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -190,13 +198,68 @@ export const CarDetails: React.FC = () => {
         });
     };
 
-    const isDateInApprovedRequest = (dateString: string): boolean => {
-        // Parse date string to YYYY-MM-DD format for comparison
-        const checkDateStr = dateString.split('T')[0]; // Get just the date part
+    // Find the earliest future approved/executed rental start date
+    const getEarliestFutureRentalStart = (): string | null => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let earliestStart: Date | null = null;
+        
+        // Check approved/executed borrow requests
+        approvedBorrowRequests.forEach(request => {
+            if (!request.start_date) return;
+            
+            const startDateStr = request.start_date.includes('T')
+                ? request.start_date.split('T')[0]
+                : request.start_date.split(' ')[0];
+            const startDate = new Date(startDateStr + 'T00:00:00');
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Only consider future rentals
+            if (startDate > today) {
+                if (!earliestStart || startDate < earliestStart) {
+                    earliestStart = startDate;
+                }
+            }
+        });
+        
+        // Check active rentals
+        carRentalsForCalendar.forEach(rental => {
+            if (!rental.start_date) return;
+            
+            const startDateStr = rental.start_date.includes('T')
+                ? rental.start_date.split('T')[0]
+                : rental.start_date.split(' ')[0];
+            const startDate = new Date(startDateStr + 'T00:00:00');
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Only consider future rentals
+            if (startDate > today) {
+                if (!earliestStart || startDate < earliestStart) {
+                    earliestStart = startDate;
+                }
+            }
+        });
+        
+        return earliestStart ? formatDateLocal(earliestStart) : null;
+    };
+
+    // Check if date is in an actual approved/executed request (for showing X mark)
+    // Only shows X marks for current/future bookings, not past ones
+    const isDateInActualApprovedRequest = (dateString: string): boolean => {
+        const checkDateStr = dateString.split('T')[0];
         const checkDate = new Date(checkDateStr + 'T00:00:00');
         checkDate.setHours(0, 0, 0, 0);
         
-        // Check maintenance periods first (12 hours after each rental)
+        // Don't show X marks for past dates - only current/future bookings
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (checkDate < today) {
+            return false;
+        }
+        
+        // Check maintenance periods (12 hours after each rental)
+        // Only for current/future maintenance periods
         if (isInMaintenancePeriod(checkDate)) {
             return true;
         }
@@ -206,56 +269,63 @@ export const CarDetails: React.FC = () => {
             const result = approvedBorrowRequests.some(request => {
                 if (!request.start_date || !request.end_date) return false;
                 
-                // Parse start date - handle both "YYYY-MM-DDTHH:MM:SS" and "YYYY-MM-DD HH:MM:SS" formats
                 const startDateStr = request.start_date.includes('T')
                     ? request.start_date.split('T')[0]
                     : request.start_date.split(' ')[0];
                 const startDate = new Date(startDateStr + 'T00:00:00');
                 startDate.setHours(0, 0, 0, 0);
                 
-                // Parse end date - handle both formats
                 const endDateStr = request.end_date.includes('T')
                     ? request.end_date.split('T')[0]
                     : request.end_date.split(' ')[0];
                 const endDate = new Date(endDateStr + 'T23:59:59');
                 endDate.setHours(23, 59, 59, 999);
                 
-                // Check if the date falls within the range (inclusive)
-                const isInRange = checkDate >= startDate && checkDate <= endDate;
-                
-                return isInRange;
+                // Only show X if the booking is current or future (end date is today or later)
+                const isCurrentOrFuture = endDate >= today;
+                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
             });
             
             if (result) return true;
         }
         
-        // Also check active rentals (which come from EXECUTED requests)
+        // Check active rentals (which come from EXECUTED requests)
         if (carRentalsForCalendar.length > 0) {
             const result = carRentalsForCalendar.some(rental => {
                 if (!rental.start_date || !rental.end_date) return false;
                 
-                // Parse start date - handle both "YYYY-MM-DDTHH:MM:SS" and "YYYY-MM-DD HH:MM:SS" formats
                 const startDateStr = rental.start_date.includes('T')
                     ? rental.start_date.split('T')[0]
                     : rental.start_date.split(' ')[0];
                 const startDate = new Date(startDateStr + 'T00:00:00');
                 startDate.setHours(0, 0, 0, 0);
                 
-                // Parse end date - handle both formats
                 const endDateStr = rental.end_date.includes('T')
                     ? rental.end_date.split('T')[0]
                     : rental.end_date.split(' ')[0];
                 const endDate = new Date(endDateStr + 'T23:59:59');
                 endDate.setHours(23, 59, 59, 999);
                 
-                // Check if the date falls within the range (inclusive)
-                return checkDate >= startDate && checkDate <= endDate;
+                // Only show X if the rental is current or future (end date is today or later)
+                const isCurrentOrFuture = endDate >= today;
+                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
             });
             
-            if (result) return true;
+            return result;
         }
         
         return false;
+    };
+
+    // Check if date is blocked by future rental limit (disable but don't show X)
+    const isDateBlockedByFutureRental = (dateString: string): boolean => {
+        const earliestFutureStart = getEarliestFutureRentalStart();
+        return earliestFutureStart !== null && dateString >= earliestFutureStart;
+    };
+
+    // Combined check for blocking (includes both actual requests and future rental limit)
+    const isDateInApprovedRequest = (dateString: string): boolean => {
+        return isDateInActualApprovedRequest(dateString) || isDateBlockedByFutureRental(dateString);
     };
 
     // ───── EFFECTS ─────
@@ -454,7 +524,7 @@ export const CarDetails: React.FC = () => {
                 setApprovedBorrowRequests(filteredRequests);
                 
                 // Calculate nextAvailableDate from combined Rentals + APPROVED requests
-                // This ensures consecutive rentals (including APPROVED) show the correct "Liber" date
+                // Show availability after the first booking if there's a gap of 2+ days before the next booking
                 const currentTime = new Date();
                 let latestReturnDate: Date | null = null;
                 
@@ -466,12 +536,23 @@ export const CarDetails: React.FC = () => {
                         return startA.getTime() - startB.getTime();
                     });
                     
-                    // Find consecutive requests (no gap between them)
-                    let consecutiveEndDate: Date | null = null;
-                    
+                    // Find the first current/future booking
                     for (let i = 0; i < sortedRequests.length; i++) {
                         const request = sortedRequests[i];
-                        if (!request.end_date) continue;
+                        if (!request.start_date || !request.end_date) continue;
+                        
+                        // Parse start date
+                        const startDateStr = request.start_date.includes('T')
+                            ? request.start_date.split('T')[0]
+                            : request.start_date.split(' ')[0];
+                        const requestStartDate = new Date(startDateStr);
+                        
+                        if (request.start_time) {
+                            const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                            requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                        } else {
+                            requestStartDate.setHours(9, 0, 0, 0);
+                        }
                         
                         // Parse end date
                         const endDateStr = request.end_date.includes('T')
@@ -479,7 +560,6 @@ export const CarDetails: React.FC = () => {
                             : request.end_date.split(' ')[0];
                         const requestEndDate = new Date(endDateStr);
                         
-                        // Add end time
                         if (request.end_time) {
                             const [hours, minutes] = request.end_time.split(':').map(Number);
                             requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
@@ -490,65 +570,128 @@ export const CarDetails: React.FC = () => {
                         // Add 12 hours maintenance period after rental ends
                         requestEndDate.setHours(requestEndDate.getHours() + 12);
                         
-                        // Check if this request is consecutive with the previous one
-                        if (i === 0) {
-                            // First request - start the chain
-                            consecutiveEndDate = requestEndDate;
-                        } else {
-                            const prevRequest = sortedRequests[i - 1];
-                            if (!prevRequest.end_date) continue;
-                            
-                            // Parse previous end date
-                            const prevEndDateStr = prevRequest.end_date.includes('T')
-                                ? prevRequest.end_date.split('T')[0]
-                                : prevRequest.end_date.split(' ')[0];
-                            const prevEndDate = new Date(prevEndDateStr);
-                            
-                            if (prevRequest.end_time) {
-                                const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
-                                prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
-                            } else {
-                                prevEndDate.setHours(17, 0, 0, 0);
-                            }
-                            
-                            // Add 12 hours maintenance period after previous rental ends
-                            prevEndDate.setHours(prevEndDate.getHours() + 12);
-                            
-                            // Parse current start date
-                            const startDateStr = request.start_date.includes('T')
-                                ? request.start_date.split('T')[0]
-                                : request.start_date.split(' ')[0];
-                            const requestStartDate = new Date(startDateStr);
-                            
-                            if (request.start_time) {
-                                const [startHours, startMinutes] = request.start_time.split(':').map(Number);
-                                requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
-                            } else {
-                                requestStartDate.setHours(9, 0, 0, 0);
-                            }
-                            
-                            // Check if requests are consecutive (same day or next day with no gap)
-                            const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
-                            const oneDayInMs = 24 * 60 * 60 * 1000;
-                            
-                            // If start of next request is same day or next day (within 25 hours to account for time differences)
-                            if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
-                                // Consecutive - update the end date
-                                consecutiveEndDate = requestEndDate;
-                            } else {
-                                // Gap found - use the previous consecutive end date
-                                if (consecutiveEndDate && consecutiveEndDate > currentTime) {
-                                    latestReturnDate = consecutiveEndDate;
+                        // Check if this is a current/future booking
+                        const isCurrentOrFuture = requestEndDate > currentTime;
+                        
+                        if (isCurrentOrFuture) {
+                            // Check if there's a next booking
+                            if (i < sortedRequests.length - 1) {
+                                const nextRequest = sortedRequests[i + 1];
+                                if (nextRequest.start_date) {
+                                    const nextStartDateStr = nextRequest.start_date.includes('T')
+                                        ? nextRequest.start_date.split('T')[0]
+                                        : nextRequest.start_date.split(' ')[0];
+                                    const nextStartDate = new Date(nextStartDateStr);
+                                    
+                                    if (nextRequest.start_time) {
+                                        const [nextHours, nextMinutes] = nextRequest.start_time.split(':').map(Number);
+                                        nextStartDate.setHours(nextHours || 9, nextMinutes || 0, 0, 0);
+                                    } else {
+                                        nextStartDate.setHours(9, 0, 0, 0);
+                                    }
+                                    
+                                    // Calculate gap between end of current booking and start of next
+                                    const gapMs = nextStartDate.getTime() - requestEndDate.getTime();
+                                    const gapDays = gapMs / (1000 * 60 * 60 * 24);
+                                    
+                                    // Minimum rental is 2 days, so if gap is 2+ days, car is available after first booking
+                                    if (gapDays >= 2) {
+                                        latestReturnDate = requestEndDate;
+                                        break; // Use first booking's end date
+                                    }
+                                    // If gap is less than 2 days, continue to check consecutive bookings
+                                } else {
+                                    // No next booking, use this one's end date
+                                    latestReturnDate = requestEndDate;
+                                    break;
                                 }
-                                // Start new chain
-                                consecutiveEndDate = requestEndDate;
+                            } else {
+                                // This is the last booking, use its end date
+                                latestReturnDate = requestEndDate;
+                                break;
+                            }
+                        } else {
+                            // Past booking - check if it hasn't ended yet
+                            if (requestEndDate > currentTime) {
+                                if (!latestReturnDate || requestEndDate < latestReturnDate) {
+                                    latestReturnDate = requestEndDate;
+                                }
                             }
                         }
                     }
                     
-                    // Use the last consecutive end date if it's later than any individual request
-                    if (consecutiveEndDate && consecutiveEndDate > currentTime) {
-                        latestReturnDate = consecutiveEndDate;
+                    // If we didn't find a booking with a gap, find consecutive bookings
+                    if (!latestReturnDate) {
+                        let consecutiveEndDate: Date | null = null;
+                        
+                        for (let i = 0; i < sortedRequests.length; i++) {
+                            const request = sortedRequests[i];
+                            if (!request.end_date) continue;
+                            
+                            const endDateStr = request.end_date.includes('T')
+                                ? request.end_date.split('T')[0]
+                                : request.end_date.split(' ')[0];
+                            const requestEndDate = new Date(endDateStr);
+                            
+                            if (request.end_time) {
+                                const [hours, minutes] = request.end_time.split(':').map(Number);
+                                requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
+                            } else {
+                                requestEndDate.setHours(17, 0, 0, 0);
+                            }
+                            
+                            requestEndDate.setHours(requestEndDate.getHours() + 12);
+                            
+                            if (i === 0) {
+                                consecutiveEndDate = requestEndDate;
+                            } else {
+                                const prevRequest = sortedRequests[i - 1];
+                                if (prevRequest.end_date) {
+                                    const prevEndDateStr = prevRequest.end_date.includes('T')
+                                        ? prevRequest.end_date.split('T')[0]
+                                        : prevRequest.end_date.split(' ')[0];
+                                    const prevEndDate = new Date(prevEndDateStr);
+                                    
+                                    if (prevRequest.end_time) {
+                                        const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
+                                        prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
+                                    } else {
+                                        prevEndDate.setHours(17, 0, 0, 0);
+                                    }
+                                    
+                                    prevEndDate.setHours(prevEndDate.getHours() + 12);
+                                    
+                                    const startDateStr = request.start_date.includes('T')
+                                        ? request.start_date.split('T')[0]
+                                        : request.start_date.split(' ')[0];
+                                    const requestStartDate = new Date(startDateStr);
+                                    
+                                    if (request.start_time) {
+                                        const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                                        requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                                    } else {
+                                        requestStartDate.setHours(9, 0, 0, 0);
+                                    }
+                                    
+                                    const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
+                                    const oneDayInMs = 24 * 60 * 60 * 1000;
+                                    
+                                    if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
+                                        consecutiveEndDate = requestEndDate;
+                                    } else {
+                                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                                            latestReturnDate = consecutiveEndDate;
+                                            break;
+                                        }
+                                        consecutiveEndDate = requestEndDate;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                            latestReturnDate = consecutiveEndDate;
+                        }
                     }
                 }
                 
@@ -603,9 +746,23 @@ export const CarDetails: React.FC = () => {
         
         // Check if all dates in the month are blocked
         const allBlocked = monthDays.every(dayString => {
-            const isPast = dayString < today.toISOString().split('T')[0];
+            const todayString = formatDateLocal(today);
+            // Only block dates that are strictly in the past (not today)
+            const isPast = dayString < todayString;
+            // Check if date is before next available date
+            // Only block if nextAvailableDate is today or in the past (car is currently booked)
+            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
             const isBeforeAvailable = nextAvailableDate 
-                ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
+                ? (() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const nextAvailDate = new Date(nextAvailableDate);
+                    nextAvailDate.setHours(0, 0, 0, 0);
+                    const dayDate = new Date(dayString);
+                    dayDate.setHours(0, 0, 0, 0);
+                    // Only block if nextAvailableDate is today or past, and day is before it
+                    return nextAvailDate <= today && dayDate < nextAvailDate;
+                })()
                 : false;
             const isInApprovedRequest = isDateInApprovedRequest(dayString);
             
@@ -626,23 +783,10 @@ export const CarDetails: React.FC = () => {
         if (returnDate) {
             setCalendarMonth(prev => ({ ...prev, return: new Date(returnDate) }));
         } else if (pickupDate) {
+            // Always show the same month as pickup date for return calendar
+            // This ensures the calendar doesn't jump to next month when pickup is selected
             const pickup = new Date(pickupDate);
-            const pickupMonth = pickup.getMonth();
-            const pickupYear = pickup.getFullYear();
-            
-            // Get the last day of the pickup month
-            const lastDayOfMonth = new Date(pickupYear, pickupMonth + 1, 0);
-            const lastDayOfMonthDate = lastDayOfMonth.getDate();
-            
-            // If pickup date is before the last day of the month, open same month
-            // Otherwise, open next month
-            if (pickup.getDate() < lastDayOfMonthDate) {
-                setCalendarMonth(prev => ({ ...prev, return: new Date(pickup) }));
-            } else {
-                const nextMonth = new Date(pickup);
-                nextMonth.setMonth(nextMonth.getMonth() + 1);
-                setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
-            }
+            setCalendarMonth(prev => ({ ...prev, return: new Date(pickup) }));
         }
     }, [returnDate, pickupDate]);
 
@@ -879,8 +1023,46 @@ export const CarDetails: React.FC = () => {
 
                             {/* Availability Badge */}
                             {(() => {
-                                const isAvailable = car.status === 'available' || car.status === 'Available';
-                                const isBooked = !isAvailable && (nextAvailableDate !== null);
+                                // Find the first available date using the same logic as the calendar
+                                const findFirstAvailableDate = (): Date | null => {
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    const todayString = formatDateLocal(today);
+                                    
+                                    // Always start checking from TODAY first
+                                    let checkDate = new Date(today);
+                                    
+                                    // Check up to 60 days ahead
+                                    for (let i = 0; i < 60; i++) {
+                                        const checkDateStr = formatDateLocal(checkDate);
+                                        
+                                        // Use the same blocking logic as the calendar
+                                        const isPast = checkDateStr < todayString;
+                                        
+                                        const isBeforeAvailable = nextAvailableDate 
+                                            ? (() => {
+                                                const nextAvailDate = new Date(nextAvailableDate);
+                                                nextAvailDate.setHours(0, 0, 0, 0);
+                                                const dayDate = new Date(checkDateStr);
+                                                dayDate.setHours(0, 0, 0, 0);
+                                                // Only block if nextAvailableDate is today or past, and day is before it
+                                                return nextAvailDate <= today && dayDate < nextAvailDate;
+                                            })()
+                                            : false;
+                                        
+                                        const isInActualRequest = isDateInActualApprovedRequest(checkDateStr);
+                                        
+                                        // If date is not blocked, this is the first available date
+                                        if (!isPast && !isBeforeAvailable && !isInActualRequest) {
+                                            return checkDate;
+                                        }
+                                        
+                                        // Move to next day
+                                        checkDate.setDate(checkDate.getDate() + 1);
+                                    }
+                                    
+                                    return null;
+                                };
                                 
                                 const formatDateForDisplay = (date: Date): string => {
                                     const day = date.getDate();
@@ -892,8 +1074,23 @@ export const CarDetails: React.FC = () => {
                                     return `Liber de pe ${day} ${month}`;
                                 };
                                 
-                                const availabilityText = isBooked && nextAvailableDate 
-                                    ? formatDateForDisplay(nextAvailableDate)
+                                // Check if there are any current/future bookings
+                                const hasBookings = approvedBorrowRequests.length > 0 || carRentalsForCalendar.length > 0;
+                                
+                                // Find the first available date using calendar logic (always starts from today)
+                                const firstAvailableDate = findFirstAvailableDate();
+                                
+                                // If first available date is today, show "Disponibil"
+                                // Otherwise show the date
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const isAvailableToday = firstAvailableDate && 
+                                    formatDateLocal(firstAvailableDate) === formatDateLocal(today);
+                                
+                                const availabilityText = firstAvailableDate 
+                                    ? (isAvailableToday 
+                                        ? 'Disponibil' 
+                                        : formatDateForDisplay(firstAvailableDate))
                                     : (car.status === 'available' || car.status === 'Available' ? 'Disponibil' : car.status || '');
                                 
                                 if (!availabilityText) return null;
@@ -1087,13 +1284,28 @@ export const CarDetails: React.FC = () => {
                                                             const dayString = day;
                                                             const today = new Date();
                                                             today.setHours(0, 0, 0, 0);
-                                                            const isPast = dayString < today.toISOString().split('T')[0];
+                                                            const todayString = formatDateLocal(today);
+                                                            // Only block dates that are strictly in the past (not today)
+                                                            const isPast = dayString < todayString;
                                                             
+                                                            // Check if date is before next available date
+                                                            // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
                                                             const isBeforeAvailable = nextAvailableDate 
-                                                                ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
+                                                                ? (() => {
+                                                                    const today = new Date();
+                                                                    today.setHours(0, 0, 0, 0);
+                                                                    const nextAvailDate = new Date(nextAvailableDate);
+                                                                    nextAvailDate.setHours(0, 0, 0, 0);
+                                                                    const dayDate = new Date(dayString);
+                                                                    dayDate.setHours(0, 0, 0, 0);
+                                                                    // Only block if nextAvailableDate is today or past, and day is before it
+                                                                    return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                                })()
                                                                 : false;
-                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
-                                                            const isBlocked = isPast || isBeforeAvailable || isInApprovedRequest;
+                                                            const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                            // For pickup date, don't block by future rentals - allow selecting any future date
+                                                            const isBlocked = isPast || isBeforeAvailable || isInActualRequest;
                                                             const isSelected = dayString === pickupDate;
                                                             // Check if this is the return date (visible in pickup calendar)
                                                             const isReturnDate = returnDate && dayString === returnDate;
@@ -1102,13 +1314,18 @@ export const CarDetails: React.FC = () => {
                                                                 dayString > pickupDate && 
                                                                 dayString < returnDate;
 
+                                                            // Get message for blocked dates
+                                                            const getBlockedMessage = () => {
+                                                                return 'Această dată nu este disponibilă.';
+                                                            };
+
                                                             return (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors relative ${
+                                                                    className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
                                                                         isBlocked 
                                                                             ? 'text-gray-300 cursor-not-allowed' 
-                                                                            : 'text-gray-700'
+                                                                            : 'text-gray-700 cursor-pointer'
                                                                     } ${isSelected
                                                                         ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
                                                                         : isReturnDate
@@ -1121,9 +1338,20 @@ export const CarDetails: React.FC = () => {
                                                                     }`}
                                                                     onClick={() => {
                                                                         if (!isBlocked) {
+                                                                            // Check if pickup date is being changed (different from current selection)
+                                                                            const isChangingPickupDate = pickupDate && pickupDate !== day;
+                                                                            
+                                                                            // If user is reselecting/changing the pickup date, clear all other inputs first
+                                                                            if (isChangingPickupDate) {
+                                                                                setReturnDate('');
+                                                                                setPickupTime('');
+                                                                                setReturnTime('');
+                                                                            }
+                                                                            
                                                                             setPickupDate(day);
-                                                                            // Clear return date if it's invalid (before pickup or less than 2 days)
-                                                                            if (returnDate && day >= returnDate) {
+                                                                            
+                                                                            // If not changing, only clear return date if it's invalid (before pickup or less than 2 days)
+                                                                            if (!isChangingPickupDate && returnDate && day >= returnDate) {
                                                                                 const returnDay = new Date(returnDate);
                                                                                 const pickupDay = new Date(day);
                                                                                 const diffTime = returnDay.getTime() - pickupDay.getTime();
@@ -1142,11 +1370,15 @@ export const CarDetails: React.FC = () => {
                                                                                     setShowPickupTime(true);
                                                                                 }
                                                                             }, 300);
+                                                                        } else {
+                                                                            // Show message for blocked dates
+                                                                            alert(getBlockedMessage());
                                                                         }
                                                                     }}
+                                                                    title={isBlocked ? getBlockedMessage() : ''}
                                                                 >
                                                                     <span className="relative z-0">{dayDate.getDate()}</span>
-                                                                    {isInApprovedRequest && (
+                                                                    {isInActualRequest && (
                                                                         <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
                                                                             ✕
                                                                         </span>
@@ -1208,15 +1440,35 @@ export const CarDetails: React.FC = () => {
                                                         {(() => {
                                                             // Calculate minimum hour if nextAvailableDate is set and matches selected date
                                                             let minHour: number | undefined = undefined;
-                                                            if (nextAvailableDate && pickupDate) {
-                                                                const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
-                                                                if (pickupDate === nextAvailableDateStr) {
-                                                                    // Car becomes free on this date, only show hours from that time onwards
-                                                                    const availableHour = nextAvailableDate.getHours();
-                                                                    const availableMinutes = nextAvailableDate.getMinutes();
-                                                                    // If there are minutes (e.g., 18:30), show from next hour (19:00)
-                                                                    // If it's exactly on the hour (e.g., 18:00), show from that hour
-                                                                    minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                            
+                                                            // Check if selected date is today - if so, start from 2 hours from now
+                                                            if (pickupDate) {
+                                                                const today = new Date();
+                                                                today.setHours(0, 0, 0, 0);
+                                                                const todayString = formatDateLocal(today);
+                                                                
+                                                                if (pickupDate === todayString) {
+                                                                    // Selected date is today - start from 2 hours from now
+                                                                    const now = new Date();
+                                                                    const currentHour = now.getHours();
+                                                                    // Calculate hour 2 hours from now
+                                                                    let targetHour = currentHour + 2;
+                                                                    // If current time + 2 hours exceeds 24, cap at 23
+                                                                    if (targetHour >= 24) {
+                                                                        targetHour = 23;
+                                                                    }
+                                                                    minHour = targetHour;
+                                                                } else if (nextAvailableDate) {
+                                                                    // Check if nextAvailableDate matches selected date
+                                                                    const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
+                                                                    if (pickupDate === nextAvailableDateStr) {
+                                                                        // Car becomes free on this date, only show hours from that time onwards
+                                                                        const availableHour = nextAvailableDate.getHours();
+                                                                        const availableMinutes = nextAvailableDate.getMinutes();
+                                                                        // If there are minutes (e.g., 18:30), show from next hour (19:00)
+                                                                        // If it's exactly on the hour (e.g., 18:00), show from that hour
+                                                                        minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                                    }
                                                                 }
                                                             }
                                                             
@@ -1358,10 +1610,24 @@ export const CarDetails: React.FC = () => {
                                                             const dayString = day;
                                                             const today = new Date();
                                                             today.setHours(0, 0, 0, 0);
-                                                            const isPast = dayString < today.toISOString().split('T')[0];
+                                                            const todayString = formatDateLocal(today);
+                                                            // Only block dates that are strictly in the past (not today)
+                                                            const isPast = dayString < todayString;
                                                             
+                                                            // Check if date is before next available date
+                                                            // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
                                                             const isBeforeAvailable = nextAvailableDate 
-                                                                ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
+                                                                ? (() => {
+                                                                    const today = new Date();
+                                                                    today.setHours(0, 0, 0, 0);
+                                                                    const nextAvailDate = new Date(nextAvailableDate);
+                                                                    nextAvailDate.setHours(0, 0, 0, 0);
+                                                                    const dayDate = new Date(dayString);
+                                                                    dayDate.setHours(0, 0, 0, 0);
+                                                                    // Only block if nextAvailableDate is today or past, and day is before it
+                                                                    return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                                })()
                                                                 : false;
                                                             const isBeforePickup = pickupDate && dayString <= pickupDate;
                                                             // Minimum rental is 2 days - block dates that are less than 2 days after pickup
@@ -1372,8 +1638,29 @@ export const CarDetails: React.FC = () => {
                                                                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                                                 return diffDays < 2;
                                                             })();
-                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
-                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInApprovedRequest;
+                                                            const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                            // Only block by future rental if pickup date is before the future rental start
+                                                            // If pickup is after future rental, allow return dates after it too
+                                                            const isBlockedByFuture = pickupDate ? (() => {
+                                                                const earliestStart = getEarliestFutureRentalStart();
+                                                                if (!earliestStart) return false;
+                                                                
+                                                                const pickupDateObj = new Date(pickupDate);
+                                                                pickupDateObj.setHours(0, 0, 0, 0);
+                                                                const earliestStartDate = new Date(earliestStart);
+                                                                earliestStartDate.setHours(0, 0, 0, 0);
+                                                                const returnDateObj = new Date(dayString);
+                                                                returnDateObj.setHours(0, 0, 0, 0);
+                                                                
+                                                                // If pickup is after or equal to future rental start, don't block return dates
+                                                                if (pickupDateObj >= earliestStartDate) {
+                                                                    return false;
+                                                                }
+                                                                
+                                                                // If pickup is before future rental start, block return dates on/after future rental start
+                                                                return returnDateObj >= earliestStartDate;
+                                                            })() : isDateBlockedByFutureRental(dayString);
+                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInActualRequest || isBlockedByFuture;
                                                             const isSelected = dayString === returnDate;
                                                             // Check if this is the pickup date (visible in return calendar)
                                                             const isPickupDate = pickupDate && dayString === pickupDate;
@@ -1381,6 +1668,23 @@ export const CarDetails: React.FC = () => {
                                                             const isInRange = pickupDate && returnDate && 
                                                                 dayString > pickupDate && 
                                                                 dayString < returnDate;
+
+                                                            // Get message for blocked dates
+                                                            const getBlockedMessage = () => {
+                                                                if (isBlockedByFuture) {
+                                                                    const earliestStart = getEarliestFutureRentalStart();
+                                                                    if (earliestStart) {
+                                                                        const date = new Date(earliestStart);
+                                                                        const formattedDate = date.toLocaleDateString('ro-RO', { 
+                                                                            day: 'numeric', 
+                                                                            month: 'long', 
+                                                                            year: 'numeric' 
+                                                                        });
+                                                                        return `Nu puteți selecta această dată. Mașina este deja rezervată începând cu ${formattedDate}.`;
+                                                                    }
+                                                                }
+                                                                return 'Această dată nu este disponibilă.';
+                                                            };
 
                                                             return (
                                                                 <div
@@ -1418,11 +1722,15 @@ export const CarDetails: React.FC = () => {
                                                                                     setShowReturnTime(true);
                                                                                 }
                                                                             }, 300);
+                                                                        } else {
+                                                                            // Show message for blocked dates
+                                                                            alert(getBlockedMessage());
                                                                         }
                                                                     }}
+                                                                    title={isBlocked ? getBlockedMessage() : ''}
                                                                 >
                                                                     <span className="relative z-0">{dayDate.getDate()}</span>
-                                                                    {isInApprovedRequest && (
+                                                                    {isInActualRequest && (
                                                                         <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
                                                                             ✕
                                                                         </span>
@@ -1885,17 +2193,31 @@ export const CarDetails: React.FC = () => {
 
                                                             const dayDate = new Date(day);
                                                             const dayString = day;
-                                                            const isSelected = dayString === pickupDate;
                                                             const today = new Date();
                                                             today.setHours(0, 0, 0, 0);
-                                                            const isPast = dayString < today.toISOString().split('T')[0];
+                                                            const todayString = formatDateLocal(today);
+                                                            // Only block dates that are strictly in the past (not today)
+                                                            const isPast = dayString < todayString;
                                                             
                                                             // Check if date is before next available date
+                                                            // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
                                                             const isBeforeAvailable = nextAvailableDate 
-                                                                ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
+                                                                ? (() => {
+                                                                    const today = new Date();
+                                                                    today.setHours(0, 0, 0, 0);
+                                                                    const nextAvailDate = new Date(nextAvailableDate);
+                                                                    nextAvailDate.setHours(0, 0, 0, 0);
+                                                                    const dayDate = new Date(dayString);
+                                                                    dayDate.setHours(0, 0, 0, 0);
+                                                                    // Only block if nextAvailableDate is today or past, and day is before it
+                                                                    return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                                })()
                                                                 : false;
-                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
-                                                            const isBlocked = isPast || isBeforeAvailable || isInApprovedRequest;
+                                                            const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                            // For pickup date, don't block by future rentals - allow selecting any future date
+                                                            const isBlocked = isPast || isBeforeAvailable || isInActualRequest;
+                                                            const isSelected = dayString === pickupDate;
                                                             // Check if this is the return date (visible in pickup calendar)
                                                             const isReturnDate = returnDate && dayString === returnDate;
                                                             // Check if date is in range between pickup and return (only if return date is selected)
@@ -1922,16 +2244,27 @@ export const CarDetails: React.FC = () => {
                                                                     }`}
                                                                     onClick={() => {
                                                                         if (!isBlocked) {
+                                                                            // Check if pickup date is being changed (not just set for the first time)
+                                                                            const isChangingPickupDate = pickupDate && pickupDate !== day;
+                                                                            
                                                                             setPickupDate(day);
-                                                                            // Clear return date if it's invalid (before pickup or less than 2 days)
-                                                                            if (returnDate && day >= returnDate) {
-                                                                                const returnDay = new Date(returnDate);
-                                                                                const pickupDay = new Date(day);
-                                                                                const diffTime = returnDay.getTime() - pickupDay.getTime();
-                                                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                                                                // Clear return date if less than 2 days
-                                                                                if (diffDays < 2) {
-                                                                                    setReturnDate('');
+                                                                            
+                                                                            // If user is reselecting/changing the pickup date, clear all other inputs
+                                                                            if (isChangingPickupDate) {
+                                                                                setReturnDate('');
+                                                                                setPickupTime('');
+                                                                                setReturnTime('');
+                                                                            } else {
+                                                                                // Only clear return date if it's invalid (before pickup or less than 2 days)
+                                                                                if (returnDate && day >= returnDate) {
+                                                                                    const returnDay = new Date(returnDate);
+                                                                                    const pickupDay = new Date(day);
+                                                                                    const diffTime = returnDay.getTime() - pickupDay.getTime();
+                                                                                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                                                    // Clear return date if less than 2 days
+                                                                                    if (diffDays < 2) {
+                                                                                        setReturnDate('');
+                                                                                    }
                                                                                 }
                                                                             }
                                                                             // Close calendar after 0.3s delay so user can see what they clicked
@@ -1947,7 +2280,7 @@ export const CarDetails: React.FC = () => {
                                                                     }}
                                                                 >
                                                                     <span className="relative z-0">{dayDate.getDate()}</span>
-                                                                    {isInApprovedRequest && (
+                                                                    {isInActualRequest && (
                                                                         <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
                                                                             ✕
                                                                         </span>
@@ -2009,15 +2342,35 @@ export const CarDetails: React.FC = () => {
                                                         {(() => {
                                                             // Calculate minimum hour if nextAvailableDate is set and matches selected date
                                                             let minHour: number | undefined = undefined;
-                                                            if (nextAvailableDate && pickupDate) {
-                                                                const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
-                                                                if (pickupDate === nextAvailableDateStr) {
-                                                                    // Car becomes free on this date, only show hours from that time onwards
-                                                                    const availableHour = nextAvailableDate.getHours();
-                                                                    const availableMinutes = nextAvailableDate.getMinutes();
-                                                                    // If there are minutes (e.g., 18:30), show from next hour (19:00)
-                                                                    // If it's exactly on the hour (e.g., 18:00), show from that hour
-                                                                    minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                            
+                                                            // Check if selected date is today - if so, start from 2 hours from now
+                                                            if (pickupDate) {
+                                                                const today = new Date();
+                                                                today.setHours(0, 0, 0, 0);
+                                                                const todayString = formatDateLocal(today);
+                                                                
+                                                                if (pickupDate === todayString) {
+                                                                    // Selected date is today - start from 2 hours from now
+                                                                    const now = new Date();
+                                                                    const currentHour = now.getHours();
+                                                                    // Calculate hour 2 hours from now
+                                                                    let targetHour = currentHour + 2;
+                                                                    // If current time + 2 hours exceeds 24, cap at 23
+                                                                    if (targetHour >= 24) {
+                                                                        targetHour = 23;
+                                                                    }
+                                                                    minHour = targetHour;
+                                                                } else if (nextAvailableDate) {
+                                                                    // Check if nextAvailableDate matches selected date
+                                                                    const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
+                                                                    if (pickupDate === nextAvailableDateStr) {
+                                                                        // Car becomes free on this date, only show hours from that time onwards
+                                                                        const availableHour = nextAvailableDate.getHours();
+                                                                        const availableMinutes = nextAvailableDate.getMinutes();
+                                                                        // If there are minutes (e.g., 18:30), show from next hour (19:00)
+                                                                        // If it's exactly on the hour (e.g., 18:00), show from that hour
+                                                                        minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                                    }
                                                                 }
                                                             }
                                                             
@@ -2154,11 +2507,24 @@ export const CarDetails: React.FC = () => {
                                                             const dayString = day;
                                                             const today = new Date();
                                                             today.setHours(0, 0, 0, 0);
-                                                            const isPast = dayString < today.toISOString().split('T')[0];
+                                                            const todayString = formatDateLocal(today);
+                                                            // Only block dates that are strictly in the past (not today)
+                                                            const isPast = dayString < todayString;
                                                             
-                                                            // Check if date is before next available date or before pickup date
+                                                            // Check if date is before next available date
+                                                            // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
                                                             const isBeforeAvailable = nextAvailableDate 
-                                                                ? new Date(dayString) < new Date(nextAvailableDate.toISOString().split('T')[0])
+                                                                ? (() => {
+                                                                    const today = new Date();
+                                                                    today.setHours(0, 0, 0, 0);
+                                                                    const nextAvailDate = new Date(nextAvailableDate);
+                                                                    nextAvailDate.setHours(0, 0, 0, 0);
+                                                                    const dayDate = new Date(dayString);
+                                                                    dayDate.setHours(0, 0, 0, 0);
+                                                                    // Only block if nextAvailableDate is today or past, and day is before it
+                                                                    return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                                })()
                                                                 : false;
                                                             const isBeforePickup = pickupDate && dayString <= pickupDate;
                                                             // Minimum rental is 2 days - block dates that are less than 2 days after pickup
@@ -2169,8 +2535,29 @@ export const CarDetails: React.FC = () => {
                                                                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                                                 return diffDays < 2;
                                                             })();
-                                                            const isInApprovedRequest = isDateInApprovedRequest(dayString);
-                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInApprovedRequest;
+                                                            const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                            // Only block by future rental if pickup date is before the future rental start
+                                                            // If pickup is after future rental, allow return dates after it too
+                                                            const isBlockedByFuture = pickupDate ? (() => {
+                                                                const earliestStart = getEarliestFutureRentalStart();
+                                                                if (!earliestStart) return false;
+                                                                
+                                                                const pickupDateObj = new Date(pickupDate);
+                                                                pickupDateObj.setHours(0, 0, 0, 0);
+                                                                const earliestStartDate = new Date(earliestStart);
+                                                                earliestStartDate.setHours(0, 0, 0, 0);
+                                                                const returnDateObj = new Date(dayString);
+                                                                returnDateObj.setHours(0, 0, 0, 0);
+                                                                
+                                                                // If pickup is after or equal to future rental start, don't block return dates
+                                                                if (pickupDateObj >= earliestStartDate) {
+                                                                    return false;
+                                                                }
+                                                                
+                                                                // If pickup is before future rental start, block return dates on/after future rental start
+                                                                return returnDateObj >= earliestStartDate;
+                                                            })() : isDateBlockedByFutureRental(dayString);
+                                                            const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInActualRequest || isBlockedByFuture;
                                                             const isSelected = dayString === returnDate;
                                                             // Check if this is the pickup date (visible in return calendar)
                                                             const isPickupDate = pickupDate && dayString === pickupDate;
@@ -2178,6 +2565,23 @@ export const CarDetails: React.FC = () => {
                                                             const isInRange = pickupDate && returnDate && 
                                                                 dayString > pickupDate && 
                                                                 dayString < returnDate;
+
+                                                            // Get message for blocked dates
+                                                            const getBlockedMessage = () => {
+                                                                if (isBlockedByFuture) {
+                                                                    const earliestStart = getEarliestFutureRentalStart();
+                                                                    if (earliestStart) {
+                                                                        const date = new Date(earliestStart);
+                                                                        const formattedDate = date.toLocaleDateString('ro-RO', { 
+                                                                            day: 'numeric', 
+                                                                            month: 'long', 
+                                                                            year: 'numeric' 
+                                                                        });
+                                                                        return `Nu puteți selecta această dată. Mașina este deja rezervată începând cu ${formattedDate}.`;
+                                                                    }
+                                                                }
+                                                                return 'Această dată nu este disponibilă.';
+                                                            };
 
                                                             return (
                                                                 <div
@@ -2215,11 +2619,15 @@ export const CarDetails: React.FC = () => {
                                                                                     setShowReturnTime(true);
                                                                                 }
                                                                             }, 300);
+                                                                        } else {
+                                                                            // Show message for blocked dates
+                                                                            alert(getBlockedMessage());
                                                                         }
                                                                     }}
+                                                                    title={isBlocked ? getBlockedMessage() : ''}
                                                                 >
                                                                     <span className="relative z-0">{dayDate.getDate()}</span>
-                                                                    {isInApprovedRequest && (
+                                                                    {isInActualRequest && (
                                                                         <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
                                                                             ✕
                                                                         </span>
@@ -2423,6 +2831,8 @@ export const CarDetails: React.FC = () => {
                     pickupTime={pickupTime}
                     returnTime={returnTime}
                     rentalCalculation={rentalCalculation}
+                    approvedBorrowRequests={approvedBorrowRequests}
+                    carRentalsForCalendar={carRentalsForCalendar}
                 />
             )}
 

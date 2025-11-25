@@ -867,8 +867,8 @@ export const Cars: React.FC = () => {
                       return status !== 'ascuns' && status !== 'hidden';
                     })
                     .map((car, index) => (
-                      <CarCard key={car.id} car={car} index={index} />
-                    ))}
+                    <CarCard key={car.id} car={car} index={index} />
+                  ))}
                 </motion.div>
               ) : (
                 // Check if any filters are applied
