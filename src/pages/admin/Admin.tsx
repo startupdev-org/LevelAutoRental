@@ -138,16 +138,16 @@ const DashboardView: React.FC = () => {
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
             
-            // Consider available if status is null, empty, 'available', or not explicitly 'booked'/'borrowed'/'maintenance'
+            // Consider available if status is null, empty, 'available', or not explicitly 'ascuns'/'hidden'/'maintenance'
             return carStatus === '' || carStatus === 'available' || 
-                   (carStatus !== 'booked' && carStatus !== 'borrowed' && carStatus !== 'maintenance' && carStatus !== 'deleted');
+                   (carStatus !== 'ascuns' && carStatus !== 'hidden' && carStatus !== 'maintenance' && carStatus !== 'deleted');
         });
         
         const rentedCars = cars.filter(car => {
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
-            // Handle both 'booked' and 'borrowed' as rented status
-            return carStatus === 'booked' || carStatus === 'borrowed';
+            // Handle 'ascuns' and 'hidden' as hidden status (keeping variable name for compatibility)
+            return carStatus === 'ascuns' || carStatus === 'hidden';
         });
 
         console.log(`[Dashboard] Free cars: ${freeCars.length}, Rented cars: ${rentedCars.length}`);
@@ -665,7 +665,6 @@ const DashboardView: React.FC = () => {
                     setSelectedOrder(null);
                 }}
                 order={selectedOrder}
-                orderNumber={selectedOrder?.id ? (typeof selectedOrder.id === 'number' ? selectedOrder.id : parseInt(selectedOrder.id.toString(), 10)) : undefined}
                 onCancel={async (order) => {
                     if (!window.confirm(t('admin.orders.confirmCancelOrder'))) {
                         return;
@@ -715,7 +714,6 @@ const DashboardView: React.FC = () => {
                     }
                 }}
                 isProcessing={processingOrder === selectedOrder?.id.toString()}
-                cars={cars}
             />
         </motion.div>
     );
@@ -1111,6 +1109,9 @@ const CarsView: React.FC = () => {
     const [editingCar, setEditingCar] = useState<CarType | null>(null);
     const [localCars, setLocalCars] = useState<CarType[]>([]);
     const [loading, setLoading] = useState(true);
+    const [togglingCarId, setTogglingCarId] = useState<number | null>(null);
+    const [pendingStatus, setPendingStatus] = useState<Map<number, string>>(new Map());
+    const [carsWithActiveRentals, setCarsWithActiveRentals] = useState<Set<number>>(new Set());
     const { showSuccess, showError } = useNotification();
 
     // Fetch cars from Supabase and load images from storage
@@ -1119,6 +1120,25 @@ const CarsView: React.FC = () => {
             try {
                 setLoading(true);
                 const fetchedCars = await fetchCars();
+                
+                // Fetch active rentals to check which cars are currently rented
+                try {
+                    const { supabase } = await import('../../lib/supabase');
+                    const { data: activeRentals } = await supabase
+                        .from('Rentals')
+                        .select('car_id')
+                        .eq('rental_status', 'ACTIVE');
+                    
+                    if (activeRentals) {
+                        const carIdsWithActiveRentals = new Set(
+                            activeRentals.map(r => typeof r.car_id === 'number' ? r.car_id : parseInt(r.car_id.toString(), 10))
+                        );
+                        setCarsWithActiveRentals(carIdsWithActiveRentals);
+                    }
+                } catch (error) {
+                    console.error('Error fetching active rentals:', error);
+                }
+                
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
                     fetchedCars.map(async (car) => {
@@ -1146,13 +1166,16 @@ const CarsView: React.FC = () => {
         loadCars();
     }, []);
 
-    // Get car status for sorting (based on database status field)
+    // Get car status for sorting (based on database status field and active rentals)
     const getCarStatus = (car: CarType): number => {
+        // Check if car has active rentals first
+        if (carsWithActiveRentals.has(car.id)) return 2; // Booked cars go to bottom
+        
         // Normalize status: handle null, empty string, and different cases
         const rawStatus = car.status?.trim() || '';
         const carStatus = rawStatus.toLowerCase();
-        // 0 = Available, 1 = Maintenance, 2 = Booked/Borrowed (lower number = higher priority)
-        if (carStatus === 'booked' || carStatus === 'borrowed') return 2;
+        // 0 = Available, 1 = Maintenance, 2 = Hidden/Ascuns/Booked (lower number = higher priority)
+        if (carStatus === 'ascuns' || carStatus === 'hidden' || carStatus === 'booked' || carStatus === 'borrowed') return 2;
         if (carStatus === 'maintenance') return 1;
         return 0; // Default to available for null/empty/unknown statuses
     };
@@ -1232,6 +1255,65 @@ const CarsView: React.FC = () => {
                 console.error('Error deleting car:', error);
                 showError(t('admin.cars.carDeleteError'));
             }
+        }
+    };
+
+    const handleToggleStatus = async (car: CarType, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent row click
+        
+        // Check if car has active rentals - if so, don't allow toggle
+        if (carsWithActiveRentals.has(car.id)) {
+            showError(t('admin.cars.cannotToggleRentedCar') || 'Nu poți schimba statusul unei mașini care are închirieri active!');
+            return;
+        }
+        
+        // Calculate new status - toggle between "available" and "ascuns" (hidden)
+        const rawStatus = car.status?.trim() || '';
+        const carStatus = rawStatus.toLowerCase();
+        const isHidden = carStatus === 'ascuns' || carStatus === 'hidden';
+        const newStatus = isHidden ? 'available' : 'ascuns';
+        const newStatusLabel = isHidden ? t('admin.cars.statusAvailable') : 'Ascuns';
+        const carName = (car as any).name || `${car.make} ${car.model}`;
+        
+        // Confirm before changing status
+        if (!window.confirm(`${t('admin.cars.confirmToggleStatus')} ${carName} ${t('admin.cars.toStatus')} ${newStatusLabel}?`)) {
+            return;
+        }
+        
+        // Set pending status for visual switch change (doesn't trigger sort)
+        setPendingStatus(prev => new Map(prev).set(car.id, newStatus));
+        setTogglingCarId(car.id);
+        
+        // Wait 0.5 seconds before updating actual status (triggers sort)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Now update the actual status which will trigger re-sort
+        setLocalCars(prev => prev.map(c => 
+            c.id === car.id ? { ...c, status: newStatus } : c
+        ));
+        
+        try {
+            // Update database
+            await updateCar(car.id, { status: newStatus });
+            
+            // Clear pending status and toggling state
+            setPendingStatus(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(car.id);
+                return newMap;
+            });
+            setTogglingCarId(null);
+            showSuccess(t('admin.cars.statusUpdated'));
+        } catch (error) {
+            console.error('Error updating car status:', error);
+            // Revert pending status on error
+            setPendingStatus(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(car.id);
+                return newMap;
+            });
+            setTogglingCarId(null);
+            showError(t('admin.cars.statusUpdateError'));
         }
     };
 
@@ -1452,9 +1534,14 @@ const CarsView: React.FC = () => {
                         {/* Mobile Card View */}
                         <div className="block md:hidden p-4 space-y-4">
                             {filteredCars.map((car) => {
+                                // Use pendingStatus for visual display, actual status for sorting
+                                const displayStatus = pendingStatus.get(car.id) || car.status?.trim() || '';
                                 const rawStatus = car.status?.trim() || '';
                                 const carStatus = rawStatus.toLowerCase() || 'available';
-                                const isBooked = carStatus === 'booked' || carStatus === 'borrowed';
+                                const displayStatusLower = displayStatus.toLowerCase() || 'available';
+                                const hasActiveRental = carsWithActiveRentals.has(car.id);
+                                const isBooked = hasActiveRental || displayStatusLower === 'booked' || displayStatusLower === 'borrowed';
+                                const isHidden = !isBooked && (displayStatusLower === 'ascuns' || displayStatusLower === 'hidden');
                                 const isMaintenance = carStatus === 'maintenance';
                                 const basePrice = car.price_per_day || 0;
                                 const discount = car.discount_percentage || 0;
@@ -1476,18 +1563,50 @@ const CarsView: React.FC = () => {
                                                 className="w-16 h-16 object-cover rounded-md border border-white/10 flex-shrink-0"
                                             />
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="text-white font-semibold text-sm mb-1 truncate">{(car as any).name || `${car.make} ${car.model}`}</h3>
+                                                <div className="flex items-start justify-between gap-2 mb-1">
+                                                    <h3 className="text-white font-semibold text-sm truncate flex-1">{(car as any).name || `${car.make} ${car.model}`}</h3>
+                                                    {!isMaintenance && (
+                                                        hasActiveRental ? (
+                                                            <span className="px-2 py-1 text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/50 rounded-full">
+                                                                {t('admin.cars.statusBooked')}
+                                                            </span>
+                                                        ) : (
+                                                            <div 
+                                                                className="flex-shrink-0"
+                                                                onClick={(e) => handleToggleStatus(car, e)}
+                                                            >
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={togglingCarId === car.id}
+                                                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ${
+                                                                        togglingCarId === car.id 
+                                                                            ? 'opacity-50 cursor-wait'
+                                                                            : ''
+                                                                    } ${
+                                                                        isHidden ? 'bg-red-500' : 'bg-emerald-500'
+                                                                    }`}
+                                                                    role="switch"
+                                                                    aria-checked={isHidden}
+                                                                    aria-label={isHidden ? 'Ascuns' : t('admin.cars.statusAvailable')}
+                                                                >
+                                                                    <span
+                                                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-500 ${
+                                                                            isHidden ? 'translate-x-5' : 'translate-x-0.5'
+                                                                        }`}
+                                                                    />
+                                                                </button>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
                                                 <p className="text-gray-400 text-xs mb-2">{car.body} · {car.seats} {t('admin.cars.seats')}</p>
-                                                <span
-                                                    className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isBooked
-                                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        : isMaintenance
-                                                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                        }`}
-                                                >
-                                                    {(carStatus === 'booked' || carStatus === 'borrowed') ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
-                                                </span>
+                                                {isMaintenance && (
+                                                    <span
+                                                        className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl bg-yellow-500/20 text-yellow-300 border-yellow-500/50`}
+                                                    >
+                                                        {t('admin.cars.statusMaintenance')}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -1596,9 +1715,14 @@ const CarsView: React.FC = () => {
                                 </thead>
                                 <tbody className="divide-y divide-white/10">
                                     {filteredCars.map((car) => {
+                                        // Use pendingStatus for visual display, actual status for sorting
+                                        const displayStatus = pendingStatus.get(car.id) || car.status?.trim() || '';
                                         const rawStatus = car.status?.trim() || '';
                                         const carStatus = rawStatus.toLowerCase() || 'available';
-                                        const isBooked = carStatus === 'booked' || carStatus === 'borrowed';
+                                        const displayStatusLower = displayStatus.toLowerCase() || 'available';
+                                        const hasActiveRental = carsWithActiveRentals.has(car.id);
+                                        const isBooked = hasActiveRental || displayStatusLower === 'booked' || displayStatusLower === 'borrowed';
+                                        const isHidden = !isBooked && (displayStatusLower === 'ascuns' || displayStatusLower === 'hidden');
                                         const isMaintenance = carStatus === 'maintenance';
                                         return (
                                             <tr
@@ -1648,16 +1772,48 @@ const CarsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                                 <td className="px-6 py-4">
-                                                    <span
-                                                        className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${isBooked
-                                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                            : isMaintenance
-                                                                ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                                                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                            }`}
-                                                    >
-                                                        {(carStatus === 'booked' || carStatus === 'borrowed') ? t('admin.cars.statusBooked') : carStatus === 'maintenance' ? t('admin.cars.statusMaintenance') : t('admin.cars.statusAvailable')}
-                                                    </span>
+                                                    {isMaintenance ? (
+                                                        <span
+                                                            className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl bg-yellow-500/20 text-yellow-300 border-yellow-500/50`}
+                                                        >
+                                                            {t('admin.cars.statusMaintenance')}
+                                                        </span>
+                                                    ) : hasActiveRental ? (
+                                                        <span
+                                                            className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl bg-red-500/20 text-red-300 border-red-500/50`}
+                                                        >
+                                                            {t('admin.cars.statusBooked')}
+                                                        </span>
+                                                    ) : (
+                                                        <div 
+                                                            className="flex items-center gap-2"
+                                                            onClick={(e) => handleToggleStatus(car, e)}
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                disabled={togglingCarId === car.id}
+                                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ${
+                                                                    togglingCarId === car.id 
+                                                                        ? 'opacity-50 cursor-wait'
+                                                                        : ''
+                                                                } ${
+                                                                    isHidden ? 'bg-red-500' : 'bg-emerald-500'
+                                                                }`}
+                                                                role="switch"
+                                                                aria-checked={isHidden}
+                                                                aria-label={isHidden ? 'Ascuns' : t('admin.cars.statusAvailable')}
+                                                            >
+                                                                <span
+                                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-500 ${
+                                                                        isHidden ? 'translate-x-6' : 'translate-x-1'
+                                                                    }`}
+                                                                />
+                                                            </button>
+                                                            <span className="text-xs text-gray-400">
+                                                                {isHidden ? 'Ascuns' : t('admin.cars.statusAvailable')}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>

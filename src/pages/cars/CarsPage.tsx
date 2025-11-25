@@ -45,14 +45,16 @@ export const Cars: React.FC = () => {
 
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
 
-  const NUMBER_OF_CARS = 4; // or whatever number you want
-
   async function handleFetchCarsWithPhotos() {
     setLoading(true);
     try {
-      const fetchedCars = await fetchCarsWithPhotos(NUMBER_OF_CARS);
+      const fetchedCars = await fetchCarsWithPhotos();
       setCars(fetchedCars);
       console.log('Fetched cars with photos:', fetchedCars);
+      
+      // Extract unique makes from fetched cars (no need for separate DB call)
+      const uniqueMakes = [...new Set(fetchedCars.map(car => car.make).filter(Boolean))];
+      setMakes(uniqueMakes);
     } catch (error) {
       console.error('Error fetching cars with photos:', error);
     } finally {
@@ -130,7 +132,7 @@ export const Cars: React.FC = () => {
   useEffect(() => {
     handleFetchCarsWithPhotos();
     // handleFetchCars();
-    handleFetchCarsMake();
+    // handleFetchCarsMake(); // No longer needed - makes are extracted from fetched cars
   }, []);
 
   // Filter state
@@ -858,9 +860,15 @@ export const Cars: React.FC = () => {
                   animate={isInView ? "animate" : "initial"}
                   className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
                 >
-                  {cars.map((car, index) => (
-                    <CarCard key={car.id} car={car} index={index} />
-                  ))}
+                  {cars
+                    .filter((car) => {
+                      // Hide only cars that are hidden (Ascuns) - booked cars should still show
+                      const status = car.status?.toLowerCase() || '';
+                      return status !== 'ascuns' && status !== 'hidden';
+                    })
+                    .map((car, index) => (
+                      <CarCard key={car.id} car={car} index={index} />
+                    ))}
                 </motion.div>
               ) : (
                 // Check if any filters are applied

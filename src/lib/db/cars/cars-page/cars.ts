@@ -25,6 +25,7 @@ export interface CarFilters {
  */
 export async function fetchCars(): Promise<Car[]> {
     try {
+        // Exclude deleted cars (Ascuns will be filtered client-side)
         const { data, error } = await supabase
             .from("Cars")
             .select("*")
@@ -48,7 +49,6 @@ export async function fetchCars(): Promise<Car[]> {
  */
 export async function fetchCarsMake() {
     try {
-        console.log('fetching cars make from database');
         const { data, error } = await supabase
             .from("Cars")
             .select("make");
@@ -136,7 +136,7 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
             .from("Cars")
             .select("*");
 
-        // Apply status filter (exclude deleted)
+        // Apply status filter (exclude deleted - Ascuns will be filtered client-side)
         query = query.or('status.is.null,status.neq.deleted');
 
         // Apply make filter
