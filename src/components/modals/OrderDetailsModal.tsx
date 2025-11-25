@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Car as DollarSign, FileText, Plus } from 'lucide-react';
-import { Rental } from '../../lib/orders';
+import { Rental, OrderDisplay } from '../../lib/orders';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
@@ -13,9 +13,9 @@ import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 interface OrderDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    order: Rental | null;
-    onCancel?: (order: Rental) => void;
-    onRedo?: (order: Rental) => void;
+    order: OrderDisplay | null;
+    onCancel?: (order: OrderDisplay) => void;
+    onRedo?: (order: OrderDisplay) => void;
     isProcessing?: boolean;
     onOpenContractModal?: () => void; // Callback to open contract modal from parent
 }
@@ -295,10 +295,10 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     if (!order) return null;
 
     const { days, hours, totalHours } = calculateRentalDuration(
-        order.start_date,
-        order.start_time,
-        order.end_date,
-        order.end_time
+        order.pickupDate,
+        order.pickupTime,
+        order.returnDate,
+        order.returnTime
     );
 
     // Now use days, hours for pricing
@@ -406,15 +406,15 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
                                             </h3>
                                             <div className="flex items-center gap-2">
-                                                {(car?.image_url || (car as any)?.image || order.car?.image_url) && (
+                                                {(car?.image_url || (car as any)?.image || (order as any).car?.image_url) && (
                                                     <img
-                                                        src={car?.image_url || (car as any)?.image || order.car?.image_url}
-                                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || order.car?.make + ' ' + order.car?.model || t('admin.orders.unknownCar')}
+                                                        src={car?.image_url || (car as any)?.image || (order as any).car?.image_url}
+                                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || ((order as any).car?.make + ' ' + (order as any).car?.model) || t('admin.orders.unknownCar')}
                                                         className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded-md border border-white/10"
                                                     />
                                                 )}
                                                 <span className="text-white font-semibold text-xs sm:text-sm">
-                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (order.car?.make + ' ' + order.car?.model && order.car?.make + ' ' + order.car?.model !== 'Unknown Car' ? order.car?.make + ' ' + order.car?.model : '') || t('admin.orders.unknownCar')}
+                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (((order as any).car?.make + ' ' + (order as any).car?.model && (order as any).car?.make + ' ' + (order as any).car?.model !== 'Unknown Car' ? (order as any).car?.make + ' ' + (order as any).car?.model : '')) || order.carName || t('admin.orders.unknownCar')}
                                                 </span>
                                             </div>
                                         </div>
@@ -423,22 +423,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.start_date)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.pickupDate)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.start_time}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{order.pickupTime}</span>
                                                 </div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.end_date)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.returnDate)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.end_time}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{order.returnTime}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -627,7 +627,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <div className="space-y-3">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.pricePerDay')}</span>
-                                                        <span className="text-white font-semibold text-sm sm:text-base">{order.car ? `${order.car.price_per_day} MDL` : 'N/A'}</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{car ? `${car.price_per_day} MDL` : ((order as any).car ? `${(order as any).car.price_per_day} MDL` : 'N/A')}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.numberOfDays')}</span>
@@ -644,21 +644,21 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">{t('admin.requestDetails.basePrice')}</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round(order.subtotal || 0).toLocaleString()} MDL</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round((order as any).subtotal || 0).toLocaleString()} MDL</span>
                                                         </div>
                                                     </div>
 
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">Taxes Fees</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{order.taxes_fees || 0} MDL</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{(order as any).taxes_fees || 0} MDL</span>
                                                         </div>
                                                     </div>
 
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">Addition Taxes</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{order.additional_taxes || 0} MDL</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{(order as any).additional_taxes || 0} MDL</span>
                                                         </div>
                                                     </div>
 
@@ -772,7 +772,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                                             <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
                                         </h3>
-                                        {order.rental_status === 'CONTRACT' ? (
+                                        {((order as any).rental_status || order.status) === 'CONTRACT' ? (
                                             <>
                                                 <button
                                                     onClick={handleOpenContractModal}
