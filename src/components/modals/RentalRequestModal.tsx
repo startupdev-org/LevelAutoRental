@@ -469,64 +469,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
             const selectedStartDate = new Date(`${pickupDate}T${pickupTime}`);
             const selectedEndDate = new Date(`${returnDate}T${returnTime}`);
             
-            // Find the earliest future rental start date
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            let earliestFutureStart: Date | null = null as Date | null;
-            
-            // Check approved/executed borrow requests
-            approvedBorrowRequests.forEach(request => {
-                if (!request.start_date) return;
-                
-                const startDateStr = request.start_date.includes('T')
-                    ? request.start_date.split('T')[0]
-                    : request.start_date.split(' ')[0];
-                const startDate = new Date(startDateStr + 'T00:00:00');
-                startDate.setHours(0, 0, 0, 0);
-                
-                if (startDate > today) {
-                    if (!earliestFutureStart || startDate < earliestFutureStart) {
-                        earliestFutureStart = startDate;
-                    }
-                }
-            });
-            
-            // Check active rentals
-            carRentalsForCalendar.forEach(rental => {
-                if (!rental.start_date) return;
-                
-                const startDateStr = rental.start_date.includes('T')
-                    ? rental.start_date.split('T')[0]
-                    : rental.start_date.split(' ')[0];
-                const startDate = new Date(startDateStr + 'T00:00:00');
-                startDate.setHours(0, 0, 0, 0);
-                
-                if (startDate > today) {
-                    if (!earliestFutureStart || startDate < earliestFutureStart) {
-                        earliestFutureStart = startDate;
-                    }
-                }
-            });
-            
-            // Block if selected start date is on or after the earliest future rental
-            if (earliestFutureStart !== null) {
-                const selectedStartDateOnly = new Date(pickupDate);
-                selectedStartDateOnly.setHours(0, 0, 0, 0);
-                
-                if (selectedStartDateOnly >= earliestFutureStart) {
-                    const formatDateForDisplay = (date: Date) => {
-                        return date.toLocaleDateString('ro-RO', { 
-                            day: 'numeric', 
-                            month: 'long', 
-                            year: 'numeric' 
-                        });
-                    };
-                    
-                    return `Nu puteți rezerva mașina după data ${formatDateForDisplay(earliestFutureStart)}. Vă rugăm să selectați o perioadă înainte de această dată.`;
-                }
-            }
-            
             // Combine all existing rentals and approved requests
             const allExistingBookings = [
                 ...carRentalsForCalendar.map(r => ({
@@ -1033,7 +975,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         value={formData.phone}
                                                         onChange={(e) => handleInputChange('phone', e.target.value)}
                                                         placeholder="000 00 000"
-                                                    className={`w-full pl-24 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
+                                                    className={`w-full pl-28 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
                                                         hasAttemptedSubmit && fieldErrors.phone
                                                             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                                                             : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
