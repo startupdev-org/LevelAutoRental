@@ -72,6 +72,7 @@ import {
 import { NotificationToaster, useNotification } from '../../components/ui/NotificationToaster';
 import { supabaseAdmin } from '../../lib/supabase';
 import { OrderDetailsModal } from '../../components/modals/OrderDetailsModal';
+import { ContractCreationModal } from '../../components/modals/ContractCreationModal';
 
 // Dashboard View Component
 const DashboardView: React.FC = () => {
@@ -3318,6 +3319,7 @@ const RequestsView: React.FC = () => {
     const [sortBy, setSortBy] = useState<'pickup' | 'return' | 'amount' | 'status' | null>('status');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [showRejected, setShowRejected] = useState(false);
+    const [showExecuted, setShowExecuted] = useState(false);
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
     const [selectedCarIdForRental, setSelectedCarIdForRental] = useState<string | undefined>(undefined);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
@@ -3325,6 +3327,8 @@ const RequestsView: React.FC = () => {
     const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingRequest, setEditingRequest] = useState<OrderDisplay | null>(null);
+    const [showContractModal, setShowContractModal] = useState(false);
+    const [selectedRentalForContract, setSelectedRentalForContract] = useState<OrderDisplay | null>(null);
 
     useEffect(() => {
         const loadCars = async () => {
@@ -3518,6 +3522,224 @@ const RequestsView: React.FC = () => {
         setShowEditModal(true);
     };
 
+    const handleCancelRental = async (request: OrderDisplay) => {
+        if (!window.confirm(`Sunteți sigur că doriți să anulați închirierea pentru ${request.customerName}? Această acțiune va seta cererea la In Asteptare și va șterge comanda de închiriere.`)) {
+            return;
+        }
+
+        setProcessingRequest(request.id.toString());
+        try {
+            const requestId = typeof request.id === 'string' ? parseInt(request.id) : request.id;
+            
+            // First, delete the rental with matching request_id
+            const { error: deleteError } = await supabaseAdmin
+                .from('Rentals')
+                .delete()
+                .eq('request_id', requestId);
+
+            if (deleteError) {
+                console.error('Error deleting rental:', deleteError);
+                showError(`Eroare la ștergerea închirierii: ${deleteError.message}`);
+                setProcessingRequest(null);
+                return;
+            }
+
+            // Then, set the request status to PENDING
+            const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
+            if (result.success) {
+                showSuccess('Închirierea a fost anulată și cererea a fost setată la În Asteptare');
+                await loadRequests();
+            } else {
+                showError(`Eroare la actualizarea cererii: ${result.error || 'Eroare necunoscută'}`);
+            }
+        } catch (error) {
+            console.error('Error canceling rental:', error);
+            showError('Eroare la anularea închirierii');
+        } finally {
+            setProcessingRequest(null);
+        }
+    };
+
+    const handleStartRental = async (request: OrderDisplay) => {
+        setProcessingRequest(request.id.toString());
+        try {
+            const car = cars.find(c => c.id.toString() === request.carId);
+            if (!car) {
+                showError('Mașina nu a fost găsită');
+                setProcessingRequest(null);
+                return;
+            }
+
+            // Calculate total amount (same logic as in RequestDetailsModal)
+            const formatTime = (timeString: string): string => {
+                if (!timeString) return '00:00';
+                if (timeString.includes('AM') || timeString.includes('PM')) {
+                    const [time, period] = timeString.split(' ');
+                    const [hours, minutes] = time.split(':');
+                    let hour24 = parseInt(hours);
+                    if (period === 'PM' && hour24 !== 12) hour24 += 12;
+                    if (period === 'AM' && hour24 === 12) hour24 = 0;
+                    return `${String(hour24).padStart(2, '0')}:${minutes || '00'}`;
+                }
+                if (timeString.includes(':')) {
+                    const [hours, minutes] = timeString.split(':');
+                    return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
+                }
+                return '00:00';
+            };
+
+            const startDate = new Date(request.pickupDate);
+            const endDate = new Date(request.returnDate);
+            const pickupTime = formatTime(request.pickupTime);
+            const returnTime = formatTime(request.returnTime);
+            const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
+            const [returnHour, returnMin] = returnTime.split(':').map(Number);
+
+            const startDateTime = new Date(startDate);
+            startDateTime.setHours(pickupHour, pickupMin, 0, 0);
+            const endDateTime = new Date(endDate);
+            if (returnHour === 0 && returnMin === 0) {
+                endDateTime.setHours(23, 59, 59, 999);
+            } else {
+                endDateTime.setHours(returnHour, returnMin, 0, 0);
+            }
+
+            const diffTime = endDateTime.getTime() - startDateTime.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const days = diffDays;
+            const hours = diffHours >= 0 ? diffHours : 0;
+            const rentalDays = days;
+            const totalDays = days + (hours / 24);
+
+            // Calculate base price (no discounts now)
+            let basePrice = car.price_per_day * rentalDays;
+            if (hours > 0) {
+                const hoursPrice = (hours / 24) * car.price_per_day;
+                basePrice += hoursPrice;
+            }
+
+            // Calculate additional costs
+            const options = (request as any).options;
+            let parsedOptions: any = {};
+            if (options) {
+                if (typeof options === 'string') {
+                    try {
+                        parsedOptions = JSON.parse(options);
+                    } catch (e) {
+                        parsedOptions = {};
+                    }
+                } else {
+                    parsedOptions = options;
+                }
+            }
+
+            let additionalCosts = 0;
+            const baseCarPrice = car.price_per_day;
+            if (parsedOptions.unlimitedKm) {
+                additionalCosts += baseCarPrice * totalDays * 0.5;
+            }
+            if (parsedOptions.speedLimitIncrease) {
+                additionalCosts += baseCarPrice * totalDays * 0.2;
+            }
+            if (parsedOptions.tireInsurance) {
+                additionalCosts += baseCarPrice * totalDays * 0.2;
+            }
+            if (parsedOptions.personalDriver) {
+                additionalCosts += 800 * rentalDays;
+            }
+            if (parsedOptions.priorityService) {
+                additionalCosts += 1000 * rentalDays;
+            }
+            if (parsedOptions.childSeat) {
+                additionalCosts += 100 * rentalDays;
+            }
+            if (parsedOptions.simCard) {
+                additionalCosts += 100 * rentalDays;
+            }
+            if (parsedOptions.roadsideAssistance) {
+                additionalCosts += 500 * rentalDays;
+            }
+
+            const totalPrice = basePrice + additionalCosts;
+
+            // Create rental with CONTRACT status
+            const userId = request.userId || '';
+            const result = await createRentalManually(
+                userId,
+                request.carId,
+                request.pickupDate,
+                request.pickupTime,
+                request.returnDate,
+                request.returnTime,
+                totalPrice,
+                cars,
+                {
+                    rentalStatus: 'CONTRACT',
+                    customerName: request.customerName,
+                    customerEmail: request.customerEmail,
+                    customerPhone: request.customerPhone,
+                    customerFirstName: request.customerFirstName,
+                    customerLastName: request.customerLastName,
+                    customerAge: request.customerAge ? parseInt(String(request.customerAge)) : undefined,
+                    requestId: typeof request.id === 'string' ? request.id : request.id.toString()
+                }
+            );
+
+            if (result.success && result.rentalId) {
+                // Fetch the created rental to pass to contract modal
+                const { data: rentalData } = await supabaseAdmin
+                    .from('Rentals')
+                    .select('*')
+                    .eq('id', result.rentalId)
+                    .single();
+
+                if (rentalData) {
+                    // Convert rental to OrderDisplay format for contract modal
+                    const rentalAsOrder: OrderDisplay = {
+                        id: rentalData.id.toString(),
+                        carId: rentalData.car_id.toString(),
+                        carName: request.carName,
+                        pickupDate: request.pickupDate,
+                        pickupTime: request.pickupTime,
+                        returnDate: request.returnDate,
+                        returnTime: request.returnTime,
+                        amount: rentalData.total_amount || totalPrice,
+                        status: 'CONTRACT',
+                        userId: userId,
+                        customerName: request.customerName,
+                        customerEmail: request.customerEmail,
+                        customerPhone: request.customerPhone,
+                        customerFirstName: request.customerFirstName,
+                        customerLastName: request.customerLastName,
+                        customerAge: request.customerAge,
+                        options: options,
+                        // Include rental database fields for price breakdown
+                        subtotal: rentalData.subtotal,
+                        taxes_fees: rentalData.taxes_fees,
+                        additional_taxes: rentalData.additional_taxes,
+                        total_amount: rentalData.total_amount,
+                        price_per_day: rentalData.price_per_day
+                    } as any;
+
+                    setSelectedRentalForContract(rentalAsOrder);
+                    setShowContractModal(true);
+                    setShowRequestDetailsModal(false);
+                    showSuccess('Închirierea a fost creată cu succes!');
+                } else {
+                    showError('Nu s-a putut găsi închirierea creată');
+                }
+            } else {
+                showError(`Nu s-a putut crea închirierea: ${result.error || 'Eroare necunoscută'}`);
+            }
+        } catch (error) {
+            console.error('Error starting rental:', error);
+            showError('A apărut o eroare la crearea închirierii');
+        } finally {
+            setProcessingRequest(null);
+        }
+    };
+
     const handleSort = (field: 'pickup' | 'return' | 'amount' | 'status') => {
         if (sortBy === field) {
             // Toggle sort order if clicking the same field
@@ -3663,7 +3885,13 @@ const RequestsView: React.FC = () => {
                 ? request.status === 'REJECTED'
                 : request.status !== 'REJECTED';
 
-            return matchesSearch && matchesRejectedFilter;
+            // When showExecuted is true, only show executed requests
+            // When showExecuted is false, hide executed requests
+            const matchesExecutedFilter = showExecuted
+                ? request.status === 'EXECUTED'
+                : request.status !== 'EXECUTED';
+
+            return matchesSearch && matchesRejectedFilter && matchesExecutedFilter;
         });
 
         // Sort based on selected field
@@ -3701,7 +3929,7 @@ const RequestsView: React.FC = () => {
         }
 
         return filtered;
-    }, [requests, searchQuery, sortBy, sortOrder, showRejected, calculateRequestTotalPrice]);
+    }, [requests, searchQuery, sortBy, sortOrder, showRejected, showExecuted, calculateRequestTotalPrice]);
 
     // If requestId is in URL, show request details view
     if (requestId) {
@@ -3730,13 +3958,34 @@ const RequestsView: React.FC = () => {
                             </div>
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                                 <button
-                                    onClick={() => setShowRejected(!showRejected)}
+                                    onClick={() => {
+                                        if (showExecuted) {
+                                            setShowExecuted(false);
+                                        }
+                                        setShowRejected(!showRejected);
+                                    }}
+                                    disabled={showExecuted}
                                     className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showRejected
                                         ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
+                                        } ${showExecuted ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {showRejected ? t('admin.requests.hideRejected') : t('admin.requests.showRejected')}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (showRejected) {
+                                            setShowRejected(false);
+                                        }
+                                        setShowExecuted(!showExecuted);
+                                    }}
+                                    disabled={showRejected}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showExecuted
+                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 hover:bg-blue-500/30 hover:border-blue-500/60'
+                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                        } ${showRejected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {showExecuted ? 'Ascunde Începute' : 'Arată Începute'}
                                 </button>
                                 <button
                                     onClick={() => setShowAddRentalModal(true)}
@@ -3861,7 +4110,7 @@ const RequestsView: React.FC = () => {
                                                 {request.status === 'PENDING' ? t('admin.status.pending') : 
                                                  request.status === 'APPROVED' ? t('admin.status.approved') : 
                                                  request.status === 'REJECTED' ? t('admin.status.rejected') : 
-                                                 request.status === 'EXECUTED' ? t('admin.status.executed') : 
+                                                 request.status === 'EXECUTED' ? 'Început' : 
                                                  request.status.charAt(0) + request.status.slice(1).toLowerCase()}
                                             </span>
                                         </div>
@@ -3998,7 +4247,7 @@ const RequestsView: React.FC = () => {
                                                         {request.status === 'PENDING' ? t('admin.status.pending') : 
                                                          request.status === 'APPROVED' ? t('admin.status.approved') : 
                                                          request.status === 'REJECTED' ? t('admin.status.rejected') : 
-                                                         request.status === 'EXECUTED' ? t('admin.status.executed') : 
+                                                         request.status === 'EXECUTED' ? 'Început' : 
                                                          request.status.charAt(0) + request.status.slice(1).toLowerCase()}
                                                     </span>
                                                 </td>
@@ -4073,9 +4322,32 @@ const RequestsView: React.FC = () => {
                     onUndoReject={handleUndoReject}
                     onSetToPending={handleSetToPending}
                     onEdit={handleEdit}
+                    onStartRental={handleStartRental}
+                    onCancelRental={handleCancelRental}
                     isProcessing={processingRequest === selectedRequest.id.toString()}
                 />
             )}
+
+            {/* Contract Creation Modal */}
+            {showContractModal && selectedRentalForContract && (() => {
+                const car = cars.find(c => c.id.toString() === selectedRentalForContract.carId);
+                return car ? (
+                    <ContractCreationModal
+                        isOpen={showContractModal}
+                        onClose={() => {
+                            setShowContractModal(false);
+                            setSelectedRentalForContract(null);
+                        }}
+                        order={selectedRentalForContract as any}
+                        car={car}
+                        onContractCreated={async () => {
+                            setShowContractModal(false);
+                            setSelectedRentalForContract(null);
+                            await loadRequests();
+                        }}
+                    />
+                ) : null;
+            })()}
 
             {/* Edit Request Modal */}
             {showEditModal && editingRequest && (
@@ -4117,11 +4389,13 @@ interface RequestDetailsModalProps {
     onUndoReject?: (request: OrderDisplay) => void;
     onSetToPending?: (request: OrderDisplay) => void;
     onEdit?: (request: OrderDisplay) => void;
+    onStartRental?: (request: OrderDisplay) => void;
+    onCancelRental?: (request: OrderDisplay) => void;
     isProcessing?: boolean;
     cars: CarType[];
 }
 
-const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, isProcessing = false, cars }) => {
+const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onStartRental, onCancelRental, isProcessing = false, cars }) => {
     const { t } = useTranslation();
     const car = cars.find(c => c.id.toString() === request.carId);
     if (!car) return null;
@@ -4633,8 +4907,30 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                             </button>
                         </div>
                     )}
-                    {request.status === 'APPROVED' && (onReject || onSetToPending) && (
+                    {request.status === 'APPROVED' && (onReject || onSetToPending || onStartRental) && (
                         <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
+                            {onStartRental && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onStartRental(request);
+                                    }}
+                                    disabled={isProcessing}
+                                    className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                >
+                                    {isProcessing ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            {t('admin.requestDetails.processing')}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="w-4 h-4" />
+                                            Începe Închirierea
+                                        </>
+                                    )}
+                                </button>
+                            )}
                             {onSetToPending && (
                                 <button
                                     onClick={(e) => {
@@ -4676,7 +4972,7 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     ) : (
                                         <>
                                             <X className="w-4 h-4" />
-                                            Reject Request
+                                            Respinge Cererea
                                         </>
                                     )}
                                 </button>
@@ -4722,6 +5018,31 @@ const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onCl
                                     {t('admin.requestDetails.editRequest')}
                                 </button>
                             )}
+                        </div>
+                    )}
+                    {request.status === 'EXECUTED' && onCancelRental && (
+                        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onCancelRental(request);
+                                    onClose();
+                                }}
+                                disabled={isProcessing}
+                                className="flex-1 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 hover:border-orange-500/60 text-orange-300 hover:text-orange-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        {t('admin.requestDetails.processing')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <X className="w-4 h-4" />
+                                        Anulează Închirierea
+                                    </>
+                                )}
+                            </button>
                         </div>
                     )}
                 </div>
@@ -4914,7 +5235,7 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                                 className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
                             >
                                 <X className="w-4 h-4" />
-                                Reject Request
+                                Respinge Cererea
                             </button>
                         </>
                     )}
@@ -4935,7 +5256,7 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                                     className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
                                 >
                                     <X className="w-4 h-4" />
-                                    Reject Request
+                                    Respinge Cererea
                                 </button>
                             )}
                         </>
@@ -5052,6 +5373,13 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         pickup: today,
         return: tomorrow
     });
+    const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
+    const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<any[]>([]);
+    const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
+    const [pickupCalendarInitialized, setPickupCalendarInitialized] = useState(false);
+    const [returnCalendarInitialized, setReturnCalendarInitialized] = useState(false);
+    const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
+    const [minDaysMessage, setMinDaysMessage] = useState<string>('');
 
     // Refs for click outside detection
     const pickupCalendarRef = React.useRef<HTMLDivElement>(null);
@@ -5090,13 +5418,234 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         return days;
     };
 
-    const generateHours = (): string[] => {
+    // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
+    const formatDateLocal = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const generateHours = (minHour?: number): string[] => {
         const hours: string[] = [];
-        for (let h = 0; h < 24; h++) {
+        const startHour = minHour !== undefined ? minHour : 0;
+        for (let h = startHour; h < 24; h++) {
             hours.push(`${String(h).padStart(2, '0')}:00`);
-            hours.push(`${String(h).padStart(2, '0')}:30`);
         }
         return hours;
+    };
+
+    // Check if a date/time is in a maintenance period (12 hours after rental ends)
+    const isInMaintenancePeriod = (checkDate: Date, checkTime?: string): boolean => {
+        if (carRentalsForCalendar.length === 0) return false;
+        
+        return carRentalsForCalendar.some(rental => {
+            if (!rental.end_date || !rental.end_time) return false;
+            
+            // Parse rental end date and time
+            const endDateStr = rental.end_date.includes('T')
+                ? rental.end_date.split('T')[0]
+                : rental.end_date.split(' ')[0];
+            const rentalEndDate = new Date(endDateStr);
+            
+            // Parse end time
+            const [endHours, endMinutes] = rental.end_time.split(':').map(Number);
+            rentalEndDate.setHours(endHours || 17, endMinutes || 0, 0, 0);
+            
+            // Calculate maintenance period: 12 hours after rental ends
+            const maintenanceEndDate = new Date(rentalEndDate);
+            maintenanceEndDate.setHours(maintenanceEndDate.getHours() + 12);
+            
+            // If checkTime is provided, check the exact datetime
+            if (checkTime) {
+                const [checkHours, checkMinutes] = checkTime.split(':').map(Number);
+                const checkDateTime = new Date(checkDate);
+                checkDateTime.setHours(checkHours || 0, checkMinutes || 0, 0, 0);
+                
+                // Check if the datetime falls within maintenance period
+                return checkDateTime >= rentalEndDate && checkDateTime < maintenanceEndDate;
+            } else {
+                // If no time provided, check if the date overlaps with maintenance period
+                // Maintenance period spans from rental end to 12 hours later
+                const checkDateStart = new Date(checkDate);
+                checkDateStart.setHours(0, 0, 0, 0);
+                const checkDateEnd = new Date(checkDate);
+                checkDateEnd.setHours(23, 59, 59, 999);
+                
+                // Check if maintenance period overlaps with the check date
+                return maintenanceEndDate > checkDateStart && rentalEndDate < checkDateEnd;
+            }
+        });
+    };
+
+    // Find the earliest future approved/executed rental start date
+    const getEarliestFutureRentalStart = (): string | null => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let earliestStart: Date | null = null;
+        
+        // Check approved/executed borrow requests
+        approvedBorrowRequests.forEach(request => {
+            if (!request.start_date) return;
+            
+            const startDateStr = request.start_date.includes('T')
+                ? request.start_date.split('T')[0]
+                : request.start_date.split(' ')[0];
+            const startDate = new Date(startDateStr + 'T00:00:00');
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Only consider future rentals
+            if (startDate > today) {
+                if (!earliestStart || startDate < earliestStart) {
+                    earliestStart = startDate;
+                }
+            }
+        });
+        
+        // Check active rentals
+        carRentalsForCalendar.forEach(rental => {
+            if (!rental.start_date) return;
+            
+            const startDateStr = rental.start_date.includes('T')
+                ? rental.start_date.split('T')[0]
+                : rental.start_date.split(' ')[0];
+            const startDate = new Date(startDateStr + 'T00:00:00');
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Only consider future rentals
+            if (startDate > today) {
+                if (!earliestStart || startDate < earliestStart) {
+                    earliestStart = startDate;
+                }
+            }
+        });
+        
+        return earliestStart ? formatDateLocal(earliestStart) : null;
+    };
+
+    // Check if date is in an actual approved/executed request (for showing X mark)
+    // Only shows X marks for current/future bookings, not past ones
+    const isDateInActualApprovedRequest = (dateString: string): boolean => {
+        const checkDateStr = dateString.split('T')[0];
+        const checkDate = new Date(checkDateStr + 'T00:00:00');
+        checkDate.setHours(0, 0, 0, 0);
+        
+        // Don't show X marks for past dates - only current/future bookings
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (checkDate < today) {
+            return false;
+        }
+        
+        // Check maintenance periods (12 hours after each rental)
+        // Only for current/future maintenance periods
+        if (isInMaintenancePeriod(checkDate)) {
+            return true;
+        }
+        
+        // Check approved/executed borrow requests
+        if (approvedBorrowRequests.length > 0) {
+            const result = approvedBorrowRequests.some(request => {
+                if (!request.start_date || !request.end_date) return false;
+                
+                const startDateStr = request.start_date.includes('T')
+                    ? request.start_date.split('T')[0]
+                    : request.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                const endDateStr = request.end_date.includes('T')
+                    ? request.end_date.split('T')[0]
+                    : request.end_date.split(' ')[0];
+                const endDate = new Date(endDateStr + 'T23:59:59');
+                endDate.setHours(23, 59, 59, 999);
+                
+                // Only show X if the booking is current or future (end date is today or later)
+                const isCurrentOrFuture = endDate >= today;
+                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
+            });
+            
+            if (result) return true;
+        }
+        
+        // Check active rentals (which come from EXECUTED requests)
+        if (carRentalsForCalendar.length > 0) {
+            const result = carRentalsForCalendar.some(rental => {
+                if (!rental.start_date || !rental.end_date) return false;
+                
+                const startDateStr = rental.start_date.includes('T')
+                    ? rental.start_date.split('T')[0]
+                    : rental.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                const endDateStr = rental.end_date.includes('T')
+                    ? rental.end_date.split('T')[0]
+                    : rental.end_date.split(' ')[0];
+                const endDate = new Date(endDateStr + 'T23:59:59');
+                endDate.setHours(23, 59, 59, 999);
+                
+                // Only show X if the rental is current or future (end date is today or later)
+                const isCurrentOrFuture = endDate >= today;
+                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
+            });
+            
+            return result;
+        }
+        
+        return false;
+    };
+
+    // Check if date is blocked by future rental limit (disable but don't show X)
+    const isDateBlockedByFutureRental = (dateString: string): boolean => {
+        const earliestFutureStart = getEarliestFutureRentalStart();
+        return earliestFutureStart !== null && dateString >= earliestFutureStart;
+    };
+
+    // Combined check for blocking (includes both actual requests and future rental limit)
+    const isDateInApprovedRequest = (dateString: string): boolean => {
+        return isDateInActualApprovedRequest(dateString) || isDateBlockedByFutureRental(dateString);
+    };
+
+    // Check if all dates in a month are blocked (have x marks)
+    const isMonthFullyBooked = (monthDate: Date, isReturnCalendar: boolean = false): boolean => {
+        const days = generateCalendarDays(monthDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Get only dates that belong to the current month (not null)
+        const monthDays = days.filter(day => day !== null) as string[];
+        
+        // Check if all dates in the month are blocked
+        const allBlocked = monthDays.every(dayString => {
+            const todayString = formatDateLocal(today);
+            // Only block dates that are strictly in the past (not today)
+            const isPast = dayString < todayString;
+            // Check if date is before next available date
+            // Only block if nextAvailableDate is today or in the past (car is currently booked)
+            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
+            const isBeforeAvailable = nextAvailableDate 
+                ? (() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const nextAvailDate = new Date(nextAvailableDate);
+                    nextAvailDate.setHours(0, 0, 0, 0);
+                    const dayDate = new Date(dayString);
+                    dayDate.setHours(0, 0, 0, 0);
+                    // Only block if nextAvailableDate is today or past, and day is before it
+                    return nextAvailDate <= today && dayDate < nextAvailDate;
+                })()
+                : false;
+            const isInApprovedRequest = isDateInApprovedRequest(dayString);
+            
+            // For return calendar, also check if date is before pickup
+            const isBeforePickup = isReturnCalendar && formData.startDate && dayString <= formData.startDate;
+            
+            return isPast || isBeforeAvailable || isInApprovedRequest || isBeforePickup;
+        });
+        
+        return allBlocked && monthDays.length > 0;
     };
 
     const [options, setOptions] = useState({
@@ -5250,6 +5799,402 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
         }
     }, [formData.endDate, formData.startDate]);
 
+    // Sync calendar months with selected dates (same as CarDetails)
+    useEffect(() => {
+        if (formData.startDate) setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.startDate || '') }));
+    }, [formData.startDate]);
+
+    useEffect(() => {
+        if (formData.endDate) {
+            setCalendarMonth(prev => ({ ...prev, return: new Date(formData.endDate || '') }));
+        } else if (formData.startDate) {
+            // Always show the same month as pickup date for return calendar
+            // This ensures the calendar doesn't jump to next month when pickup is selected
+            const pickup = new Date(formData.startDate);
+            setCalendarMonth(prev => ({ ...prev, return: new Date(pickup) }));
+        }
+    }, [formData.endDate, formData.startDate]);
+
+    // Fetch rentals and calculate next available date
+    useEffect(() => {
+        const fetchCarAvailability = async () => {
+            if (!formData.carId) return;
+            
+            try {
+                const { fetchRentals } = await import('../../lib/orders');
+                const rentals = await fetchRentals();
+                const now = new Date();
+                
+                const carIdNum = parseInt(formData.carId, 10);
+                
+                // Filter rentals for this car that are active, contract, or current/future
+                const carRentals = rentals.filter(rental => {
+                    const rentalCarId = typeof rental.car_id === 'number' 
+                        ? rental.car_id 
+                        : parseInt(rental.car_id?.toString() || '0', 10);
+                    const rentalStatus = (rental as any).status || rental.rental_status || '';
+                    
+                    // Include ACTIVE, CONTRACT, or any rental that hasn't ended yet
+                    if (rentalCarId !== carIdNum) return false;
+                    
+                    if (rentalStatus === 'ACTIVE' || rentalStatus === 'CONTRACT') {
+                        return true;
+                    }
+                    
+                    // Also include rentals that haven't ended yet (for calendar marking)
+                    if (rental.end_date) {
+                        const endDate = new Date(rental.end_date);
+                        if (rental.end_time) {
+                            const [hours, minutes] = rental.end_time.split(':').map(Number);
+                            endDate.setHours(hours || 17, minutes || 0, 0, 0);
+                        } else {
+                            endDate.setHours(23, 59, 59, 999);
+                        }
+                        return endDate >= now;
+                    }
+                    
+                    return false;
+                });
+                
+                // Store rentals for calendar marking
+                setCarRentalsForCalendar(carRentals);
+            } catch (error) {
+                console.error('Error fetching car availability:', error);
+            }
+        };
+        
+        fetchCarAvailability();
+    }, [formData.carId]);
+
+    // Fetch approved and executed borrow requests for this car
+    useEffect(() => {
+        const fetchApprovedRequests = async () => {
+            if (!formData.carId) return;
+            
+            try {
+                const carIdNum = parseInt(formData.carId, 10);
+                
+                // Query Rentals table for all current/future rentals (not just CONTRACT/ACTIVE)
+                const rentalsResult = await supabaseAdmin
+                    .from('Rentals')
+                    .select('*')
+                    .eq('car_id', carIdNum)
+                    .order('created_at', { ascending: false });
+                
+                // Filter for rentals that are current or future (haven't ended yet)
+                const now = new Date();
+                const rentalsData = (rentalsResult.data || []).filter((rental: any) => {
+                    if (!rental.end_date) return false;
+                    
+                    // Parse end date
+                    const endDateStr = rental.end_date.includes('T')
+                        ? rental.end_date.split('T')[0]
+                        : rental.end_date.split(' ')[0];
+                    const endDate = new Date(endDateStr);
+                    
+                    // Add end time if available
+                    if (rental.end_time) {
+                        const [hours, minutes] = rental.end_time.split(':').map(Number);
+                        endDate.setHours(hours || 17, minutes || 0, 0, 0);
+                    } else {
+                        endDate.setHours(23, 59, 59, 999);
+                    }
+                    
+                    // Include if rental hasn't ended yet
+                    return endDate >= now;
+                });
+                
+                // Query BorrowRequest table for APPROVED requests
+                let approvedData: any[] = [];
+                
+                try {
+                    const approvedResult = await supabaseAdmin
+                        .from('BorrowRequest')
+                        .select('*')
+                        .eq('car_id', carIdNum)
+                        .in('status', ['APPROVED', 'EXECUTED'])
+                        .order('requested_at', { ascending: false });
+                    
+                    if (approvedResult.data && approvedResult.data.length > 0) {
+                        approvedData = approvedResult.data;
+                    }
+                } catch (error) {
+                    // Silently fail if query doesn't work (RLS might still be blocking)
+                }
+                
+                // Convert rentals to borrow request format
+                const rentalRequests = rentalsData.map((rental: any) => ({
+                    id: rental.id.toString(),
+                    user_id: rental.user_id,
+                    car_id: rental.car_id.toString(),
+                    start_date: rental.start_date,
+                    start_time: rental.start_time || '09:00:00',
+                    end_date: rental.end_date,
+                    end_time: rental.end_time || '17:00:00',
+                    status: 'EXECUTED' as const,
+                    created_at: rental.created_at,
+                    updated_at: rental.updated_at,
+                }));
+                
+                // Convert approved borrow requests to same format
+                const approvedRequests = approvedData.map((req: any) => ({
+                    id: req.id.toString(),
+                    user_id: req.user_id,
+                    car_id: req.car_id.toString(),
+                    start_date: req.start_date,
+                    start_time: req.start_time || '09:00:00',
+                    end_date: req.end_date,
+                    end_time: req.end_time || '17:00:00',
+                    status: 'APPROVED' as const,
+                    created_at: req.requested_at || req.created_at,
+                    updated_at: req.updated_at,
+                }));
+                
+                // Combine both types
+                const allRequests = [...rentalRequests, ...approvedRequests];
+                
+                // Filter requests - only filter out ones with missing dates
+                const filteredRequests = allRequests.filter((request: any) => {
+                    return request.start_date && request.end_date;
+                });
+                
+                setApprovedBorrowRequests(filteredRequests);
+                
+                // Calculate nextAvailableDate from combined Rentals + APPROVED requests
+                // Show availability after the first booking if there's a gap of 2+ days before the next booking
+                const currentTime = new Date();
+                let latestReturnDate: Date | null = null;
+                
+                if (filteredRequests.length > 0) {
+                    // Sort all requests (rentals + approved) by start date
+                    const sortedRequests = [...filteredRequests].sort((a, b) => {
+                        const startA = new Date(a.start_date || 0);
+                        const startB = new Date(b.start_date || 0);
+                        return startA.getTime() - startB.getTime();
+                    });
+                    
+                    // Find the first current/future booking
+                    for (let i = 0; i < sortedRequests.length; i++) {
+                        const request = sortedRequests[i];
+                        if (!request.start_date || !request.end_date) continue;
+                        
+                        // Parse start date
+                        const startDateStr = request.start_date.includes('T')
+                            ? request.start_date.split('T')[0]
+                            : request.start_date.split(' ')[0];
+                        const requestStartDate = new Date(startDateStr);
+                        
+                        if (request.start_time) {
+                            const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                            requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                        } else {
+                            requestStartDate.setHours(9, 0, 0, 0);
+                        }
+                        
+                        // Parse end date
+                        const endDateStr = request.end_date.includes('T')
+                            ? request.end_date.split('T')[0]
+                            : request.end_date.split(' ')[0];
+                        const requestEndDate = new Date(endDateStr);
+                        
+                        if (request.end_time) {
+                            const [hours, minutes] = request.end_time.split(':').map(Number);
+                            requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
+                        } else {
+                            requestEndDate.setHours(17, 0, 0, 0);
+                        }
+                        
+                        // Add 12 hours maintenance period after rental ends
+                        requestEndDate.setHours(requestEndDate.getHours() + 12);
+                        
+                        // Check if this is a current/future booking
+                        const isCurrentOrFuture = requestEndDate > currentTime;
+                        
+                        if (isCurrentOrFuture) {
+                            // Check if there's a next booking
+                            if (i < sortedRequests.length - 1) {
+                                const nextRequest = sortedRequests[i + 1];
+                                if (nextRequest.start_date) {
+                                    const nextStartDateStr = nextRequest.start_date.includes('T')
+                                        ? nextRequest.start_date.split('T')[0]
+                                        : nextRequest.start_date.split(' ')[0];
+                                    const nextStartDate = new Date(nextStartDateStr);
+                                    
+                                    if (nextRequest.start_time) {
+                                        const [nextHours, nextMinutes] = nextRequest.start_time.split(':').map(Number);
+                                        nextStartDate.setHours(nextHours || 9, nextMinutes || 0, 0, 0);
+                                    } else {
+                                        nextStartDate.setHours(9, 0, 0, 0);
+                                    }
+                                    
+                                    // Calculate gap between end of current booking and start of next
+                                    const gapMs = nextStartDate.getTime() - requestEndDate.getTime();
+                                    const gapDays = gapMs / (1000 * 60 * 60 * 24);
+                                    
+                                    // Minimum rental is 2 days, so if gap is 2+ days, car is available after first booking
+                                    if (gapDays >= 2) {
+                                        latestReturnDate = requestEndDate;
+                                        break; // Use first booking's end date
+                                    }
+                                    // If gap is less than 2 days, continue to check consecutive bookings
+                                } else {
+                                    // No next booking, use this one's end date
+                                    latestReturnDate = requestEndDate;
+                                    break;
+                                }
+                            } else {
+                                // This is the last booking, use its end date
+                                latestReturnDate = requestEndDate;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If we didn't find a booking with a gap, find consecutive bookings
+                    if (!latestReturnDate) {
+                        let consecutiveEndDate: Date | null = null;
+                        
+                        for (let i = 0; i < sortedRequests.length; i++) {
+                            const request = sortedRequests[i];
+                            if (!request.end_date) continue;
+                            
+                            const endDateStr = request.end_date.includes('T')
+                                ? request.end_date.split('T')[0]
+                                : request.end_date.split(' ')[0];
+                            const requestEndDate = new Date(endDateStr);
+                            
+                            if (request.end_time) {
+                                const [hours, minutes] = request.end_time.split(':').map(Number);
+                                requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
+                            } else {
+                                requestEndDate.setHours(17, 0, 0, 0);
+                            }
+                            
+                            requestEndDate.setHours(requestEndDate.getHours() + 12);
+                            
+                            if (i === 0) {
+                                consecutiveEndDate = requestEndDate;
+                            } else {
+                                const prevRequest = sortedRequests[i - 1];
+                                if (prevRequest.end_date) {
+                                    const prevEndDateStr = prevRequest.end_date.includes('T')
+                                        ? prevRequest.end_date.split('T')[0]
+                                        : prevRequest.end_date.split(' ')[0];
+                                    const prevEndDate = new Date(prevEndDateStr);
+                                    
+                                    if (prevRequest.end_time) {
+                                        const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
+                                        prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
+                                    } else {
+                                        prevEndDate.setHours(17, 0, 0, 0);
+                                    }
+                                    
+                                    prevEndDate.setHours(prevEndDate.getHours() + 12);
+                                    
+                                    const startDateStr = request.start_date.includes('T')
+                                        ? request.start_date.split('T')[0]
+                                        : request.start_date.split(' ')[0];
+                                    const requestStartDate = new Date(startDateStr);
+                                    
+                                    if (request.start_time) {
+                                        const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                                        requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                                    } else {
+                                        requestStartDate.setHours(9, 0, 0, 0);
+                                    }
+                                    
+                                    const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
+                                    const oneDayInMs = 24 * 60 * 60 * 1000;
+                                    
+                                    if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
+                                        consecutiveEndDate = requestEndDate;
+                                    } else {
+                                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                                            latestReturnDate = consecutiveEndDate;
+                                            break;
+                                        }
+                                        consecutiveEndDate = requestEndDate;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                            latestReturnDate = consecutiveEndDate;
+                        }
+                    }
+                }
+                
+                setNextAvailableDate(latestReturnDate);
+            } catch (error) {
+                console.error('Error fetching approved borrow requests:', error);
+            }
+        };
+        
+        fetchApprovedRequests();
+    }, [formData.carId]);
+
+    // Auto-advance to next month if current month is fully booked when calendar first opens
+    useEffect(() => {
+        if (showPickupCalendar && !pickupCalendarInitialized) {
+            if (isMonthFullyBooked(calendarMonth.pickup, false)) {
+                const nextMonth = new Date(calendarMonth.pickup);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCalendarMonth(prev => ({ ...prev, pickup: nextMonth }));
+            }
+            setPickupCalendarInitialized(true);
+        } else if (!showPickupCalendar) {
+            // Reset when calendar closes so it can auto-advance again on next open
+            setPickupCalendarInitialized(false);
+        }
+    }, [showPickupCalendar, calendarMonth.pickup, nextAvailableDate, approvedBorrowRequests, pickupCalendarInitialized]);
+
+    useEffect(() => {
+        if (showReturnCalendar && !returnCalendarInitialized) {
+            if (isMonthFullyBooked(calendarMonth.return, true)) {
+                const nextMonth = new Date(calendarMonth.return);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
+            }
+            setReturnCalendarInitialized(true);
+        } else if (!showReturnCalendar) {
+            // Reset when calendar closes so it can auto-advance again on next open
+            setReturnCalendarInitialized(false);
+        }
+    }, [showReturnCalendar, calendarMonth.return, nextAvailableDate, approvedBorrowRequests, formData.startDate, returnCalendarInitialized]);
+
+    // Click outside for calendars & time selectors (same as CarDetails)
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+            // Don't close if we're in the middle of a delayed close
+            if (isClosingWithDelay) return;
+            
+            const target = event.target as HTMLElement;
+            // Check if click is on a button that toggles the calendar - if so, don't close
+            const clickedButton = target.closest('button[data-calendar-toggle]');
+            if (clickedButton) {
+                // Don't close if clicking on the toggle button - let the button's onClick handle it
+                return;
+            }
+            
+            // Only close if clicking outside the calendar container and the calendar is open
+            if (showPickupCalendar && pickupCalendarRef.current && !pickupCalendarRef.current.contains(target as Node))
+                setShowPickupCalendar(false);
+            if (showReturnCalendar && returnCalendarRef.current && !returnCalendarRef.current.contains(target as Node))
+                setShowReturnCalendar(false);
+            if (showPickupTime && pickupTimeRef.current && !pickupTimeRef.current.contains(target as Node))
+                setShowPickupTime(false);
+            if (showReturnTime && returnTimeRef.current && !returnTimeRef.current.contains(target as Node))
+                setShowReturnTime(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [showPickupCalendar, showReturnCalendar, showPickupTime, showReturnTime, isClosingWithDelay]);
+
     const handleCarChange = (carId: string) => {
         const selectedCar = cars.find(c => c.id.toString() === carId);
         setFormData(prev => ({
@@ -5308,7 +6253,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                 onClick={(e) => e.stopPropagation()}
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             >
-                <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#1C1C1C' }}>
+                <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                     <h2 className="text-xl font-bold text-white">{t('admin.requests.createNew')}</h2>
                     <button
                         onClick={onClose}
@@ -5379,7 +6324,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Telefon *</label>
                                 <div className="relative">
-                                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 country-code-dropdown-container">
+                                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-[1] country-code-dropdown-container">
                                         <button
                                             type="button"
                                             onClick={() => setShowCountryCodeDropdown(!showCountryCodeDropdown)}
@@ -5392,7 +6337,7 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             </svg>
                                         </button>
                                         {showCountryCodeDropdown && (
-                                            <div className="absolute top-full left-0 mt-1 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50 min-w-[200px]" style={{ backgroundColor: '#343434' }}>
+                                            <div className="absolute top-full left-0 mt-1 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto z-[5] min-w-[200px]" style={{ backgroundColor: '#343434' }}>
                                                 {COUNTRY_CODES.map((country) => (
                                                     <button
                                                         key={country.code}
@@ -5552,36 +6497,105 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
 
                                                     const dayDate = new Date(day);
                                                     const dayString = day;
+                                                    const today = new Date();
+                                                    today.setHours(0, 0, 0, 0);
+                                                    const todayString = formatDateLocal(today);
+                                                    // Only block dates that are strictly in the past (not today)
+                                                    const isPast = dayString < todayString;
+                                                    
+                                                    // Check if date is before next available date
+                                                    // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                    // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
+                                                    const isBeforeAvailable = nextAvailableDate 
+                                                        ? (() => {
+                                                            const today = new Date();
+                                                            today.setHours(0, 0, 0, 0);
+                                                            const nextAvailDate = new Date(nextAvailableDate);
+                                                            nextAvailDate.setHours(0, 0, 0, 0);
+                                                            const dayDate = new Date(dayString);
+                                                            dayDate.setHours(0, 0, 0, 0);
+                                                            // Only block if nextAvailableDate is today or past, and day is before it
+                                                            return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                        })()
+                                                        : false;
+                                                    const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                    // For pickup date, don't block by future rentals - allow selecting any future date
+                                                    const isBlocked = isPast || isBeforeAvailable || isInActualRequest;
                                                     const isSelected = dayString === formData.startDate;
-                                                    const isPast = dayString < today.toISOString().split('T')[0];
+                                                    // Check if this is the return date (visible in pickup calendar)
+                                                    const isReturnDate = formData.endDate && dayString === formData.endDate;
+                                                    // Check if date is in range between pickup and return (only if return date is selected)
+                                                    const isInRange = formData.startDate && formData.endDate && 
+                                                        dayString > formData.startDate && 
+                                                        dayString < formData.endDate;
+
+                                                    // Get message for blocked dates
+                                                    const getBlockedMessage = () => {
+                                                        return 'Această dată nu este disponibilă.';
+                                                    };
 
                                                     return (
                                                         <div
                                                             key={index}
-                                                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-600 cursor-not-allowed' : 'text-white'
-                                                                } ${isSelected
+                                                            className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
+                                                                isBlocked 
+                                                                    ? 'text-gray-300 cursor-not-allowed' 
+                                                                    : 'text-white cursor-pointer'
+                                                            } ${isSelected
+                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
+                                                                : isReturnDate
                                                                     ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
-                                                                    : !isPast
-                                                                        ? 'hover:bg-white/20'
-                                                                        : ''
-                                                                }`}
+                                                                    : isInRange
+                                                                        ? 'bg-white/20 text-white hover:bg-white/30'
+                                                                        : !isBlocked
+                                                                            ? 'hover:bg-white/20'
+                                                                            : ''
+                                                            }`}
                                                             onClick={() => {
-                                                                if (!isPast) {
-                                                                    setFormData(prev => ({ ...prev, startDate: day }));
-                                                                    setShowPickupCalendar(false);
-                                                                    if (formData.endDate && day >= formData.endDate) {
-                                                                        const newReturnDate = new Date(day);
-                                                                        newReturnDate.setDate(newReturnDate.getDate() + 1);
-                                                                        setFormData(prev => ({ ...prev, endDate: newReturnDate.toISOString().split('T')[0] }));
+                                                                if (!isBlocked) {
+                                                                    // Check if pickup date is being changed (different from current selection)
+                                                                    const isChangingPickupDate = formData.startDate && formData.startDate !== day;
+                                                                    
+                                                                    // If user is reselecting/changing the pickup date, clear all other inputs first
+                                                                    if (isChangingPickupDate) {
+                                                                        setFormData(prev => ({ ...prev, endDate: '', startTime: '', endTime: '' }));
                                                                     }
-                                                                    // Auto-open pickup time picker after selecting date
+                                                                    
+                                                                    setFormData(prev => ({ ...prev, startDate: day }));
+                                                                    
+                                                                    // If not changing, only clear return date if it's invalid (before pickup or less than 2 days)
+                                                                    if (!isChangingPickupDate && formData.endDate && day >= formData.endDate) {
+                                                                        const returnDay = new Date(formData.endDate);
+                                                                        const pickupDay = new Date(day);
+                                                                        const diffTime = returnDay.getTime() - pickupDay.getTime();
+                                                                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                                        // Clear return date if less than 2 days
+                                                                        if (diffDays < 2) {
+                                                                            setFormData(prev => ({ ...prev, endDate: '' }));
+                                                                        }
+                                                                    }
+                                                                    // Close calendar after 0.3s delay so user can see what they clicked
+                                                                    setIsClosingWithDelay(true);
                                                                     setTimeout(() => {
-                                                                        setShowPickupTime(true);
-                                                                    }, 100);
+                                                                        setShowPickupCalendar(false);
+                                                                        setIsClosingWithDelay(false);
+                                                                        if (!formData.startTime) {
+                                                                            setShowPickupTime(true);
+                                                                        }
+                                                                    }, 300);
+                                                                } else {
+                                                                    // Show message for blocked dates
+                                                                    alert(getBlockedMessage());
                                                                 }
                                                             }}
+                                                            title={isBlocked ? getBlockedMessage() : ''}
                                                         >
-                                                            {dayDate.getDate()}
+                                                            <span className="relative z-0">{dayDate.getDate()}</span>
+                                                            {isInActualRequest && (
+                                                                <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                    ✕
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
@@ -5620,27 +6634,76 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
                                             className="absolute z-50 top-full left-0 mt-2 bg-[#343434] border border-white/20 rounded-lg shadow-lg p-3 max-h-[200px] overflow-y-auto min-w-[120px]"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            <div className="grid grid-cols-2 gap-1">
-                                                {generateHours().map((hour) => (
-                                                    <button
-                                                        key={hour}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setFormData(prev => ({ ...prev, startTime: hour }));
-                                                            setShowPickupTime(false);
-                                                            // Auto-open return date picker after selecting time
-                                                            setTimeout(() => {
-                                                                setShowReturnCalendar(true);
-                                                            }, 100);
-                                                        }}
-                                                        className={`px-3 py-2 text-xs rounded transition-colors ${formData.startTime === hour
-                                                            ? 'bg-red-500 text-white font-medium'
-                                                            : 'text-white hover:bg-white/20'
-                                                            }`}
-                                                    >
-                                                        {hour}
-                                                    </button>
-                                                ))}
+                                            <div className="flex flex-col gap-1">
+                                                {(() => {
+                                                    // Calculate minimum hour if nextAvailableDate is set and matches selected date
+                                                    let minHour: number | undefined = undefined;
+                                                    
+                                                    // Check if selected date is today - if so, start from 2 hours from now
+                                                    if (formData.startDate) {
+                                                        const today = new Date();
+                                                        today.setHours(0, 0, 0, 0);
+                                                        const todayString = formatDateLocal(today);
+                                                        
+                                                        if (formData.startDate === todayString) {
+                                                            // Selected date is today - start from 2 hours from now
+                                                            const now = new Date();
+                                                            const currentHour = now.getHours();
+                                                            // Calculate hour 2 hours from now
+                                                            let targetHour = currentHour + 2;
+                                                            // If current time + 2 hours exceeds 24, cap at 23
+                                                            if (targetHour >= 24) {
+                                                                targetHour = 23;
+                                                            }
+                                                            minHour = targetHour;
+                                                        } else if (nextAvailableDate) {
+                                                            // Check if nextAvailableDate matches selected date
+                                                            const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
+                                                            if (formData.startDate === nextAvailableDateStr) {
+                                                                // Car becomes free on this date, only show hours from that time onwards
+                                                                const availableHour = nextAvailableDate.getHours();
+                                                                const availableMinutes = nextAvailableDate.getMinutes();
+                                                                // If there are minutes (e.g., 18:30), show from next hour (19:00)
+                                                                // If it's exactly on the hour (e.g., 18:00), show from that hour
+                                                                minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // Filter out hours that are in maintenance periods
+                                                    const availableHours = generateHours(minHour).filter((hour) => {
+                                                        if (!formData.startDate) return true;
+                                                        const checkDate = new Date(formData.startDate);
+                                                        return !isInMaintenancePeriod(checkDate, hour);
+                                                    });
+                                                    
+                                                    return availableHours.map((hour) => (
+                                                        <button
+                                                            key={hour}
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setFormData(prev => ({ ...prev, startTime: hour }));
+                                                                // Close time picker after 0.3s delay so user can see what they clicked
+                                                                setIsClosingWithDelay(true);
+                                                                setTimeout(() => {
+                                                                    setShowPickupTime(false);
+                                                                    setIsClosingWithDelay(false);
+                                                                    if (!formData.endDate) {
+                                                                        setShowReturnCalendar(true);
+                                                                    }
+                                                                }, 300);
+                                                            }}
+                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                            className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${formData.startTime === hour
+                                                                ? 'bg-red-500 text-white font-medium'
+                                                                : 'text-white hover:bg-white/20'
+                                                                }`}
+                                                        >
+                                                            {hour}
+                                                        </button>
+                                                    ));
+                                                })()}
                                             </div>
                                         </motion.div>
                                     )}
@@ -5718,36 +6781,144 @@ const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, onClose, 
 
                                                     const dayDate = new Date(day);
                                                     const dayString = day;
+                                                    const today = new Date();
+                                                    today.setHours(0, 0, 0, 0);
+                                                    const todayString = formatDateLocal(today);
+                                                    // Only block dates that are strictly in the past (not today)
+                                                    const isPast = dayString < todayString;
+                                                    
+                                                    // Check if date is before next available date
+                                                    // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                    // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
+                                                    const isBeforeAvailable = nextAvailableDate 
+                                                        ? (() => {
+                                                            const today = new Date();
+                                                            today.setHours(0, 0, 0, 0);
+                                                            const nextAvailDate = new Date(nextAvailableDate);
+                                                            nextAvailDate.setHours(0, 0, 0, 0);
+                                                            const dayDate = new Date(dayString);
+                                                            dayDate.setHours(0, 0, 0, 0);
+                                                            // Only block if nextAvailableDate is today or past, and day is before it
+                                                            return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                        })()
+                                                        : false;
+                                                    const isBeforePickup = formData.startDate && dayString <= formData.startDate;
+                                                    // Minimum rental is 2 days - block dates that are less than 2 days after pickup
+                                                    const isLessThanMinDays = formData.startDate && (() => {
+                                                        const pickup = new Date(formData.startDate);
+                                                        const returnDay = new Date(dayString);
+                                                        const diffTime = returnDay.getTime() - pickup.getTime();
+                                                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                        return diffDays < 2;
+                                                    })();
+                                                    const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                    // Only block by future rental if pickup date is before the future rental start
+                                                    // If pickup is after future rental, allow return dates after it too
+                                                    const isBlockedByFuture = formData.startDate ? (() => {
+                                                        const earliestStart = getEarliestFutureRentalStart();
+                                                        if (!earliestStart) return false;
+                                                        
+                                                        const pickupDateObj = new Date(formData.startDate);
+                                                        pickupDateObj.setHours(0, 0, 0, 0);
+                                                        const earliestStartDate = new Date(earliestStart);
+                                                        earliestStartDate.setHours(0, 0, 0, 0);
+                                                        const returnDateObj = new Date(dayString);
+                                                        returnDateObj.setHours(0, 0, 0, 0);
+                                                        
+                                                        // If pickup is after or equal to future rental start, don't block return dates
+                                                        if (pickupDateObj >= earliestStartDate) {
+                                                            return false;
+                                                        }
+                                                        
+                                                        // If pickup is before future rental start, block return dates on/after future rental start
+                                                        return returnDateObj >= earliestStartDate;
+                                                    })() : isDateBlockedByFutureRental(dayString);
+                                                    const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInActualRequest || isBlockedByFuture;
                                                     const isSelected = dayString === formData.endDate;
-                                                    const minReturnDate = formData.startDate || today.toISOString().split('T')[0];
-                                                    const isPast = dayString < minReturnDate;
+                                                    // Check if this is the pickup date (visible in return calendar)
+                                                    const isPickupDate = formData.startDate && dayString === formData.startDate;
+                                                    // Check if date is in range between pickup and return
+                                                    const isInRange = formData.startDate && formData.endDate && 
+                                                        dayString > formData.startDate && 
+                                                        dayString < formData.endDate;
+
+                                                    // Get message for blocked dates
+                                                    const getBlockedMessage = () => {
+                                                        if (isBlockedByFuture) {
+                                                            const earliestStart = getEarliestFutureRentalStart();
+                                                            if (earliestStart) {
+                                                                const date = new Date(earliestStart);
+                                                                const formattedDate = date.toLocaleDateString('ro-RO', { 
+                                                                    day: 'numeric', 
+                                                                    month: 'long', 
+                                                                    year: 'numeric' 
+                                                                });
+                                                                return `Nu puteți selecta această dată. Mașina este deja rezervată începând cu ${formattedDate}.`;
+                                                            }
+                                                        }
+                                                        return 'Această dată nu este disponibilă.';
+                                                    };
 
                                                     return (
                                                         <div
                                                             key={index}
-                                                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-600 cursor-not-allowed' : 'text-white'
-                                                                } ${isSelected
+                                                            className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
+                                                                isLessThanMinDays
+                                                                    ? 'text-black opacity-50 cursor-not-allowed' 
+                                                                    : isBlocked 
+                                                                        ? 'text-gray-300 cursor-not-allowed' 
+                                                                        : 'text-white cursor-pointer'
+                                                            } ${isSelected
+                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
+                                                                : isPickupDate
                                                                     ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
-                                                                    : !isPast
-                                                                        ? 'hover:bg-white/20'
-                                                                        : ''
-                                                                }`}
+                                                                    : isInRange
+                                                                        ? 'bg-white/20 text-white hover:bg-white/30'
+                                                                        : !isBlocked && !isLessThanMinDays
+                                                                            ? 'hover:bg-white/20'
+                                                                            : ''
+                                                            }`}
                                                             onClick={() => {
-                                                                if (!isPast) {
+                                                                if (isLessThanMinDays) {
+                                                                    setMinDaysMessage('Perioada minimă de închiriere este de 2 zile');
+                                                                    setTimeout(() => setMinDaysMessage(''), 3000);
+                                                                    return;
+                                                                }
+                                                                if (!isBlocked) {
                                                                     setFormData(prev => ({ ...prev, endDate: day }));
-                                                                    setShowReturnCalendar(false);
-                                                                    // Auto-open return time picker after selecting date
+                                                                    // Close calendar after 0.3s delay so user can see what they clicked
+                                                                    setIsClosingWithDelay(true);
                                                                     setTimeout(() => {
-                                                                        setShowReturnTime(true);
-                                                                    }, 100);
+                                                                        setShowReturnCalendar(false);
+                                                                        setIsClosingWithDelay(false);
+                                                                        if (!formData.endTime) {
+                                                                            setShowReturnTime(true);
+                                                                        }
+                                                                    }, 300);
+                                                                } else {
+                                                                    // Show message for blocked dates
+                                                                    alert(getBlockedMessage());
                                                                 }
                                                             }}
+                                                            title={isBlocked ? getBlockedMessage() : ''}
                                                         >
-                                                            {dayDate.getDate()}
+                                                            <span className="relative z-0">{dayDate.getDate()}</span>
+                                                            {isInActualRequest && (
+                                                                <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                    ✕
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
                                             </div>
+                                            {minDaysMessage && (
+                                                <div className="mt-3 px-2 py-1.5 bg-blue-50 rounded-xl border border-blue-100">
+                                                    <p className="text-xs text-blue-700">
+                                                        {minDaysMessage}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -6381,6 +7552,13 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         pickup: startDateObj,
         return: endDateObj
     });
+    const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
+    const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<any[]>([]);
+    const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
+    const [pickupCalendarInitialized, setPickupCalendarInitialized] = useState(false);
+    const [returnCalendarInitialized, setReturnCalendarInitialized] = useState(false);
+    const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
+    const [minDaysMessage, setMinDaysMessage] = useState<string>('');
 
     // Refs for click outside detection
     const pickupCalendarRef = React.useRef<HTMLDivElement>(null);
@@ -6419,58 +7597,634 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         return days;
     };
 
-    const generateHours = (): string[] => {
+    // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
+    const formatDateLocal = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const generateHours = (minHour?: number): string[] => {
         const hours: string[] = [];
-        for (let h = 0; h < 24; h++) {
+        const startHour = minHour !== undefined ? minHour : 0;
+        for (let h = startHour; h < 24; h++) {
             hours.push(`${String(h).padStart(2, '0')}:00`);
-            hours.push(`${String(h).padStart(2, '0')}:30`);
         }
         return hours;
     };
 
-    // Close dropdowns when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (!target.closest('.country-code-dropdown-container')) {
-                setShowCountryCodeDropdown(false);
+    // Check if a date/time is in a maintenance period (12 hours after rental ends)
+    const isInMaintenancePeriod = (checkDate: Date, checkTime?: string): boolean => {
+        if (carRentalsForCalendar.length === 0) return false;
+        
+        return carRentalsForCalendar.some(rental => {
+            if (!rental.end_date || !rental.end_time) return false;
+            
+            // Parse rental end date and time
+            const endDateStr = rental.end_date.includes('T')
+                ? rental.end_date.split('T')[0]
+                : rental.end_date.split(' ')[0];
+            const rentalEndDate = new Date(endDateStr);
+            
+            // Parse end time
+            const [endHours, endMinutes] = rental.end_time.split(':').map(Number);
+            rentalEndDate.setHours(endHours || 17, endMinutes || 0, 0, 0);
+            
+            // Calculate maintenance period: 12 hours after rental ends
+            const maintenanceEndDate = new Date(rentalEndDate);
+            maintenanceEndDate.setHours(maintenanceEndDate.getHours() + 12);
+            
+            // If checkTime is provided, check the exact datetime
+            if (checkTime) {
+                const [checkHours, checkMinutes] = checkTime.split(':').map(Number);
+                const checkDateTime = new Date(checkDate);
+                checkDateTime.setHours(checkHours || 0, checkMinutes || 0, 0, 0);
+                
+                // Check if the datetime falls within maintenance period
+                return checkDateTime >= rentalEndDate && checkDateTime < maintenanceEndDate;
+            } else {
+                // If no time provided, check if the date overlaps with maintenance period
+                // Maintenance period spans from rental end to 12 hours later
+                const checkDateStart = new Date(checkDate);
+                checkDateStart.setHours(0, 0, 0, 0);
+                const checkDateEnd = new Date(checkDate);
+                checkDateEnd.setHours(23, 59, 59, 999);
+                
+                // Check if maintenance period overlaps with the check date
+                return maintenanceEndDate > checkDateStart && rentalEndDate < checkDateEnd;
             }
-            if (pickupCalendarRef.current && !pickupCalendarRef.current.contains(target)) {
-                setShowPickupCalendar(false);
-            }
-            if (returnCalendarRef.current && !returnCalendarRef.current.contains(target)) {
-                setShowReturnCalendar(false);
-            }
-            if (pickupTimeRef.current && !pickupTimeRef.current.contains(target)) {
-                setShowPickupTime(false);
-            }
-            if (returnTimeRef.current && !returnTimeRef.current.contains(target)) {
-                setShowReturnTime(false);
-            }
-        };
+        });
+    };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
+    // Find the earliest future approved/executed rental start date
+    const getEarliestFutureRentalStart = (): string | null => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let earliestStart: Date | null = null;
+        
+        // Check approved/executed borrow requests
+        approvedBorrowRequests.forEach(request => {
+            if (!request.start_date) return;
+            
+            const startDateStr = request.start_date.includes('T')
+                ? request.start_date.split('T')[0]
+                : request.start_date.split(' ')[0];
+            const startDate = new Date(startDateStr + 'T00:00:00');
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Only consider future rentals
+            if (startDate > today) {
+                if (!earliestStart || startDate < earliestStart) {
+                    earliestStart = startDate;
+                }
+            }
+        });
+        
+        // Check active rentals
+        carRentalsForCalendar.forEach(rental => {
+            if (!rental.start_date) return;
+            
+            const startDateStr = rental.start_date.includes('T')
+                ? rental.start_date.split('T')[0]
+                : rental.start_date.split(' ')[0];
+            const startDate = new Date(startDateStr + 'T00:00:00');
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Only consider future rentals
+            if (startDate > today) {
+                if (!earliestStart || startDate < earliestStart) {
+                    earliestStart = startDate;
+                }
+            }
+        });
+        
+        return earliestStart ? formatDateLocal(earliestStart) : null;
+    };
 
-    // Sync calendar month with selected dates
-    useEffect(() => {
-        if (formData.startDate) {
-            setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.startDate || '') }));
+    // Check if date is in an actual approved/executed request (for showing X mark)
+    // Only shows X marks for current/future bookings, not past ones
+    const isDateInActualApprovedRequest = (dateString: string): boolean => {
+        const checkDateStr = dateString.split('T')[0];
+        const checkDate = new Date(checkDateStr + 'T00:00:00');
+        checkDate.setHours(0, 0, 0, 0);
+        
+        // Don't show X marks for past dates - only current/future bookings
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (checkDate < today) {
+            return false;
         }
+        
+        // Check maintenance periods (12 hours after each rental)
+        // Only for current/future maintenance periods
+        if (isInMaintenancePeriod(checkDate)) {
+            return true;
+        }
+        
+        // Check approved/executed borrow requests
+        if (approvedBorrowRequests.length > 0) {
+            const result = approvedBorrowRequests.some(request => {
+                if (!request.start_date || !request.end_date) return false;
+                
+                const startDateStr = request.start_date.includes('T')
+                    ? request.start_date.split('T')[0]
+                    : request.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                const endDateStr = request.end_date.includes('T')
+                    ? request.end_date.split('T')[0]
+                    : request.end_date.split(' ')[0];
+                const endDate = new Date(endDateStr + 'T23:59:59');
+                endDate.setHours(23, 59, 59, 999);
+                
+                // Only show X if the booking is current or future (end date is today or later)
+                const isCurrentOrFuture = endDate >= today;
+                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
+            });
+            
+            if (result) return true;
+        }
+        
+        // Check active rentals (which come from EXECUTED requests)
+        if (carRentalsForCalendar.length > 0) {
+            const result = carRentalsForCalendar.some(rental => {
+                if (!rental.start_date || !rental.end_date) return false;
+                
+                const startDateStr = rental.start_date.includes('T')
+                    ? rental.start_date.split('T')[0]
+                    : rental.start_date.split(' ')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                startDate.setHours(0, 0, 0, 0);
+                
+                const endDateStr = rental.end_date.includes('T')
+                    ? rental.end_date.split('T')[0]
+                    : rental.end_date.split(' ')[0];
+                const endDate = new Date(endDateStr + 'T23:59:59');
+                endDate.setHours(23, 59, 59, 999);
+                
+                // Only show X if the rental is current or future (end date is today or later)
+                const isCurrentOrFuture = endDate >= today;
+                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
+            });
+            
+            return result;
+        }
+        
+        return false;
+    };
+
+    // Check if date is blocked by future rental limit (disable but don't show X)
+    const isDateBlockedByFutureRental = (dateString: string): boolean => {
+        const earliestFutureStart = getEarliestFutureRentalStart();
+        return earliestFutureStart !== null && dateString >= earliestFutureStart;
+    };
+
+    // Combined check for blocking (includes both actual requests and future rental limit)
+    const isDateInApprovedRequest = (dateString: string): boolean => {
+        return isDateInActualApprovedRequest(dateString) || isDateBlockedByFutureRental(dateString);
+    };
+
+    // Check if all dates in a month are blocked (have x marks)
+    const isMonthFullyBooked = (monthDate: Date, isReturnCalendar: boolean = false): boolean => {
+        const days = generateCalendarDays(monthDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Get only dates that belong to the current month (not null)
+        const monthDays = days.filter(day => day !== null) as string[];
+        
+        // Check if all dates in the month are blocked
+        const allBlocked = monthDays.every(dayString => {
+            const todayString = formatDateLocal(today);
+            // Only block dates that are strictly in the past (not today)
+            const isPast = dayString < todayString;
+            // Check if date is before next available date
+            // Only block if nextAvailableDate is today or in the past (car is currently booked)
+            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
+            const isBeforeAvailable = nextAvailableDate 
+                ? (() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const nextAvailDate = new Date(nextAvailableDate);
+                    nextAvailDate.setHours(0, 0, 0, 0);
+                    const dayDate = new Date(dayString);
+                    dayDate.setHours(0, 0, 0, 0);
+                    // Only block if nextAvailableDate is today or past, and day is before it
+                    return nextAvailDate <= today && dayDate < nextAvailDate;
+                })()
+                : false;
+            const isInApprovedRequest = isDateInApprovedRequest(dayString);
+            
+            // For return calendar, also check if date is before pickup
+            const isBeforePickup = isReturnCalendar && formData.startDate && dayString <= formData.startDate;
+            
+            return isPast || isBeforeAvailable || isInApprovedRequest || isBeforePickup;
+        });
+        
+        return allBlocked && monthDays.length > 0;
+    };
+
+    // Sync calendar months with selected dates (same as CarDetails)
+    useEffect(() => {
+        if (formData.startDate) setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.startDate || '') }));
     }, [formData.startDate]);
 
     useEffect(() => {
         if (formData.endDate) {
             setCalendarMonth(prev => ({ ...prev, return: new Date(formData.endDate || '') }));
         } else if (formData.startDate) {
-            const nextMonth = new Date(formData.startDate);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
+            // Always show the same month as pickup date for return calendar
+            // This ensures the calendar doesn't jump to next month when pickup is selected
+            const pickup = new Date(formData.startDate);
+            setCalendarMonth(prev => ({ ...prev, return: new Date(pickup) }));
         }
     }, [formData.endDate, formData.startDate]);
+
+    // Fetch rentals and calculate next available date
+    useEffect(() => {
+        const fetchCarAvailability = async () => {
+            if (!formData.carId) return;
+            
+            try {
+                const { fetchRentals } = await import('../../lib/orders');
+                const rentals = await fetchRentals();
+                const now = new Date();
+                
+                const carIdNum = parseInt(formData.carId, 10);
+                
+                // Filter rentals for this car that are active, contract, or current/future
+                const carRentals = rentals.filter(rental => {
+                    const rentalCarId = typeof rental.car_id === 'number' 
+                        ? rental.car_id 
+                        : parseInt(rental.car_id?.toString() || '0', 10);
+                    const rentalStatus = (rental as any).status || rental.rental_status || '';
+                    
+                    // Include ACTIVE, CONTRACT, or any rental that hasn't ended yet
+                    if (rentalCarId !== carIdNum) return false;
+                    
+                    if (rentalStatus === 'ACTIVE' || rentalStatus === 'CONTRACT') {
+                        return true;
+                    }
+                    
+                    // Also include rentals that haven't ended yet (for calendar marking)
+                    if (rental.end_date) {
+                        const endDate = new Date(rental.end_date);
+                        if (rental.end_time) {
+                            const [hours, minutes] = rental.end_time.split(':').map(Number);
+                            endDate.setHours(hours || 17, minutes || 0, 0, 0);
+                        } else {
+                            endDate.setHours(23, 59, 59, 999);
+                        }
+                        return endDate >= now;
+                    }
+                    
+                    return false;
+                });
+                
+                // Store rentals for calendar marking
+                setCarRentalsForCalendar(carRentals);
+            } catch (error) {
+                console.error('Error fetching car availability:', error);
+            }
+        };
+        
+        fetchCarAvailability();
+    }, [formData.carId]);
+
+    // Fetch approved and executed borrow requests for this car
+    useEffect(() => {
+        const fetchApprovedRequests = async () => {
+            if (!formData.carId) return;
+            
+            try {
+                const carIdNum = parseInt(formData.carId, 10);
+                
+                // Query Rentals table for all current/future rentals (not just CONTRACT/ACTIVE)
+                const rentalsResult = await supabaseAdmin
+                    .from('Rentals')
+                    .select('*')
+                    .eq('car_id', carIdNum)
+                    .order('created_at', { ascending: false });
+                
+                // Filter for rentals that are current or future (haven't ended yet)
+                const now = new Date();
+                const rentalsData = (rentalsResult.data || []).filter((rental: any) => {
+                    if (!rental.end_date) return false;
+                    
+                    // Parse end date
+                    const endDateStr = rental.end_date.includes('T')
+                        ? rental.end_date.split('T')[0]
+                        : rental.end_date.split(' ')[0];
+                    const endDate = new Date(endDateStr);
+                    
+                    // Add end time if available
+                    if (rental.end_time) {
+                        const [hours, minutes] = rental.end_time.split(':').map(Number);
+                        endDate.setHours(hours || 17, minutes || 0, 0, 0);
+                    } else {
+                        endDate.setHours(23, 59, 59, 999);
+                    }
+                    
+                    // Include if rental hasn't ended yet
+                    return endDate >= now;
+                });
+                
+                // Query BorrowRequest table for APPROVED requests
+                let approvedData: any[] = [];
+                
+                try {
+                    const approvedResult = await supabaseAdmin
+                        .from('BorrowRequest')
+                        .select('*')
+                        .eq('car_id', carIdNum)
+                        .in('status', ['APPROVED', 'EXECUTED'])
+                        .order('requested_at', { ascending: false });
+                    
+                    if (approvedResult.data && approvedResult.data.length > 0) {
+                        approvedData = approvedResult.data;
+                    }
+                } catch (error) {
+                    // Silently fail if query doesn't work (RLS might still be blocking)
+                }
+                
+                // Convert rentals to borrow request format
+                const rentalRequests = rentalsData.map((rental: any) => ({
+                    id: rental.id.toString(),
+                    user_id: rental.user_id,
+                    car_id: rental.car_id.toString(),
+                    start_date: rental.start_date,
+                    start_time: rental.start_time || '09:00:00',
+                    end_date: rental.end_date,
+                    end_time: rental.end_time || '17:00:00',
+                    status: 'EXECUTED' as const,
+                    created_at: rental.created_at,
+                    updated_at: rental.updated_at,
+                }));
+                
+                // Convert approved borrow requests to same format
+                const approvedRequests = approvedData.map((req: any) => ({
+                    id: req.id.toString(),
+                    user_id: req.user_id,
+                    car_id: req.car_id.toString(),
+                    start_date: req.start_date,
+                    start_time: req.start_time || '09:00:00',
+                    end_date: req.end_date,
+                    end_time: req.end_time || '17:00:00',
+                    status: 'APPROVED' as const,
+                    created_at: req.requested_at || req.created_at,
+                    updated_at: req.updated_at,
+                }));
+                
+                // Combine both types
+                const allRequests = [...rentalRequests, ...approvedRequests];
+                
+                // Filter requests - only filter out ones with missing dates
+                const filteredRequests = allRequests.filter((request: any) => {
+                    return request.start_date && request.end_date;
+                });
+                
+                setApprovedBorrowRequests(filteredRequests);
+                
+                // Calculate nextAvailableDate from combined Rentals + APPROVED requests
+                // Show availability after the first booking if there's a gap of 2+ days before the next booking
+                const currentTime = new Date();
+                let latestReturnDate: Date | null = null;
+                
+                if (filteredRequests.length > 0) {
+                    // Sort all requests (rentals + approved) by start date
+                    const sortedRequests = [...filteredRequests].sort((a, b) => {
+                        const startA = new Date(a.start_date || 0);
+                        const startB = new Date(b.start_date || 0);
+                        return startA.getTime() - startB.getTime();
+                    });
+                    
+                    // Find the first current/future booking
+                    for (let i = 0; i < sortedRequests.length; i++) {
+                        const request = sortedRequests[i];
+                        if (!request.start_date || !request.end_date) continue;
+                        
+                        // Parse start date
+                        const startDateStr = request.start_date.includes('T')
+                            ? request.start_date.split('T')[0]
+                            : request.start_date.split(' ')[0];
+                        const requestStartDate = new Date(startDateStr);
+                        
+                        if (request.start_time) {
+                            const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                            requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                        } else {
+                            requestStartDate.setHours(9, 0, 0, 0);
+                        }
+                        
+                        // Parse end date
+                        const endDateStr = request.end_date.includes('T')
+                            ? request.end_date.split('T')[0]
+                            : request.end_date.split(' ')[0];
+                        const requestEndDate = new Date(endDateStr);
+                        
+                        if (request.end_time) {
+                            const [hours, minutes] = request.end_time.split(':').map(Number);
+                            requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
+                        } else {
+                            requestEndDate.setHours(17, 0, 0, 0);
+                        }
+                        
+                        // Add 12 hours maintenance period after rental ends
+                        requestEndDate.setHours(requestEndDate.getHours() + 12);
+                        
+                        // Check if this is a current/future booking
+                        const isCurrentOrFuture = requestEndDate > currentTime;
+                        
+                        if (isCurrentOrFuture) {
+                            // Check if there's a next booking
+                            if (i < sortedRequests.length - 1) {
+                                const nextRequest = sortedRequests[i + 1];
+                                if (nextRequest.start_date) {
+                                    const nextStartDateStr = nextRequest.start_date.includes('T')
+                                        ? nextRequest.start_date.split('T')[0]
+                                        : nextRequest.start_date.split(' ')[0];
+                                    const nextStartDate = new Date(nextStartDateStr);
+                                    
+                                    if (nextRequest.start_time) {
+                                        const [nextHours, nextMinutes] = nextRequest.start_time.split(':').map(Number);
+                                        nextStartDate.setHours(nextHours || 9, nextMinutes || 0, 0, 0);
+                                    } else {
+                                        nextStartDate.setHours(9, 0, 0, 0);
+                                    }
+                                    
+                                    // Calculate gap between end of current booking and start of next
+                                    const gapMs = nextStartDate.getTime() - requestEndDate.getTime();
+                                    const gapDays = gapMs / (1000 * 60 * 60 * 24);
+                                    
+                                    // Minimum rental is 2 days, so if gap is 2+ days, car is available after first booking
+                                    if (gapDays >= 2) {
+                                        latestReturnDate = requestEndDate;
+                                        break; // Use first booking's end date
+                                    }
+                                    // If gap is less than 2 days, continue to check consecutive bookings
+                                } else {
+                                    // No next booking, use this one's end date
+                                    latestReturnDate = requestEndDate;
+                                    break;
+                                }
+                            } else {
+                                // This is the last booking, use its end date
+                                latestReturnDate = requestEndDate;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If we didn't find a booking with a gap, find consecutive bookings
+                    if (!latestReturnDate) {
+                        let consecutiveEndDate: Date | null = null;
+                        
+                        for (let i = 0; i < sortedRequests.length; i++) {
+                            const request = sortedRequests[i];
+                            if (!request.end_date) continue;
+                            
+                            const endDateStr = request.end_date.includes('T')
+                                ? request.end_date.split('T')[0]
+                                : request.end_date.split(' ')[0];
+                            const requestEndDate = new Date(endDateStr);
+                            
+                            if (request.end_time) {
+                                const [hours, minutes] = request.end_time.split(':').map(Number);
+                                requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
+                            } else {
+                                requestEndDate.setHours(17, 0, 0, 0);
+                            }
+                            
+                            requestEndDate.setHours(requestEndDate.getHours() + 12);
+                            
+                            if (i === 0) {
+                                consecutiveEndDate = requestEndDate;
+                            } else {
+                                const prevRequest = sortedRequests[i - 1];
+                                if (prevRequest.end_date) {
+                                    const prevEndDateStr = prevRequest.end_date.includes('T')
+                                        ? prevRequest.end_date.split('T')[0]
+                                        : prevRequest.end_date.split(' ')[0];
+                                    const prevEndDate = new Date(prevEndDateStr);
+                                    
+                                    if (prevRequest.end_time) {
+                                        const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
+                                        prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
+                                    } else {
+                                        prevEndDate.setHours(17, 0, 0, 0);
+                                    }
+                                    
+                                    prevEndDate.setHours(prevEndDate.getHours() + 12);
+                                    
+                                    const startDateStr = request.start_date.includes('T')
+                                        ? request.start_date.split('T')[0]
+                                        : request.start_date.split(' ')[0];
+                                    const requestStartDate = new Date(startDateStr);
+                                    
+                                    if (request.start_time) {
+                                        const [startHours, startMinutes] = request.start_time.split(':').map(Number);
+                                        requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
+                                    } else {
+                                        requestStartDate.setHours(9, 0, 0, 0);
+                                    }
+                                    
+                                    const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
+                                    const oneDayInMs = 24 * 60 * 60 * 1000;
+                                    
+                                    if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
+                                        consecutiveEndDate = requestEndDate;
+                                    } else {
+                                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                                            latestReturnDate = consecutiveEndDate;
+                                            break;
+                                        }
+                                        consecutiveEndDate = requestEndDate;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
+                            latestReturnDate = consecutiveEndDate;
+                        }
+                    }
+                }
+                
+                setNextAvailableDate(latestReturnDate);
+            } catch (error) {
+                console.error('Error fetching approved borrow requests:', error);
+            }
+        };
+        
+        fetchApprovedRequests();
+    }, [formData.carId]);
+
+    // Auto-advance to next month if current month is fully booked when calendar first opens
+    useEffect(() => {
+        if (showPickupCalendar && !pickupCalendarInitialized) {
+            if (isMonthFullyBooked(calendarMonth.pickup, false)) {
+                const nextMonth = new Date(calendarMonth.pickup);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCalendarMonth(prev => ({ ...prev, pickup: nextMonth }));
+            }
+            setPickupCalendarInitialized(true);
+        } else if (!showPickupCalendar) {
+            // Reset when calendar closes so it can auto-advance again on next open
+            setPickupCalendarInitialized(false);
+        }
+    }, [showPickupCalendar, calendarMonth.pickup, nextAvailableDate, approvedBorrowRequests, pickupCalendarInitialized]);
+
+    useEffect(() => {
+        if (showReturnCalendar && !returnCalendarInitialized) {
+            if (isMonthFullyBooked(calendarMonth.return, true)) {
+                const nextMonth = new Date(calendarMonth.return);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
+            }
+            setReturnCalendarInitialized(true);
+        } else if (!showReturnCalendar) {
+            // Reset when calendar closes so it can auto-advance again on next open
+            setReturnCalendarInitialized(false);
+        }
+    }, [showReturnCalendar, calendarMonth.return, nextAvailableDate, approvedBorrowRequests, formData.startDate, returnCalendarInitialized]);
+
+    // Click outside for calendars & time selectors (same as CarDetails)
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+            // Don't close if we're in the middle of a delayed close
+            if (isClosingWithDelay) return;
+            
+            const target = event.target as HTMLElement;
+            // Check if click is on a button that toggles the calendar - if so, don't close
+            const clickedButton = target.closest('button[data-calendar-toggle]');
+            if (clickedButton) {
+                // Don't close if clicking on the toggle button - let the button's onClick handle it
+                return;
+            }
+            
+            // Only close if clicking outside the calendar container and the calendar is open
+            if (showPickupCalendar && pickupCalendarRef.current && !pickupCalendarRef.current.contains(target as Node))
+                setShowPickupCalendar(false);
+            if (showReturnCalendar && returnCalendarRef.current && !returnCalendarRef.current.contains(target as Node))
+                setShowReturnCalendar(false);
+            if (showPickupTime && pickupTimeRef.current && !pickupTimeRef.current.contains(target as Node))
+                setShowPickupTime(false);
+            if (showReturnTime && returnTimeRef.current && !returnTimeRef.current.contains(target as Node))
+                setShowReturnTime(false);
+            if (!target.closest('.country-code-dropdown-container')) {
+                setShowCountryCodeDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [showPickupCalendar, showReturnCalendar, showPickupTime, showReturnTime, isClosingWithDelay]);
 
     const calculateAmount = () => {
         if (!formData.startDate || !formData.endDate || !formData.carId) return 0;
@@ -6579,8 +8333,6 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
         });
     };
 
-    const today = new Date().toISOString().split('T')[0];
-
     return createPortal(
         <motion.div
             initial={{ opacity: 1 }}
@@ -6598,7 +8350,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#1C1C1C' }}>
+                <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                     <h2 className="text-xl font-bold text-white">{t('admin.requests.editRequest')}</h2>
                     <button
                         onClick={onClose}
@@ -6669,7 +8421,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Telefon *</label>
                                 <div className="relative">
-                                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 country-code-dropdown-container">
+                                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-[1] country-code-dropdown-container">
                                         <button
                                             type="button"
                                             onClick={() => setShowCountryCodeDropdown(!showCountryCodeDropdown)}
@@ -6682,7 +8434,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                             </svg>
                                         </button>
                                         {showCountryCodeDropdown && (
-                                            <div className="absolute top-full left-0 mt-1 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50 min-w-[200px]" style={{ backgroundColor: '#343434' }}>
+                                            <div className="absolute top-full left-0 mt-1 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto z-[5] min-w-[200px]" style={{ backgroundColor: '#343434' }}>
                                                 {COUNTRY_CODES.map((country) => (
                                                     <button
                                                         key={country.code}
@@ -6801,31 +8553,108 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         <div className="grid grid-cols-7 gap-1">
                                             {generateCalendarDays(calendarMonth.pickup).map((day, index) => {
                                                 if (!day) return <div key={index}></div>;
+
                                                 const dayDate = new Date(day);
-                                                const isSelected = day === formData.startDate;
-                                                const isPast = day < today;
+                                                const dayString = day;
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                const todayString = formatDateLocal(today);
+                                                // Only block dates that are strictly in the past (not today)
+                                                const isPast = dayString < todayString;
+                                                
+                                                // Check if date is before next available date
+                                                // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
+                                                const isBeforeAvailable = nextAvailableDate 
+                                                    ? (() => {
+                                                        const today = new Date();
+                                                        today.setHours(0, 0, 0, 0);
+                                                        const nextAvailDate = new Date(nextAvailableDate);
+                                                        nextAvailDate.setHours(0, 0, 0, 0);
+                                                        const dayDate = new Date(dayString);
+                                                        dayDate.setHours(0, 0, 0, 0);
+                                                        // Only block if nextAvailableDate is today or past, and day is before it
+                                                        return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                    })()
+                                                    : false;
+                                                const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                // For pickup date, don't block by future rentals - allow selecting any future date
+                                                const isBlocked = isPast || isBeforeAvailable || isInActualRequest;
+                                                const isSelected = dayString === formData.startDate;
+                                                // Check if this is the return date (visible in pickup calendar)
+                                                const isReturnDate = formData.endDate && dayString === formData.endDate;
+                                                // Check if date is in range between pickup and return (only if return date is selected)
+                                                const isInRange = formData.startDate && formData.endDate && 
+                                                    dayString > formData.startDate && 
+                                                    dayString < formData.endDate;
+
+                                                // Get message for blocked dates
+                                                const getBlockedMessage = () => {
+                                                    return 'Această dată nu este disponibilă.';
+                                                };
 
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-500 cursor-not-allowed' : 'text-white'
-                                                            } ${isSelected
-                                                                ? 'bg-red-500 text-white font-medium'
-                                                                : !isPast
-                                                                    ? 'hover:bg-white/20'
-                                                                    : ''
-                                                            }`}
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
+                                                            isBlocked 
+                                                                ? 'text-gray-300 cursor-not-allowed' 
+                                                                : 'text-white cursor-pointer'
+                                                        } ${isSelected
+                                                            ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
+                                                            : isReturnDate
+                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
+                                                                : isInRange
+                                                                    ? 'bg-white/20 text-white hover:bg-white/30'
+                                                                    : !isBlocked
+                                                                        ? 'hover:bg-white/20'
+                                                                        : ''
+                                                        }`}
                                                         onClick={() => {
-                                                            if (!isPast) {
+                                                            if (!isBlocked) {
+                                                                // Check if pickup date is being changed (different from current selection)
+                                                                const isChangingPickupDate = formData.startDate && formData.startDate !== day;
+                                                                
+                                                                // If user is reselecting/changing the pickup date, clear all other inputs first
+                                                                if (isChangingPickupDate) {
+                                                                    setFormData(prev => ({ ...prev, endDate: '', startTime: '', endTime: '' }));
+                                                                }
+                                                                
                                                                 setFormData(prev => ({ ...prev, startDate: day }));
-                                                                setShowPickupCalendar(false);
+                                                                
+                                                                // If not changing, only clear return date if it's invalid (before pickup or less than 2 days)
+                                                                if (!isChangingPickupDate && formData.endDate && day >= formData.endDate) {
+                                                                    const returnDay = new Date(formData.endDate);
+                                                                    const pickupDay = new Date(day);
+                                                                    const diffTime = returnDay.getTime() - pickupDay.getTime();
+                                                                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                                    // Clear return date if less than 2 days
+                                                                    if (diffDays < 2) {
+                                                                        setFormData(prev => ({ ...prev, endDate: '' }));
+                                                                    }
+                                                                }
+                                                                // Close calendar after 0.3s delay so user can see what they clicked
+                                                                setIsClosingWithDelay(true);
                                                                 setTimeout(() => {
-                                                                    setShowPickupTime(true);
-                                                                }, 100);
+                                                                    setShowPickupCalendar(false);
+                                                                    setIsClosingWithDelay(false);
+                                                                    if (!formData.startTime) {
+                                                                        setShowPickupTime(true);
+                                                                    }
+                                                                }, 300);
+                                                            } else {
+                                                                // Show message for blocked dates
+                                                                alert(getBlockedMessage());
                                                             }
                                                         }}
+                                                        title={isBlocked ? getBlockedMessage() : ''}
                                                     >
-                                                        {dayDate.getDate()}
+                                                        <span className="relative z-0">{dayDate.getDate()}</span>
+                                                        {isInActualRequest && (
+                                                            <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                ✕
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
@@ -6862,26 +8691,76 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         className="absolute z-50 top-full left-0 mt-2 bg-[#343434] border border-white/20 rounded-lg shadow-lg p-3 max-h-[200px] overflow-y-auto min-w-[120px]"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <div className="grid grid-cols-2 gap-1">
-                                            {generateHours().map((hour) => (
-                                                <button
-                                                    key={hour}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setFormData(prev => ({ ...prev, startTime: hour }));
-                                                        setShowPickupTime(false);
-                                                        setTimeout(() => {
-                                                            setShowReturnCalendar(true);
-                                                        }, 100);
-                                                    }}
-                                                    className={`px-3 py-2 text-xs rounded transition-colors ${formData.startTime === hour
-                                                        ? 'bg-red-500 text-white font-medium'
-                                                        : 'text-white hover:bg-white/20'
-                                                        }`}
-                                                >
-                                                    {hour}
-                                                </button>
-                                            ))}
+                                        <div className="flex flex-col gap-1">
+                                            {(() => {
+                                                // Calculate minimum hour if nextAvailableDate is set and matches selected date
+                                                let minHour: number | undefined = undefined;
+                                                
+                                                // Check if selected date is today - if so, start from 2 hours from now
+                                                if (formData.startDate) {
+                                                    const today = new Date();
+                                                    today.setHours(0, 0, 0, 0);
+                                                    const todayString = formatDateLocal(today);
+                                                    
+                                                    if (formData.startDate === todayString) {
+                                                        // Selected date is today - start from 2 hours from now
+                                                        const now = new Date();
+                                                        const currentHour = now.getHours();
+                                                        // Calculate hour 2 hours from now
+                                                        let targetHour = currentHour + 2;
+                                                        // If current time + 2 hours exceeds 24, cap at 23
+                                                        if (targetHour >= 24) {
+                                                            targetHour = 23;
+                                                        }
+                                                        minHour = targetHour;
+                                                    } else if (nextAvailableDate) {
+                                                        // Check if nextAvailableDate matches selected date
+                                                        const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
+                                                        if (formData.startDate === nextAvailableDateStr) {
+                                                            // Car becomes free on this date, only show hours from that time onwards
+                                                            const availableHour = nextAvailableDate.getHours();
+                                                            const availableMinutes = nextAvailableDate.getMinutes();
+                                                            // If there are minutes (e.g., 18:30), show from next hour (19:00)
+                                                            // If it's exactly on the hour (e.g., 18:00), show from that hour
+                                                            minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                // Filter out hours that are in maintenance periods
+                                                const availableHours = generateHours(minHour).filter((hour) => {
+                                                    if (!formData.startDate) return true;
+                                                    const checkDate = new Date(formData.startDate);
+                                                    return !isInMaintenancePeriod(checkDate, hour);
+                                                });
+                                                
+                                                return availableHours.map((hour) => (
+                                                    <button
+                                                        key={hour}
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setFormData(prev => ({ ...prev, startTime: hour }));
+                                                            // Close time picker after 0.3s delay so user can see what they clicked
+                                                            setIsClosingWithDelay(true);
+                                                            setTimeout(() => {
+                                                                setShowPickupTime(false);
+                                                                setIsClosingWithDelay(false);
+                                                                if (!formData.endDate) {
+                                                                    setShowReturnCalendar(true);
+                                                                }
+                                                            }, 300);
+                                                        }}
+                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                        className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${formData.startTime === hour
+                                                            ? 'bg-red-500 text-white font-medium'
+                                                            : 'text-white hover:bg-white/20'
+                                                            }`}
+                                                    >
+                                                        {hour}
+                                                    </button>
+                                                ));
+                                            })()}
                                         </div>
                                     </motion.div>
                                 )}
@@ -6954,36 +8833,147 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         <div className="grid grid-cols-7 gap-1">
                                             {generateCalendarDays(calendarMonth.return).map((day, index) => {
                                                 if (!day) return <div key={index}></div>;
+
                                                 const dayDate = new Date(day);
-                                                const isSelected = day === formData.endDate;
-                                                const minReturnDate = formData.startDate || today;
-                                                const isPast = day < minReturnDate;
+                                                const dayString = day;
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                const todayString = formatDateLocal(today);
+                                                // Only block dates that are strictly in the past (not today)
+                                                const isPast = dayString < todayString;
+                                                
+                                                // Check if date is before next available date
+                                                // Only block if nextAvailableDate is today or in the past (car is currently booked)
+                                                // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
+                                                const isBeforeAvailable = nextAvailableDate 
+                                                    ? (() => {
+                                                        const today = new Date();
+                                                        today.setHours(0, 0, 0, 0);
+                                                        const nextAvailDate = new Date(nextAvailableDate);
+                                                        nextAvailDate.setHours(0, 0, 0, 0);
+                                                        const dayDate = new Date(dayString);
+                                                        dayDate.setHours(0, 0, 0, 0);
+                                                        // Only block if nextAvailableDate is today or past, and day is before it
+                                                        return nextAvailDate <= today && dayDate < nextAvailDate;
+                                                    })()
+                                                    : false;
+                                                const isBeforePickup = formData.startDate && dayString <= formData.startDate;
+                                                // Minimum rental is 2 days - block dates that are less than 2 days after pickup
+                                                const isLessThanMinDays = formData.startDate && (() => {
+                                                    const pickup = new Date(formData.startDate);
+                                                    const returnDay = new Date(dayString);
+                                                    const diffTime = returnDay.getTime() - pickup.getTime();
+                                                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                    return diffDays < 2;
+                                                })();
+                                                const isInActualRequest = isDateInActualApprovedRequest(dayString);
+                                                // Only block by future rental if pickup date is before the future rental start
+                                                // If pickup is after future rental, allow return dates after it too
+                                                const isBlockedByFuture = formData.startDate ? (() => {
+                                                    const earliestStart = getEarliestFutureRentalStart();
+                                                    if (!earliestStart) return false;
+                                                    
+                                                    const pickupDateObj = new Date(formData.startDate);
+                                                    pickupDateObj.setHours(0, 0, 0, 0);
+                                                    const earliestStartDate = new Date(earliestStart);
+                                                    earliestStartDate.setHours(0, 0, 0, 0);
+                                                    const returnDateObj = new Date(dayString);
+                                                    returnDateObj.setHours(0, 0, 0, 0);
+                                                    
+                                                    // If pickup is after or equal to future rental start, don't block return dates
+                                                    if (pickupDateObj >= earliestStartDate) {
+                                                        return false;
+                                                    }
+                                                    
+                                                    // If pickup is before future rental start, block return dates on/after future rental start
+                                                    return returnDateObj >= earliestStartDate;
+                                                })() : isDateBlockedByFutureRental(dayString);
+                                                const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInActualRequest || isBlockedByFuture;
+                                                const isSelected = dayString === formData.endDate;
+                                                // Check if this is the pickup date (visible in return calendar)
+                                                const isPickupDate = formData.startDate && dayString === formData.startDate;
+                                                // Check if date is in range between pickup and return
+                                                const isInRange = formData.startDate && formData.endDate && 
+                                                    dayString > formData.startDate && 
+                                                    dayString < formData.endDate;
+
+                                                // Get message for blocked dates
+                                                const getBlockedMessage = () => {
+                                                    if (isBlockedByFuture) {
+                                                        const earliestStart = getEarliestFutureRentalStart();
+                                                        if (earliestStart) {
+                                                            const date = new Date(earliestStart);
+                                                            const formattedDate = date.toLocaleDateString('ro-RO', { 
+                                                                day: 'numeric', 
+                                                                month: 'long', 
+                                                                year: 'numeric' 
+                                                            });
+                                                            return `Nu puteți selecta această dată. Mașina este deja rezervată începând cu ${formattedDate}.`;
+                                                        }
+                                                    }
+                                                    return 'Această dată nu este disponibilă.';
+                                                };
 
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded transition-colors ${isPast ? 'text-gray-500 cursor-not-allowed' : 'text-white'
-                                                            } ${isSelected
-                                                                ? 'bg-red-500 text-white font-medium'
-                                                                : !isPast
-                                                                    ? 'hover:bg-white/20'
-                                                                    : ''
-                                                            }`}
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
+                                                            isLessThanMinDays
+                                                                ? 'text-black opacity-50 cursor-not-allowed' 
+                                                                : isBlocked 
+                                                                    ? 'text-gray-300 cursor-not-allowed' 
+                                                                    : 'text-white cursor-pointer'
+                                                        } ${isSelected
+                                                            ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
+                                                            : isPickupDate
+                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
+                                                                : isInRange
+                                                                    ? 'bg-white/20 text-white hover:bg-white/30'
+                                                                    : !isBlocked && !isLessThanMinDays
+                                                                        ? 'hover:bg-white/20'
+                                                                        : ''
+                                                        }`}
                                                         onClick={() => {
-                                                            if (!isPast) {
+                                                            if (isLessThanMinDays) {
+                                                                setMinDaysMessage('Perioada minimă de închiriere este de 2 zile');
+                                                                setTimeout(() => setMinDaysMessage(''), 3000);
+                                                                return;
+                                                            }
+                                                            if (!isBlocked) {
                                                                 setFormData(prev => ({ ...prev, endDate: day }));
-                                                                setShowReturnCalendar(false);
+                                                                // Close calendar after 0.3s delay so user can see what they clicked
+                                                                setIsClosingWithDelay(true);
                                                                 setTimeout(() => {
-                                                                    setShowReturnTime(true);
-                                                                }, 100);
+                                                                    setShowReturnCalendar(false);
+                                                                    setIsClosingWithDelay(false);
+                                                                    if (!formData.endTime) {
+                                                                        setShowReturnTime(true);
+                                                                    }
+                                                                }, 300);
+                                                            } else {
+                                                                // Show message for blocked dates
+                                                                alert(getBlockedMessage());
                                                             }
                                                         }}
+                                                        title={isBlocked ? getBlockedMessage() : ''}
                                                     >
-                                                        {dayDate.getDate()}
+                                                        <span className="relative z-0">{dayDate.getDate()}</span>
+                                                        {isInActualRequest && (
+                                                            <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
+                                                                ✕
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
                                         </div>
+                                        {minDaysMessage && (
+                                            <div className="mt-3 px-2 py-1.5 bg-blue-50 rounded-xl border border-blue-100">
+                                                <p className="text-xs text-blue-700">
+                                                    {minDaysMessage}
+                                                </p>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 )}
                             </div>
@@ -7016,16 +9006,23 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, on
                                         className="absolute z-50 top-full left-0 mt-2 bg-[#343434] border border-white/20 rounded-lg shadow-lg p-3 max-h-[200px] overflow-y-auto min-w-[120px]"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <div className="grid grid-cols-2 gap-1">
+                                        <div className="flex flex-col gap-1">
                                             {generateHours().map((hour) => (
                                                 <button
                                                     key={hour}
                                                     type="button"
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         setFormData(prev => ({ ...prev, endTime: hour }));
-                                                        setShowReturnTime(false);
+                                                        // Close time picker after 0.3s delay so user can see what they clicked
+                                                        setIsClosingWithDelay(true);
+                                                        setTimeout(() => {
+                                                            setShowReturnTime(false);
+                                                            setIsClosingWithDelay(false);
+                                                        }, 300);
                                                     }}
-                                                    className={`px-3 py-2 text-xs rounded transition-colors ${formData.endTime === hour
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${formData.endTime === hour
                                                         ? 'bg-red-500 text-white font-medium'
                                                         : 'text-white hover:bg-white/20'
                                                         }`}
@@ -7758,8 +9755,12 @@ export const Admin: React.FC = () => {
             <div className="relative min-h-screen">
                 {/* Background Image - Lowest layer */}
                 <div
-                    className="fixed inset-0 bg-cover bg-center bg-fixed"
-                    style={{ backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')", zIndex: 0 }}
+                    className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{
+                        backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                        backgroundAttachment: 'fixed',
+                        zIndex: 0
+                    }}
                 ></div>
                 {/* Dark Overlay - Over the background but under all content */}
                 <div className="fixed inset-0 bg-black/70" style={{ zIndex: 1 }}></div>

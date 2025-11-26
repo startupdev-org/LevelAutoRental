@@ -878,9 +878,8 @@ export const CarDetails: React.FC = () => {
         const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
         const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
 
-        let basePrice = rentalDays >= 8 ? pricePerDay * 0.96 * rentalDays
-            : rentalDays >= 4 ? pricePerDay * 0.98 * rentalDays
-                : pricePerDay * rentalDays;
+        // No rental duration discounts - use base price for all ranges
+        let basePrice = pricePerDay * rentalDays;
 
         if (hours > 0) basePrice += (hours / 24) * pricePerDay;
 
@@ -1849,9 +1848,11 @@ export const CarDetails: React.FC = () => {
                                     <h3 className="text-xl font-bold text-gray-900 mb-4">Costul închirierii</h3>
 
                                     <div className="space-y-3">
-                                        {/* 1 day */}
+                                        {/* 2-4 days */}
                                         <div className="flex items-center justify-between">
-                                            <span className="text-base text-gray-600">De la 1 zi</span>
+                                            <span className="text-base text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>2-4 zile
+                                            </span>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
                                                     {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
@@ -1859,28 +1860,38 @@ export const CarDetails: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* 4 days */}
+                                        {/* 5-15 days */}
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-base text-gray-600">De la 4 zile</span>
-                                                <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded">-2%</span>
-                                            </div>
+                                            <span className="text-base text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>5-15 zile
+                                            </span>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
-                                                    {Math.round(car.price_per_day * 0.98).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* 8 days */}
+                                        {/* 16-30 days */}
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-base text-gray-600">De la 8 zile</span>
-                                                <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded">-4%</span>
-                                            </div>
+                                            <span className="text-base text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>16-30 zile
+                                            </span>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
-                                                    {Math.round(car.price_per_day * 0.96).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                            </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Over 30 days */}
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-base text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>Peste 30 zile
+                                            </span>
+                                            <div className="text-right">
+                                                <div className="text-lg font-bold text-gray-900">
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2776,9 +2787,11 @@ export const CarDetails: React.FC = () => {
                                     <h3 className="text-xl font-bold text-gray-900 mb-4">Costul închirierii</h3>
 
                                     <div className="space-y-3">
-                                        {/* 1 day */}
+                                        {/* 2-4 days */}
                                         <div className="flex items-center justify-between">
-                                            <span className="text-gray-600">De la 1 zi</span>
+                                            <span className="text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>2-4 zile
+                                            </span>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
                                                     {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
@@ -2786,28 +2799,38 @@ export const CarDetails: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* 4 days */}
+                                        {/* 5-15 days */}
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-600">De la 4 zile</span>
-                                                <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded">-2%</span>
-                                            </div>
+                                            <span className="text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>5-15 zile
+                                            </span>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
-                                                    {Math.round(car.price_per_day * 0.98).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* 8 days */}
+                                        {/* 16-30 days */}
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-600">De la 8 zile</span>
-                                                <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded">-4%</span>
-                                            </div>
+                                            <span className="text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>16-30 zile
+                                            </span>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
-                                                    {Math.round(car.price_per_day * 0.96).toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                            </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Over 30 days */}
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-gray-600">
+                                                <span className="text-red-500 mr-2 text-xl">•</span>Peste 30 zile
+                                            </span>
+                                            <div className="text-right">
+                                                <div className="text-lg font-bold text-gray-900">
+                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
                                                 </div>
                                             </div>
                                         </div>

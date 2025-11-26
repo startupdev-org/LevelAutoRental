@@ -435,6 +435,40 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
 
     const orders: OrderDisplay[] = [];
 
+    // Collect all request IDs from rentals that have them
+    const requestIds = new Set<number>();
+    rentals.forEach(r => {
+      const requestId = (r as any).request_id;
+      if (requestId) {
+        requestIds.add(typeof requestId === 'number' ? requestId : parseInt(requestId));
+      }
+    });
+
+    // Fetch customer information from BorrowRequest table for rentals created from requests
+    const requestCustomerMap = new Map<number, { name: string; email: string; phone: string; firstName?: string; lastName?: string }>();
+    if (requestIds.size > 0) {
+      try {
+        const { data: requestsData, error: requestsError } = await supabase
+          .from('BorrowRequest')
+          .select('id, customer_name, customer_email, customer_phone, customer_first_name, customer_last_name')
+          .in('id', Array.from(requestIds));
+
+        if (!requestsError && requestsData) {
+          requestsData.forEach((request: any) => {
+            requestCustomerMap.set(request.id, {
+              name: request.customer_name || '',
+              email: request.customer_email || '',
+              phone: request.customer_phone || '',
+              firstName: request.customer_first_name,
+              lastName: request.customer_last_name,
+            });
+          });
+        }
+      } catch (err) {
+        console.debug('Error fetching customer info from requests:', err);
+      }
+    }
+
     // Process rentals only - use Promise.all to handle async car fetching
     const processedOrders = await Promise.all(rentals.map(async (rental) => {
       // Handle both string and number car_id
@@ -489,17 +523,39 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
           console.error(`Error fetching car ${carIdMatch} from database:`, err);
         }
       }
+
+      // Get customer information - prefer from request if rental was created from a request
+      const requestId = (rental as any).request_id;
+      const requestCustomer = requestId ? requestCustomerMap.get(typeof requestId === 'number' ? requestId : parseInt(requestId)) : null;
+      
+      let email = '';
+      let phone = '';
+      let firstName = '';
+      let lastName = '';
+      let userName = '';
+
+      if (requestCustomer) {
+        // Use customer info from the original request
+        email = requestCustomer.email;
+        phone = requestCustomer.phone;
+        firstName = requestCustomer.firstName || '';
+        lastName = requestCustomer.lastName || '';
+        userName = requestCustomer.name || 
+          (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || email.split('@')[0] || 'Unknown');
+      } else {
+        // Fallback to profile lookup
       const profile = profiles.get(rental.user_id);
-      const email = profile?.email || rental.user?.email || '';
-      const phone = profile?.phone || '';
-      const firstName = profile?.firstName || '';
-      const lastName = profile?.lastName || '';
-      const userName = (firstName && lastName)
+        email = profile?.email || rental.user?.email || '';
+        phone = profile?.phone || '';
+        firstName = profile?.firstName || '';
+        lastName = profile?.lastName || '';
+        userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
           ? `${firstName}${lastName}`
           : (email ? email.split('@')[0] : '')
           || `User ${rental.user_id.slice(0, 8)}`;
+      }
 
       // Calculate amount based on days and car price
       const startDate = new Date(rental.start_date || new Date());
@@ -567,6 +623,8 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         customerName: userName,
         customerEmail: email,
         customerPhone: phone || '',
+        customerFirstName: firstName || undefined,
+        customerLastName: lastName || undefined,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
         pickupDate: formatDate(rental.start_date),
@@ -998,8 +1056,8 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
 export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderDisplay[]> {
   try {
     const allRequests = await fetchBorrowRequests();
-    // Filter out EXECUTED requests - they should not appear in the requests list
-    const requests = allRequests.filter(req => req.status !== 'EXECUTED');
+    // Don't filter out EXECUTED requests - let the component handle filtering based on showExecuted state
+    const requests = allRequests;
 
     // If no data from database, return mock requests
     if (requests.length === 0) {
@@ -1503,10 +1561,6 @@ export async function createRentalManually(
     const calculatedTotal = subtotal + taxesFees + additionalTaxes;
     const finalTotal = totalAmount > 0 ? totalAmount : calculatedTotal;
 
-    // Get car make and model for historical record
-    const carMake = car.make || '';
-    const carModel = car.model || '';
-
     const { data: rental, error } = await supabase
       .from('Rentals')
       .insert({
@@ -1527,14 +1581,6 @@ export async function createRentalManually(
         notes: options?.notes || null,
         special_requests: options?.specialRequests || null,
         features: options?.features || null,
-        customer_name: options?.customerName || null,
-        customer_email: options?.customerEmail || null,
-        customer_phone: options?.customerPhone || null,
-        customer_first_name: options?.customerFirstName || null,
-        customer_last_name: options?.customerLastName || null,
-        customer_age: options?.customerAge || null,
-        car_make: carMake || null,
-        car_model: carModel || null,
         request_id: options?.requestId ? (typeof options.requestId === 'string' ? parseInt(options.requestId) : options.requestId) : null,
       })
       .select()
@@ -1640,14 +1686,6 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
               total_amount: totalAmount,
               rental_status: 'ACTIVE',
               payment_status: 'PENDING',
-              customer_name: (request as any).customer_name || null,
-              customer_email: (request as any).customer_email || null,
-              customer_phone: (request as any).customer_phone || null,
-              customer_first_name: (request as any).customer_first_name || null,
-              customer_last_name: (request as any).customer_last_name || null,
-              customer_age: (request as any).customer_age ? parseInt((request as any).customer_age) : null,
-              car_make: car.make || null,
-              car_model: car.model || null,
             });
 
           if (rentalError) {
