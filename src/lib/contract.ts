@@ -1886,8 +1886,9 @@ export const uploadContractToStorage = async (
       throw new Error('Service key not configured');
     }
 
-    // Create folder structure: contracts/rental-{id}/
-    const folderPath = `rental-${rentalId}`;
+    // Create folder structure: Public/rental-{id}/filename
+    // Based on bucket structure: contracts > Public > rental-{id}
+    const folderPath = `Public/rental-${rentalId}`;
     const filePath = `${folderPath}/${filename}`;
 
     // Upload to Supabase storage

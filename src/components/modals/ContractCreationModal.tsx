@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Plus, Trash2 } from 'lucide-react';
+import { X, Loader2, Plus, Trash2, Download, FileText } from 'lucide-react';
 import { OrderDisplay, Rental } from '../../lib/orders';
 import { Car } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
@@ -53,8 +53,8 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
     const [depositPaymentMethod, setDepositPaymentMethod] = useState('');
 
     // Locations
-    const [pickupLocation, setPickupLocation] = useState('Chișinău, str. Mircea cel Bătrân 13/1');
-    const [returnLocation, setReturnLocation] = useState('Chișinău, str. Mircea cel Bătrân 13/1');
+    const [pickupLocation, setPickupLocation] = useState('');
+    const [returnLocation, setReturnLocation] = useState('');
 
     // Vehicle condition (for Anexa Nr.2)
     const [pickupOdometer, setPickupOdometer] = useState('');
@@ -67,6 +67,145 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
 
     // Car value (for total loss clause)
     const [carValue, setCarValue] = useState('');
+
+    // Calculate price breakdown - same logic as RequestDetailsModal
+    const calculatePriceBreakdown = () => {
+        const formatTime = (timeString: string): string => {
+            if (!timeString) return '00:00';
+            // Convert to 24-hour format if needed
+            if (timeString.includes('AM') || timeString.includes('PM')) {
+                const [time, period] = timeString.split(' ');
+                const [hours, minutes] = time.split(':');
+                let hour24 = parseInt(hours);
+                if (period === 'PM' && hour24 !== 12) hour24 += 12;
+                if (period === 'AM' && hour24 === 12) hour24 = 0;
+                return `${String(hour24).padStart(2, '0')}:${minutes || '00'}`;
+            }
+            // If already in HH:MM format, ensure it's padded
+            if (timeString.includes(':')) {
+                const [hours, minutes] = timeString.split(':');
+                return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
+            }
+            return '00:00';
+        };
+
+        const startDate = new Date((order as any).pickupDate || (order as any).start_date);
+        const endDate = new Date((order as any).returnDate || (order as any).end_date);
+
+        // Parse times and combine with dates for accurate calculation
+        const pickupTime = formatTime((order as any).pickupTime || (order as any).start_time || '09:00');
+        const returnTime = formatTime((order as any).returnTime || (order as any).end_time || '17:00');
+        const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
+        const [returnHour, returnMin] = returnTime.split(':').map(Number);
+
+        const startDateTime = new Date(startDate);
+        startDateTime.setHours(pickupHour, pickupMin, 0, 0);
+
+        const endDateTime = new Date(endDate);
+        // If return time is 00:00, treat it as end of previous day (23:59:59)
+        if (returnHour === 0 && returnMin === 0) {
+            endDateTime.setHours(23, 59, 59, 999);
+        } else {
+            endDateTime.setHours(returnHour, returnMin, 0, 0);
+        }
+
+        const diffTime = endDateTime.getTime() - startDateTime.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+        const days = diffDays;
+        const hours = diffHours >= 0 ? diffHours : 0; // Ensure hours is never negative
+
+        // Calculate pricing using same system as RequestDetailsModal
+        const rentalDays = days; // Use full days for discount calculation
+        const totalDays = days + (hours / 24); // Use total days for final calculation
+
+        const pricePerDay = (order as any).price_per_day || car.price_per_day || 0;
+
+        // Base price calculation (same as RequestDetailsModal) - with discounts
+        let basePrice = 0;
+        let discountPercent = 0;
+
+        if (rentalDays >= 8) {
+            discountPercent = 4;
+            basePrice = pricePerDay * 0.96 * rentalDays; // -4%
+        } else if (rentalDays >= 4) {
+            discountPercent = 2;
+            basePrice = pricePerDay * 0.98 * rentalDays; // -2%
+        } else {
+            basePrice = pricePerDay * rentalDays;
+        }
+
+        // Add hours portion (hours are charged at full price, no discount)
+        if (hours > 0) {
+            const hoursPrice = (hours / 24) * pricePerDay;
+            basePrice += hoursPrice;
+        }
+
+        // Calculate additional costs from options (same as Calculator.tsx)
+        const options = (order as any).options;
+        let parsedOptions: any = {};
+
+        if (options) {
+            if (typeof options === 'string') {
+                try {
+                    parsedOptions = JSON.parse(options);
+                } catch (e) {
+                    parsedOptions = {};
+                }
+            } else {
+                parsedOptions = options;
+            }
+        }
+
+        let additionalCosts = 0;
+        const baseCarPrice = pricePerDay;
+
+        // Percentage-based options (calculated as percentage of base car price * totalDays)
+        // These should be calculated on the total rental period (days + hours)
+        if (parsedOptions.unlimitedKm) {
+            additionalCosts += baseCarPrice * totalDays * 0.5; // 50%
+        }
+        if (parsedOptions.speedLimitIncrease) {
+            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+        }
+        if (parsedOptions.tireInsurance) {
+            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+        }
+
+        // Fixed daily costs
+        if (parsedOptions.personalDriver) {
+            additionalCosts += 800 * rentalDays;
+        }
+        if (parsedOptions.priorityService) {
+            additionalCosts += 1000 * rentalDays;
+        }
+        if (parsedOptions.childSeat) {
+            additionalCosts += 100 * rentalDays;
+        }
+        if (parsedOptions.simCard) {
+            additionalCosts += 100 * rentalDays;
+        }
+        if (parsedOptions.roadsideAssistance) {
+            additionalCosts += 500 * rentalDays;
+        }
+
+        // Total price = base price + additional costs (same as RequestDetailsModal)
+        const totalPrice = basePrice + additionalCosts;
+
+        return {
+            pricePerDay,
+            days,
+            hours,
+            rentalDays,
+            discountPercent,
+            basePrice,
+            additionalServices: additionalCosts,
+            total: totalPrice
+        };
+    };
+
+    const priceBreakdown = calculatePriceBreakdown();
 
     const handleAddDriver = () => {
         setAdditionalDrivers([...additionalDrivers, { firstName: '', lastName: '', idnp: '' }]);
@@ -140,8 +279,8 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                     customerIdSeries: customerIdSeries.trim(),
                     customerIdNumber: customerIdNumber.trim(),
                     customerIdnp: customerIdnp.trim(),
-                    pickupLocation: pickupLocation.trim() || 'Chișinău, str. Mircea cel Bătrân 13/1',
-                    returnLocation: returnLocation.trim() || 'Chișinău, str. Mircea cel Bătrân 13/1',
+                    pickupLocation: pickupLocation.trim() || '',
+                    returnLocation: returnLocation.trim() || '',
                     deposit: deposit,
                     paymentMethod: paymentMethod.trim(),
                     depositPaymentMethod: depositPaymentMethod.trim(),
@@ -513,6 +652,157 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+
+                            {/* Price Breakdown */}
+                            <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                                <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Detalii preț</h3>
+                                <div className="space-y-2 sm:space-y-3">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-300">Preț pe zi</span>
+                                        <span className="text-white font-medium">
+                                            {priceBreakdown.pricePerDay.toLocaleString('ro-RO')} MDL
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-300">Număr zile</span>
+                                        <span className="text-white font-medium">
+                                            {priceBreakdown.days} {priceBreakdown.days === 1 ? 'zi' : 'zile'}
+                                            {priceBreakdown.hours > 0 ? `, ${priceBreakdown.hours} ${priceBreakdown.hours === 1 ? 'oră' : 'ore'}` : ''}
+                                        </span>
+                                    </div>
+                                    {priceBreakdown.discountPercent > 0 && (
+                                        <div className="flex items-center justify-between text-sm text-emerald-400">
+                                            <span>Reducere</span>
+                                            <span className="font-semibold">-{priceBreakdown.discountPercent}%</span>
+                                        </div>
+                                    )}
+                                    <div className="pt-2 border-t border-white/10">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-white font-medium">Preț de bază</span>
+                                            <span className="text-white font-medium">
+                                                {Math.round(priceBreakdown.basePrice).toLocaleString('ro-RO')} MDL
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {priceBreakdown.additionalServices > 0 && (() => {
+                                        const options = (order as any).options;
+                                        let parsedOptions: any = {};
+                                        
+                                        if (options) {
+                                            if (typeof options === 'string') {
+                                                try {
+                                                    parsedOptions = JSON.parse(options);
+                                                } catch (e) {
+                                                    parsedOptions = {};
+                                                }
+                                            } else {
+                                                parsedOptions = options;
+                                            }
+                                        }
+                                        
+                                        const serviceNames: Record<string, string> = {
+                                            unlimitedKm: 'Kilometraj nelimitat',
+                                            speedLimitIncrease: 'Creșterea limitei de viteză',
+                                            tireInsurance: 'Asigurare anvelope & parbriz',
+                                            personalDriver: 'Șofer personal',
+                                            priorityService: 'Priority Service',
+                                            childSeat: 'Scaun copil',
+                                            simCard: 'Cartelă SIM cu internet',
+                                            roadsideAssistance: 'Asistență rutieră'
+                                        };
+                                        
+                                        const baseCarPrice = priceBreakdown.pricePerDay;
+                                        const totalDays = priceBreakdown.days + (priceBreakdown.hours / 24);
+                                        const rentalDays = priceBreakdown.rentalDays;
+                                        
+                                        return (
+                                            <div className="pt-3 border-t border-white/10">
+                                                <h4 className="text-sm font-bold text-white mb-3">Servicii suplimentare</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    {parsedOptions.unlimitedKm && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.unlimitedKm}</span>
+                                                            <span className="text-white font-medium">
+                                                                {Math.round(baseCarPrice * totalDays * 0.5).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {parsedOptions.speedLimitIncrease && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.speedLimitIncrease}</span>
+                                                            <span className="text-white font-medium">
+                                                                {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {parsedOptions.tireInsurance && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.tireInsurance}</span>
+                                                            <span className="text-white font-medium">
+                                                                {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {parsedOptions.personalDriver && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.personalDriver}</span>
+                                                            <span className="text-white font-medium">
+                                                                {(800 * rentalDays).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {parsedOptions.priorityService && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.priorityService}</span>
+                                                            <span className="text-white font-medium">
+                                                                {(1000 * rentalDays).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {parsedOptions.childSeat && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.childSeat}</span>
+                                                            <span className="text-white font-medium">
+                                                                {(100 * rentalDays).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {parsedOptions.simCard && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.simCard}</span>
+                                                            <span className="text-white font-medium">
+                                                                {(100 * rentalDays).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {parsedOptions.roadsideAssistance && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-300">{serviceNames.roadsideAssistance}</span>
+                                                            <span className="text-white font-medium">
+                                                                {(500 * rentalDays).toLocaleString('ro-RO')} MDL
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="pt-2 border-t border-white/10 mt-2">
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="text-gray-300">Total servicii</span>
+                                                        <span className="text-white font-semibold">
+                                                            {Math.round(priceBreakdown.additionalServices).toLocaleString('ro-RO')} MDL
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                    <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                                        <span className="text-white font-bold text-base sm:text-lg">Total</span>
+                                        <span className="text-emerald-400 font-bold text-lg sm:text-xl">
+                                            {Math.round(priceBreakdown.total).toLocaleString('ro-RO')} MDL
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

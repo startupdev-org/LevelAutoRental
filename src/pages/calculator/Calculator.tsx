@@ -49,7 +49,7 @@ export const Calculator: React.FC = () => {
 
     const selectedCar = cars.find(c => c.id === selectedCarId);
 
-    // Calculate base price with discounts
+    // Calculate base price (no rental duration discounts)
     const basePrice = useMemo(() => {
         if (!selectedCar) return 0;
         // Get price with car discount applied first
@@ -59,12 +59,7 @@ export const Calculator: React.FC = () => {
             ? basePricePerDay * (1 - carDiscount / 100)
             : basePricePerDay;
         
-        // Then apply rental duration discounts
-        if (rentalDays >= 8) {
-            return pricePerDay * 0.96 * rentalDays; // -4%
-        } else if (rentalDays >= 4) {
-            return pricePerDay * 0.98 * rentalDays; // -2%
-        }
+        // No rental duration discounts - use base price for all ranges
         return pricePerDay * rentalDays;
     }, [selectedCar, rentalDays]);
 
@@ -175,25 +170,6 @@ export const Calculator: React.FC = () => {
                                     <span>30 {t('calculator.days')}</span>
                                 </div>
                             </div>
-
-                            {/* Discount indicator */}
-                            {rentalDays >= 4 && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-6 p-4 bg-theme-500/20 backdrop-blur-md border border-theme-500/30 rounded-xl"
-                                >
-                                    <div className="flex items-center gap-3 text-white text-sm font-semibold">
-                                        <div className="p-1.5 bg-theme-500 rounded-lg">
-                                            <Check className="w-4 h-4" />
-                                        </div>
-                                        {rentalDays >= 8 
-                                            ? t('calculator.discountApplied4')
-                                            : t('calculator.discountApplied2')
-                                        }
-                                    </div>
-                                </motion.div>
-                            )}
                         </div>
 
                         {/* Locations */}
@@ -556,14 +532,6 @@ export const Calculator: React.FC = () => {
                                                 <span className="text-gray-200">{t('calculator.numberDays')}</span>
                                                 <span className="font-medium text-white">{rentalDays}</span>
                                             </div>
-                                            {rentalDays >= 4 && (
-                                                <div className="flex justify-between text-green-600">
-                                                    <span>{t('calculator.discount')}</span>
-                                                    <span className="font-medium">
-                                                        {rentalDays >= 8 ? '-4%' : '-2%'}
-                                                    </span>
-                                                </div>
-                                            )}
                                             <div className="pt-2 border-t border-white/20">
                                                 <div className="flex justify-between font-medium">
                                                     <span className="text-white">{t('calculator.basePrice')}</span>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car as DollarSign, FileText, Plus } from 'lucide-react';
+import { X, Calendar, Clock, Car as DollarSign, FileText, Plus, Download, RefreshCw, Loader2 } from 'lucide-react';
 import { Rental, OrderDisplay } from '../../lib/orders';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
@@ -305,10 +305,46 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     const rentalDays = days;
     const totalDays = days + hours / 24;
 
-
-    // Base price calculation with discounts
+    // Base price calculation with discounts (same as RequestDetailsModal)
     let basePrice = 0;
     let discountPercent = 0;
+
+    if (!car) {
+        // If no car found, try to get price from order
+        const orderPricePerDay = (order as any).price_per_day || (order as any).car?.price_per_day || 0;
+        if (orderPricePerDay > 0) {
+            if (rentalDays >= 8) {
+                discountPercent = 4;
+                basePrice = orderPricePerDay * 0.96 * rentalDays; // -4%
+            } else if (rentalDays >= 4) {
+                discountPercent = 2;
+                basePrice = orderPricePerDay * 0.98 * rentalDays; // -2%
+            } else {
+                basePrice = orderPricePerDay * rentalDays;
+            }
+            // Add hours portion
+            if (hours > 0) {
+                const hoursPrice = (hours / 24) * orderPricePerDay;
+                basePrice += hoursPrice;
+            }
+        }
+    } else {
+        // Calculate with car price
+        if (rentalDays >= 8) {
+            discountPercent = 4;
+            basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
+        } else if (rentalDays >= 4) {
+            discountPercent = 2;
+            basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
+        } else {
+            basePrice = car.price_per_day * rentalDays;
+        }
+        // Add hours portion (hours are charged at full price, no discount)
+        if (hours > 0) {
+            const hoursPrice = (hours / 24) * car.price_per_day;
+            basePrice += hoursPrice;
+        }
+    }
 
     const formatDate = (dateString: string) => {
         try {
@@ -544,12 +580,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                                         console.log('OrderDetailsModal: Final parsedOptions:', parsedOptions);
 
+                                        // Calculate additional costs (same logic as RequestDetailsModal)
                                         let additionalCosts = 0;
-                                        const baseCarPrice = car?.price_per_day || 0;
+                                        const baseCarPrice = car?.price_per_day || (order as any).price_per_day || (order as any).car?.price_per_day || 0;
 
-                                        // Percentage-based options (use totalDays including hours)
+                                        // Percentage-based options (calculated as percentage of base car price * totalDays)
+                                        // These should be calculated on the total rental period (days + hours)
                                         if (parsedOptions.unlimitedKm) {
-                                            console.log('OrderDetailsModal: Found unlimitedKm option');
                                             additionalCosts += baseCarPrice * totalDays * 0.5; // 50%
                                         }
                                         if (parsedOptions.speedLimitIncrease) {
@@ -559,7 +596,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
                                         }
 
-                                        // Fixed daily costs (use rentalDays - full days only)
+                                        // Fixed daily costs
                                         if (parsedOptions.personalDriver) {
                                             additionalCosts += 800 * rentalDays;
                                         }
@@ -576,35 +613,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             additionalCosts += 500 * rentalDays;
                                         }
 
-                                        console.log('OrderDetailsModal: Calculated additionalCosts:', additionalCosts, 'from options:', parsedOptions);
-
-                                        // Use the stored total_amount from database as source of truth
-                                        const storedTotal = order.total_amount ? parseFloat(order.total_amount.toString()) : null;
-
-                                        // Calculate the actual additional costs from the difference
-                                        // This ensures the total matches what's in the database
-                                        let actualAdditionalCosts = 0;
-                                        if (storedTotal && storedTotal > basePrice) {
-                                            // There's a difference - this is the additional services cost
-                                            actualAdditionalCosts = storedTotal - basePrice;
-
-                                            // If we calculated additional costs from options, use those for individual display
-                                            // But ensure the total matches the stored total
-                                            if (Object.keys(parsedOptions).length > 0 && additionalCosts > 0) {
-                                                // We have individual services, use calculated costs
-                                                // But adjust if there's a discrepancy
-                                                if (Math.abs(additionalCosts - actualAdditionalCosts) > 1) {
-                                                    // There's a significant difference, use the actual difference
-                                                    // This might happen if calculation logic changed or services were manually adjusted
-                                                    actualAdditionalCosts = storedTotal - basePrice;
-                                                }
-                                            }
-                                        } else if (additionalCosts > 0) {
-                                            // No stored total or it matches base price, but we calculated services
-                                            actualAdditionalCosts = additionalCosts;
-                                        }
-
-                                        const displayTotal = storedTotal || (basePrice + actualAdditionalCosts);
+                                        // Total price = base price + additional costs (same as RequestDetailsModal)
+                                        const totalPrice = basePrice + additionalCosts;
 
                                         // Service names mapping
                                         const serviceNames: Record<string, string> = {
@@ -644,28 +654,14 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">{t('admin.requestDetails.basePrice')}</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round((order as any).subtotal || 0).toLocaleString()} MDL</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="pt-2 border-t border-white/10">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-white font-medium text-sm sm:text-base">Taxes Fees</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{(order as any).taxes_fees || 0} MDL</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="pt-2 border-t border-white/10">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-white font-medium text-sm sm:text-base">Addition Taxes</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{(order as any).additional_taxes || 0} MDL</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round(basePrice).toLocaleString()} MDL</span>
                                                         </div>
                                                     </div>
 
                                                     {/* Show services section if we have additional costs */}
-                                                    {actualAdditionalCosts > 0 && (
+                                                    {additionalCosts > 0 && (
                                                         <div className="pt-3 border-t border-white/10">
-                                                            <h4 className="text-sm font-bold text-white mb-3">!!! TODO !!! {t('admin.requestDetails.additionalServices')}</h4>
+                                                            <h4 className="text-sm font-bold text-white mb-3">{t('admin.requestDetails.additionalServices')}</h4>
                                                             <div className="space-y-2 text-sm">
                                                                 {/* Show individual services if we have parsed options with service keys */}
                                                                 {Object.keys(parsedOptions).length > 0 && (
@@ -749,7 +745,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                             <div className="pt-2 border-t border-white/10 mt-2">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="text-gray-300 text-sm">{t('admin.requestDetails.totalServices')}</span>
-                                                                    <span className="text-white font-semibold text-sm">0 MDL</span>
+                                                                    <span className="text-white font-semibold text-sm">{Math.round(additionalCosts).toLocaleString()} MDL</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -758,7 +754,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-semibold text-base sm:text-lg">{t('admin.requestDetails.total')}</span>
-                                                            <span className="text-emerald-400 font-bold text-lg sm:text-xl">{displayTotal.toLocaleString()} MDL</span>
+                                                            <span className="text-emerald-400 font-bold text-lg sm:text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -788,24 +784,17 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                                {/* <button
-                                                    onClick={downloadContract}
-                                                    disabled={isGeneratingContract || !car}
-                                                    className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                                {order.contract_url ? (
+                                                    <>
+                                                        <a
+                                                            href={order.contract_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
                                                 >
-                                                    {isGeneratingContract ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                            <span>{t('admin.orders.generatingContract')}</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
                                                             <Download className="w-4 h-4" />
                                                             <span>{t('admin.orders.downloadContractPDF')}</span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                                {order.contract_url && (
+                                                        </a>
                                                     <button
                                                         onClick={handleOpenContractModal}
                                                         className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold mt-2"
@@ -813,13 +802,25 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                         <RefreshCw className="w-4 h-4" />
                                                         <span>{t('admin.orders.recreateContract')}</span>
                                                     </button>
-                                                )}
                                                 <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                                    {order.contract_url
-                                                        ? t('admin.orders.downloadExistingOrRecreate')
-                                                        : t('admin.orders.generatesCompleteContract')}
-                                                </p> */}
-                                                <h1>should be contract</h1>
+                                                            {t('admin.orders.downloadExistingOrRecreate')}
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={handleOpenContractModal}
+                                                            disabled={!car}
+                                                            className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                            <span>{t('admin.orders.createContract')}</span>
+                                                        </button>
+                                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
+                                                            {t('admin.orders.generatesCompleteContract')}
+                                                        </p>
+                                                    </>
+                                                )}
                                             </>
 
                                         )}
