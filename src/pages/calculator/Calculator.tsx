@@ -127,17 +127,17 @@ export const Calculator: React.FC = () => {
                                 {t('calculator.selectVehicle')}
                             </h2>
                             <div className="relative">
-                                <select
-                                    value={selectedCarId}
-                                    onChange={(e) => setSelectedCarId(Number(e.target.value))}
+                            <select
+                                value={selectedCarId}
+                                onChange={(e) => setSelectedCarId(Number(e.target.value))}
                                     className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm appearance-none pr-10"
-                                >
-                                    {cars.map(car => (
+                            >
+                                {cars.map(car => (
                                         <option key={car.id} value={car.id} className="bg-gray-800 text-white">
-                                            {car.name} ({car.year}) - {car.pricePerDay} MDL{t('calculator.perDay')}
-                                        </option>
-                                    ))}
-                                </select>
+                                        {car.name} ({car.year}) - {car.pricePerDay} MDL{t('calculator.perDay')}
+                                    </option>
+                                ))}
+                            </select>
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                     <ChevronDown className="w-5 h-5 text-white/70" />
                                 </div>
@@ -191,15 +191,15 @@ export const Calculator: React.FC = () => {
                                         {t('calculator.pickup')}
                                     </label>
                                     <div className="relative">
-                                        <select
-                                            value={pickupLocation}
-                                            onChange={(e) => setPickupLocation(e.target.value)}
+                                    <select
+                                        value={pickupLocation}
+                                        onChange={(e) => setPickupLocation(e.target.value)}
                                             className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm appearance-none pr-10"
-                                        >
-                                            {locations.map(loc => (
+                                    >
+                                        {locations.map(loc => (
                                                 <option key={loc} value={loc} className="bg-gray-800 text-white">{loc}</option>
-                                            ))}
-                                        </select>
+                                        ))}
+                                    </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                             <ChevronDown className="w-5 h-5 text-white/70" />
                                         </div>
@@ -210,15 +210,15 @@ export const Calculator: React.FC = () => {
                                         {t('calculator.return')}
                                     </label>
                                     <div className="relative">
-                                        <select
-                                            value={returnLocation}
-                                            onChange={(e) => setReturnLocation(e.target.value)}
+                                    <select
+                                        value={returnLocation}
+                                        onChange={(e) => setReturnLocation(e.target.value)}
                                             className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm appearance-none pr-10"
-                                        >
-                                            {locations.map(loc => (
+                                    >
+                                        {locations.map(loc => (
                                                 <option key={loc} value={loc} className="bg-gray-800 text-white">{loc}</option>
-                                            ))}
-                                        </select>
+                                        ))}
+                                    </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                             <ChevronDown className="w-5 h-5 text-white/70" />
                                         </div>
@@ -241,83 +241,83 @@ export const Calculator: React.FC = () => {
                                 <div>
                                     <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.limits', 'Limite')}</h3>
                                     <div className="space-y-3">
-                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={unlimitedKm}
-                                                        onChange={(e) => setUnlimitedKm(e.target.checked)}
-                                                        className="sr-only"
-                                                    />
-                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                        unlimitedKm
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                                    }`}>
+                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={unlimitedKm}
+                                                onChange={(e) => setUnlimitedKm(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                unlimitedKm
+                                                    ? 'bg-theme-500 border-theme-500'
+                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                            }`}>
                                                         <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                            unlimitedKm ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        unlimitedKm ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                                                         }`} />
-                                                    </div>
-                                                </div>
-                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.unlimitedMileage')}</span>
                                             </div>
-                                            <span className="text-sm font-bold text-theme-500 bg-theme-500/20 px-3 py-1 rounded-lg">+50%</span>
-                                        </label>
+                                        </div>
+                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.unlimitedMileage')}</span>
                                     </div>
-                                </div>
+                                    <span className="text-sm font-bold text-theme-500 bg-theme-500/20 px-3 py-1 rounded-lg">+50%</span>
+                                </label>
+                                    </div>
+                                    </div>
 
                                 {/* Servicii VIP */}
                                 <div>
                                     <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.vipServices', 'Servicii VIP')}</h3>
                                     <div className="space-y-3">
-                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={driver}
-                                                        onChange={(e) => setDriver(e.target.checked)}
-                                                        className="sr-only"
-                                                    />
-                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                        driver
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                                    }`}>
+                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={driver}
+                                                onChange={(e) => setDriver(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                driver
+                                                    ? 'bg-theme-500 border-theme-500'
+                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                            }`}>
                                                         <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                            driver ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        driver ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                                                         }`} />
-                                                    </div>
-                                                </div>
-                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.personalDriver')}</span>
                                             </div>
-                                            <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">800 MDL{t('calculator.perDay')}</span>
-                                        </label>
+                                        </div>
+                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.personalDriver')}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">800 MDL{t('calculator.perDay')}</span>
+                                </label>
 
-                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={priority}
-                                                        onChange={(e) => setPriority(e.target.checked)}
-                                                        className="sr-only"
-                                                    />
-                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                        priority
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                                    }`}>
+                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={priority}
+                                                onChange={(e) => setPriority(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                priority
+                                                    ? 'bg-theme-500 border-theme-500'
+                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                            }`}>
                                                         <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                            priority ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        priority ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                                                         }`} />
-                                                    </div>
-                                                </div>
-                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.priorityService')}</span>
                                             </div>
-                                            <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">1000 MDL{t('calculator.perDay')}</span>
-                                        </label>
+                                        </div>
+                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.priorityService')}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">1000 MDL{t('calculator.perDay')}</span>
+                                </label>
                                     </div>
                                 </div>
 
@@ -355,77 +355,77 @@ export const Calculator: React.FC = () => {
                                 <div>
                                     <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.extra', 'Suplimentar')}</h3>
                                     <div className="space-y-3">
-                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={childSeat}
-                                                        onChange={(e) => setChildSeat(e.target.checked)}
-                                                        className="sr-only"
-                                                    />
-                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                        childSeat
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                                    }`}>
+                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={childSeat}
+                                                onChange={(e) => setChildSeat(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                childSeat
+                                                    ? 'bg-theme-500 border-theme-500'
+                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                            }`}>
                                                         <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                            childSeat ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        childSeat ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                                                         }`} />
-                                                    </div>
-                                                </div>
-                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.childCarSeat')}</span>
                                             </div>
-                                            <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">100 MDL{t('calculator.perDay')}</span>
-                                        </label>
+                                        </div>
+                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.childCarSeat')}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">100 MDL{t('calculator.perDay')}</span>
+                                </label>
 
-                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={sim}
-                                                        onChange={(e) => setSim(e.target.checked)}
-                                                        className="sr-only"
-                                                    />
-                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                        sim
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                                    }`}>
+                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={sim}
+                                                onChange={(e) => setSim(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                sim
+                                                    ? 'bg-theme-500 border-theme-500'
+                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                            }`}>
                                                         <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                            sim ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        sim ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                                                         }`} />
-                                                    </div>
-                                                </div>
-                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.simWithInternet')}</span>
                                             </div>
-                                            <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">100 MDL{t('calculator.perDay')}</span>
-                                        </label>
+                                        </div>
+                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.simWithInternet')}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">100 MDL{t('calculator.perDay')}</span>
+                                </label>
 
-                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={assistance}
-                                                        onChange={(e) => setAssistance(e.target.checked)}
-                                                        className="sr-only"
-                                                    />
-                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                        assistance
-                                                            ? 'bg-theme-500 border-theme-500'
-                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                                    }`}>
+                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={assistance}
+                                                onChange={(e) => setAssistance(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                assistance
+                                                    ? 'bg-theme-500 border-theme-500'
+                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                            }`}>
                                                         <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                            assistance ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        assistance ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                                                         }`} />
-                                                    </div>
-                                                </div>
-                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.roadsideAssistance')}</span>
                                             </div>
-                                            <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">500 MDL{t('calculator.perDay')}</span>
-                                        </label>
+                                        </div>
+                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.roadsideAssistance')}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">500 MDL{t('calculator.perDay')}</span>
+                                </label>
                                     </div>
                                 </div>
 
