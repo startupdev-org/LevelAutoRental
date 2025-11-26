@@ -52,9 +52,13 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
     '/contact',
     '/how-to-rent',
     '/reviews',
-    '/terms'
+    '/terms',
+    '/calculator',
+    '/not-found'
   ];
-  const hasHeroSection = pagesWithHeroSections.includes(location.pathname);
+  
+  const isNotFoundPage = !!document.getElementById('not-found-page');
+  const hasHeroSection = pagesWithHeroSections.includes(location.pathname) || isNotFoundPage;
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
