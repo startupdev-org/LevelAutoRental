@@ -12,6 +12,7 @@ const NotFound: React.FC = () => {
   return (
     /* Main content with background */
     <section
+        id="not-found-page"
         className="relative bg-cover bg-no-repeat bg-fixed bg-center flex items-center justify-center py-32"
         style={{
           backgroundImage: window.innerWidth < 768
