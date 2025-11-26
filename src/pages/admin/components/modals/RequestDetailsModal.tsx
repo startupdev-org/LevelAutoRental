@@ -7,6 +7,7 @@ import {
     XIcon,
     Loader2,
     Edit,
+    Check,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Car as CarType } from '../../../../types';
