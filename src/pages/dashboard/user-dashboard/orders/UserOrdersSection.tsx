@@ -47,9 +47,9 @@ export const UserOrdersSection: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div>
+            {/* <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">{t('dashboard.bookings.title')}</h2>
-            </div>
+            </div> */}
 
             {/* Current Borrowed Cars */}
             <UserActiveOrdersTable orders={activeRentals} onOrderClick={handleOrderClick} />

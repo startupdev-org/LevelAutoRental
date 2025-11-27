@@ -179,23 +179,20 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                                     <ArrowUpDown className={`w-3 h-3 ${arrowColor}`} />
                                 )}
                             </button>
+
+
                         );
                     })}
-
-                    {sortBy && (
+                    {/* CLEAR FILTERS */}
+                    {(sortBy || searchQuery) && (
                         <button
-                            onClick={() => {
-                                setSortBy(null);
-                                setSortOrder('desc');
-                            }}
+                            onClick={clearFilters}
                             className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                         >
-                            Clear Sort
+                            Clear Filters
                         </button>
                     )}
                 </div>
-
-
             </div>
 
             {loading ? (

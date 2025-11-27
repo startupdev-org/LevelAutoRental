@@ -13,6 +13,7 @@ import { fetchCarsWithMainImageFilteredPaginated, fetchCarsWithPhotos } from '..
 import { fetchCarWithImagesById } from '../../../../lib/db/cars/cars';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { CarDetailsView } from '../../../../components/dashboard/user-dashboard/cars/CarDetailsView';
+import { EmptyState } from '../../../../components/ui/EmptyState';
 
 
 // Cars Management View Component
@@ -25,7 +26,6 @@ export const CarsView: React.FC = () => {
 
     const [status, setStatus] = useState<'available' | 'borrowed' | null>(null);
 
-    const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -36,10 +36,28 @@ export const CarsView: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-    async function handleFetchCars() {
-        const cars = await fetchCarsWithPhotos();
-        setCars(cars);
+    // Debounce effect: updates debouncedSearchQuery after 500ms of inactivity
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+            setPage(1); // reset to first page whenever search changes
+        }, 500); // adjust debounce time here
+
+        return () => clearTimeout(handler); // cleanup if user types again
+    }, [searchQuery]);
+
+
+    // Clear filters immediately
+    function clearFilters() {
+        setSearchQuery('');
+        setDebouncedSearchQuery('');
+        setSortBy(null);
+        setSortOrder('asc');
+        setStatus(null);
+        setPage(1);
     }
 
     async function handleFetchCarsWithSortByFilters() {
@@ -56,6 +74,11 @@ export const CarsView: React.FC = () => {
         }
     }
 
+    // Fetch cars whenever debouncedSearchQuery changes
+    useEffect(() => {
+        handleFetchCarsWithSortByFilters();
+    }, [debouncedSearchQuery, filterCategory, sortBy, sortOrder, status, page]);
+
     // Reset page to 1 whenever the searchQuery changes
     useEffect(() => {
         setPage(1);
@@ -65,7 +88,6 @@ export const CarsView: React.FC = () => {
     useEffect(() => {
         handleFetchCarsWithSortByFilters();
     }, [filterCategory, sortBy, sortOrder, searchQuery, status, page]);
-
 
 
     const handleSort = (field: 'price' | 'year' | 'status') => {
@@ -115,6 +137,7 @@ export const CarsView: React.FC = () => {
     }
 
 
+    // add the empty state compoent and add the debounce query variable
 
 
     return (
@@ -208,12 +231,7 @@ export const CarsView: React.FC = () => {
                                 {/* CLEAR FILTERS */}
                                 {(sortBy || status || searchQuery) && (
                                     <button
-                                        onClick={() => {
-                                            setSortBy(null);
-                                            setSortOrder("asc");
-                                            setStatus(null);
-                                            setSearchQuery("");
-                                        }}
+                                        onClick={() => { clearFilters }}
                                         className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                     >
                                         Clear Filters
@@ -335,8 +353,14 @@ export const CarsView: React.FC = () => {
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                                                {searchQuery || filterCategory !== 'all' ? 'No cars found matching your filters' : 'No cars available'}
+                                            <td colSpan={5}>
+                                                <EmptyState
+                                                    icon={<CarIcon className="w-8 h-8 text-gray-400" />}
+                                                    title="No cars found"
+                                                    subtitle="Try adjusting your filters"
+                                                    buttonText="Clear Filters"
+                                                    onButtonClick={clearFilters}
+                                                />
                                             </td>
                                         </tr>
                                     )}
