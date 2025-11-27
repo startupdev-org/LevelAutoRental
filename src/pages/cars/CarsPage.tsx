@@ -70,8 +70,6 @@ export const Cars: React.FC = () => {
       setModels(fetchedMakeModels)
     } catch (error) {
       console.error('Error fetching make models:', error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -133,6 +131,8 @@ export const Cars: React.FC = () => {
     
     if (!makeParam && !modelParam) {
       handleFetchCarsWithPhotos();
+    } else {
+      handleFetchCarsMake();
     }
   }, []);
 
@@ -232,6 +232,10 @@ export const Cars: React.FC = () => {
       
       // Also trigger the fetch for filtered cars
       handleFetchFilteredCars(initialFilters);
+
+      if (makeParam) {
+        handleFetchCarsModel(makeParam);
+      }
     }
   }, [searchParams]);
 
