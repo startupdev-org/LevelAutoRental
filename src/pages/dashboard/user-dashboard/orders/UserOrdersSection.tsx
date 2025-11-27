@@ -1,16 +1,8 @@
 import { useTranslation } from "react-i18next"
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import {
-    Calendar,
-    Download,
-    Plus
-} from 'lucide-react';
 import { format } from 'date-fns';
 import { UserOrdersTable } from '../../../../components/dashboard/user/orders/UsersOrdersTable';
 
-import { orders } from '../../../../data/index'
 import { Rental } from "../../../../lib/orders";
 import { OrderDetailsModal } from "../../../../components/modals/OrderDetailsModal";
 import { UserActiveOrdersTable } from "../../../../components/dashboard/user/orders/UserActiveOrdersTable";
@@ -19,7 +11,6 @@ import { fetchActiveRentals } from "../../../../lib/db/rentals/rentals";
 export const UserOrdersSection: React.FC = () => {
 
     const { t } = useTranslation();
-    const navigate = useNavigate();
 
     const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
@@ -56,9 +47,9 @@ export const UserOrdersSection: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div>
+            {/* <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">{t('dashboard.bookings.title')}</h2>
-            </div>
+            </div> */}
 
             {/* Current Borrowed Cars */}
             <UserActiveOrdersTable orders={activeRentals} onOrderClick={handleOrderClick} />

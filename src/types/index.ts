@@ -91,6 +91,8 @@ export interface CarFilterOptions {
   sortBy: 'price' | 'year' | 'status' | null;
   sortOrder: 'asc' | 'desc';
   status: 'available' | 'borrowed' | null;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface FavoriteCar {

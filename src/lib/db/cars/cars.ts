@@ -19,7 +19,7 @@ export async function fetchCarById(carId: string): Promise<Car | null> {
             return null;
         }
 
-        console.log('car fetched: ', data)
+        // console.log('car fetched: ', data)
 
         // data can be null, so default to empty array
         return data ?? null;
