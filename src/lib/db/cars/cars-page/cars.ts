@@ -285,54 +285,69 @@ export async function fetchCarsWithPhotos(): Promise<(Car[])> {
     return carsWithImages;
 }
 
-export async function fetchCarsWithMainImageFiltered(filters: CarFilterOptions): Promise<Car[]> {
+export async function fetchCarsWithMainImageFilteredPaginated(
+    filters: CarFilterOptions
+): Promise<{ cars: Car[]; total: number }> {
+
     console.log('the filters are: ', filters)
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 10;
 
-    let query = supabase.from('Cars').select('*');
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
+    let query = supabase.from("Cars").select("*", { count: "exact" });
+
+    // Search
     if (filters.searchQuery) {
-        const search = `%${filters.searchQuery}%`;
-        query = query.or(`make.ilike.${search},model.ilike.${search}`);
+        const s = `%${filters.searchQuery}%`;
+        query = query.or(`make.ilike.${s},model.ilike.${s}`);
     }
 
+    // Status
     if (filters.status !== null) {
-        query = query.eq("status", filters.status)
+        query = query.eq("status", filters.status);
     }
 
-    // Apply sorting
-    if (filters.sortBy === "price") {
-        query = query.order("price_per_day", { ascending: filters.sortOrder === "asc" });
+    // Sort
+    if (filters.sortBy === "price")
+        query = query.order("price_per_day", {
+            ascending: filters.sortOrder === "asc",
+        });
+
+    if (filters.sortBy === "year")
+        query = query.order("year", {
+            ascending: filters.sortOrder === "asc",
+        });
+
+    if (filters.sortBy === "status")
+        query = query.order("status", {
+            ascending: filters.sortOrder === "asc",
+        });
+
+    // Pagination
+    query = query.range(from, to);
+
+    const { data, count, error } = await query;
+
+    if (error || !data) {
+        console.error("Error fetching filtered paginated cars:", error);
+        return { cars: [], total: 0 };
     }
 
-    if (filters.sortBy === "year") {
-        query = query.order("year", { ascending: filters.sortOrder === "asc" });
-    }
-
-    const { data: cars, error } = await query;
-
-    if (error) {
-        console.error('Error fetching filtered cars:', error);
-        return [];
-    }
-
-    // Attach images
+    // Attach MAIN image only for current page cars
     const carsWithImages = await Promise.all(
-        cars.map(async (car) => {
-            // Fetch images from storage for this car - use name field if available, otherwise construct from make + model
-            let carName = (car as any).name;
-            if (!carName || carName.trim() === '') {
-                carName = `${car.make} ${car.model}`;
-            }
+        data.map(async (car) => {
+            let carName = car.name || `${car.make} ${car.model}`;
             const { mainImage } = await fetchImagesByCarName(carName);
 
-            return {
-                ...car,
-                image_url: mainImage,
-            };
+            return { ...car, image_url: mainImage };
         })
     );
 
-    return carsWithImages;
+    return { cars: carsWithImages, total: count || 0 };
 }
+
+
 
 

@@ -9,8 +9,10 @@ import {
     Car as CarIcon,
 } from 'lucide-react';
 import { Car, CarFilterOptions, Car as CarType } from '../../../../types';
-import { fetchCarsWithMainImageFiltered, fetchCarsWithPhotos } from '../../../../lib/db/cars/cars-page/cars';
+import { fetchCarsWithMainImageFilteredPaginated, fetchCarsWithPhotos } from '../../../../lib/db/cars/cars-page/cars';
 import { fetchCarWithImagesById } from '../../../../lib/db/cars/cars';
+import { LoadingState } from '../../../../components/ui/LoadingState';
+import { CarDetailsView } from '../../../../components/dashboard/user-dashboard/cars/CarDetailsView';
 
 
 // Cars Management View Component
@@ -27,7 +29,12 @@ export const CarsView: React.FC = () => {
     const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
+    const [page, setPage] = useState(1);
+    const pageSize = 5;
 
+    const [totalCars, setTotalCars] = useState(0);
+
+    const [loading, setLoading] = useState(false);
 
 
     async function handleFetchCars() {
@@ -36,21 +43,29 @@ export const CarsView: React.FC = () => {
     }
 
     async function handleFetchCarsWithSortByFilters() {
-        const filters = getCurrentFilters();
-        console.log('fetching info with current filters: ', filters)
-
-        const cars = await fetchCarsWithMainImageFiltered(filters);
-        setCars(cars);
+        setLoading(true); // start loading
+        try {
+            const filters = getCurrentFilters();
+            const { cars, total } = await fetchCarsWithMainImageFilteredPaginated(filters);
+            setCars(cars);
+            setTotalCars(total);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false); // stop loading
+        }
     }
 
+    // Reset page to 1 whenever the searchQuery changes
     useEffect(() => {
-        console.log('fetching data')
-        handleFetchCars();
-    }, []);
+        setPage(1);
+    }, [searchQuery, status, filterCategory, sortBy, sortOrder]);
+
 
     useEffect(() => {
         handleFetchCarsWithSortByFilters();
-    }, [filterCategory, sortBy, sortOrder, searchQuery, status]);
+    }, [filterCategory, sortBy, sortOrder, searchQuery, status, page]);
+
 
 
     const handleSort = (field: 'price' | 'year' | 'status') => {
@@ -69,15 +84,12 @@ export const CarsView: React.FC = () => {
             searchQuery: searchQuery.trim(),
             sortBy,
             sortOrder,
-            status
+            status,
+            page,
+            pageSize
         };
     };
 
-
-    async function handleFetchCarInfo(carId: string) {
-        return await fetchCarWithImagesById(carId);
-
-    }
 
     const handleViewCarDetails = async (car: CarType) => {
         try {
@@ -116,9 +128,10 @@ export const CarsView: React.FC = () => {
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-white/10">
                     <div className="flex flex-col gap-4">
-                        {/* Search and Sort Row */}
+                        {/* Search + Filters Row */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            {/* Search */}
+
+                            {/* Search Input */}
                             <div className="flex-1 max-w-md">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -131,32 +144,39 @@ export const CarsView: React.FC = () => {
                                     />
                                 </div>
                             </div>
-                            {/* Sort Controls */}
-                            {/* Sort + Status Controls */}
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort by:</span>
 
-                                {/* Price & Year buttons */}
-                                {['price', 'year'].map((field) => {
+                            {/* Sort + Status */}
+                            <div className="flex flex-wrap items-center gap-2">
+
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Sort by:
+                                </span>
+
+                                {/* PRICE + YEAR sorting */}
+                                {["price", "year"].map((field) => {
                                     const isActive = sortBy === field;
                                     const arrowColor = isActive
-                                        ? sortOrder === 'asc'
-                                            ? 'text-green-400'
-                                            : 'text-red-400'
-                                        : 'opacity-50 text-gray-400';
+                                        ? sortOrder === "asc"
+                                            ? "text-green-400"
+                                            : "text-red-400"
+                                        : "opacity-50 text-gray-400";
 
                                     return (
                                         <button
                                             key={field}
-                                            onClick={() => handleSort(field as 'price' | 'year')}
+                                            onClick={() => handleSort(field as "price" | "year")}
                                             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${isActive
-                                                ? 'bg-white/10 border-white/20'
-                                                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:text-white text-gray-300'
+                                                ? "bg-white/10 border-white/20"
+                                                : "bg-white/5 border-white/10 hover:bg-white/10 hover:text-white text-gray-300"
                                                 }`}
                                         >
                                             {field.charAt(0).toUpperCase() + field.slice(1)}
                                             {isActive ? (
-                                                sortOrder === 'asc' ? <ArrowUp className={`w-3 h-3 ${arrowColor}`} /> : <ArrowDown className={`w-3 h-3 ${arrowColor}`} />
+                                                sortOrder === "asc" ? (
+                                                    <ArrowUp className={`w-3 h-3 ${arrowColor}`} />
+                                                ) : (
+                                                    <ArrowDown className={`w-3 h-3 ${arrowColor}`} />
+                                                )
                                             ) : (
                                                 <ArrowUpDown className="w-3 h-3 opacity-50" />
                                             )}
@@ -164,392 +184,202 @@ export const CarsView: React.FC = () => {
                                     );
                                 })}
 
-                                {/* Status button */}
+                                {/* STATUS FILTER */}
                                 <button
-                                    onClick={() => {
-                                        // Toggle through three states: null -> available -> borrowed -> null
-                                        setStatus((prev) => {
-                                            if (prev === null) return 'available';
-                                            if (prev === 'available') return 'borrowed';
-                                            return null;
-                                        });
-                                        handleFetchCars(); // fetch with new status filter
-                                    }}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${status === 'available'
-                                        ? 'bg-green-500/20 text-green-300 border-green-500/50'
-                                        : status === 'borrowed'
-                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                    onClick={() =>
+                                        setStatus((prev) =>
+                                            prev === null ? "available" : prev === "available" ? "borrowed" : null
+                                        )
+                                    }
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${status === "available"
+                                        ? "bg-green-500/20 text-green-300 border-green-500/50"
+                                        : status === "borrowed"
+                                            ? "bg-red-500/20 text-red-300 border-red-500/50"
+                                            : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
                                         }`}
                                 >
-                                    {/* Show current value or default */}
-                                    {status === 'available'
-                                        ? 'Available'
-                                        : status === 'borrowed'
-                                            ? 'Borrowed'
-                                            : 'Status'}
-
-                                    {/* Arrow indicators */}
-                                    {/* {status === 'available' && <span className="ml-1 text-green-400 text-xs">↑</span>}
-                                    {status === 'borrowed' && <span className="ml-1 text-red-400 text-xs">↓</span>}
-                                    {status === null && <span className="ml-1 text-gray-400 text-xs">–</span>} */}
+                                    {status === "available"
+                                        ? "Available"
+                                        : status === "borrowed"
+                                            ? "Borrowed"
+                                            : "Status"}
                                 </button>
 
-
-                                {/* Clear Sort */}
-                                {(sortBy || status) && (
+                                {/* CLEAR FILTERS */}
+                                {(sortBy || status || searchQuery) && (
                                     <button
                                         onClick={() => {
                                             setSortBy(null);
-                                            setSortOrder('asc');
+                                            setSortOrder("asc");
                                             setStatus(null);
-                                            handleFetchCars();
+                                            setSearchQuery("");
                                         }}
                                         className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                                     >
-                                        Clear Sort
+                                        Clear Filters
                                     </button>
                                 )}
                             </div>
-
-
-
                         </div>
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-white/10">
-                        <thead className="bg-white/5">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Car
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    Transmission
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <button
-                                        onClick={() => handleSort('price')}
-                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
-                                    >
-                                        Price/Day
-                                        {sortBy === 'price' ? (
-                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                        ) : (
-                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
-                                        )}
-                                    </button>
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <button
-                                        onClick={() => handleSort('year')}
-                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
-                                    >
-                                        Year
-                                        {sortBy === 'year' ? (
-                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                        ) : (
-                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
-                                        )}
-                                    </button>
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <button
-                                        onClick={() => handleSort('status')}
-                                        className="flex items-center gap-1.5 hover:text-white transition-colors"
-                                    >
-                                        Status
-                                        {sortBy === 'status' ? (
-                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                        ) : (
-                                            <ArrowUpDown className="w-3 h-3 opacity-50" />
-                                        )}
-                                    </button>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10">
-                            {cars.length > 0 ? (
-                                cars.map((car) => {
-                                    return (
-                                        <tr
-                                            key={car.id}
-                                            className="hover:bg-white/5 transition-colors cursor-pointer"
-                                            onClick={() => handleViewCarDetails(car)}
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
 
-                                                    <img
-                                                        src={car.image_url || ''}
-                                                        alt={`${car.make}-${car.model}`.toLowerCase()}
-
-                                                        className="w-12 h-12 object-cover rounded-md border border-white/10"
-                                                    />
-                                                    <div>
-                                                        <p className="text-white font-semibold">{car.make} {car.model}</p>
-                                                        <p className="text-gray-400 text-xs">{car.body} · {car.seats} seats</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="px-2 py-1 text-xs font-semibold bg-white/10 text-gray-300 rounded capitalize">
-                                                    {car.transmission}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-white font-semibold">{car.price_per_day} MDL</td>
-                                            <td className="px-6 py-4 text-gray-300">{car.year}</td>
-                                            <td className="px-6 py-4">
-                                                <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${car.status === 'borrowed'
-                                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                                        : car.status === 'MAINTENANCE'
-                                                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' // AVAILABLE
-                                                        }
-                                                    `}
+                {loading ? (
+                    <LoadingState message='Loading cars' />
+                ) : (
+                    <>
+                        {/* Table */}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-white/10">
+                                <thead className="bg-white/5">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            Car
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            Transmission
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <button
+                                                onClick={() => handleSort('price')}
+                                                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                            >
+                                                Price/Day
+                                                {sortBy === 'price' ? (
+                                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                ) : (
+                                                    <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                                )}
+                                            </button>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <button
+                                                onClick={() => handleSort('year')}
+                                                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                            >
+                                                Year
+                                                {sortBy === 'year' ? (
+                                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                ) : (
+                                                    <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                                )}
+                                            </button>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <button
+                                                onClick={() => handleSort('status')}
+                                                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                                            >
+                                                Status
+                                                {sortBy === 'status' ? (
+                                                    sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                ) : (
+                                                    <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                                )}
+                                            </button>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/10">
+                                    {cars.length > 0 ? (
+                                        cars.map((car) => {
+                                            return (
+                                                <tr
+                                                    key={car.id}
+                                                    className="hover:bg-white/5 transition-colors cursor-pointer"
+                                                    onClick={() => handleViewCarDetails(car)}
                                                 >
-                                                    {car.status === 'borrowed'
-                                                        ? 'Borrowed'
-                                                        : car.status === 'maintenance'
-                                                            ? 'Maintenance'
-                                                            : 'Available'}
-                                                </span>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
 
+                                                            <img
+                                                                src={car.image_url || ''}
+                                                                alt={`${car.make}-${car.model}`.toLowerCase()}
+
+                                                                className="w-12 h-12 object-cover rounded-md border border-white/10"
+                                                            />
+                                                            <div>
+                                                                <p className="text-white font-semibold">{car.make} {car.model}</p>
+                                                                <p className="text-gray-400 text-xs">{car.body} · {car.seats} seats</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 text-xs font-semibold bg-white/10 text-gray-300 rounded capitalize">
+                                                            {car.transmission}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-white font-semibold">{car.price_per_day} MDL</td>
+                                                    <td className="px-6 py-4 text-gray-300">{car.year}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span
+                                                            className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xl ${car.status === 'borrowed'
+                                                                ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                                : car.status === 'MAINTENANCE'
+                                                                    ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                                                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' // AVAILABLE
+                                                                }
+                                                    `}
+                                                        >
+                                                            {car.status === 'borrowed'
+                                                                ? 'Borrowed'
+                                                                : car.status === 'maintenance'
+                                                                    ? 'Maintenance'
+                                                                    : 'Available'}
+                                                        </span>
+
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
+                                                {searchQuery || filterCategory !== 'all' ? 'No cars found matching your filters' : 'No cars available'}
                                             </td>
                                         </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                                        {searchQuery || filterCategory !== 'all' ? 'No cars found matching your filters' : 'No cars available'}
-                                    </td>
-                                </tr>
+                                    )}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination */}
+                            {totalCars > pageSize && (
+                                <div className="flex justify-between items-center px-6 py-4 border-t border-white/10">
+                                    <span className="text-gray-400 text-sm">
+                                        Page {page} of {Math.ceil(totalCars / pageSize)}
+                                    </span>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                                            disabled={page === 1}
+                                            className={`px-3 py-1 rounded text-xs font-semibold ${page === 1
+                                                ? "bg-white/10 text-gray-400 cursor-not-allowed"
+                                                : "bg-white/5 text-white hover:bg-white/10"
+                                                }`}
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            onClick={() => setPage((prev) => (prev * pageSize < totalCars ? prev + 1 : prev))}
+                                            disabled={page * pageSize >= totalCars}
+                                            className={`px-3 py-1 rounded text-xs font-semibold ${page * pageSize >= totalCars
+                                                ? "bg-white/10 text-gray-400 cursor-not-allowed"
+                                                : "bg-white/5 text-white hover:bg-white/10"
+                                                }`}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
                             )}
-                        </tbody>
-                    </table>
-                </div>
+
+
+                        </div>
+                    </>
+                )}
             </div>
         </div>
-    );
-};
-
-// Car Details/Edit View Component
-interface CarDetailsViewProps {
-    car: Car;
-    onCancel: () => void;
-}
-
-const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: onExit }) => {
-
-    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
-    const mainImage = selectedIndex !== null
-        ? car.photo_gallery?.[selectedIndex]   // optional chaining înainte de index
-        : car.photo_gallery?.[0];
-
-
-
-
-    return (
-        <div className="space-y-6">
-            <form className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Basic Information */}
-                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <h3 className="text-lg font-bold text-white mb-4">Basic Information</h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
-                            <input
-                                type="text"
-                                value={(car.make || '') + ' ' + (car.model || '')}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                                required
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Year</label>
-                                <input
-                                    type="number"
-                                    value={car.year || ''}
-                                    readOnly
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Seats</label>
-                                <input
-                                    type="number"
-                                    value={car.seats || ''}
-                                    readOnly
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
-                            <input
-                                value={car.category || 'luxury'}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Price Per Day (MDL)</label>
-                            <input
-                                type="number"
-                                value={car.price_per_day || ''}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    {/* Specifications */}
-                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <h3 className="text-lg font-bold text-white mb-4">Specifications</h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Body Type</label>
-                            <input
-                                value={car.body || 'Sedan'}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Transmission</label>
-                            <input
-                                value={car.transmission || 'Automatic'}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Fuel Type</label>
-                            <input
-                                value={car.fuel_type || 'gasoline'}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Drivetrain</label>
-                            <input
-                                type="text"
-                                value={car.drivetrain || ''}
-                                readOnly
-                                placeholder="e.g., AWD, RWD, FWD"
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Images */}
-                {mainImage && (
-                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
-
-                        {/* Preview mare */}
-                        <div className="w-full flex justify-center mb-4">
-                            <img
-                                src={mainImage}
-                                srcSet={`${mainImage}?w=320 320w, ${mainImage}?w=640 640w, ${mainImage}?w=800 800w`}
-                                sizes="(max-width: 768px) 320px, (max-width: 1024px) 480px, 640px"
-                                alt="Selected car image"
-                                className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-cover rounded-lg border border-white/20"
-                            />
-                        </div>
-
-                        {/* Gallery mică */}
-                        <div className="flex flex-wrap gap-2 justify-center">
-                            {car.photo_gallery && car.photo_gallery.length > 0 && car.photo_gallery.map((url, index) => (
-                                <img
-                                    key={index}
-                                    src={url}
-                                    srcSet={`${url}?w=160 160w, ${url}?w=320 320w, ${url}?w=480 480w`}
-                                    sizes="(max-width: 768px) 64px, (max-width: 1024px) 96px, 120px"
-                                    alt={`Gallery image ${index + 1}`}
-                                    className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-cover rounded-lg border 
-                    ${selectedIndex === index ? "border-blue-500 ring-2 ring-blue-400" : "border-white/10"}`}
-                                    onClick={() => setSelectedIndex(index)}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Features */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Features</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {car.features?.map((feature, index) => (
-                            <span
-                                key={index}
-                                className="flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
-                            >
-                                {feature}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Status & Ratings */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Status & Ratings</h3>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="5"
-                                value={car.rating || ''}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Reviews Count</label>
-                            <input
-                                type="number"
-                                value={car.reviews || ''}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4 justify-end">
-                    <button
-                        type="button"
-                        onClick={onExit}
-                        className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
-                    >
-                        Exit
-                    </button>
-                </div>
-            </form >
-        </div >
     );
 };
