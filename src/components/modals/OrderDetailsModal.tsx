@@ -13,7 +13,7 @@ import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 interface OrderDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    order: OrderDisplay | null;
+    order: Rental | null;
     onCancel?: (order: OrderDisplay) => void;
     onRedo?: (order: OrderDisplay) => void;
     isProcessing?: boolean;
@@ -48,16 +48,16 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             if (!isOpen) {
                 return; // Don't load if modal is closed
             }
-            
+
             try {
                 // Fetch cars from database
                 const fetchedCars = await fetchCars();
-                
+
                 if (fetchedCars.length === 0) {
                     setCars([]);
                     return;
                 }
-                
+
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
                     fetchedCars.map(async (car) => {
@@ -74,14 +74,14 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                         };
                     })
                 );
-                
+
                 setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
                 setCars([]);
             }
         };
-        
+
         loadCars();
     }, [isOpen]);
 
@@ -92,7 +92,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 setRequestOptions(null);
                 return;
             }
-            
+
             const requestId = (order as any).request_id;
             console.log('OrderDetailsModal: Checking for request_id. Order:', {
                 id: order.id,
@@ -100,26 +100,26 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 orderKeys: Object.keys(order),
                 fullOrder: order
             });
-            
+
             if (!requestId) {
                 console.log('OrderDetailsModal: No request_id found in order. Trying to find request by matching data...');
-                
+
                 // Try to find the request by matching user_id, car_id, and dates
                 try {
                     const { supabase } = await import('../../lib/supabase');
                     const { data: matchingRequests, error: searchError } = await supabase
                         .from('BorrowRequest')
                         .select('id, options, user_id, car_id, start_date, end_date')
-                        .eq('user_id', order.userId)
-                        .eq('car_id', order.carId)
-                        .eq('start_date', order.pickupDate)
-                        .eq('end_date', order.returnDate)
+                        .eq('user_id', order.user_id)
+                        .eq('car_id', order.car_id)
+                        .eq('start_date', order.start_date)
+                        .eq('end_date', order.end_date)
                         .limit(1);
-                    
+
                     if (!searchError && matchingRequests && matchingRequests.length > 0) {
                         const matchingRequest = matchingRequests[0];
                         console.log('OrderDetailsModal: Found matching request:', matchingRequest);
-                        
+
                         if (matchingRequest.options) {
                             let parsedOptions: any = {};
                             if (typeof matchingRequest.options === 'string') {
@@ -131,7 +131,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             } else {
                                 parsedOptions = matchingRequest.options;
                             }
-                            
+
                             if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
                                 console.log('OrderDetailsModal: Using options from matching request:', parsedOptions);
                                 setRequestOptions(parsedOptions);
@@ -142,7 +142,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 } catch (error) {
                     console.error('OrderDetailsModal: Error searching for matching request:', error);
                 }
-                
+
                 setRequestOptions(null);
                 return;
             }
@@ -150,7 +150,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             try {
                 const { supabase } = await import('../../lib/supabase');
                 console.log('OrderDetailsModal: Fetching request options for request_id:', requestId);
-                
+
                 const { data: request, error } = await supabase
                     .from('BorrowRequest')
                     .select('options, id, status')
@@ -177,7 +177,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     } else {
                         parsedOptions = request.options;
                     }
-                    
+
                     // Check if options is not empty (not just {})
                     if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
                         console.log('OrderDetailsModal: Parsed options from request:', parsedOptions);
@@ -207,48 +207,48 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             setCar(undefined);
             return;
         }
-        
+
         const findCar = async () => {
             // First, try to find in cars array
             let foundCar = cars.find(c => {
-        if (!order.carId) return false;
-        
-        // Normalize both IDs to numbers for comparison
-        const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
-        const orderCarIdNum = typeof order.carId === 'number' 
-            ? order.carId 
-            : parseInt(order.carId.toString(), 10);
-        
-        // Compare as numbers
-        if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
-            return true;
-        }
-        
-        // Fallback: compare as strings
-        const carIdStr = c.id.toString();
-        const orderCarIdStr = order.carId.toString();
-        return carIdStr === orderCarIdStr;
-    });
-    
+                if (!order.car_id) return false;
+
+                // Normalize both IDs to numbers for comparison
+                const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
+                const orderCarIdNum = typeof order.car_id === 'number'
+                    ? order.car_id
+                    : parseInt(order.car_id.toString(), 10);
+
+                // Compare as numbers
+                if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
+                    return true;
+                }
+
+                // Fallback: compare as strings
+                const carIdStr = c.id.toString();
+                const orderCarIdStr = order.car_id.toString();
+                return carIdStr === orderCarIdStr;
+            });
+
             // If car not found in cars array, fetch from database
-            if (!foundCar && order.carId) {
+            if (!foundCar && order.car_id) {
                 console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
-            orderCarId: order.carId,
-            orderCarName: order.carName
-        });
-                
+                    orderCarId: order.car_id,
+                    orderCarName: order.carName
+                });
+
                 try {
                     const { supabase } = await import('../../lib/supabase');
-                    const carIdMatch = typeof order.carId === 'number' 
-                        ? order.carId 
-                        : parseInt(order.carId.toString(), 10);
-                    
+                    const carIdMatch = typeof order.car_id === 'number'
+                        ? order.car_id
+                        : parseInt(order.car_id.toString(), 10);
+
                     const { data: carData, error } = await supabase
                         .from('Cars')
                         .select('*')
                         .eq('id', carIdMatch)
                         .single();
-                    
+
                     if (!error && carData) {
                         // Map database row to Car type
                         foundCar = {
@@ -272,7 +272,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             status: carData.status || undefined,
                             drivetrain: carData.drivetrain || undefined,
                         } as Car & { name?: string };
-                        
+
                         // Fetch images from storage for this car
                         if (foundCar) {
                             const carName = (foundCar as any).name || `${foundCar.make} ${foundCar.model}`;
@@ -282,23 +282,23 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                         }
                     }
                 } catch (err) {
-                    console.error(`OrderDetailsModal: Error fetching car ${order.carId} from database:`, err);
+                    console.error(`OrderDetailsModal: Error fetching car ${order.car_id} from database:`, err);
                 }
             }
-            
+
             setCar(foundCar);
         };
-        
+
         findCar();
-    }, [order, cars, order?.carId]);
+    }, [order, cars, order?.car_id]);
 
     if (!order) return null;
 
     const { days, hours, totalHours } = calculateRentalDuration(
-        order.pickupDate,
-        order.pickupTime,
-        order.returnDate,
-        order.returnTime
+        order.start_date,
+        order.start_time,
+        order.end_date,
+        order.end_time
     );
 
     // Now use days, hours for pricing
@@ -450,7 +450,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     />
                                                 )}
                                                 <span className="text-white font-semibold text-xs sm:text-sm">
-                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (((order as any).car?.make + ' ' + (order as any).car?.model && (order as any).car?.make + ' ' + (order as any).car?.model !== 'Unknown Car' ? (order as any).car?.make + ' ' + (order as any).car?.model : '')) || order.carName || t('admin.orders.unknownCar')}
+                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (((order as any).car?.make + ' ' + (order as any).car?.model && (order as any).car?.make + ' ' + (order as any).car?.model !== 'Unknown Car' ? (order as any).car?.make + ' ' + (order as any).car?.model : '')) || t('admin.orders.unknownCar')}
                                                 </span>
                                             </div>
                                         </div>
@@ -459,22 +459,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.pickupDate)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.start_date)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.pickupTime}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{order.start_time}</span>
                                                 </div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.returnDate)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.end_date)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.returnTime}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{order.end_time}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -768,7 +768,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                                             <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
                                         </h3>
-                                        {((order as any).rental_status || order.status) === 'CONTRACT' ? (
+                                        {((order as any).rental_status || order.rental_status) === 'CONTRACT' ? (
                                             <>
                                                 <button
                                                     onClick={handleOpenContractModal}
@@ -791,18 +791,18 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
-                                                >
+                                                        >
                                                             <Download className="w-4 h-4" />
                                                             <span>{t('admin.orders.downloadContractPDF')}</span>
                                                         </a>
-                                                    <button
-                                                        onClick={handleOpenContractModal}
-                                                        className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold mt-2"
-                                                    >
-                                                        <RefreshCw className="w-4 h-4" />
-                                                        <span>{t('admin.orders.recreateContract')}</span>
-                                                    </button>
-                                                <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
+                                                        <button
+                                                            onClick={handleOpenContractModal}
+                                                            className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold mt-2"
+                                                        >
+                                                            <RefreshCw className="w-4 h-4" />
+                                                            <span>{t('admin.orders.recreateContract')}</span>
+                                                        </button>
+                                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
                                                             {t('admin.orders.downloadExistingOrRecreate')}
                                                         </p>
                                                     </>

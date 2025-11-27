@@ -3,6 +3,9 @@ import { format } from 'date-fns';
 import { Rental } from '../../../../lib/orders';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search, Plus } from 'lucide-react';
 import { fetchRentalsHistory } from '../../../../lib/db/rentals/rentals';
+import { EmptyState } from '../../../ui/EmptyState';
+import LoadingScreen from '../../../layout/Loader';
+import { LoadingState } from '../../../ui/LoadingState';
 
 type OrdersTableProps = {
     title: string;
@@ -46,9 +49,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
 
     async function handleFetchOrdersHistory() {
         setLoading(true);
-
-        console.log('Making a request for this filters: ', { page, pageSize, sortBy, sortOrder, debouncedSearchQuery })
-
+        // console.log('Making a request for this filters: ', { page, pageSize, sortBy, sortOrder, debouncedSearchQuery })
         const { rentals, total } = await fetchRentalsHistory(page, pageSize, sortBy, sortOrder, debouncedSearchQuery);
 
         setOrders(rentals);
@@ -103,26 +104,9 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
         }
     };
 
-    const getInitials = (name: string) => {
-        const parts = name.trim().split(' ');
-        if (parts.length >= 2) {
-            return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-        }
-        return name.substring(0, 2).toUpperCase();
-    };
-
-    const toggleSort = (column: 'start_date' | 'total_amount') => {
-        if (sortBy === column) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortBy(column);
-            setSortOrder('asc');
-        }
-        setPage(1); // reset page when sorting
-    };
-
     const clearFilters = () => {
-        setSearchQuery('');
+        setSearchQuery('')
+        setDebouncedSearchQuery('');
         setSortBy(null);
         setSortOrder('desc');
         setPage(1);
@@ -215,32 +199,17 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-12 w-full">
-                    <div className="w-12 h-12 flex items-center justify-center bg-white/5 rounded-full">
-                        <Loader2 className="w-6 h-6 animate-spin text-white/50" />
-                    </div>
-                    <p className="mt-2 text-sm text-gray-400">Loading orders...</p>
-                </div>
+                <LoadingState message={'Loading orders...'} />
             ) : (
                 <>
-                    {/* Table */}
                     {orders.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center">
-                            <div className="bg-white/5 w-20 h-20 rounded-full flex items-center justify-center mb-4">
-                                <CarIcon className="w-8 h-8 text-gray-400" />
-                            </div>
-                            <p className="text-gray-400 text-lg font-medium mb-1">No orders available for this filters</p>
-                            <p className="text-gray-500 text-sm">Try adjusting your current filters</p>
-                            <button
-                                onClick={() => {
-                                    clearFilters()
-                                }}
-                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2 mt-4"
-                            >
-                                Clear Filters
-                            </button>
-                        </div>
-
+                        <EmptyState
+                            icon={<CarIcon className="w-8 h-8 text-gray-400" />}
+                            title="No orders available for this filters"
+                            subtitle="Try adjusting your current filters"
+                            buttonText="Clear Filters"
+                            onButtonClick={clearFilters}
+                        />
                     ) : (
                         <>
                             <div className="overflow-x-auto">
