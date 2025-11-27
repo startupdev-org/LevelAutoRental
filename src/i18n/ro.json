@@ -513,7 +513,10 @@
     "car": {
         "mileageLimit": "200km/zi",
         "seeCar": "Vezi mașina",
-        "seeMorePhotos": "Vezi încă {{count}} fotografii"
+        "seeMorePhotos": "Vezi încă {{count}} fotografii",
+        "seeMorePhotos_one": "Vezi încă o fotografie",
+        "seeMorePhotos_few": "Vezi încă {{count}} fotografii",
+        "seeMorePhotos_other": "Vezi încă {{count}} de fotografii"
     },
     "calculator": {
         "selectVehicle": "Selectați vehiculul",
