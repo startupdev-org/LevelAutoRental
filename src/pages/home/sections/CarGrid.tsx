@@ -15,6 +15,7 @@ export const CarGrid: React.FC = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { ref, isInView } = useInView();
+  const dataFetchedRef = React.useRef(false);
 
   const [cars, setCars] = useState<CarType[]>([]);
 
@@ -22,13 +23,14 @@ export const CarGrid: React.FC = () => {
     try {
       const fetchedCars = await fetchCarsWithPhotos(NUMBER_OF_CARS);
       setCars(fetchedCars);
-      console.log('fetched cars are: ', fetchedCars)
     } catch (error) {
       console.error('Error fetching cars:', error);
     }
   }
 
   useEffect(() => {
+    if (dataFetchedRef.current) return;
+    dataFetchedRef.current = true;
     handleFetchCarsWithPhotos();
   }, []);
 

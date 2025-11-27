@@ -47,10 +47,10 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
       '/LevelAutoRental/logos/merc.svg',
       
       // Car images (main images only for faster loading)
-      '/LevelAutoRental/cars/c43/c43-1.jpg',
-      '/LevelAutoRental/cars/gle/gle-1.jpg',
-      '/LevelAutoRental/cars/cls/cls-1.jpg',
-      '/LevelAutoRental/cars/maserati/maserati-1.jpg',
+      // '/LevelAutoRental/cars/c43/c43-1.jpg',
+      // '/LevelAutoRental/cars/gle/gle-1.jpg',
+      // '/LevelAutoRental/cars/cls/cls-1.jpg',
+      // '/LevelAutoRental/cars/maserati/maserati-1.jpg',
     ];
 
     // Preload images
