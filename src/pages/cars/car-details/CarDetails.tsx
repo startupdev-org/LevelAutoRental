@@ -1162,8 +1162,16 @@ export const CarDetails: React.FC = () => {
                                                         {basePrice.toLocaleString('ro-RO')} MDL
                                                     </div>
                                                 )}
-                                                <div className="text-base text-gray-500">
-                                                    {(finalPrice / eurRate).toFixed(2)} EUR / {(finalPrice / usdRate).toFixed(2)} USD pe zi
+                                                <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="text-gray-400">€</span>
+                                                        <span className="font-semibold text-gray-700">{(finalPrice / eurRate).toFixed(0)}</span>
+                                                    </span>
+                                                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="text-gray-400">$</span>
+                                                        <span className="font-semibold text-gray-700">{(finalPrice / usdRate).toFixed(0)}</span>
+                                                    </span>
                                                 </div>
                                             </>
                                         );
@@ -2080,8 +2088,16 @@ export const CarDetails: React.FC = () => {
                                                         {basePrice.toLocaleString('ro-RO')} MDL
                                                     </div>
                                                 )}
-                                                <div className="text-base text-gray-500">
-                                                    {(finalPrice / eurRate).toFixed(2)} EUR / {(finalPrice / usdRate).toFixed(2)} USD pe zi
+                                                <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="text-gray-400">€</span>
+                                                        <span className="font-semibold text-gray-700">{(finalPrice / eurRate).toFixed(0)}</span>
+                                                    </span>
+                                                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="text-gray-400">$</span>
+                                                        <span className="font-semibold text-gray-700">{(finalPrice / usdRate).toFixed(0)}</span>
+                                                    </span>
                                                 </div>
                                             </>
                                         );

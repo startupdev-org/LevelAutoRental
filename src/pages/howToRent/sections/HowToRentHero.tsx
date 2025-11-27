@@ -51,21 +51,10 @@ export const HowToRentHero: React.FC = () => {
     return (
         <section
             key={i18n.language}
-            className="relative py-60 bg-cover bg-center bg-no-repeat bg-fixed"
-            style={{
-                backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
-                backgroundPosition: isDesktop ? 'center -150px' : 'center center',
-                backgroundSize: isDesktop ? '115%' : 'cover'
-            }}
+            className="relative py-44"
         >
             {/* Background Overlay */}
-            <div className="absolute inset-0 bg-black/60"></div>
-
-            {/* Bottom Gradient Fade (in front of everything) */}
-            <div className="absolute bottom-0 left-0 w-full h-40 
-                bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
-                z-50 pointer-events-none">
-            </div>
+            {/* Content is below */}
 
 
 

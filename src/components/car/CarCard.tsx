@@ -413,11 +413,25 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 ));
                             })()
                         ) : (
-                            <img
-                                src={carWithImages.image_url || ''}
-                                alt={carWithImages.make + ' ' + carWithImages.model}
-                                className="w-full h-56 object-cover object-center bg-gray-100"
-                            />
+                            carWithImages.image_url ? (
+                                <img
+                                    src={carWithImages.image_url}
+                                    alt={carWithImages.make + ' ' + carWithImages.model}
+                                    className="w-full h-56 object-cover object-center bg-gray-100"
+                                />
+                            ) : (
+                                <div className="w-full h-56 bg-gray-50 flex flex-col items-center justify-center text-gray-300 relative overflow-hidden">
+                                    <div className="absolute inset-0 opacity-[0.03]"
+                                        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, black 1px, transparent 0)', backgroundSize: '16px 16px' }}>
+                                    </div>
+                                    <div className="relative z-10 flex flex-col items-center">
+                                        <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-3 shadow-sm border border-gray-100">
+                                            <Image className="w-8 h-8 text-gray-300" />
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Fără fotografii</span>
+                                    </div>
+                                </div>
+                            )
                         )}
                     </div>
 
@@ -724,35 +738,30 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                     {/* Price and CTA */}
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex flex-col gap-0.5">
-                            {(() => {
-                                const basePrice = (carWithImages as any).pricePerDay || carWithImages.price_per_day || 0;
-                                const discount = (carWithImages as any).discount_percentage || carWithImages.discount_percentage || 0;
-                                const finalPrice = discount > 0
-                                    ? basePrice * (1 - discount / 100)
-                                    : basePrice;
+                        {(() => {
+                            const basePrice = (carWithImages as any).pricePerDay || carWithImages.price_per_day || 0;
+                            const discount = (carWithImages as any).discount_percentage || carWithImages.discount_percentage || 0;
+                            const finalPrice = discount > 0
+                                ? basePrice * (1 - discount / 100)
+                                : basePrice;
 
-                                return discount > 0 ? (
-                                    <>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-xl font-bold text-gray-800">{finalPrice.toFixed(0)} MDL</span>
-                                            <span className="text-gray-500 text-sm">/zi</span>
-                                        </div>
-                                        <span className="text-sm text-gray-400 line-through">{basePrice} MDL</span>
-                                    </>
-                                ) : (
+                            return (
+                                <div className="flex items-center gap-2">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-bold text-gray-800">{basePrice} MDL</span>
+                                        <span className="text-xl font-bold text-gray-800">{finalPrice.toFixed(0)} MDL</span>
                                         <span className="text-gray-500 text-sm">/zi</span>
                                     </div>
-                                );
-                            })()}
-                        </div>
+                                    {discount > 0 && (
+                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60">{basePrice} MDL</span>
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         {/* Rating */}
                         <div className="flex items-center gap-1">
                             <span className="text-sm font-semibold text-gray-900 h-6 flex items-center justify-center">{carWithImages.rating}</span>
-                            <img src="/LevelAutoRental/assets/star.png" alt="Rating" className="w-6 h-6 flex-shrink-0 ml-2" />
+                            <img src="/LevelAutoRental/assets/star.png" alt="Rating" className="w-6 h-6 flex-shrink-0 ml-2 relative bottom-0.5" />
                         </div>
                     </div>
                 </div>
