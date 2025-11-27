@@ -27,7 +27,7 @@ export const LogoMarquee: React.FC = () => {
   };
 
   return (
-    <section className="lg:py-16 py-0 mt-[360px] lg:mt-20 w-full">
+    <section className="lg:py-16 py-0 mt-[280px] lg:mt-20 w-full">
       <div className="w-full">
         <div className="marquee">
           <ul className="marquee__content">

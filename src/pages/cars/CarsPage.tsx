@@ -37,6 +37,7 @@ export const Cars: React.FC = () => {
   const { ref, isInView } = useInView();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const dataFetchedRef = React.useRef(false);
 
   const [cars, setCars] = useState<CarType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +51,6 @@ export const Cars: React.FC = () => {
     try {
       const fetchedCars = await fetchCarsWithPhotos();
       setCars(fetchedCars);
-      console.log('Fetched cars with photos:', fetchedCars);
       
       // Extract unique makes from fetched cars (no need for separate DB call)
       const uniqueMakes = [...new Set(fetchedCars.map(car => car.make).filter(Boolean))];
@@ -67,7 +67,6 @@ export const Cars: React.FC = () => {
     // setLoading(true);
     try {
       const fetchedMakeModels = await fetchCarsModels(make);
-      console.log('fetched models are: ', fetchedMakeModels)
       setModels(fetchedMakeModels)
     } catch (error) {
       console.error('Error fetching make models:', error);
@@ -99,9 +98,6 @@ export const Cars: React.FC = () => {
 
   async function handleFetchFilteredCars(basicFilters: typeof filters) {
     setLoading(true);
-    // console.log('fetching the cars after filters: ', filters)
-    console.log('fetching the cars WITH THIS applied filters: ', basicFilters)
-    console.log('fetching the cars WITH THIS sidebar filters: ', sidebarFilters)
     try {
       // Build filter object from applied filters and sidebar filters
       const filters: CarFilters = {
@@ -118,8 +114,6 @@ export const Cars: React.FC = () => {
         seats: sidebarFilters.seats !== undefined ? sidebarFilters.seats : undefined,
       };
 
-      console.log('the last filters are: ', filters)
-
       const fetchedCars = await fetchFilteredCarsWithPhotos(filters);
       setCars(fetchedCars);
     } catch (error) {
@@ -130,9 +124,16 @@ export const Cars: React.FC = () => {
   }
 
   useEffect(() => {
-    handleFetchCarsWithPhotos();
-    // handleFetchCars();
-    // handleFetchCarsMake(); // No longer needed - makes are extracted from fetched cars
+    if (dataFetchedRef.current) return;
+    dataFetchedRef.current = true;
+    
+    // Check if we have URL params, if so, skip the default fetch
+    const makeParam = searchParams.get('make');
+    const modelParam = searchParams.get('model');
+    
+    if (!makeParam && !modelParam) {
+      handleFetchCarsWithPhotos();
+    }
   }, []);
 
   // Filter state
@@ -157,10 +158,6 @@ export const Cars: React.FC = () => {
     setShowMakeDropdown(false);
     setShowModelDropdown(false);
   };
-
-  useEffect(() => {
-    console.log('SidebarFilters are: ', sidebarFilters)
-  }, [showAdvancedFilters])
 
   // Handle opening a specific dropdown and closing others
   const openDropdown = (dropdownType: 'make' | 'model') => {
@@ -232,6 +229,9 @@ export const Cars: React.FC = () => {
       };
       setFilters(initialFilters);
       setAppliedFilters(initialFilters);
+      
+      // Also trigger the fetch for filtered cars
+      handleFetchFilteredCars(initialFilters);
     }
   }, [searchParams]);
 
@@ -276,7 +276,6 @@ export const Cars: React.FC = () => {
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    console.log('settings the filter: key = ', key, ' ; value = ', value)
     setFilters(prev => {
       const newFilters = { ...prev, [key]: value };
 
@@ -296,7 +295,6 @@ export const Cars: React.FC = () => {
           newFilters.model = '';
         }
       }
-      console.log('the new filters: ', newFilters)
       return newFilters;
     });
     setApplyError('');
@@ -319,18 +317,12 @@ export const Cars: React.FC = () => {
   };
 
   const handleSidebarFilterChange = (key: string, value: any) => {
-    console.log('changing the sidebar filters: key = ', key, ' ; value = ', value)
     if (value === 'Any')
       value = undefined
     setSidebarFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const applyFilters = (liveFilters: typeof filters) => {
-    console.log('making a request to get the cars from the filters')
-    console.log('applying the filters: ', liveFilters)
-
-    console.log('sidebarFilters: ', sidebarFilters)
-
     // Validate that at least one filter is set
     const hasFilters =
       liveFilters.make ||
@@ -364,7 +356,6 @@ export const Cars: React.FC = () => {
     navigate(`/cars${queryString ? `?${queryString}` : ''}`, { replace: true });
 
     // Trigger filtered fetch
-    // console.log('should fetch cars after the filters')
     handleFetchFilteredCars(liveFilters);
   };
 

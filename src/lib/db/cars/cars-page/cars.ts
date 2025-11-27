@@ -23,14 +23,20 @@ export interface CarFilters {
  * Fetch the cars from the database
  * @returns Car[]
  */
-export async function fetchCars(): Promise<Car[]> {
+export async function fetchCars(limit?: number): Promise<Car[]> {
     try {
         // Exclude deleted cars (Ascuns will be filtered client-side)
-        const { data, error } = await supabase
+        let query = supabase
             .from("Cars")
             .select("*")
             .or('status.is.null,status.neq.deleted')
             .order('id', { ascending: true });
+
+        if (limit) {
+            query = query.limit(limit);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching cars:', error);
@@ -263,8 +269,8 @@ export async function fetchCarsWithMainImage(): Promise<(Car[])> {
  * Fetch cars just with full photo gallery
  *  
  */
-export async function fetchCarsWithPhotos(): Promise<(Car[])> {
-    const cars = await fetchCars();
+export async function fetchCarsWithPhotos(limit?: number): Promise<(Car[])> {
+    const cars = await fetchCars(limit);
 
     const carsWithImages = await Promise.all(
         cars.map(async (car) => {

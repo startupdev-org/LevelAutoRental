@@ -529,6 +529,25 @@ export const Admin: React.FC = () => {
                         {/* Content */}
                         <div className="p-6">
                             <Settings />
+                            
+                            {/* Mobile Only: Navigation Buttons */}
+                            <div className="lg:hidden mt-8 pt-6 border-t border-white/10 space-y-3">
+                                <button
+                                    onClick={handleBackToSite}
+                                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white/5 border border-white/10 text-gray-200 text-sm font-medium rounded-lg hover:bg-white/10 hover:border-white/20 hover:text-white transition-all duration-200"
+                                >
+                                    <Home className="w-4 h-4" />
+                                    <span>Înapoi la Site</span>
+                                </button>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-300 text-sm font-medium rounded-lg hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-200 transition-all duration-200"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Deconectare</span>
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </motion.div>,

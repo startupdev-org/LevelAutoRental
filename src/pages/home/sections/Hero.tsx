@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { BiSolidPhoneCall } from "react-icons/bi";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { cars } from '../../../data/cars';
+import { fetchCars } from '../../../lib/db/cars/cars-page/cars';
+import { Car } from '../../../types';
 
 export const Hero: React.FC = () => {
 
@@ -13,6 +14,20 @@ export const Hero: React.FC = () => {
 
   const navigate = useNavigate();
   const todayDate = new Date().toISOString().split('T')[0];
+
+  const [cars, setCars] = useState<Car[]>([]);
+
+  useEffect(() => {
+    const loadCars = async () => {
+      try {
+        const fetchedCars = await fetchCars();
+        setCars(fetchedCars);
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+      }
+    };
+    loadCars();
+  }, []);
 
   const [bookingForm, setBookingForm] = useState({
     make: '',
@@ -28,33 +43,31 @@ export const Hero: React.FC = () => {
   // Get unique makes
   const uniqueMakes = useMemo(() => {
     const makes = cars.map(car => {
-      const parts = car.name.split(' ');
-      const firstPart = parts[0];
-      // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
-      return firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
+      const make = car.make || '';
+      return make.includes('-') ? make.split('-')[0] : make;
     });
-    return Array.from(new Set(makes));
-  }, []);
+    return Array.from(new Set(makes)).filter(Boolean);
+  }, [cars]);
 
   // Map makes to their available models
   const makeToModels = useMemo(() => {
     const mapping: Record<string, string[]> = {};
     cars.forEach(car => {
-      const parts = car.name.split(' ');
-      const firstPart = parts[0];
-      // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
-      const make = firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
-      const model = parts.slice(1).join(' '); // Rest is the model
+      const make = car.make || '';
+      const model = car.model || '';
+      const cleanMake = make.includes('-') ? make.split('-')[0] : make;
 
-      if (!mapping[make]) {
-        mapping[make] = [];
+      if (!cleanMake) return;
+
+      if (!mapping[cleanMake]) {
+        mapping[cleanMake] = [];
       }
-      if (model && !mapping[make].includes(model)) {
-        mapping[make].push(model);
+      if (model && !mapping[cleanMake].includes(model)) {
+        mapping[cleanMake].push(model);
       }
     });
     return mapping;
-  }, []);
+  }, [cars]);
 
   // Get available models for selected make
   const availableModels = useMemo(() => {
@@ -493,7 +506,7 @@ export const Hero: React.FC = () => {
               </div>
 
               {/* Date Range */}
-              <div className="w-full">
+              <div className="w-full hidden">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   Perioadă
                 </label>
@@ -822,8 +835,8 @@ export const Hero: React.FC = () => {
               {/* Separator */}
               <div className="w-px bg-gray-200 my-4"></div>
 
-              {/* Date Range */}
-              <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
+              {/* Date Range - Hidden */}
+              {/* <div className="flex-1 px-6 py-5 dropdown-container overflow-visible hidden">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   Perioadă
                 </label>
@@ -838,10 +851,10 @@ export const Hero: React.FC = () => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
-                  </div>
+                  </div> */}
 
                   {/* Calendar Dropdown */}
-                  <AnimatePresence>
+                  {/* <AnimatePresence>
                     {showDateCalendar && (
                       <motion.div
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -850,9 +863,9 @@ export const Hero: React.FC = () => {
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
                         onClick={(e) => e.stopPropagation()}
-                      >
+                      > */}
                         {/* Instruction Message */}
-                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                        {/* <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                           <p className="text-xs text-gray-600">
                             {!bookingForm.dateRange.startDate 
                               ? 'Selectează data de început' 
@@ -937,12 +950,12 @@ export const Hero: React.FC = () => {
                         </div>
                       </motion.div>
                     )}
-                  </AnimatePresence>
-                </div>
-              </div>
+                  </AnimatePresence> */}
+                {/* </div>
+              </div> */}
 
-              {/* Separator */}
-              <div className="w-px bg-gray-200 my-4"></div>
+              {/* Separator - Hidden */}
+              {/* <div className="w-px bg-gray-200 my-4 hidden"></div> */}
 
               {/* Search Button */}
               <div className="flex-1 px-6 py-5 flex items-center">

@@ -11,7 +11,7 @@ export const testimonials: Testimonial[] = [
     location: 'Chișinău, Moldova',
     product: {
       name: 'Mercedes-AMG C43',
-      images: [{ url: '/LevelAutoRental/cars/c43/c43-1.jpg' }]
+      images: []
     }
   },
   {
@@ -24,7 +24,7 @@ export const testimonials: Testimonial[] = [
     location: 'Bălți, Moldova',
     product: {
       name: 'Mercedes GLE',
-      images: [{ url: '/LevelAutoRental/cars/gle/gle-1.jpg' }]
+      images: []
     }
   },
   {
@@ -37,7 +37,7 @@ export const testimonials: Testimonial[] = [
     location: 'Tiraspol, Moldova',
     product: {
       name: 'Mercedes CLS',
-      images: [{ url: '/LevelAutoRental/cars/cls/cls-1.jpg' }]
+      images: []
     }
   },
   {
@@ -50,7 +50,7 @@ export const testimonials: Testimonial[] = [
     location: 'Orhei, Moldova',
     product: {
       name: 'Maserati Ghibli',
-      images: [{ url: '/LevelAutoRental/cars/maserati/maserati-1.jpg' }]
+      images: []
     }
   }
 ];
