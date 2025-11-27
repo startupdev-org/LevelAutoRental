@@ -3,9 +3,11 @@ import { Calendar, Car, MapPin, Info, Check, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cars } from '../../data/cars';
 import { useTranslation } from 'react-i18next';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 export const Calculator: React.FC = () => {
     const { t, i18n } = useTranslation();
+    const { eur: eurRate, usd: usdRate } = useExchangeRates();
     const [isDesktop, setIsDesktop] = useState(false);
     const [selectedCarId, setSelectedCarId] = useState<number>(cars[0]?.id || 1);
     const [rentalDays, setRentalDays] = useState<number>(1);
@@ -86,8 +88,8 @@ export const Calculator: React.FC = () => {
     }, [unlimitedKm, insurance, driver, priority, childSeat, sim, assistance, selectedCar, rentalDays, airportDelivery]);
 
     const totalPrice = basePrice + additionalCosts;
-    const priceInEUR = (totalPrice / 19.8).toFixed(2);
-    const priceInUSD = (totalPrice / 17.5).toFixed(2);
+    const priceInEUR = (totalPrice / eurRate).toFixed(2);
+    const priceInUSD = (totalPrice / usdRate).toFixed(2);
 
     return (
         <section
