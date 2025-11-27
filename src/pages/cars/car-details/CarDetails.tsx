@@ -34,10 +34,12 @@ import { fetchImagesByCarName } from '../../../lib/db/cars/cars';
 import { fetchRentals, BorrowRequest } from '../../../lib/orders';
 import { supabase } from '../../../lib/supabase';
 import { RentalOptionsSection } from '../sections/RentalOptionsSection';
+import { useExchangeRates } from '../../../hooks/useExchangeRates';
 
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();
     const navigate = useNavigate();
+    const { eur: eurRate, usd: usdRate, loading: ratesLoading } = useExchangeRates();
 
     // ───── STATE ─────
     const [car, setCar] = useState<Car | null>(null);
@@ -1161,7 +1163,7 @@ export const CarDetails: React.FC = () => {
                                                     </div>
                                                 )}
                                                 <div className="text-base text-gray-500">
-                                                    {(finalPrice / 19.82).toFixed(2)} EUR / {(finalPrice / 17.00).toFixed(2)} USD pe zi
+                                                    {(finalPrice / eurRate).toFixed(2)} EUR / {(finalPrice / usdRate).toFixed(2)} USD pe zi
                                                 </div>
                                             </>
                                         );
@@ -2079,7 +2081,7 @@ export const CarDetails: React.FC = () => {
                                                     </div>
                                                 )}
                                                 <div className="text-base text-gray-500">
-                                                    {(finalPrice / 19.82).toFixed(2)} EUR / {(finalPrice / 17.00).toFixed(2)} USD pe zi
+                                                    {(finalPrice / eurRate).toFixed(2)} EUR / {(finalPrice / usdRate).toFixed(2)} USD pe zi
                                                 </div>
                                             </>
                                         );
