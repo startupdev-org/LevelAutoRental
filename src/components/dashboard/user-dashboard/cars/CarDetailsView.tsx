@@ -43,7 +43,25 @@ export const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: o
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Basic Information */}
                     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <h3 className="text-lg font-bold text-white mb-4">Basic Information</h3>
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-white">Basic Information</h3>
+
+                            {/* Availability status badge */}
+                            <span
+                                className={`px-3 py-1 rounded-full text-sm font-semibold border backdrop-blur-xl ${fullCar.status === 'borrowed'
+                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                        : fullCar.status === 'MAINTENANCE'
+                                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                                    }`}
+                            >
+                                {fullCar.status === 'borrowed'
+                                    ? 'Borrowed'
+                                    : fullCar.status === 'MAINTENANCE'
+                                        ? 'Maintenance'
+                                        : 'Available'}
+                            </span>
+                        </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Car Name</label>
@@ -145,9 +163,9 @@ export const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: o
                 </div>
 
                 {/* Images */}
-                {mainImage && (
+                {mainImage && car.photo_gallery && (
                     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Photo Gallery</label>
+                        <label className="block text-m font-semibold text-gray-300 mb-2">Photo Gallery</label>
 
                         <div className="w-full flex justify-center mb-4">
                             <img
@@ -173,48 +191,56 @@ export const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: o
                 )}
 
                 {/* Features */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Features</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {fullCar.features?.map((feature, index) => (
-                            <span
-                                key={index}
-                                className="flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
-                            >
-                                {feature}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Status & Ratings */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                    <h3 className="text-lg font-bold text-white mb-4">Status & Ratings</h3>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="5"
-                                value={fullCar.rating || ''}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
+                {car.features && (
+                    <>
+                        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
+                            <h3 className="text-lg font-bold text-white mb-4">Features</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {fullCar.features?.map((feature, index) => (
+                                    <span
+                                        key={index}
+                                        className="flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
+                                    >
+                                        {feature}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Reviews Count</label>
-                            <input
-                                type="number"
-                                value={fullCar.reviews || ''}
-                                readOnly
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
+                    </>
+                )}
+
+                {car.features && car.rating && (
+                    <>
+                        {/* Status & Ratings */}
+                        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
+                            <h3 className="text-lg font-bold text-white mb-4">Status & Ratings</h3>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        max="5"
+                                        value={fullCar.rating || ''}
+                                        readOnly
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Reviews Count</label>
+                                    <input
+                                        type="number"
+                                        value={fullCar.reviews || ''}
+                                        readOnly
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 justify-end">
