@@ -7,6 +7,7 @@ import { Rental } from "../../../../lib/orders";
 import { OrderDetailsModal } from "../../../../components/modals/OrderDetailsModal";
 import { UserActiveOrdersTable } from "../../../../components/dashboard/user/orders/UserActiveOrdersTable";
 import { fetchActiveRentals } from "../../../../lib/db/rentals/rentals";
+import { EmptyState } from "../../../../components/ui/EmptyState";
 
 export const UserOrdersSection: React.FC = () => {
 
@@ -19,14 +20,7 @@ export const UserOrdersSection: React.FC = () => {
 
     const [activeRentals, setActiveRentals] = useState<Rental[] | null>(null);
 
-
-    const formatDate = (dateString: string) => {
-        try {
-            return format(new Date(dateString), 'MMM dd, yyyy');
-        } catch {
-            return dateString;
-        }
-    };
+    const [loading, setLoading] = useState(true);
 
     async function handleFetchActiveOrders() {
         const acitveRentals = await fetchActiveRentals();
@@ -35,8 +29,17 @@ export const UserOrdersSection: React.FC = () => {
     }
 
     useEffect(() => {
-        handleFetchActiveOrders();
+        async function loadAll() {
+            setLoading(true);
 
+            await Promise.all([
+                handleFetchActiveOrders()
+            ]);
+
+            setLoading(false);
+        }
+
+        loadAll()
     }, [])
 
     const handleOrderClick = (order: Rental) => {
@@ -44,6 +47,16 @@ export const UserOrdersSection: React.FC = () => {
         setSelectedOrder(order);
         setIsModalOpen(true);
     };
+
+    if (loading) {
+        return (
+            <EmptyState
+                icon={<div className="animate-spin border-4 border-gray-600 border-t-transparent rounded-full w-10 h-10"></div>}
+                title="Loading your orders..."
+                subtitle="Please wait while we your data is loading"
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">

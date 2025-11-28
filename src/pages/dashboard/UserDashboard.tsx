@@ -4,33 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Car,
-  Calendar,
-  CreditCard,
-  User,
-  LogOut,
   FileText,
   Clock,
-  MapPin,
-  Mail,
-  Phone,
-  Home,
-  Settings,
-  DollarSign,
   Check,
-  X,
-  Edit3,
-  Eye,
-  Download,
-  Star,
   Truck,
-  Plus
 } from 'lucide-react';
 import { UserDashboardSidebar } from '../../components/dashboard/sidebar/UserDashboardSidebar';
-import CalendarPage from './calendar/CalendarPage';
 import { Header } from '../../components/layout/Header';
 
-import { orders } from '../../data/index'
 import { UserOrdersSection } from './user-dashboard/orders/UserOrdersSection';
 
 import { CarsView } from './user-dashboard/cars/UserCarPage'
@@ -62,14 +43,6 @@ export const UserDashboard: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form state
-  const [editForm, setEditForm] = useState({
-    firstName: user?.email?.split('@')[0] || '',
-    lastName: '',
-    phone: '',
-    email: user?.email || ''
-  });
-
   // Password form
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -90,50 +63,11 @@ export const UserDashboard: React.FC = () => {
     navigate('/');
   };
 
-  const handleSaveProfile = () => {
-    setIsEditing(false);
-  };
-
-
   const handleNotificationToggle = (setting: keyof typeof notificationSettings) => {
     setNotificationSettings(prev => ({
       ...prev,
       [setting]: !prev[setting]
     }));
-  };
-
-  const getStatusColor = (status: Booking['status']) => {
-    switch (status) {
-      case 'upcoming':
-        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-      case 'active':
-        return 'bg-green-500/20 text-green-400 border border-green-500/30';
-      case 'completed':
-        return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
-      default:
-        return 'bg-gray-500/20 text-gray-400';
-    }
-  };
-
-  const getStatusIcon = (status: Booking['status']) => {
-    switch (status) {
-      case 'Pending':
-        return <Clock className="w-3 h-3" />;
-      case 'active':
-        return <Truck className="w-3 h-3" />;
-      case 'completed':
-        return <Check className="w-3 h-3" />;
-      default:
-        return <FileText className="w-3 h-3" />;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
   };
 
   // Update URL when tab changes

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { Search, ArrowLeft, ArrowRight, Loader2, CarIcon } from "lucide-react";
 import { Car } from "../../../../types";
 import { fetchCarsPaginated } from "../../../../lib/db/cars/cars";
+import { EmptyState } from "../../../../components/ui/EmptyState";
 
 interface FiltersProps {
     setShowFilters: (val: boolean) => void;
@@ -12,12 +13,14 @@ interface FiltersProps {
         searchQuery?: string;
     };
     setFilters: (filters: any) => void;
+    setCar: (car: Car | null) => void;
 }
 
 export const CalendarFilters: React.FC<FiltersProps> = ({
     setShowFilters,
     filters,
     setFilters,
+    setCar
 }) => {
     const [cars, setCars] = useState<Car[] | null>(null);
     const [page, setPage] = useState(1);
@@ -39,25 +42,31 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
 
     // Fetch cars whenever page or debouncedSearch changes
     useEffect(() => {
-        async function fetchCars() {
+        async function loadAll() {
             setLoading(true);
             const { cars, total } = await fetchCarsPaginated(page, pageSize, debouncedSearch);
             setCars(cars);
             setTotal(total);
             setLoading(false);
         }
-        fetchCars();
+        loadAll();
     }, [page, debouncedSearch]);
 
     const handleFilterChange = (field: string, value: string) => {
+        console.log('the new filters is: ', field, ' ; value = ', value)
         setFilters({ ...filters, [field]: value });
-        if (field === "carId") setShowFilters(false);
+        if (field === "carId")
+            setShowFilters(false);
     };
 
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages) return;
         setPage(newPage);
     };
+
+    function clearFilters() {
+        handleFilterChange("searchQuery", "")
+    }
 
     return (
         <AnimatePresence>
@@ -105,7 +114,7 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
                         />
                         {filters.searchQuery && (
                             <button
-                                onClick={() => handleFilterChange("searchQuery", "")}
+                                onClick={clearFilters}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors text-sm"
                             >
                                 ✕
@@ -125,7 +134,10 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
                             cars.map((car, index) => (
                                 <div
                                     key={car.id ? `car-${car.id}` : `car-fallback-${index}`}
-                                    onClick={() => handleFilterChange("carId", car.id?.toString() || "")}
+                                    onClick={() => {
+                                        handleFilterChange("carId", car.id?.toString() || "")
+                                        setCar(car)
+                                    }}
                                     className={`flex items-center gap-4 px-4 py-3 rounded-xl border border-white/20 cursor-pointer hover:bg-white/10 transition-colors ${filters.carId === car.id.toString() ? "bg-red-500/20" : ""}`}
                                 >
                                     <div className="w-16 h-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-700/30 flex items-center justify-center">
@@ -142,7 +154,13 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
                                 </div>
                             ))
                         ) : (
-                            <div className="px-4 py-2 text-white/50 text-sm text-center">No cars available</div>
+                            <EmptyState
+                                icon={<CarIcon className="w-8 h-8 text-gray-400" />}
+                                title="No cars found"
+                                subtitle="Try adjusting your filters"
+                                buttonText="Clear Filters"
+                                onButtonClick={clearFilters}
+                            />
                         )}
                     </div>
 

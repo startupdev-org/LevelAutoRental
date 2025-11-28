@@ -3,15 +3,17 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, en
 import { motion } from "framer-motion";
 import { User, Clock } from "lucide-react";
 import { Rental } from "../../../../lib/orders";
+import { Car } from "../../../../types";
 
 interface CalendarSectionProps {
     month: Date;
     setMonth: React.Dispatch<React.SetStateAction<Date>>;
     orders: Rental[];
     t: (key: string) => string;
+    car: Car | null;
 }
 
-export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month, setMonth, t }) => {
+export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month, setMonth, t, car }) => {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -196,38 +198,58 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                 </motion.div>
             </div>
 
-            {/* Pickups & Returns */}
-            <div>
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-0">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-white">
-                            {displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                            {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t("admin.calendar.today")})</span>}
-                        </h3>
-                        {selectedDate && <button onClick={() => setSelectedDate(null)} className="text-gray-400 hover:text-white transition-colors p-1">✕</button>}
+            <div className="flex flex-col gap-6">
+                {/* Selected Car Info */}
+                {car && (
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-gray-300">
+                        <div className="flex items-start justify-between gap-6">
+                            <div className="flex-1">
+                                <h3 className="text-xl font-semibold text-white mb-3">Calendar for selected car</h3>
+                                <p className="text-m"><span className="font-semibold text-white">Make:</span> {car.make}</p>
+                                <p className="text-m"><span className="font-semibold text-white">Model:</span> {car.model}</p>
+                                <p className="text-m"><span className="font-semibold text-white">Year:</span> {car.year}</p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <img src={car.image_url || ''} alt="Car" className="w-32 h-32 rounded-lg object-cover bg-black/10" />
+                            </div>
+                        </div>
                     </div>
+                )}
 
-                    {/* Pickups */}
-                    {sortedPickups.length > 0 && (
-                        <div className="mb-6">
-                            <h4 className="text-base font-semibold text-yellow-300 mb-4 uppercase tracking-wide">{t("admin.calendar.pickups")} ({sortedPickups.length})</h4>
-                            <div className="space-y-4">{sortedPickups.map(o => renderOrderCard(o, true))}</div>
+
+                {/* Pickups & Returns */}
+                <div>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-0">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-white">
+                                {displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t("admin.calendar.today")})</span>}
+                            </h3>
+                            {selectedDate && <button onClick={() => setSelectedDate(null)} className="text-gray-400 hover:text-white transition-colors p-1">✕</button>}
                         </div>
-                    )}
 
-                    {/* Returns */}
-                    {sortedReturns.length > 0 && (
-                        <div className="mb-6">
-                            <h4 className="text-base font-semibold text-blue-300 mb-4 uppercase tracking-wide">{t("admin.calendar.returns")} ({sortedReturns.length})</h4>
-                            <div className="space-y-4">{sortedReturns.map(o => renderOrderCard(o, false))}</div>
-                        </div>
-                    )}
+                        {/* Pickups */}
+                        {sortedPickups.length > 0 && (
+                            <div className="mb-6">
+                                <h4 className="text-base font-semibold text-yellow-300 mb-4 uppercase tracking-wide">{t("admin.calendar.pickups")} ({sortedPickups.length})</h4>
+                                <div className="space-y-4">{sortedPickups.map(o => renderOrderCard(o, true))}</div>
+                            </div>
+                        )}
 
-                    {/* Empty */}
-                    {sortedPickups.length === 0 && sortedReturns.length === 0 && (
-                        <div className="text-center py-8 text-gray-400 font-semibold text-m">No deals for this day</div>
-                    )}
-                </motion.div>
+                        {/* Returns */}
+                        {sortedReturns.length > 0 && (
+                            <div className="mb-6">
+                                <h4 className="text-base font-semibold text-blue-300 mb-4 uppercase tracking-wide">{t("admin.calendar.returns")} ({sortedReturns.length})</h4>
+                                <div className="space-y-4">{sortedReturns.map(o => renderOrderCard(o, false))}</div>
+                            </div>
+                        )}
+
+                        {/* Empty */}
+                        {sortedPickups.length === 0 && sortedReturns.length === 0 && (
+                            <div className="text-center py-8 text-gray-400 font-semibold text-m">No deals for this day</div>
+                        )}
+                    </motion.div>
+                </div>
             </div>
         </div>
     );
