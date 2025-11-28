@@ -167,7 +167,7 @@ export async function fetchRentalsHistory(
 }
 
 
-export async function fetchRentalsCalendarPage(
+export async function fetchUserRentalsForCalendarPage(
     carId?: string,
     month?: Date,
     status?: string
@@ -215,8 +215,6 @@ export async function fetchRentalsCalendarPage(
         )
     );
 }
-
-
 
 async function toRentalDTO(rental: Rental, carId: string): Promise<Rental> {
 

@@ -4,8 +4,10 @@ import { Filter } from "lucide-react";
 import { CalendarFilters } from "./CalendarFilter";
 import { useTranslation } from "react-i18next";
 import { CalendarSection } from "./CalendarSection";
-import { fetchRentalsCalendarPage } from "../../../../lib/db/rentals/rentals";
+import { fetchUserRentalsForCalendarPage } from "../../../../lib/db/rentals/rentals";
 import { Rental } from "../../../../lib/orders";
+import { Car } from "../../../../types";
+import { LoadingState } from "../../../../components/ui/LoadingState";
 
 export const CalendarPage: React.FC = () => {
     const { t } = useTranslation();
@@ -16,31 +18,46 @@ export const CalendarPage: React.FC = () => {
         searchQuery: ''
     });
 
+    const [car, setCar] = useState<Car | null>(null);
     const [month, setMonth] = useState(new Date());
-
-    const [carId, setCarId] = useState<number | null>(null);
 
     const [orders, setOrders] = useState<Rental[] | null>([])
 
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        hadleFetchUserRentals();
-    }, [carId, month]);
+        async function loadAll() {
+            setLoading(true);
+
+            await Promise.all([
+                hadleFetchUserRentals()
+            ])
+            setLoading(false);
+        }
+        loadAll();
+    }, [filters, month]);
 
     async function hadleFetchUserRentals() {
-        const orders = await fetchRentalsCalendarPage(
-            (carId)?.toString(),
+        const orders = await fetchUserRentalsForCalendarPage(
+            (filters.carId)?.toString(),
             month,
         );
-
         setOrders(orders)
-
         console.log('the orders for the calendar page are: ', orders)
+    }
+
+    if (loading && !showFilters) {
+        return (
+            <LoadingState
+                message="The car calendar is loading..."
+            />
+        );
     }
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">Car Calendar</h2>
+                <h2 className="text-2xl sm:text-5xl font-bold text-white mb-6 mt-4">Car Calendar</h2>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-s font-medium rounded-lg border bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white transition-all flex-shrink-0"
@@ -56,6 +73,7 @@ export const CalendarPage: React.FC = () => {
                     setShowFilters={setShowFilters}
                     filters={filters}
                     setFilters={setFilters}
+                    setCar={setCar}
                 />,
                 document.body
             )}
@@ -67,10 +85,10 @@ export const CalendarPage: React.FC = () => {
                     month={month}
                     setMonth={setMonth}
                     t={t}
+                    car={car}
                 />
             )}
         </div>
-
     );
 };
 

@@ -38,7 +38,7 @@ export const CalendarPage: React.FC<Props> = () => {
         const checkDesktop = () => {
             setIsDesktop(window.innerWidth >= 1024); // lg breakpoint
         };
-        
+
         checkDesktop();
         window.addEventListener('resize', checkDesktop);
         return () => window.removeEventListener('resize', checkDesktop);
@@ -58,7 +58,7 @@ export const CalendarPage: React.FC<Props> = () => {
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                
+
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
                     fetchedCars.map(async (car) => {
@@ -75,7 +75,7 @@ export const CalendarPage: React.FC<Props> = () => {
                         };
                     })
                 );
-                
+
                 setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
@@ -123,7 +123,7 @@ export const CalendarPage: React.FC<Props> = () => {
             // Try to get make and model from car object
             let make = '';
             let model = '';
-            
+
             // First, try to use make and model properties directly
             if ((car as any).make && (car as any).model) {
                 make = (car as any).make;
@@ -136,7 +136,7 @@ export const CalendarPage: React.FC<Props> = () => {
                 make = firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
                 model = parts.slice(1).join(" ");
             }
-            
+
             if (make) {
                 if (!mapping[make]) mapping[make] = [];
                 if (model && !mapping[make].includes(model)) mapping[make].push(model);
@@ -157,7 +157,7 @@ export const CalendarPage: React.FC<Props> = () => {
                 const make = (car as any).make;
                 return make.includes("-") ? make.split("-")[0] : make;
             }
-            
+
             // Fallback to parsing from name
             const carName = (car as any).name || '';
             const firstPart = carName.split(" ")[0];
@@ -197,7 +197,7 @@ export const CalendarPage: React.FC<Props> = () => {
                     // Try to get make and model from car object
                     let make = '';
                     let model = '';
-                    
+
                     // First, try to use make and model properties directly
                     if ((car as any).make && (car as any).model) {
                         make = (car as any).make;
@@ -257,7 +257,7 @@ export const CalendarPage: React.FC<Props> = () => {
 
     const getStatusDisplay = (status: string): { text: string; className: string } => {
         const statusUpper = status.toUpperCase();
-        
+
         if (statusUpper === 'CONTRACT') {
             return {
                 text: 'Contract',
@@ -279,7 +279,7 @@ export const CalendarPage: React.FC<Props> = () => {
                 className: 'bg-gray-500/20 text-gray-300 border border-gray-500/50'
             };
         }
-        
+
         // Fallback for payment statuses (legacy support)
         const statusLower = status.toLowerCase();
         if (statusLower === 'paid') {
@@ -305,7 +305,7 @@ export const CalendarPage: React.FC<Props> = () => {
         try {
             // Remove any AM/PM and convert to 24-hour format
             let cleanTime = timeString.trim();
-            
+
             // Check if time has AM/PM
             const hasAMPM = /AM|PM/i.test(cleanTime);
             if (hasAMPM) {
@@ -313,17 +313,17 @@ export const CalendarPage: React.FC<Props> = () => {
                 cleanTime = cleanTime.replace(/AM|PM/gi, '').trim();
                 const [hours, minutes] = cleanTime.split(':');
                 let hour = parseInt(hours, 10);
-                
+
                 // Convert to 24-hour format
                 if (isPM && hour !== 12) {
                     hour += 12;
                 } else if (!isPM && hour === 12) {
                     hour = 0;
                 }
-                
+
                 return `${hour.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
             }
-            
+
             // Handle both "HH:mm" and "HH:mm:ss" formats
             const time = cleanTime.split(':');
             if (time.length >= 2) {
@@ -396,11 +396,11 @@ export const CalendarPage: React.FC<Props> = () => {
             filteredOrders = filteredOrders.filter((o) => {
                 const car = cars.find(c => c.id.toString() === o.carId.toString());
                 if (!car) return false;
-                
+
                 // Try to get make and model from car object
                 let make = '';
                 let model = '';
-                
+
                 // First, try to use make and model properties directly
                 if ((car as any).make && (car as any).model) {
                     make = (car as any).make;
@@ -426,7 +426,7 @@ export const CalendarPage: React.FC<Props> = () => {
             const pickupDate = format(new Date(o.pickupDate), "yyyy-MM-dd");
             if (!pickupsMap.has(pickupDate)) pickupsMap.set(pickupDate, []);
             pickupsMap.get(pickupDate)!.push(o);
-            
+
             // Add order to its return date
             const returnDate = format(new Date(o.returnDate), "yyyy-MM-dd");
             if (!returnsMap.has(returnDate)) returnsMap.set(returnDate, []);
@@ -586,7 +586,7 @@ export const CalendarPage: React.FC<Props> = () => {
                         )}
                     </div>
                 </div>
-                
+
                 {/* Filter Toggle Button - Desktop only */}
                 <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
                     {selectedCar && (() => {
@@ -598,8 +598,8 @@ export const CalendarPage: React.FC<Props> = () => {
                         return (
                             <div className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-medium flex items-center gap-2 max-w-full">
                                 {logoPath && (
-                                    <img 
-                                        src={logoPath} 
+                                    <img
+                                        src={logoPath}
                                         alt={carMake}
                                         className={`${getLogoSize(carMake)} object-contain brightness-0 invert flex-shrink-0`}
                                         onError={(e) => {
@@ -632,8 +632,8 @@ export const CalendarPage: React.FC<Props> = () => {
                     return (
                         <div className="px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-medium flex items-center gap-1.5 max-w-full">
                             {logoPath && (
-                                <img 
-                                    src={logoPath} 
+                                <img
+                                    src={logoPath}
                                     alt={carMake}
                                     className={`${getLogoSize(carMake)} object-contain brightness-0 invert flex-shrink-0`}
                                     onError={(e) => {
@@ -674,15 +674,15 @@ export const CalendarPage: React.FC<Props> = () => {
                                 className="fixed inset-0 bg-black/50 z-[9998]"
                                 onClick={() => setShowFilters(false)}
                             />
-                    {/* Sidebar */}
-                    <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white/10 backdrop-blur-xl border-l border-white/20 shadow-2xl z-[9999] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                            {/* Sidebar */}
+                            <motion.div
+                                initial={{ x: '100%' }}
+                                animate={{ x: 0 }}
+                                exit={{ x: '100%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white/10 backdrop-blur-xl border-l border-white/20 shadow-2xl z-[9999] overflow-y-auto"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 <div className="p-6">
                                     {/* Header */}
                                     <div className="flex items-center justify-between mb-6">
@@ -698,156 +698,156 @@ export const CalendarPage: React.FC<Props> = () => {
                                     </div>
 
                                     <div className="flex flex-col gap-4">
-                {/* Make */}
+                                        {/* Make */}
                                         <div className="flex-1 relative dropdown-container z-[10000]">
-                    <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
-                        Marca
-                    </label>
-                    <div
-                        className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer border border-white/10 flex items-center gap-2 ${filters.make ? "text-white" : "text-white/70"}`}
-                        onClick={() => openDropdown("make")}
-                    >
-                        {filters.make && (() => {
-                            const logoPath = getMakeLogo(filters.make.toLowerCase());
-                            return logoPath ? (
-                                <img 
-                                    src={logoPath} 
-                                    alt={filters.make}
-                                    className={`${getLogoSize(filters.make)} object-contain brightness-0 invert`}
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
-                                />
-                            ) : null;
-                        })()}
-                        <span>{filters.make || "Selectează marca"}</span>
-                    </div>
-                    <AnimatePresence>
-                        {showMakeDropdown && (
-                                                    <>
-                                                        {/* Backdrop for dropdown */}
-                                                        <div 
-                                                            className="fixed inset-0 z-[10001]" 
-                                                            onClick={closeAllDropdowns}
-                                                        />
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="absolute top-full left-0 right-0 mt-1 border border-white/20 rounded-xl shadow-2xl z-[10002] min-w-[200px] max-h-[300px] overflow-y-auto"
-                                style={{ backgroundColor: '#363636' }}
-                            >
-                                <div
-                                                            className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
-                                    onClick={() => {
-                                        handleFilterChange("make", "");
-                                        closeAllDropdowns();
-                                    }}
-                                >
-                                    Selectează marca
-                                </div>
-                                {uniqueMakes.length > 0 ? (
-                                    uniqueMakes.map((make) => {
-                                        const logoPath = getMakeLogo(make.toLowerCase());
-                                        return (
-                                        <div
-                                            key={make}
-                                                className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white flex items-center gap-2"
-                                            onClick={() => {
-                                                handleFilterChange("make", make);
-                                                closeAllDropdowns();
-                                            }}
-                                        >
-                                                <div className="w-6 flex items-center justify-center flex-shrink-0">
-                                                    {logoPath && (
-                                                        <img 
-                                                            src={logoPath} 
-                                                            alt={make}
-                                                            className={`${getLogoSize(make)} object-contain brightness-0 invert`}
+                                            <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
+                                                Marca
+                                            </label>
+                                            <div
+                                                className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer border border-white/10 flex items-center gap-2 ${filters.make ? "text-white" : "text-white/70"}`}
+                                                onClick={() => openDropdown("make")}
+                                            >
+                                                {filters.make && (() => {
+                                                    const logoPath = getMakeLogo(filters.make.toLowerCase());
+                                                    return logoPath ? (
+                                                        <img
+                                                            src={logoPath}
+                                                            alt={filters.make}
+                                                            className={`${getLogoSize(filters.make)} object-contain brightness-0 invert`}
                                                             onError={(e) => {
                                                                 (e.target as HTMLImageElement).style.display = 'none';
                                                             }}
                                                         />
-                                                    )}
-                                                </div>
-                                                <span>{make}</span>
-                                        </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="px-4 py-2 text-white/50 text-sm">
-                                        Nu sunt mașini disponibile
-                                    </div>
-                                )}
-                            </motion.div>
+                                                    ) : null;
+                                                })()}
+                                                <span>{filters.make || "Selectează marca"}</span>
+                                            </div>
+                                            <AnimatePresence>
+                                                {showMakeDropdown && (
+                                                    <>
+                                                        {/* Backdrop for dropdown */}
+                                                        <div
+                                                            className="fixed inset-0 z-[10001]"
+                                                            onClick={closeAllDropdowns}
+                                                        />
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.2 }}
+                                                            className="absolute top-full left-0 right-0 mt-1 border border-white/20 rounded-xl shadow-2xl z-[10002] min-w-[200px] max-h-[300px] overflow-y-auto"
+                                                            style={{ backgroundColor: '#363636' }}
+                                                        >
+                                                            <div
+                                                                className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
+                                                                onClick={() => {
+                                                                    handleFilterChange("make", "");
+                                                                    closeAllDropdowns();
+                                                                }}
+                                                            >
+                                                                Selectează marca
+                                                            </div>
+                                                            {uniqueMakes.length > 0 ? (
+                                                                uniqueMakes.map((make) => {
+                                                                    const logoPath = getMakeLogo(make.toLowerCase());
+                                                                    return (
+                                                                        <div
+                                                                            key={make}
+                                                                            className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white flex items-center gap-2"
+                                                                            onClick={() => {
+                                                                                handleFilterChange("make", make);
+                                                                                closeAllDropdowns();
+                                                                            }}
+                                                                        >
+                                                                            <div className="w-6 flex items-center justify-center flex-shrink-0">
+                                                                                {logoPath && (
+                                                                                    <img
+                                                                                        src={logoPath}
+                                                                                        alt={make}
+                                                                                        className={`${getLogoSize(make)} object-contain brightness-0 invert`}
+                                                                                        onError={(e) => {
+                                                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                                                        }}
+                                                                                    />
+                                                                                )}
+                                                                            </div>
+                                                                            <span>{make}</span>
+                                                                        </div>
+                                                                    );
+                                                                })
+                                                            ) : (
+                                                                <div className="px-4 py-2 text-white/50 text-sm">
+                                                                    Nu sunt mașini disponibile
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
                                                     </>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Model */}
-                                        <div className="flex-1 relative dropdown-container z-[9999]">
-                    <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
-                        Model
-                    </label>
-                    <div
-                        className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer border border-white/10 flex items-center gap-2 ${!filters.make ? "text-white/50 cursor-not-allowed" : "text-white"
-                            }`}
-                        onClick={() => filters.make && openDropdown("model")}
-                    >
-                        {!filters.make ? "Selectează marca" : filters.model || "Orice"}
-                    </div>
-                        {showModelDropdown && filters.make && (
-                                            <>
-                                                {/* Backdrop for dropdown */}
-                                                <div 
-                                                    className="fixed inset-0 z-[10001]" 
-                                                    onClick={closeAllDropdowns}
-                                                />
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="absolute top-full left-0 right-0 mt-1 border border-white/20 rounded-xl shadow-2xl z-[10002] min-w-[200px] max-h-[300px] overflow-y-auto"
-                                style={{ backgroundColor: '#363636' }}
-                            >
-                                {availableModels.length > 1 && (
-                                <div
-                                        className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
-                                    onClick={() => {
-                                        handleFilterChange("model", "");
-                                        closeAllDropdowns();
-                                    }}
-                                >
-                                    Orice
-                                </div>
-                                )}
-                                {availableModels.length > 0 ? (
-                                    availableModels.map((model) => {
-                                        return (
-                                        <div
-                                            key={model}
-                                                className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
-                                            onClick={() => {
-                                                handleFilterChange("model", model);
-                                                closeAllDropdowns();
-                                            }}
-                                        >
-                                            {model}
+                                                )}
+                                            </AnimatePresence>
                                         </div>
-                                        );
-                                    })
-                                ) : filters.make ? (
-                                    <div className="px-4 py-2 text-white/50 text-sm">
-                                        Nu sunt modele disponibile
-                                    </div>
-                                ) : null}
-                            </motion.div>
+
+                                        {/* Model */}
+                                        <div className="flex-1 relative dropdown-container z-[9999]">
+                                            <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
+                                                Model
+                                            </label>
+                                            <div
+                                                className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer border border-white/10 flex items-center gap-2 ${!filters.make ? "text-white/50 cursor-not-allowed" : "text-white"
+                                                    }`}
+                                                onClick={() => filters.make && openDropdown("model")}
+                                            >
+                                                {!filters.make ? "Selectează marca" : filters.model || "Orice"}
+                                            </div>
+                                            {showModelDropdown && filters.make && (
+                                                <>
+                                                    {/* Backdrop for dropdown */}
+                                                    <div
+                                                        className="fixed inset-0 z-[10001]"
+                                                        onClick={closeAllDropdowns}
+                                                    />
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="absolute top-full left-0 right-0 mt-1 border border-white/20 rounded-xl shadow-2xl z-[10002] min-w-[200px] max-h-[300px] overflow-y-auto"
+                                                        style={{ backgroundColor: '#363636' }}
+                                                    >
+                                                        {availableModels.length > 1 && (
+                                                            <div
+                                                                className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
+                                                                onClick={() => {
+                                                                    handleFilterChange("model", "");
+                                                                    closeAllDropdowns();
+                                                                }}
+                                                            >
+                                                                Orice
+                                                            </div>
+                                                        )}
+                                                        {availableModels.length > 0 ? (
+                                                            availableModels.map((model) => {
+                                                                return (
+                                                                    <div
+                                                                        key={model}
+                                                                        className="px-4 py-2 cursor-pointer hover:bg-white/10 text-white"
+                                                                        onClick={() => {
+                                                                            handleFilterChange("model", model);
+                                                                            closeAllDropdowns();
+                                                                        }}
+                                                                    >
+                                                                        {model}
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        ) : filters.make ? (
+                                                            <div className="px-4 py-2 text-white/50 text-sm">
+                                                                Nu sunt modele disponibile
+                                                            </div>
+                                                        ) : null}
+                                                    </motion.div>
                                                 </>
-                        )}
-                </div>
+                                            )}
+                                        </div>
 
                                         {/* Apply Filters Button */}
                                         {(filters.make || filters.model) && (
@@ -884,281 +884,279 @@ export const CalendarPage: React.FC<Props> = () => {
                         transition={{ duration: 0.3 }}
                         className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-4 sm:p-6"
                     >
-                {/* Month Navigation */}
-                <div className="flex items-center justify-between mb-4">
-                        <button
-                            onClick={prevMonth}
-                        className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-                        >
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        </button>
-                    <div className="text-sm font-medium text-white">
-                        {currentMonth.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
-                    </div>
-                        <button
-                            onClick={nextMonth}
-                        className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-                        >
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        </button>
-            </div>
-
-                {/* Weekday Header */}
-                <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                    {['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'].map((day, i) => (
-                        <div key={day} className={`text-gray-400 font-medium ${i === 5 || i === 6 ? 'text-red-400' : ''}`}>
-                            {day}
-                        </div>
-                    ))}
-                    </div>
-
-                {/* Calendar Days */}
-                <div className="grid grid-cols-7 gap-1">
-                    {generateCalendarDays(currentMonth).map((day, index) => {
-                        if (!day) return <div key={index}></div>;
-                        const dayDate = new Date(day);
-                        const dayString = day;
-                        const hasPickups = eventsByDay.pickups.has(dayString);
-                        const hasReturns = eventsByDay.returns.has(dayString);
-                        const hasEvents = hasPickups || hasReturns;
-                        const isInCurrentMonth = isSameMonth(dayDate, currentMonth);
-                        
-                        // Check if this is today's date
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        const isToday = dayDate.getFullYear() === today.getFullYear() &&
-                            dayDate.getMonth() === today.getMonth() &&
-                            dayDate.getDate() === today.getDate();
-                        
-                        // Check if this is a past date
-                        const dayDateNormalized = new Date(dayDate);
-                        dayDateNormalized.setHours(0, 0, 0, 0);
-                        const isPast = dayDateNormalized < today;
-                        
-                        // If no date is selected, treat today as selected
-                        const isSelected = selectedDate === dayString || (selectedDate === null && isToday);
-
-                        // Determine styling based on today, selected, events, and past dates
-                        let dayClassName = '';
-                        if (isToday && isSelected) {
-                            // Today when selected - red background with selection ring
-                            dayClassName = 'bg-red-500 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold';
-                        } else if (isToday) {
-                            // Today always has red background
-                            dayClassName = 'bg-red-500 text-white';
-                        } else if (isSelected) {
-                            // Selected (but not today) - show ring effect
-                            if (hasEvents) {
-                                if (isPast) {
-                                    dayClassName = 'bg-gray-500/40 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-gray-500/50';
-                                } else {
-                                    dayClassName = 'bg-yellow-500/20 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-yellow-500/30';
-                                }
-                            } else {
-                                dayClassName = 'ring-1 ring-white/60 ring-offset-1 ring-offset-transparent text-white hover:ring-white/50 bg-white/5 font-semibold';
-                            }
-                        } else if (hasEvents) {
-                            if (isPast) {
-                                dayClassName = 'bg-gray-500/40 text-white hover:bg-gray-500/50';
-                            } else {
-                                dayClassName = 'bg-yellow-500/20 text-white hover:bg-yellow-500/30';
-                            }
-                        } else {
-                            dayClassName = 'hover:bg-white/10';
-                        }
-
-                        return (
-                            <div
-                                key={index}
-                                className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-xs rounded-xl transition-colors relative cursor-pointer ${
-                                    !isInCurrentMonth ? 'text-gray-500' : 'text-white'
-                                } ${dayClassName}`}
-                                onClick={() => handleSelectDay(dayString)}
+                        {/* Month Navigation */}
+                        <div className="flex items-center justify-between mb-4">
+                            <button
+                                onClick={prevMonth}
+                                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
                             >
-                                    {dayDate.getDate()}
-                                    {/* Dot indicator for days with events - yellow for today, gray for past, red for future */}
-                                    {hasEvents && (
-                                        <div className={`absolute top-0 right-0 w-2 h-2 rounded-full ${
-                                            isToday ? 'bg-yellow-500' : isPast ? 'bg-gray-500' : 'bg-red-500'
-                                        }`}></div>
-                                    )}
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <div className="text-sm font-medium text-white">
+                                {currentMonth.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                             </div>
-                        );
-                    })}
-                </div>
+                            <button
+                                onClick={nextMonth}
+                                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                            >
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Weekday Header */}
+                        <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
+                            {['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'].map((day, i) => (
+                                <div key={day} className={`text-gray-400 font-medium ${i === 5 || i === 6 ? 'text-red-400' : ''}`}>
+                                    {day}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Calendar Days */}
+                        <div className="grid grid-cols-7 gap-1">
+                            {generateCalendarDays(currentMonth).map((day, index) => {
+                                if (!day) return <div key={index}></div>;
+                                const dayDate = new Date(day);
+                                const dayString = day;
+                                const hasPickups = eventsByDay.pickups.has(dayString);
+                                const hasReturns = eventsByDay.returns.has(dayString);
+                                const hasEvents = hasPickups || hasReturns;
+                                const isInCurrentMonth = isSameMonth(dayDate, currentMonth);
+
+                                // Check if this is today's date
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const isToday = dayDate.getFullYear() === today.getFullYear() &&
+                                    dayDate.getMonth() === today.getMonth() &&
+                                    dayDate.getDate() === today.getDate();
+
+                                // Check if this is a past date
+                                const dayDateNormalized = new Date(dayDate);
+                                dayDateNormalized.setHours(0, 0, 0, 0);
+                                const isPast = dayDateNormalized < today;
+
+                                // If no date is selected, treat today as selected
+                                const isSelected = selectedDate === dayString || (selectedDate === null && isToday);
+
+                                // Determine styling based on today, selected, events, and past dates
+                                let dayClassName = '';
+                                if (isToday && isSelected) {
+                                    // Today when selected - red background with selection ring
+                                    dayClassName = 'bg-red-500 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold';
+                                } else if (isToday) {
+                                    // Today always has red background
+                                    dayClassName = 'bg-red-500 text-white';
+                                } else if (isSelected) {
+                                    // Selected (but not today) - show ring effect
+                                    if (hasEvents) {
+                                        if (isPast) {
+                                            dayClassName = 'bg-gray-500/40 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-gray-500/50';
+                                        } else {
+                                            dayClassName = 'bg-yellow-500/20 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-yellow-500/30';
+                                        }
+                                    } else {
+                                        dayClassName = 'ring-1 ring-white/60 ring-offset-1 ring-offset-transparent text-white hover:ring-white/50 bg-white/5 font-semibold';
+                                    }
+                                } else if (hasEvents) {
+                                    if (isPast) {
+                                        dayClassName = 'bg-gray-500/40 text-white hover:bg-gray-500/50';
+                                    } else {
+                                        dayClassName = 'bg-yellow-500/20 text-white hover:bg-yellow-500/30';
+                                    }
+                                } else {
+                                    dayClassName = 'hover:bg-white/10';
+                                }
+
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-xs rounded-xl transition-colors relative cursor-pointer ${!isInCurrentMonth ? 'text-gray-500' : 'text-white'
+                                            } ${dayClassName}`}
+                                        onClick={() => handleSelectDay(dayString)}
+                                    >
+                                        {dayDate.getDate()}
+                                        {/* Dot indicator for days with events - yellow for today, gray for past, red for future */}
+                                        {hasEvents && (
+                                            <div className={`absolute top-0 right-0 w-2 h-2 rounded-full ${isToday ? 'bg-yellow-500' : isPast ? 'bg-gray-500' : 'bg-red-500'
+                                                }`}></div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </motion.div>
 
                     {/* Selected Date Information or Today's Events - Independent Section */}
-            {(() => {
-                // If a date is selected, show that date's events, otherwise show today's events
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const todayStr = format(today, "yyyy-MM-dd");
-                const displayDate = selectedDate || todayStr;
-                const displayDateObj = new Date(displayDate);
-                
-                const selectedDayPickups = sortOrders(eventsByDay.pickups.get(displayDate) || [], true);
-                const selectedDayReturns = sortOrders(eventsByDay.returns.get(displayDate) || [], false);
-                
-                return (
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                        className="mt-6"
-                    >
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-white">
-                                {displayDateObj.toLocaleDateString('ro-RO', { 
-                                    weekday: 'long', 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                })}
-                                {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t('admin.calendar.today')})</span>}
-                            </h3>
-                            {selectedDate && (
-                                <button
-                                    onClick={() => setSelectedDate(null)}
-                                    className="text-gray-400 hover:text-white transition-colors p-1"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            )}
-                        </div>
-                        
-                        {/* Pickups Section */}
-                        {selectedDayPickups.length > 0 && (
-                            <div className="mb-6">
-                                <h4 className="text-sm font-semibold text-yellow-300 mb-3 uppercase tracking-wide">{t('admin.calendar.pickups')} ({selectedDayPickups.length})</h4>
-                                <div className="space-y-3">
-                                    {selectedDayPickups.map((order) => {
-                                        const car = cars.find(c => c.id.toString() === order.carId.toString());
-                                        const carName = car ? ((car as any).name || 'Unknown Car') : 'Unknown Car';
-                                        const customerName = order.customerName || 'Unknown Customer';
-                                    
-                                    return (
-                                        <motion.div
-                                            key={order.id}
-                                            initial={{ opacity: 0, y: 5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            onClick={() => {
-                                                setSelectedOrder(order);
-                                                setIsModalOpen(true);
-                                            }}
-                                            className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                    {(() => {
+                        // If a date is selected, show that date's events, otherwise show today's events
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const todayStr = format(today, "yyyy-MM-dd");
+                        const displayDate = selectedDate || todayStr;
+                        const displayDateObj = new Date(displayDate);
+
+                        const selectedDayPickups = sortOrders(eventsByDay.pickups.get(displayDate) || [], true);
+                        const selectedDayReturns = sortOrders(eventsByDay.returns.get(displayDate) || [], false);
+
+                        return (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="mt-6"
+                            >
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-white">
+                                        {displayDateObj.toLocaleDateString('ro-RO', {
+                                            weekday: 'long',
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}
+                                        {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t('admin.calendar.today')})</span>}
+                                    </h3>
+                                    {selectedDate && (
+                                        <button
+                                            onClick={() => setSelectedDate(null)}
+                                            className="text-gray-400 hover:text-white transition-colors p-1"
                                         >
-                                            <div className="space-y-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                                            <User className="w-5 h-5 text-white" />
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                            <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
-                                                        </div>
-                                                    </div>
-                                                    {(() => {
-                                                        const statusDisplay = getStatusDisplay(order.status);
-                                                        return (
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
-                                                                {statusDisplay.text}
-                                                            </span>
-                                                        );
-                                                    })()}
-                                                </div>
-                                                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <span className="text-white/90 text-sm truncate">{carName}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                                                        <Clock className="w-4 h-4 text-yellow-400/70 flex-shrink-0" />
-                                                        <span className="text-yellow-400 text-lg font-bold tracking-tight">{formatTime(order.pickupTime)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                </motion.div>
-                                    );
-                                    })}
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    )}
                                 </div>
-                            </div>
-                        )}
-                        
-                        {/* Returns Section */}
-                        {selectedDayReturns.length > 0 && (
-                            <div className="mb-6">
-                                <h4 className="text-sm font-semibold text-blue-300 mb-3 uppercase tracking-wide">{t('admin.calendar.returns')} ({selectedDayReturns.length})</h4>
-                                <div className="space-y-3">
-                                    {selectedDayReturns.map((order) => {
-                                        const car = cars.find(c => c.id.toString() === order.carId.toString());
-                                        const carName = car ? ((car as any).name || 'Unknown Car') : 'Unknown Car';
-                                        const customerName = order.customerName || 'Unknown Customer';
-                                    
-                                    return (
-                                        <motion.div
-                                            key={order.id}
-                                            initial={{ opacity: 0, y: 5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            onClick={() => {
-                                                setSelectedOrder(order);
-                                                setIsModalOpen(true);
-                                            }}
-                                            className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
-                                        >
-                                            <div className="space-y-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                                            <User className="w-5 h-5 text-white" />
+
+                                {/* Pickups Section */}
+                                {selectedDayPickups.length > 0 && (
+                                    <div className="mb-6">
+                                        <h4 className="text-sm font-semibold text-yellow-300 mb-3 uppercase tracking-wide">{t('admin.calendar.pickups')} ({selectedDayPickups.length})</h4>
+                                        <div className="space-y-3">
+                                            {selectedDayPickups.map((order) => {
+                                                const car = cars.find(c => c.id.toString() === order.carId.toString());
+                                                const carName = car ? ((car as any).name || 'Unknown Car') : 'Unknown Car';
+                                                const customerName = order.customerName || 'Unknown Customer';
+
+                                                return (
+                                                    <motion.div
+                                                        key={order.id}
+                                                        initial={{ opacity: 0, y: 5 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        onClick={() => {
+                                                            setSelectedOrder(order);
+                                                            setIsModalOpen(true);
+                                                        }}
+                                                        className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                                                    >
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                                                        <User className="w-5 h-5 text-white" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-semibold text-white text-sm">{customerName}</div>
+                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {(() => {
+                                                                    const statusDisplay = getStatusDisplay(order.status);
+                                                                    return (
+                                                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
+                                                                            {statusDisplay.text}
+                                                                        </span>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                            <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                    <span className="text-white/90 text-sm truncate">{carName}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                                                                    <Clock className="w-4 h-4 text-yellow-400/70 flex-shrink-0" />
+                                                                    <span className="text-yellow-400 text-lg font-bold tracking-tight">{formatTime(order.pickupTime)}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                            <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Returns Section */}
+                                {selectedDayReturns.length > 0 && (
+                                    <div className="mb-6">
+                                        <h4 className="text-sm font-semibold text-blue-300 mb-3 uppercase tracking-wide">{t('admin.calendar.returns')} ({selectedDayReturns.length})</h4>
+                                        <div className="space-y-3">
+                                            {selectedDayReturns.map((order) => {
+                                                const car = cars.find(c => c.id.toString() === order.carId.toString());
+                                                const carName = car ? ((car as any).name || 'Unknown Car') : 'Unknown Car';
+                                                const customerName = order.customerName || 'Unknown Customer';
+
+                                                return (
+                                                    <motion.div
+                                                        key={order.id}
+                                                        initial={{ opacity: 0, y: 5 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        onClick={() => {
+                                                            setSelectedOrder(order);
+                                                            setIsModalOpen(true);
+                                                        }}
+                                                        className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                                                    >
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                                                        <User className="w-5 h-5 text-white" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-semibold text-white text-sm">{customerName}</div>
+                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {(() => {
+                                                                    const statusDisplay = getStatusDisplay(order.status);
+                                                                    return (
+                                                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
+                                                                            {statusDisplay.text}
+                                                                        </span>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                            <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                    <span className="text-white/90 text-sm truncate">{carName}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                                                                    <Clock className="w-4 h-4 text-blue-400/70 flex-shrink-0" />
+                                                                    <span className="text-blue-400 text-lg font-bold tracking-tight">{formatTime(order.returnTime)}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    {(() => {
-                                                        const statusDisplay = getStatusDisplay(order.status);
-                                                        return (
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
-                                                                {statusDisplay.text}
-                                                            </span>
-                                                        );
-                                                    })()}
-                                                </div>
-                                                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <span className="text-white/90 text-sm truncate">{carName}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                                                        <Clock className="w-4 h-4 text-blue-400/70 flex-shrink-0" />
-                                                        <span className="text-blue-400 text-lg font-bold tracking-tight">{formatTime(order.returnTime)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                        
-                        {selectedDayPickups.length === 0 && selectedDayReturns.length === 0 && (
-                            <div className="text-center py-8 text-gray-400 text-sm">
-                                No bookings for this day
-                            </div>
-                        )}
-                    </motion.div>
-                    );
-                })()}
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedDayPickups.length === 0 && selectedDayReturns.length === 0 && (
+                                    <div className="text-center py-8 text-gray-400 text-sm">
+                                        No bookings for this day
+                                    </div>
+                                )}
+                            </motion.div>
+                        );
+                    })()}
                 </>
             )}
 
@@ -1169,7 +1167,7 @@ export const CalendarPage: React.FC<Props> = () => {
                 const todayStr = format(today, "yyyy-MM-dd");
                 const displayDate = selectedDate || todayStr;
                 const displayDateObj = new Date(displayDate);
-                
+
                 const selectedDayPickups = eventsByDay.pickups.get(displayDate) || [];
                 const selectedDayReturns = eventsByDay.returns.get(displayDate) || [];
 
@@ -1204,7 +1202,7 @@ export const CalendarPage: React.FC<Props> = () => {
                     />
                 );
             })()}
-            
+
             {/* Order Details Modal */}
             <OrderDetailsModal
                 isOpen={isModalOpen}

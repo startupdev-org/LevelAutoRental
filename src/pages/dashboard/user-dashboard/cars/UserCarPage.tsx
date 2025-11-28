@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
     Search,
     ArrowUpDown,
@@ -9,7 +8,7 @@ import {
     Car as CarIcon,
 } from 'lucide-react';
 import { Car, CarFilterOptions, Car as CarType } from '../../../../types';
-import { fetchCarsWithMainImageFilteredPaginated, fetchCarsWithPhotos } from '../../../../lib/db/cars/cars-page/cars';
+import { fetchCarsWithMainImageFilteredPaginated } from '../../../../lib/db/cars/cars-page/cars';
 import { fetchCarWithImagesById } from '../../../../lib/db/cars/cars';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { CarDetailsView } from '../../../../components/dashboard/user-dashboard/cars/CarDetailsView';
@@ -19,8 +18,6 @@ import { EmptyState } from '../../../../components/ui/EmptyState';
 // Cars Management View Component
 export const CarsView: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const carId = searchParams.get('carId');
-    const [filterCategory, setFilterCategory] = useState<string>('all');
     const [viewingCar, setViewingCarDetails] = useState<Car | null>(null);
     const [cars, setCars] = useState<CarType[]>([]);
 
@@ -77,17 +74,17 @@ export const CarsView: React.FC = () => {
     // Fetch cars whenever debouncedSearchQuery changes
     useEffect(() => {
         handleFetchCarsWithSortByFilters();
-    }, [debouncedSearchQuery, filterCategory, sortBy, sortOrder, status, page]);
+    }, [debouncedSearchQuery, sortBy, sortOrder, status, page]);
 
     // Reset page to 1 whenever the searchQuery changes
     useEffect(() => {
         setPage(1);
-    }, [searchQuery, status, filterCategory, sortBy, sortOrder]);
+    }, [searchQuery, status, sortBy, sortOrder]);
 
 
     useEffect(() => {
         handleFetchCarsWithSortByFilters();
-    }, [filterCategory, sortBy, sortOrder, searchQuery, status, page]);
+    }, [sortBy, sortOrder, searchQuery, status, page]);
 
 
     const handleSort = (field: 'price' | 'year' | 'status') => {
@@ -135,10 +132,6 @@ export const CarsView: React.FC = () => {
             />
         );
     }
-
-
-    // add the empty state compoent and add the debounce query variable
-
 
     return (
         <div className="space-y-6">
@@ -398,8 +391,6 @@ export const CarsView: React.FC = () => {
                                     </div>
                                 </div>
                             )}
-
-
                         </div>
                     </>
                 )}

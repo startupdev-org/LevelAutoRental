@@ -1,13 +1,13 @@
 // OverviewTab.tsx
 import React, { useEffect, useState } from 'react';
-import { Calendar, DollarSign, Star, Truck, Check, Clock, FileText, Plus } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Calendar, Truck, Check, Clock, FileText } from 'lucide-react';
 import { fetchFavoriteCar, fetchRecentRentals, getUserRentals as fetchUsersRentals } from '../../../../lib/db/rentals/rentals';
 import { TabType } from '../../UserDashboard';
 import { Rental } from '../../../../lib/orders';
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
 import BasicInfoComponent from '../../../../components/dashboard/user-dashboard/overview/BasicInfoComponent';
+import { EmptyState } from '../../../../components/ui/EmptyState';
 
 export interface Booking {
     id: string;
@@ -32,11 +32,24 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
 
     const [favoriteCar, setFavoriteCar] = useState<FavoriteCar | null>(null);
 
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        handleFetchUserRentals()
-        handleFetchUserFavoriteCar()
-        handleFetchUserRecentRentals()
-    }, [])
+        async function loadAll() {
+            setLoading(true);
+
+            await Promise.all([
+                handleFetchUserRentals(),
+                handleFetchUserFavoriteCar(),
+                handleFetchUserRecentRentals()
+            ]);
+
+            setLoading(false);
+        }
+
+        loadAll();
+    }, []);
+
 
     async function handleFetchUserRentals() {
         const orders = await fetchUsersRentals();
@@ -96,6 +109,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 return <FileText className="w-3 h-3" />;
         }
     };
+
+    if (loading) {
+        return (
+            <EmptyState
+                icon={<div className="animate-spin border-4 border-gray-600 border-t-transparent rounded-full w-10 h-10"></div>}
+                title="Loading your overview..."
+                subtitle="Please wait while we your data is loading"
+            />
+        );
+    }
+
 
     return (
         <div className="space-y-6">
