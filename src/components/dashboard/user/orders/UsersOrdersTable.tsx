@@ -6,6 +6,8 @@ import { fetchRentalsHistory } from '../../../../lib/db/rentals/rentals';
 import { EmptyState } from '../../../ui/EmptyState';
 import LoadingScreen from '../../../layout/Loader';
 import { LoadingState } from '../../../ui/LoadingState';
+import { UserCreateRentalModal } from '../../../modals/UserCreateRentalRequestModal';
+import { getLoggedUser } from '../../../../lib/db/user/profile';
 
 type OrdersTableProps = {
     title: string;
@@ -14,6 +16,10 @@ type OrdersTableProps = {
 };
 
 export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder }) => {
+
+    const user = getLoggedUser();
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -112,12 +118,20 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
         setPage(1);
     };
 
+    function openModal() {
+        setIsModalOpen(true);
+    }
+
+    function closeModal() {
+        setIsModalOpen(false);
+    }
+
     return (
         <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden mb-8">
             {/* Header */}
             <div className="px-6 py-4 border-b border-white/10 flex flex-col sm:flex-row justify-between gap-4">
                 <h3 className="text-xl font-bold text-white">{title}</h3>
-                <button onClick={handleAddOrder} className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg flex items-center gap-2 text-sm">
+                <button onClick={openModal} className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-semibold rounded-lg flex items-center gap-2 text-sm">
                     <Plus className="w-4 h-4" />
                     Make a new request
                 </button>
@@ -289,6 +303,12 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
                 </>
             )}
 
+
+            {isModalOpen && (
+                <UserCreateRentalModal
+                    onClose={closeModal}
+                />
+            )}
 
 
         </div>

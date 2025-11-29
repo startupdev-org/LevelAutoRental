@@ -137,21 +137,21 @@ export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
     if (error || !data || data.length === 0) {
       try {
         const { supabaseAdmin } = await import('./supabase');
-        
+
         if (!import.meta.env.VITE_SUPABASE_SERVICE_KEY) {
           return [];
         }
-        
+
         // Get full data with admin client
         const fullResult = await supabaseAdmin
           .from('BorrowRequest')
           .select('*')
           .order('requested_at', { ascending: false });
-        
+
         if (fullResult.error) {
           return [];
         }
-        
+
         if (fullResult.data && fullResult.data.length > 0) {
           // Map admin data to request format
           return fullResult.data.map((request: any) => ({
@@ -527,7 +527,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       // Get customer information - prefer from request if rental was created from a request
       const requestId = (rental as any).request_id;
       const requestCustomer = requestId ? requestCustomerMap.get(typeof requestId === 'number' ? requestId : parseInt(requestId)) : null;
-      
+
       let email = '';
       let phone = '';
       let firstName = '';
@@ -540,21 +540,21 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         phone = requestCustomer.phone;
         firstName = requestCustomer.firstName || '';
         lastName = requestCustomer.lastName || '';
-        userName = requestCustomer.name || 
+        userName = requestCustomer.name ||
           (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || email.split('@')[0] || 'Unknown');
       } else {
         // Fallback to profile lookup
-      const profile = profiles.get(rental.user_id);
+        const profile = profiles.get(rental.user_id);
         email = profile?.email || rental.user?.email || '';
         phone = profile?.phone || '';
         firstName = profile?.firstName || '';
         lastName = profile?.lastName || '';
         userName = (firstName && lastName)
-        ? `${firstName} ${lastName}`
-        : firstName || lastName
-          ? `${firstName}${lastName}`
-          : (email ? email.split('@')[0] : '')
-          || `User ${rental.user_id.slice(0, 8)}`;
+          ? `${firstName} ${lastName}`
+          : firstName || lastName
+            ? `${firstName}${lastName}`
+            : (email ? email.split('@')[0] : '')
+            || `User ${rental.user_id.slice(0, 8)}`;
       }
 
       // Calculate amount based on days and car price
@@ -1432,7 +1432,7 @@ export async function createUserBorrowRequest(
     // Use provided userId (which should be email for logged-in users) or use customerEmail for guest requests
     // Both logged-in users and guests use email as user_id
     const finalUserId = userId || customerEmail;
-    
+
     // Combine first and last name for customer_name
     const customerName = `${customerFirstName} ${customerLastName}`.trim();
 

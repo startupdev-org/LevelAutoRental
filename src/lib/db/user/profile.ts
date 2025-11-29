@@ -11,18 +11,27 @@ export interface UserProfileUpdate {
     phone_number?: string;
 }
 
-export async function getLoggedUser(): Promise<User | null> {
+export async function getLoggedUser(): Promise<User> {
     const {
-        data: { user },
+        data: { user: supabase_user },
         error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    if (authError || !supabase_user || !supabase_user.id) {
         console.error('Auth error or no logged-in user', authError);
-        return null;
+        throw authError
     }
 
-    return user;
+    const { data, error } = await supabase
+        .from('Profiles')
+        .select()
+        .eq('id', supabase_user.id)
+        .single()
+
+    if (error)
+        throw error
+
+    return data as User;
 }
 
 
