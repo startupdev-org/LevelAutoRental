@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car as DollarSign, FileText, Plus, Download, RefreshCw, Loader2 } from 'lucide-react';
+import { X, Calendar, Clock, Car as DollarSign, FileText, Download, Loader2 } from 'lucide-react';
 import { Rental, OrderDisplay } from '../../lib/orders';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
@@ -762,69 +762,27 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         );
                                     })()}
 
-                                    {/* Contract Download/Create */}
-                                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                                            <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
-                                        </h3>
-                                        {((order as any).rental_status || order.rental_status) === 'CONTRACT' ? (
-                                            <>
-                                                <button
-                                                    onClick={handleOpenContractModal}
-                                                    disabled={!car}
-                                                    className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                    <span>{t('admin.orders.createContract')}</span>
-                                                </button>
-                                                <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                                    {t('admin.orders.createContractDescription')}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                {order.contract_url ? (
-                                                    <>
-                                                        <a
-                                                            href={order.contract_url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
-                                                        >
-                                                            <Download className="w-4 h-4" />
-                                                            <span>{t('admin.orders.downloadContractPDF')}</span>
-                                                        </a>
-                                                        <button
-                                                            onClick={handleOpenContractModal}
-                                                            className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold mt-2"
-                                                        >
-                                                            <RefreshCw className="w-4 h-4" />
-                                                            <span>{t('admin.orders.recreateContract')}</span>
-                                                        </button>
-                                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                                            {t('admin.orders.downloadExistingOrRecreate')}
-                                                        </p>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button
-                                                            onClick={handleOpenContractModal}
-                                                            disabled={!car}
-                                                            className="w-full px-4 py-2.5 sm:py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        >
-                                                            <Plus className="w-4 h-4" />
-                                                            <span>{t('admin.orders.createContract')}</span>
-                                                        </button>
-                                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                                            {t('admin.orders.generatesCompleteContract')}
-                                                        </p>
-                                                    </>
-                                                )}
-                                            </>
-
-                                        )}
-                                    </div>
+                                    {/* Contract Download Only */}
+                                    {order.contract_url && (
+                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                                                <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
+                                            </h3>
+                                            <a
+                                                href={order.contract_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                <span>{t('admin.orders.downloadContractPDF')}</span>
+                                            </a>
+                                            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
+                                                Descarcă contractul de închiriere
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         </motion.div>

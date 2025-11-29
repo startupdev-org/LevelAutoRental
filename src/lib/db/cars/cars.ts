@@ -249,6 +249,19 @@ export async function fetchImagesByCarName(
     }
 }
 
+/**
+ * Fetch CLS car image specifically
+ */
+export async function fetchCLSImage(): Promise<string | null> {
+    try {
+        const { mainImage } = await fetchImagesByCarName("Mercedes CLS");
+        return mainImage;
+    } catch (error) {
+        console.error('Error fetching CLS image:', error);
+        return null;
+    }
+}
+
 export async function fetchCarWithImagesById(
     carId: string
 ): Promise<Car> {

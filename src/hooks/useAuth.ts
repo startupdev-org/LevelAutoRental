@@ -59,30 +59,11 @@ export function useAuth() {
         try {
           queryResult = await Promise.race([fetchPromise, timeoutPromise]);
         } catch (timeoutError: any) {
-          // If Profiles times out, try 'users' table as fallback
-          if (timeoutError?.message === 'Profile fetch timeout') {
-            try {
-              const usersFetchPromise = supabase
-                .from('users')
-                .select('id, email, first_name, last_name, phone_number, role')
-                .eq('id', userId)
-                .maybeSingle();
-              
-              queryResult = await Promise.race([usersFetchPromise, timeoutPromise]);
-            } catch (secondError) {
-              console.error('❌ Profile fetch failed from both tables');
-              setUserProfile(null);
-              setRoleLoaded(true);
-              isFetchingRef.current = false;
-              return;
-            }
-          } else {
-            console.error('Query error:', timeoutError);
-            setUserProfile(null);
-            setRoleLoaded(true);
-            isFetchingRef.current = false;
-            return;
-          }
+          console.error('❌ Profile fetch failed:', timeoutError?.message || timeoutError);
+          setUserProfile(null);
+          setRoleLoaded(true);
+          isFetchingRef.current = false;
+          return;
         }
         
         const { data, error } = queryResult as any;

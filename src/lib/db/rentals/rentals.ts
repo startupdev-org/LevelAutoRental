@@ -1,7 +1,7 @@
 import { Car, FavoriteCar, User } from '../../../types';
 import { Rental } from '../../orders';
 import { supabase } from '../../supabase';
-import { fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
+import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
 import { getLoggedUser, getProfile } from '../user/profile';
 
 
@@ -11,12 +11,103 @@ export async function getUserRentals(): Promise<Rental[]> {
 
     const { data } = await supabase
         .from('Rentals')
-        .select()
+        .select('*')
         .eq('user_id', user?.id)
 
     console.log('user rentals: ', data);
 
-    return data || [];
+    // If no rentals found, return empty array
+    if (!data || data.length === 0) {
+        return [];
+    }
+
+    // Collect all unique car IDs
+    const carIds = new Set<number>();
+    data.forEach((rental: any) => {
+        if (rental.car_id) {
+            const carId = typeof rental.car_id === 'number' ? rental.car_id : parseInt(rental.car_id);
+            carIds.add(carId);
+        }
+    });
+
+    // Fetch all cars at once
+    let cars: any[] = [];
+    if (carIds.size > 0) {
+        try {
+            const { data: carsData, error } = await supabase
+                .from('Cars')
+                .select('*')
+                .in('id', Array.from(carIds));
+
+            if (!error && carsData) {
+                cars = carsData;
+                console.log('Fetched cars data:', cars);
+            }
+        } catch (error) {
+            console.error('Error fetching cars for rentals:', error);
+        }
+    }
+
+    // Process the rentals to include car data with images
+    const processedRentals = await Promise.all(data.map(async (rental: any) => {
+        // Find the car for this rental
+        const carId = typeof rental.car_id === 'number' ? rental.car_id : parseInt(rental.car_id);
+        let car = cars.find((c: any) => c.id === carId);
+        console.log('Processing rental for car ID:', carId, 'Found car:', car);
+
+        // If car exists, ensure it has images from storage
+        if (car) {
+            try {
+                // Try multiple variations of the car name to find images
+                const carNameVariations = [
+                    car.name,
+                    `${car.make} ${car.model}`,
+                    car.model, // Just the model in case that's how folders are named
+                    `${car.make}-${car.model}`.toLowerCase(),
+                ].filter(Boolean);
+
+                let mainImage = null;
+                let photoGallery = [];
+
+                // Try each variation until we find images
+                for (const carName of carNameVariations) {
+                    try {
+                        const result = await fetchImagesByCarName(carName as string);
+                        if (result.mainImage) {
+                            mainImage = result.mainImage;
+                            photoGallery = result.photoGallery;
+                            console.log('✅ Found images for car:', carName, '->', mainImage);
+                            break;
+                        }
+                    } catch (e) {
+                        // Continue to next variation
+                    }
+                }
+
+                // Override any existing image_url with the fresh one from storage
+                car = {
+                    ...car,
+                    image_url: mainImage || car.image_url || '/placeholder-car.jpg',
+                    photo_gallery: photoGallery || [],
+                };
+
+            } catch (error) {
+                console.error('❌ Error fetching storage images for', car.make, car.model, ':', error);
+                // Fallback to database image or placeholder
+                car = {
+                    ...car,
+                    image_url: car.image_url || '/placeholder-car.jpg'
+                };
+            }
+        }
+
+        return {
+            ...rental,
+            car: car || null,
+        };
+    }));
+
+    return processedRentals;
 }
 
 export async function fetchFavoriteCar(): Promise<FavoriteCar> {
@@ -51,6 +142,45 @@ export async function fetchFavoriteCar(): Promise<FavoriteCar> {
         lastRental,
         borrowCount
     };
+}
+
+export async function fetchFavoriteCarsFromStorage(): Promise<FavoriteCar[]> {
+    // Get favorite car IDs from localStorage
+    const getFavorites = (): number[] => {
+        try {
+            const favorites = localStorage.getItem('carFavorites');
+            return favorites ? JSON.parse(favorites) : [];
+        } catch {
+            return [];
+        }
+    };
+
+    const favoriteCarIds = getFavorites();
+
+    if (favoriteCarIds.length === 0) {
+        return [];
+    }
+
+    // Fetch car details for each favorite car ID
+    const favoriteCars: FavoriteCar[] = [];
+
+    for (const carId of favoriteCarIds) {
+        try {
+            const car = await fetchCarWithImagesById(carId);
+            if (car) {
+                favoriteCars.push({
+                    car,
+                    lastRental: null, // We don't have rental history for localStorage favorites
+                    borrowCount: null
+                });
+            }
+        } catch (error) {
+            console.error(`Error fetching car ${carId}:`, error);
+            // Continue with other cars even if one fails
+        }
+    }
+
+    return favoriteCars;
 }
 
 export async function fetchRecentRentals(): Promise<Rental[]> {
