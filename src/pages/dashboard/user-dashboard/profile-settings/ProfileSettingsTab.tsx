@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProfileTab from '../../profile/UserProfile';
 import { SettingsTab } from '../settings/UserSettings';
-import { TabType } from '../../../UserDashboard';
+import { TabType } from '../../UserDashboard';
 
 interface ProfileSettingsTabProps {
     t: (key: string) => string;
@@ -33,7 +33,7 @@ export const ProfileSettingsTab: React.FC<ProfileSettingsTabProps> = ({
 }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const subTabFromUrl = searchParams.get('subTab') as SubTabType | null;
-    
+
     // Initialize with URL value or default
     const [activeSubTab, setActiveSubTab] = useState<SubTabType>(() => {
         if (subTabFromUrl && (subTabFromUrl === 'profile' || subTabFromUrl === 'settings')) {
@@ -69,11 +69,10 @@ export const ProfileSettingsTab: React.FC<ProfileSettingsTabProps> = ({
                         setActiveSubTab('profile');
                         setSearchParams({ tab: 'settings', subTab: 'profile' }, { replace: true });
                     }}
-                    className={`px-6 py-3 text-sm font-semibold transition-all duration-300 border-b-2 ${
-                        activeSubTab === 'profile'
+                    className={`px-6 py-3 text-sm font-semibold transition-all duration-300 border-b-2 ${activeSubTab === 'profile'
                             ? 'text-red-600 border-red-600'
                             : 'text-gray-400 border-transparent hover:text-white'
-                    }`}
+                        }`}
                 >
                     {t('dashboard.sidebar.profile')}
                 </button>
@@ -82,11 +81,10 @@ export const ProfileSettingsTab: React.FC<ProfileSettingsTabProps> = ({
                         setActiveSubTab('settings');
                         setSearchParams({ tab: 'settings', subTab: 'settings' }, { replace: true });
                     }}
-                    className={`px-6 py-3 text-sm font-semibold transition-all duration-300 border-b-2 ${
-                        activeSubTab === 'settings'
+                    className={`px-6 py-3 text-sm font-semibold transition-all duration-300 border-b-2 ${activeSubTab === 'settings'
                             ? 'text-red-600 border-red-600'
                             : 'text-gray-400 border-transparent hover:text-white'
-                    }`}
+                        }`}
                 >
                     {t('dashboard.sidebar.settings')}
                 </button>

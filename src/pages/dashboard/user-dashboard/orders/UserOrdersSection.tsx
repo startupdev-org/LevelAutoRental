@@ -3,16 +3,19 @@ import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { UserOrdersTable } from '../../../../components/dashboard/user/orders/UsersOrdersTable';
 
-import { Rental } from "../../../../lib/orders";
+import { OrderDisplay, Rental } from "../../../../lib/orders";
 import { OrderDetailsModal } from "../../../../components/modals/OrderDetailsModal";
 import { UserActiveOrdersTable } from "../../../../components/dashboard/user/orders/UserActiveOrdersTable";
 import { fetchActiveRentals } from "../../../../lib/db/rentals/rentals";
 import { EmptyState } from "../../../../components/ui/EmptyState";
-import { RentalRequestModal } from "../../../../components/modals/RentalRequestModal";
+import { UserCreateRentalModal } from "../../../../components/modals/UserCreateRentalRequestModal";
+import { getLoggedUser } from "../../../../lib/db/user/profile";
 
 export const UserOrdersSection: React.FC = () => {
 
     const { t } = useTranslation();
+
+
 
     const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
@@ -26,7 +29,6 @@ export const UserOrdersSection: React.FC = () => {
     async function handleFetchActiveOrders() {
         const acitveRentals = await fetchActiveRentals();
         setActiveRentals(acitveRentals);
-
     }
 
     useEffect(() => {
@@ -81,16 +83,6 @@ export const UserOrdersSection: React.FC = () => {
                 order={selectedOrder}
             />
 
-            {/* <RentalRequestModal
-                isOpen={false}
-                // onClose={ }
-                // car={undefined}
-                pickupDate={""}
-                returnDate={""}
-                pickupTime={""}
-                returnTime={""}
-                rentalCalculation={null}
-            /> */}
         </div>
     );
 
