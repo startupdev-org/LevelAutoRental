@@ -414,38 +414,38 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Mark that user has attempted to submit
         setHasAttemptedSubmit(true);
-        
+
         // Comprehensive validation before submitting
         const errors: typeof fieldErrors = {};
-        
+
         const firstNameError = validateName(formData.firstName);
         if (firstNameError) errors.firstName = firstNameError;
-        
+
         const lastNameError = validateName(formData.lastName);
         if (lastNameError) errors.lastName = lastNameError;
-        
+
         const ageError = validateAge(formData.age);
         if (ageError) errors.age = ageError;
-        
+
         const emailError = validateEmail(formData.email);
         if (emailError) errors.email = emailError;
-        
+
         const phoneError = validatePhone(formData.phone);
         if (phoneError) errors.phone = phoneError;
-        
+
         const commentError = validateComment(formData.comment);
         if (commentError) errors.comment = commentError;
-        
+
         // Set all errors
         setFieldErrors(errors);
-        
+
         // If there are any errors, scroll to the first error field and prevent submission
         if (Object.keys(errors).length > 0) {
             const firstErrorField = Object.keys(errors)[0];
-            
+
             // Scroll to the first error field
             setTimeout(() => {
                 const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
@@ -458,17 +458,17 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                     }
                 }
             }, 100);
-            
+
             setSubmitError('Vă rugăm să corectați erorile din formular.');
             return;
         }
-        
+
         // Check for date overlaps with existing rentals/requests
         const checkDateOverlap = () => {
             // Parse selected dates and times
             const selectedStartDate = new Date(`${pickupDate}T${pickupTime}`);
             const selectedEndDate = new Date(`${returnDate}T${returnTime}`);
-            
+
             // Combine all existing rentals and approved requests
             const allExistingBookings = [
                 ...carRentalsForCalendar.map(r => ({
@@ -486,11 +486,11 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                     status: r.status || 'APPROVED'
                 }))
             ];
-            
+
             // Check each existing booking for overlap
             for (const booking of allExistingBookings) {
                 if (!booking.start_date || !booking.end_date) continue;
-                
+
                 // Parse booking dates
                 const bookingStartStr = booking.start_date.includes('T')
                     ? booking.start_date.split('T')[0]
@@ -498,7 +498,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                 const bookingEndStr = booking.end_date.includes('T')
                     ? booking.end_date.split('T')[0]
                     : booking.end_date.split(' ')[0];
-                
+
                 // Parse times - handle different formats (HH:MM, HH:MM:SS, etc.)
                 const parseTime = (timeStr: string): string => {
                     if (!timeStr) return '09:00';
@@ -509,54 +509,54 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                     // Default to 09:00
                     return '09:00';
                 };
-                
+
                 const bookingStartTime = parseTime(booking.start_time || '09:00');
                 const bookingEndTime = parseTime(booking.end_time || '17:00');
-                
+
                 const bookingStartDate = new Date(`${bookingStartStr}T${bookingStartTime}`);
                 const bookingEndDate = new Date(`${bookingEndStr}T${bookingEndTime}`);
-                
+
                 // Check for overlap: two periods overlap if they share any common time
                 // Period A overlaps Period B if:
                 // - A starts before B ends AND A ends after B starts
                 const hasOverlap = (
                     selectedStartDate < bookingEndDate && selectedEndDate > bookingStartDate
                 );
-                
+
                 if (hasOverlap) {
                     // Format dates for error message
                     const formatDateForDisplay = (dateStr: string) => {
                         const date = new Date(dateStr);
-                        return date.toLocaleDateString('ro-RO', { 
-                            day: 'numeric', 
-                            month: 'long', 
-                            year: 'numeric' 
+                        return date.toLocaleDateString('ro-RO', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
                         });
                     };
-                    
+
                     return `Mașina este deja rezervată în perioada ${formatDateForDisplay(bookingStartStr)} - ${formatDateForDisplay(bookingEndStr)}. Vă rugăm să selectați o altă perioadă.`;
                 }
             }
-            
+
             return null;
         };
-        
+
         const overlapError = checkDateOverlap();
         if (overlapError) {
             setSubmitError(overlapError);
             setIsSubmitting(false);
             return;
         }
-        
+
         // Clear any previous errors and set submitting state
         setSubmitError(null);
         setSubmitSuccess(false);
         setIsSubmitting(true);
 
         try {
-        // Include country code in phone number
+            // Include country code in phone number
             const fullPhoneNumber = `${selectedCountryCode.code} ${formData.phone.trim()}`;
-            
+
             // Format dates for database (YYYY-MM-DD)
             const formatDateForDB = (dateString: string): string => {
                 const date = new Date(dateString);
@@ -777,121 +777,119 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                         )}
                                     </div>
                                 ) : (
-                                <form onSubmit={handleSubmit} className="px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
-                                    {/* Rental Period */}
-                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
-                                        <div className="mb-3 md:mb-4">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
-                                                    <Calendar className="w-5 h-5 text-white" />
-                                            </div>
-                                                <h3 className="text-base md:text-lg font-bold text-gray-800">
-                                            Perioada închirierii
-                                        </h3>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 md:space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-600 text-sm md:text-base">
-                                                {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
-                                                {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
-                                            </span>
-                                        </div>
-
-                                        {/* Discount indicator */}
-                                        {discountPercentage > 0 && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                    className="p-2.5 md:p-3 bg-emerald-50 border border-emerald-200 rounded-xl"
-                                                >
-                                                    <div className="flex items-center gap-2 text-emerald-700 text-xs md:text-sm font-semibold">
-                                                        <div className="p-1 bg-emerald-500/20 rounded-lg flex-shrink-0">
-                                                            <Check className="w-3 h-3 text-emerald-600" />
+                                    <form onSubmit={handleSubmit} className="px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
+                                        {/* Rental Period */}
+                                        <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
+                                            <div className="mb-3 md:mb-4">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                        <Calendar className="w-5 h-5 text-white" />
                                                     </div>
-                                                    <span>
-                                                        {discountPercentage === 4
-                                                            ? 'Reducere de 4% pentru 8+ zile'
-                                                            : 'Reducere de 2% pentru 4+ zile'
-                                                        }
+                                                    <h3 className="text-base md:text-lg font-bold text-gray-800">
+                                                        Perioada închirierii
+                                                    </h3>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2 md:space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-gray-600 text-sm md:text-base">
+                                                        {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
+                                                        {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
                                                     </span>
                                                 </div>
-                                            </motion.div>
-                                        )}
 
-                                            <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-gray-300">
-                                                <div>
-                                                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data preluării</p>
-                                                    <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(pickupDate)}</p>
-                                                    <p className="text-gray-500 text-xs md:text-sm">ora {pickupTime}</p>
-                                            </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data returnării</p>
-                                                    <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(returnDate)}</p>
-                                                    <p className="text-gray-500 text-xs md:text-sm">ora {returnTime}</p>
+                                                {/* Discount indicator */}
+                                                {discountPercentage > 0 && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="p-2.5 md:p-3 bg-emerald-50 border border-emerald-200 rounded-xl"
+                                                    >
+                                                        <div className="flex items-center gap-2 text-emerald-700 text-xs md:text-sm font-semibold">
+                                                            <div className="p-1 bg-emerald-500/20 rounded-lg flex-shrink-0">
+                                                                <Check className="w-3 h-3 text-emerald-600" />
+                                                            </div>
+                                                            <span>
+                                                                {discountPercentage === 4
+                                                                    ? 'Reducere de 4% pentru 8+ zile'
+                                                                    : 'Reducere de 2% pentru 4+ zile'
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+
+                                                <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-gray-300">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data preluării</p>
+                                                        <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(pickupDate)}</p>
+                                                        <p className="text-gray-500 text-xs md:text-sm">ora {pickupTime}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data returnării</p>
+                                                        <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(returnDate)}</p>
+                                                        <p className="text-gray-500 text-xs md:text-sm">ora {returnTime}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Contact Information */}
-                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
-                                        <div className="mb-3 md:mb-4">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
-                                                    <UserRound className="w-5 h-5 text-white" />
+                                        {/* Contact Information */}
+                                        <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
+                                            <div className="mb-3 md:mb-4">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                        <UserRound className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <h3 className="text-base md:text-lg font-bold text-gray-800">
+                                                        Date de contact
+                                                    </h3>
+                                                </div>
                                             </div>
-                                                <h3 className="text-base md:text-lg font-bold text-gray-800">
-                                            Date de contact
-                                        </h3>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
-                                            <div data-field="firstName">
-                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                    Prenume <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={formData.firstName}
-                                                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
-                                                        hasAttemptedSubmit && fieldErrors.firstName
+                                            <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
+                                                <div data-field="firstName">
+                                                    <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                        Prenume <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.firstName}
+                                                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${hasAttemptedSubmit && fieldErrors.firstName
                                                             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                                                             : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
-                                                    }`}
-                                                    required
-                                                    maxLength={50}
-                                                />
-                                                {hasAttemptedSubmit && fieldErrors.firstName && (
-                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.firstName}</p>
-                                                )}
-                                            </div>
-                                            <div data-field="lastName">
-                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                    Nume <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={formData.lastName}
-                                                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
-                                                        hasAttemptedSubmit && fieldErrors.lastName
+                                                            }`}
+                                                        required
+                                                        maxLength={50}
+                                                    />
+                                                    {hasAttemptedSubmit && fieldErrors.firstName && (
+                                                        <p className="mt-1 text-xs text-red-500">{fieldErrors.firstName}</p>
+                                                    )}
+                                                </div>
+                                                <div data-field="lastName">
+                                                    <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                        Nume <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.lastName}
+                                                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${hasAttemptedSubmit && fieldErrors.lastName
                                                             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                                                             : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
-                                                    }`}
-                                                    required
-                                                    maxLength={50}
-                                                />
-                                                {hasAttemptedSubmit && fieldErrors.lastName && (
-                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.lastName}</p>
-                                                )}
+                                                            }`}
+                                                        required
+                                                        maxLength={50}
+                                                    />
+                                                    {hasAttemptedSubmit && fieldErrors.lastName && (
+                                                        <p className="mt-1 text-xs text-red-500">{fieldErrors.lastName}</p>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="mb-4" data-field="age">
-                                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                Vârstă <span className="text-red-500">*</span>
-                                            </label>
+                                            <div className="mb-4" data-field="age">
+                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                    Vârstă <span className="text-red-500">*</span>
+                                                </label>
                                                 <input
                                                     type="number"
                                                     value={formData.age}
@@ -899,44 +897,42 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     placeholder="18"
                                                     min="18"
                                                     max="100"
-                                                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
-                                                    hasAttemptedSubmit && fieldErrors.age
+                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${hasAttemptedSubmit && fieldErrors.age
                                                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                                                         : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
-                                                }`}
+                                                        }`}
                                                     required
                                                 />
-                                            {hasAttemptedSubmit && fieldErrors.age && (
-                                                <p className="mt-1 text-xs text-red-500">{fieldErrors.age}</p>
-                                            )}
-                                            </div>
-                                        {!user && (
-                                            <div className="mb-4" data-field="email">
-                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                    E-mail <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    value={formData.email}
-                                                    onChange={(e) => handleInputChange('email', e.target.value)}
-                                                    placeholder="email@mail.com"
-                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${
-                                                        hasAttemptedSubmit && fieldErrors.email
-                                                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                                                            : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
-                                                    }`}
-                                                    required
-                                                    maxLength={255}
-                                                />
-                                                {hasAttemptedSubmit && fieldErrors.email && (
-                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>
+                                                {hasAttemptedSubmit && fieldErrors.age && (
+                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.age}</p>
                                                 )}
                                             </div>
-                                        )}
-                                        <div data-field="phone">
-                                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                Telefon <span className="text-red-500">*</span>
-                                            </label>
+                                            {!user && (
+                                                <div className="mb-4" data-field="email">
+                                                    <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                        E-mail <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="email"
+                                                        value={formData.email}
+                                                        onChange={(e) => handleInputChange('email', e.target.value)}
+                                                        placeholder="email@mail.com"
+                                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors text-sm md:text-base ${hasAttemptedSubmit && fieldErrors.email
+                                                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                            : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
+                                                            }`}
+                                                        required
+                                                        maxLength={255}
+                                                    />
+                                                    {hasAttemptedSubmit && fieldErrors.email && (
+                                                        <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <div data-field="phone">
+                                                <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                                                    Telefon <span className="text-red-500">*</span>
+                                                </label>
                                                 <div className="relative">
                                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 country-code-dropdown-container">
                                                         <button
@@ -975,494 +971,492 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         value={formData.phone}
                                                         onChange={(e) => handleInputChange('phone', e.target.value)}
                                                         placeholder="000 00 000"
-                                                    className={`w-full pl-28 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
-                                                        hasAttemptedSubmit && fieldErrors.phone
+                                                        className={`w-full pl-28 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${hasAttemptedSubmit && fieldErrors.phone
                                                             ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                                                             : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
-                                                    }`}
+                                                            }`}
                                                         required
-                                                    maxLength={20}
+                                                        maxLength={20}
                                                     />
                                                 </div>
-                                            {hasAttemptedSubmit && fieldErrors.phone && (
-                                                <p className="mt-1 text-xs text-red-500">{fieldErrors.phone}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Rental Options */}
-                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
-                                        <div className="mb-3 md:mb-4">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
-                                                    <Car className="w-5 h-5 text-white" />
-                                            </div>
-                                                <h3 className="text-base md:text-lg font-bold text-gray-800">
-                                            Opțiuni de închiriere
-                                        </h3>
-                                                        </div>
-                                        </div>
-
-                                        {/* Limits */}
-                                        <div className="mb-5 md:mb-6">
-                                            <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Limite</h4>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.unlimitedKm}
-                                                                onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Kilometraj nelimitat</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+50%</span>
-                                                </label>
-
+                                                {hasAttemptedSubmit && fieldErrors.phone && (
+                                                    <p className="mt-1 text-xs text-red-500">{fieldErrors.phone}</p>
+                                                )}
                                             </div>
                                         </div>
 
-                                        {/* VIP Services */}
-                                        <div className="mb-5 md:mb-6">
-                                            <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Servicii VIP</h4>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.personalDriver}
-                                                                onChange={(e) => handleOptionChange('personalDriver', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.personalDriver
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.personalDriver ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Șofer personal</span>
+                                        {/* Rental Options */}
+                                        <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm">
+                                            <div className="mb-3 md:mb-4">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                        <Car className="w-5 h-5 text-white" />
                                                     </div>
-                                                    <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">800 MDL/zi</span>
-                                                </label>
+                                                    <h3 className="text-base md:text-lg font-bold text-gray-800">
+                                                        Opțiuni de închiriere
+                                                    </h3>
+                                                </div>
+                                            </div>
 
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.priorityService}
-                                                                onChange={(e) => handleOptionChange('priorityService', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.priorityService
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.priorityService ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
+                                            {/* Limits */}
+                                            <div className="mb-5 md:mb-6">
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Limite</h4>
+                                                <div className="space-y-2">
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.unlimitedKm}
+                                                                    onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
                                                             </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Kilometraj nelimitat</span>
                                                         </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Priority Service</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">1 000 MDL/zi</span>
-                                                </label>
+                                                        <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+50%</span>
+                                                    </label>
+
+                                                </div>
+                                            </div>
+
+                                            {/* VIP Services */}
+                                            <div className="mb-5 md:mb-6">
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Servicii VIP</h4>
+                                                <div className="space-y-2">
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.personalDriver}
+                                                                    onChange={(e) => handleOptionChange('personalDriver', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.personalDriver
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.personalDriver ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Șofer personal</span>
+                                                        </div>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">800 MDL/zi</span>
+                                                    </label>
+
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.priorityService}
+                                                                    onChange={(e) => handleOptionChange('priorityService', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.priorityService
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.priorityService ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Priority Service</span>
+                                                        </div>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">1 000 MDL/zi</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            {/* Insurance */}
+                                            <div className="mb-5 md:mb-6">
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Asigurare</h4>
+                                                <div className="space-y-2">
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.tireInsurance}
+                                                                    onChange={(e) => handleOptionChange('tireInsurance', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.tireInsurance
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.tireInsurance ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Asigurare anvelope & parbriz</span>
+                                                        </div>
+                                                        <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+20%</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            {/* Additional */}
+                                            <div>
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Suplimentar</h4>
+                                                <div className="space-y-2">
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.childSeat}
+                                                                    onChange={(e) => handleOptionChange('childSeat', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.childSeat
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.childSeat ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Scaun auto pentru copii</span>
+                                                        </div>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
+                                                    </label>
+
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.simCard}
+                                                                    onChange={(e) => handleOptionChange('simCard', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.simCard
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.simCard ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Cartelă SIM cu internet</span>
+                                                        </div>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
+                                                    </label>
+
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.roadsideAssistance}
+                                                                    onChange={(e) => handleOptionChange('roadsideAssistance', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.roadsideAssistance
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Asistență rutieră</span>
+                                                        </div>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">500 MDL/zi</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            {/* Delivery */}
+                                            <div className="mb-5 md:mb-6">
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 mt-4 md:mb-3">Livrare</h4>
+                                                <div className="space-y-2">
+                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                                                        <div className="flex items-center gap-3 md:gap-4">
+                                                            <div className="relative flex-shrink-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={options.airportDelivery}
+                                                                    onChange={(e) => handleOptionChange('airportDelivery', e.target.checked)}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.airportDelivery
+                                                                    ? 'bg-red-500 border-red-500'
+                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
+                                                                    }`}>
+                                                                    <svg
+                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.airportDelivery ? 'opacity-100' : 'opacity-0'
+                                                                            }`}
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Livrare aeroport</span>
+                                                        </div>
+                                                        <span className="text-xs md:text-sm font-bold text-green-600 bg-green-50 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">Gratuit</span>
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Insurance */}
-                                        <div className="mb-5 md:mb-6">
-                                            <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Asigurare</h4>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.tireInsurance}
-                                                                onChange={(e) => handleOptionChange('tireInsurance', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.tireInsurance
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.tireInsurance ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Asigurare anvelope & parbriz</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+20%</span>
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        {/* Additional */}
-                                        <div>
-                                            <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Suplimentar</h4>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.childSeat}
-                                                                onChange={(e) => handleOptionChange('childSeat', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.childSeat
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.childSeat ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Scaun auto pentru copii</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
-                                                </label>
-
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.simCard}
-                                                                onChange={(e) => handleOptionChange('simCard', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.simCard
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.simCard ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Cartelă SIM cu internet</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
-                                                </label>
-
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.roadsideAssistance}
-                                                                onChange={(e) => handleOptionChange('roadsideAssistance', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.roadsideAssistance
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Asistență rutieră</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">500 MDL/zi</span>
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        {/* Delivery */}
-                                        <div className="mb-5 md:mb-6">
-                                            <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 mt-4 md:mb-3">Livrare</h4>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="relative flex-shrink-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={options.airportDelivery}
-                                                                onChange={(e) => handleOptionChange('airportDelivery', e.target.checked)}
-                                                                className="sr-only"
-                                                            />
-                                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.airportDelivery
-                                                                ? 'bg-red-500 border-red-500'
-                                                                : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                }`}>
-                                                                <svg
-                                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.airportDelivery ? 'opacity-100' : 'opacity-0'
-                                                                        }`}
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                        <span className="font-medium text-gray-900 text-xs md:text-sm">Livrare aeroport</span>
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-bold text-green-600 bg-green-50 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">Gratuit</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Comment */}
-                                    <div data-field="comment">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Comentariu <span className="text-gray-400 font-normal">(opțional)</span></label>
-                                        <textarea
-                                            value={formData.comment}
-                                            onChange={(e) => handleInputChange('comment', e.target.value)}
-                                            rows={3}
-                                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 resize-none transition-colors ${
-                                                hasAttemptedSubmit && fieldErrors.comment
+                                        {/* Comment */}
+                                        <div data-field="comment">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Comentariu <span className="text-gray-400 font-normal">(opțional)</span></label>
+                                            <textarea
+                                                value={formData.comment}
+                                                onChange={(e) => handleInputChange('comment', e.target.value)}
+                                                rows={3}
+                                                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 resize-none transition-colors ${hasAttemptedSubmit && fieldErrors.comment
                                                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                                                     : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
-                                            }`}
-                                            placeholder="Adăugați un comentariu (opțional)"
-                                            maxLength={1000}
-                                        />
-                                        {hasAttemptedSubmit && fieldErrors.comment && (
-                                            <p className="mt-1 text-xs text-red-500">{fieldErrors.comment}</p>
-                                        )}
-                                        {formData.comment.length > 0 && (
-                                            <p className="mt-1 text-xs text-gray-500 text-right">
-                                                {formData.comment.length}/1000 caractere
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Price Summary */}
-                                    <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm mt-6">
-                                        <div className="mb-3 md:mb-4">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
-                                                    <Star className="w-5 h-5 text-white" />
-                                                </div>
-                                                <h3 className="text-base md:text-lg font-bold text-gray-800">Detalii preț</h3>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm md:text-base">
-                                                <span className="text-gray-600">Preț pe zi</span>
-                                                <span className="text-gray-900 font-medium">{car.price_per_day.toLocaleString('ro-RO')} MDL</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm md:text-base">
-                                                <span className="text-gray-600">Perioadă</span>
-                                                <span className="text-gray-900 font-medium">
-                                                    {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
-                                                    {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
-                                                </span>
-                                            </div>
-                                            {discountPercentage > 0 && (
-                                                <div className="flex items-center justify-between text-sm md:text-base text-green-600">
-                                                    <span>Reducere</span>
-                                                    <span className="font-medium">-{discountPercentage}%</span>
-                                                </div>
+                                                    }`}
+                                                placeholder="Adăugați un comentariu (opțional)"
+                                                maxLength={1000}
+                                            />
+                                            {hasAttemptedSubmit && fieldErrors.comment && (
+                                                <p className="mt-1 text-xs text-red-500">{fieldErrors.comment}</p>
                                             )}
-                                            <div className="pt-2 border-t border-gray-300">
-                                                <div className="flex items-center justify-between text-sm md:text-base">
-                                                    <span className="text-gray-900 font-medium">Preț de bază</span>
-                                                    <span className="text-gray-900 font-medium">{Math.round(basePrice).toLocaleString('ro-RO')} MDL</span>
+                                            {formData.comment.length > 0 && (
+                                                <p className="mt-1 text-xs text-gray-500 text-right">
+                                                    {formData.comment.length}/1000 caractere
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Price Summary */}
+                                        <div className="bg-white rounded-2xl border border-gray-300 p-4 md:p-6 shadow-sm mt-6">
+                                            <div className="mb-3 md:mb-4">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
+                                                        <Star className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <h3 className="text-base md:text-lg font-bold text-gray-800">Detalii preț</h3>
                                                 </div>
                                             </div>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between text-sm md:text-base">
+                                                    <span className="text-gray-600">Preț pe zi</span>
+                                                    <span className="text-gray-900 font-medium">{car.price_per_day.toLocaleString('ro-RO')} MDL</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm md:text-base">
+                                                    <span className="text-gray-600">Perioadă</span>
+                                                    <span className="text-gray-900 font-medium">
+                                                        {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
+                                                        {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
+                                                    </span>
+                                                </div>
+                                                {discountPercentage > 0 && (
+                                                    <div className="flex items-center justify-between text-sm md:text-base text-green-600">
+                                                        <span>Reducere</span>
+                                                        <span className="font-medium">-{discountPercentage}%</span>
+                                                    </div>
+                                                )}
+                                                <div className="pt-2 border-t border-gray-300">
+                                                    <div className="flex items-center justify-between text-sm md:text-base">
+                                                        <span className="text-gray-900 font-medium">Preț de bază</span>
+                                                        <span className="text-gray-900 font-medium">{Math.round(basePrice).toLocaleString('ro-RO')} MDL</span>
+                                                    </div>
+                                                </div>
 
-                                            {additionalCosts > 0 && (
-                                                <>
-                                                    <div className="pt-3 border-t border-gray-300">
-                                                        <h4 className="text-sm md:text-base font-bold text-gray-900 mb-3">Servicii suplimentare</h4>
-                                                        <div className="space-y-2 text-sm md:text-base">
-                                                            {options.unlimitedKm && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Kilometraj nelimitat</span>
-                                                                    <span className="text-gray-900 font-medium">
-                                                                        {Math.round(car.price_per_day * rentalCalculation.days * 0.5).toLocaleString('ro-RO')} MDL
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                            {options.tireInsurance && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Asigurare anvelope & parbriz</span>
-                                                                    <span className="text-gray-900 font-medium">
-                                                                        {Math.round(car.price_per_day * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                            {options.personalDriver && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Șofer personal</span>
-                                                                    <span className="text-gray-900 font-medium">{800 * rentalCalculation.days} MDL</span>
-                                                                </div>
-                                                            )}
-                                                            {options.priorityService && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Priority Service</span>
-                                                                    <span className="text-gray-900 font-medium">{1000 * rentalCalculation.days} MDL</span>
-                                                                </div>
-                                                            )}
-                                                            {options.childSeat && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Scaun auto pentru copii</span>
-                                                                    <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
-                                                                </div>
-                                                            )}
-                                                            {options.simCard && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Cartelă SIM cu internet</span>
-                                                                    <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
-                                                                </div>
-                                                            )}
-                                                            {options.roadsideAssistance && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-gray-600">Asistență rutieră</span>
-                                                                    <span className="text-gray-900 font-medium">{500 * rentalCalculation.days} MDL</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="pt-2 border-t border-gray-300">
-                                                                <div className="flex justify-between font-medium text-sm md:text-base">
-                                                                    <span className="text-gray-900">Total servicii</span>
-                                                                    <span className="text-gray-900">{Math.round(additionalCosts).toLocaleString('ro-RO')} MDL</span>
+                                                {additionalCosts > 0 && (
+                                                    <>
+                                                        <div className="pt-3 border-t border-gray-300">
+                                                            <h4 className="text-sm md:text-base font-bold text-gray-900 mb-3">Servicii suplimentare</h4>
+                                                            <div className="space-y-2 text-sm md:text-base">
+                                                                {options.unlimitedKm && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-600">Kilometraj nelimitat</span>
+                                                                        <span className="text-gray-900 font-medium">
+                                                                            {Math.round(car.price_per_day * rentalCalculation.days * 0.5).toLocaleString('ro-RO')} MDL
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {options.tireInsurance && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-600">Asigurare anvelope & parbriz</span>
+                                                                        <span className="text-gray-900 font-medium">
+                                                                            {Math.round(car.price_per_day * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {options.personalDriver && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-600">Șofer personal</span>
+                                                                        <span className="text-gray-900 font-medium">{800 * rentalCalculation.days} MDL</span>
+                                                                    </div>
+                                                                )}
+                                                                {options.priorityService && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-600">Priority Service</span>
+                                                                        <span className="text-gray-900 font-medium">{1000 * rentalCalculation.days} MDL</span>
+                                                                    </div>
+                                                                )}
+                                                                {options.childSeat && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-600">Scaun auto pentru copii</span>
+                                                                        <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                    </div>
+                                                                )}
+                                                                {options.simCard && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-600">Cartelă SIM cu internet</span>
+                                                                        <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                    </div>
+                                                                )}
+                                                                {options.roadsideAssistance && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-600">Asistență rutieră</span>
+                                                                        <span className="text-gray-900 font-medium">{500 * rentalCalculation.days} MDL</span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="pt-2 border-t border-gray-300">
+                                                                    <div className="flex justify-between font-medium text-sm md:text-base">
+                                                                        <span className="text-gray-900">Total servicii</span>
+                                                                        <span className="text-gray-900">{Math.round(additionalCosts).toLocaleString('ro-RO')} MDL</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </>
-                                            )}
+                                                    </>
+                                                )}
 
-                                            <div className="pt-3 border-t border-gray-300 flex items-center justify-between">
-                                                <span className="text-gray-900 font-bold text-base md:text-lg">Total</span>
-                                                <span className="text-gray-900 font-bold text-lg md:text-xl">{totalCost.toLocaleString('ro-RO')} MDL</span>
+                                                <div className="pt-3 border-t border-gray-300 flex items-center justify-between">
+                                                    <span className="text-gray-900 font-bold text-base md:text-lg">Total</span>
+                                                    <span className="text-gray-900 font-bold text-lg md:text-xl">{totalCost.toLocaleString('ro-RO')} MDL</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Submit Button */}
-                                    <div className="flex flex-col gap-2 mt-6">
-                                        {submitError && (
-                                            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-                                                <p className="text-sm text-red-800 font-medium text-center">
-                                                    {submitError}
-                                                </p>
-                                            </div>
-                                        )}
-                                        <button
-                                            type="submit"
-                                            onClick={handleSubmit}
-                                            disabled={isSubmitting || submitSuccess}
-                                            className="w-full font-semibold text-sm md:text-base py-3.5 px-6 rounded-xl transition-all bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isSubmitting ? 'Se trimite...' : submitSuccess ? 'Trimis cu succes!' : 'Trimite cererea'}
-                                        </button>
-                                        <p className="text-[10px] md:text-xs text-center text-gray-500 leading-relaxed">
-                                            Făcând clic pe butonul «Trimite cererea», sunteți de acord cu{' '}
+                                        {/* Submit Button */}
+                                        <div className="flex flex-col gap-2 mt-6">
+                                            {submitError && (
+                                                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                                    <p className="text-sm text-red-800 font-medium text-center">
+                                                        {submitError}
+                                                    </p>
+                                                </div>
+                                            )}
                                             <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setTermsModalType('terms');
-                                                    setShowTermsModal(true);
-                                                }}
-                                                className="text-red-600 hover:text-red-700 underline"
+                                                type="submit"
+                                                onClick={handleSubmit}
+                                                disabled={isSubmitting || submitSuccess}
+                                                className="w-full font-semibold text-sm md:text-base py-3.5 px-6 rounded-xl transition-all bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                termenii de utilizare
+                                                {isSubmitting ? 'Se trimite...' : submitSuccess ? 'Trimis cu succes!' : 'Trimite cererea'}
                                             </button>
-                                            {' '}și{' '}
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setTermsModalType('privacy');
-                                                    setShowTermsModal(true);
-                                                }}
-                                                className="text-red-600 hover:text-red-700 underline"
-                                            >
-                                                politica de confidențialitate
-                                            </button>
-                                        </p>
-                                    </div>
-                                </form>
+                                            <p className="text-[10px] md:text-xs text-center text-gray-500 leading-relaxed">
+                                                Făcând clic pe butonul «Trimite cererea», sunteți de acord cu{' '}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setTermsModalType('terms');
+                                                        setShowTermsModal(true);
+                                                    }}
+                                                    className="text-red-600 hover:text-red-700 underline"
+                                                >
+                                                    termenii de utilizare
+                                                </button>
+                                                {' '}și{' '}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setTermsModalType('privacy');
+                                                        setShowTermsModal(true);
+                                                    }}
+                                                    className="text-red-600 hover:text-red-700 underline"
+                                                >
+                                                    politica de confidențialitate
+                                                </button>
+                                            </p>
+                                        </div>
+                                    </form>
                                 )}
                             </div>
                         </div>
@@ -1651,9 +1645,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             </div>
                                         </div>
                                     )}
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
                     </React.Fragment>
                 )}
             </AnimatePresence>

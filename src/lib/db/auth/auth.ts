@@ -1,5 +1,7 @@
+import { errorBarReducer } from 'recharts/types/state/errorBarSlice';
 import { User } from '../../../types';
 import { supabase, supabaseAdmin } from '../../supabase';
+import { getLoggedUser } from '../user/profile';
 
 /**
  * Create a new user
@@ -49,5 +51,26 @@ export async function changeUserPassword(newPassword: string) {
     }
 
     return { success: true, data };
+}
+
+export async function updatePassword(currentPassword: string, newPassword: string) {
+    const user = await getLoggedUser();
+
+    const email = user && user.email && user.email !== null ? user?.email : '';
+
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+    })
+
+    if (loginError) return { succes: false, error: loginError.message }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+    })
+
+    if (updateError) return { succes: false, error: updateError.message }
+
+    return { success: true }
 }
 

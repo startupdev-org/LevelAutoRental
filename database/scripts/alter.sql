@@ -24,8 +24,22 @@ ALTER COLUMN "user_id" TYPE TEXT USING "user_id"::TEXT;
 -- get the supabase user & it's profile
 SELECT *
 FROM "Profiles" p
-JOIN auth.Users u ON u.id = CAST(p.id AS uuid)
+JOIN auth.Users u ON u.id = CAST(p.id AS uuid)	
 
 SELECT *
 FROM auth.Users
+
+SELECT *
+FROM "Profiles"
+
+SELECT user_id
+FROM "Rentals"
+
+
+ALTER TABLE "Rentals"
+ADD CONSTRAINT rentals_profiles_fk FOREIGN KEY (user_id) REFERENCES "Profiles"(id)
+
+ALTER TABLE "BorrowRequest"
+ADD CONSTRAINT borrow_request_profiles_fk FOREIGN KEY (customer_email) REFERENCES "Profiles"(email)
+
 

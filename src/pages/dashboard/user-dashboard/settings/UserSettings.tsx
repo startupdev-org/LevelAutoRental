@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { changeUserPassword } from '../../../../lib/db/auth/auth';
+import { changeUserPassword, updatePassword } from '../../../../lib/db/auth/auth';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
 interface SettingsTabProps {
@@ -70,7 +70,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     useEffect(() => {
         if (passwordForm.newPassword && passwordForm.confirmPassword) {
 
-
             const passwordsMatch = passwordForm.newPassword === passwordForm.confirmPassword;
             setFieldErrors(prev => ({
                 ...prev,
@@ -130,7 +129,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             return;
         }
 
-        const { success: updated, error: updateError } = await changeUserPassword(passwordForm.newPassword);
+        const { success: updated, error: updateError } = await updatePassword(passwordForm.currentPassword, passwordForm.newPassword)
+
 
         if (updated) {
             setSuccess('Password updated successfully!');
