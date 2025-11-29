@@ -5,13 +5,13 @@ export const LogoMarquee: React.FC = () => {
   const navigate = useNavigate();
 
   const logos = [
-    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi", filter: "audi" },
-    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW", filter: "bmw" },
-    { src: "/LevelAutoRental/logos/hyundai.png", alt: "Hyundai", filter: "hyundai" },
-    { src: "/LevelAutoRental/logos/maserati.png", alt: "Maserati", filter: "maserati" },
-    { src: "/LevelAutoRental/logos/merc.svg", alt: "Mercedes-Benz", filter: "mercedes" },
-    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi", filter: "audi" },
-    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW", filter: "bmw" },
+    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi", filter: "Audi" },
+    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW", filter: "BMW" },
+    { src: "/LevelAutoRental/logos/hyundai.png", alt: "Hyundai", filter: "Hyundai" },
+    { src: "/LevelAutoRental/logos/maserati.png", alt: "Maserati", filter: "Maserati" },
+    { src: "/LevelAutoRental/logos/merc.svg", alt: "Mercedes-Benz", filter: "Mercedes" },
+    { src: "/LevelAutoRental/logos/audi.png", alt: "Audi", filter: "Audi" },
+    { src: "/LevelAutoRental/logos/bmw.webp", alt: "BMW", filter: "BMW" },
   ];
 
   const getLogoSizeClass = (alt: string): string => {
