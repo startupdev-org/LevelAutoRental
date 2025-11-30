@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, LogOut, Home, Calendar, Settings, Car, FileText } from 'lucide-react';
+import { User, LogOut, Home, Calendar, Settings, Car } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../hooks/useAuth';
 import { TabType } from '../../../pages/dashboard/UserDashboard';
@@ -27,7 +27,6 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
 
     const sidebarItems: SidebarItem[] = [
         { id: 'overview', label: t('dashboard.sidebar.overview'), icon: Home },
-        { id: 'bookings', label: t('dashboard.sidebar.myBookings'), icon: FileText },
         { id: 'cars', label: t('dashboard.sidebar.cars'), icon: Car },
         { id: 'calendar', label: t('dashboard.sidebar.calendar'), icon: Calendar },
         { id: 'settings', label: t('dashboard.sidebar.settings'), icon: Settings },

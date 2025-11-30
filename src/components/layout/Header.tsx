@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Globe, User, LogOut, Settings, LayoutDashboard, ChevronDown, FileText, Shield } from 'lucide-react';
+import { Menu, X, Globe, User, LogOut, Settings, LayoutDashboard, ChevronDown, Shield } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -330,17 +330,6 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                           <span>{t('header.dashboard')}</span>
                         </button>
                         
-                        <button
-                          onClick={() => {
-                            navigate('/dashboard?tab=bookings');
-                            setShowUserDropdown(false);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <FileText className="w-4 h-4" />
-                          <span>{t('dashboard.sidebar.myBookings')}</span>
-                        </button>
-                        
                         {!isAdmin && (
                           <button
                             onClick={() => {
@@ -417,16 +406,6 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <span>{t('header.dashboard')}</span>
                           </button>
                           
-                          <button
-                            onClick={() => {
-                              navigate('/dashboard?tab=bookings');
-                              setShowUserDropdown(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>{t('dashboard.sidebar.myBookings')}</span>
-                          </button>
                           
                           {!isAdmin && (
                             <button
@@ -697,16 +676,6 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <span>{t('header.dashboard')}</span>
                           </button>
                           
-                          <button
-                            onClick={() => {
-                              setIsMenuOpen(false);
-                              navigate('/dashboard?tab=bookings');
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>{t('dashboard.sidebar.myBookings')}</span>
-                          </button>
                           
                           {!isAdmin && (
                             <button

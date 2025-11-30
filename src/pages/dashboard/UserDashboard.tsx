@@ -30,7 +30,7 @@ interface Booking {
   pickupLocation: string;
 }
 
-export type TabType = 'overview' | 'bookings' | 'profile' | 'settings' | 'calendar' | 'cars';
+export type TabType = 'overview' | 'profile' | 'settings' | 'calendar' | 'cars';
 
 
 export const UserDashboard: React.FC = () => {
@@ -182,11 +182,6 @@ export const UserDashboard: React.FC = () => {
                 )}
 
                 {/* Bookings Tab */}
-                {activeTab === 'bookings' && (
-                  <div className="space-y-6">
-                    <UserOrdersSection />
-                  </div>
-                )}
 
                 {/* Profile & Settings Tab */}
                 {(activeTab === 'profile' || activeTab === 'settings') && (
