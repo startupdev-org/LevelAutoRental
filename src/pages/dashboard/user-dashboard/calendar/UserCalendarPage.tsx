@@ -49,7 +49,7 @@ export const CalendarPage: React.FC = () => {
     if (loading && !showFilters) {
         return (
             <LoadingState
-                message="The car calendar is loading..."
+                message="Se încarcă calendarul mașinilor..."
             />
         );
     }

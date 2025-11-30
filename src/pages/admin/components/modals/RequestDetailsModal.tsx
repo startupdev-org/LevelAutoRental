@@ -8,6 +8,9 @@ import {
     Loader2,
     Edit,
     Check,
+    RefreshCw,
+    Calendar,
+    Clock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Car as CarType } from '../../../../types';

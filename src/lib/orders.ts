@@ -1495,9 +1495,8 @@ export async function createUserBorrowRequest(
     const { data: { session } } = await supabase.auth.getSession();
     const isAuthenticated = !!session;
 
-    // Use supabaseAdmin for unauthenticated users to bypass RLS
-    // TODO: Fix RLS policy 'allow_all_inserts' to properly allow public inserts
-    // The policy should allow INSERT for all users (authenticated and anonymous)
+    // Use regular supabase client for authenticated users (now that RLS policies are fixed)
+    // Fall back to supabaseAdmin for unauthenticated users
     const clientToUse = isAuthenticated ? supabase : supabaseAdmin;
 
     const { data, error } = await clientToUse

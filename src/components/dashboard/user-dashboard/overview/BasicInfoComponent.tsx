@@ -8,7 +8,7 @@ interface BasicInfoComponentProps {
 
 export default function BasicInfoComponent({ rentals, t }: BasicInfoComponentProps) {
     // Calculate counts
-    const activeBookings = rentals?.filter(r => r.rental_status === "ACTIVE").length ?? 0;
+    const activeBookings = rentals?.filter(r => r.rental_status === "ACTIVE" || r.rental_status === "CONTRACT").length ?? 0;
 
     // Calculate upcoming bookings (start_date is in the future)
     const now = new Date();

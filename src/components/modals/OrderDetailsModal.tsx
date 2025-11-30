@@ -13,7 +13,7 @@ import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 interface OrderDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    order: Rental | null;
+    order: Rental | OrderDisplay | null;
     onCancel?: (order: OrderDisplay) => void;
     onRedo?: (order: OrderDisplay) => void;
     isProcessing?: boolean;
@@ -111,9 +111,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                         .from('BorrowRequest')
                         .select('id, options, user_id, car_id, start_date, end_date')
                         .eq('user_id', order.user_id)
-                        .eq('car_id', order.car_id)
-                        .eq('start_date', order.start_date)
-                        .eq('end_date', order.end_date)
+                        .eq('car_id', (order as Rental).car_id || (order as OrderDisplay).carId)
+                        .eq('start_date', startDate)
+                        .eq('end_date', endDate)
                         .limit(1);
 
                     if (!searchError && matchingRequests && matchingRequests.length > 0) {
@@ -210,14 +210,15 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
         const findCar = async () => {
             // First, try to find in cars array
+            const carId = (order as Rental).car_id || (order as OrderDisplay).carId;
             let foundCar = cars.find(c => {
-                if (!order.car_id) return false;
+                if (!carId) return false;
 
                 // Normalize both IDs to numbers for comparison
                 const carIdNum = typeof c.id === 'number' ? c.id : parseInt(c.id.toString(), 10);
-                const orderCarIdNum = typeof order.car_id === 'number'
-                    ? order.car_id
-                    : parseInt(order.car_id.toString(), 10);
+                const orderCarIdNum = typeof carId === 'number'
+                    ? carId
+                    : parseInt(carId.toString(), 10);
 
                 // Compare as numbers
                 if (!isNaN(carIdNum) && !isNaN(orderCarIdNum) && carIdNum === orderCarIdNum) {
@@ -226,22 +227,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                 // Fallback: compare as strings
                 const carIdStr = c.id.toString();
-                const orderCarIdStr = order.car_id.toString();
+                const orderCarIdStr = carId.toString();
                 return carIdStr === orderCarIdStr;
             });
 
             // If car not found in cars array, fetch from database
-            if (!foundCar && order.car_id) {
+            if (!foundCar && carId) {
                 console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
-                    orderCarId: order.car_id,
+                    orderCarId: carId,
                     orderCarName: order.carName
                 });
 
                 try {
                     const { supabase } = await import('../../lib/supabase');
-                    const carIdMatch = typeof order.car_id === 'number'
-                        ? order.car_id
-                        : parseInt(order.car_id.toString(), 10);
+                    const carIdMatch = typeof carId === 'number'
+                        ? carId
+                        : parseInt(carId.toString(), 10);
 
                     const { data: carData, error } = await supabase
                         .from('Cars')
@@ -282,7 +283,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                         }
                     }
                 } catch (err) {
-                    console.error(`OrderDetailsModal: Error fetching car ${order.car_id} from database:`, err);
+                    console.error(`OrderDetailsModal: Error fetching car ${carId} from database:`, err);
                 }
             }
 
@@ -294,11 +295,17 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     if (!order) return null;
 
+    // Handle both Rental and OrderDisplay formats
+    const startDate = (order as Rental).start_date || (order as OrderDisplay).pickupDate;
+    const startTime = (order as Rental).start_time || (order as OrderDisplay).pickupTime;
+    const endDate = (order as Rental).end_date || (order as OrderDisplay).returnDate;
+    const endTime = (order as Rental).end_time || (order as OrderDisplay).returnTime;
+
     const { days, hours, totalHours } = calculateRentalDuration(
-        order.start_date,
-        order.start_time,
-        order.end_date,
-        order.end_time
+        startDate,
+        startTime,
+        endDate,
+        endTime
     );
 
     // Now use days, hours for pricing
@@ -459,22 +466,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.start_date)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(startDate)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.start_time}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{startTime}</span>
                                                 </div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
                                                 <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(order.end_date)}</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(endDate)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{order.end_time}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{endTime}</span>
                                                 </div>
                                             </div>
                                         </div>

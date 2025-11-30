@@ -589,8 +589,7 @@
         "customer": "Client {{number}}",
         "sidebar": {
             "overview": "Acasă",
-            "myBookings": "Rezervările mele",
-            "cars": "Mașini",
+            "cars": "Închiriază",
             "profile": "Profil",
             "calendar": "Calendar",
             "settings": "Setări",
@@ -701,7 +700,7 @@
         "menu": {
             "dashboard": "Panou",
             "requests": "Cereri",
-            "cars": "Mașini",
+            "cars": "Închiriază",
             "calendar": "Calendar",
             "orders": "Comenzi",
             "users": "Utilizatori"

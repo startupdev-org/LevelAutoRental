@@ -14,6 +14,7 @@ import { fetchCars } from '../../../../lib/cars';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 import { Car as CarType } from '../../../../types';
 import { OrderDisplay } from '../../../../lib/orders';
+import { supabaseAdmin } from '../../../../lib/supabase';
 import {
     fetchBorrowRequestsForDisplay,
     acceptBorrowRequest,

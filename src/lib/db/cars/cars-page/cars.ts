@@ -310,8 +310,8 @@ export async function fetchCarsWithMainImageFilteredPaginated(
         query = query.or(`make.ilike.${s},model.ilike.${s}`);
     }
 
-    // Status
-    if (filters.status !== null) {
+    // Status - only filter if status is explicitly set (not null or undefined)
+    if (filters.status !== null && filters.status !== undefined) {
         query = query.eq("status", filters.status);
     }
 

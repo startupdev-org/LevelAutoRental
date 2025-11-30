@@ -4,6 +4,7 @@ import { Search, ArrowLeft, ArrowRight, Loader2, CarIcon } from "lucide-react";
 import { Car } from "../../../../types";
 import { fetchCarsPaginated } from "../../../../lib/db/cars/cars";
 import { EmptyState } from "../../../../components/ui/EmptyState";
+import { LoadingState } from "../../../../components/ui/LoadingState";
 
 interface FiltersProps {
     setShowFilters: (val: boolean) => void;
@@ -126,10 +127,7 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
                     {/* Cars List */}
                     <div className="flex flex-col gap-3 min-h-[200px]">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-12">
-                                <Loader2 className="w-8 h-8 animate-spin text-white/50" />
-                                <p className="mt-2 text-sm text-gray-400">Loading cars...</p>
-                            </div>
+                            <LoadingState message="Se încarcă mașinile..." />
                         ) : cars && cars.length > 0 ? (
                             cars.map((car, index) => (
                                 <div
