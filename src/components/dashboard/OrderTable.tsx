@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { cars } from '../../data/cars';
 import { format } from 'date-fns';
 import { fetchRentalsOnly, OrderDisplay } from '../../lib/orders';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Car } from '../../types';
 
 type OrdersTableProps = {
     title: string;
@@ -14,15 +15,170 @@ type OrdersTableProps = {
     initialSearch?: string;
     showCancelled?: boolean;
     onToggleShowCancelled?: () => void;
+    cars?: Car[];
 };
 
-export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading = false, onOrderClick, onAddOrder, initialSearch, showCancelled = false, onToggleShowCancelled }) => {
+export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading = false, onOrderClick, onAddOrder, initialSearch, showCancelled = false, onToggleShowCancelled, cars: propCars }) => {
     const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState(initialSearch || '');
     const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
+
+    // Use provided cars or fallback to static cars
+    const carsList = propCars || cars;
+
+    // Calculate total price for an order (exact same logic as requests)
+    const calculateOrderTotalPrice = useCallback((order: OrderDisplay): number => {
+        const car = carsList.find(c => c.id.toString() === order.carId);
+        if (!car) return order.amount || 0;
+
+        const formatTime = (timeString: string): string => {
+            if (!timeString) return '00:00';
+            if (timeString.includes('AM') || timeString.includes('PM')) {
+                const [time, period] = timeString.split(' ');
+                const [hours, minutes] = time.split(':');
+                let hour24 = parseInt(hours);
+                if (period === 'PM' && hour24 !== 12) hour24 += 12;
+                if (period === 'AM' && hour24 === 12) hour24 = 0;
+                return `${String(hour24).padStart(2, '0')}:${minutes || '00'}`;
+            }
+            if (timeString.includes(':')) {
+                const [hours, minutes] = timeString.split(':');
+                return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
+            }
+            return '00:00';
+        };
+
+        const startDate = new Date(order.pickupDate);
+        const endDate = new Date(order.returnDate);
+
+        const pickupTime = formatTime(order.pickupTime);
+        const returnTime = formatTime(order.returnTime);
+        const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
+        const [returnHour, returnMin] = returnTime.split(':').map(Number);
+
+        const startDateTime = new Date(startDate);
+        startDateTime.setHours(pickupHour, pickupMin, 0, 0);
+
+        const endDateTime = new Date(endDate);
+        // If return time is 00:00, treat it as end of previous day (23:59:59)
+        if (returnHour === 0 && returnMin === 0) {
+            endDateTime.setHours(23, 59, 59, 999);
+        } else {
+            endDateTime.setHours(returnHour, returnMin, 0, 0);
+        }
+
+        const diffTime = endDateTime.getTime() - startDateTime.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+        const days = diffDays;
+        const hours = diffHours >= 0 ? diffHours : 0;
+
+        // Calculate pricing using same system as Calculator.tsx
+        const rentalDays = days; // Use full days for discount calculation (same as Calculator)
+        const totalDays = days + (hours / 24); // Use total days for final calculation
+
+        // Base price calculation (same as Calculator.tsx)
+        let basePrice = 0;
+        let discountPercent = 0;
+
+        if (rentalDays >= 8) {
+            discountPercent = 4;
+            basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
+        } else if (rentalDays >= 4) {
+            discountPercent = 2;
+            basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
+        } else {
+            basePrice = car.price_per_day * rentalDays;
+        }
+
+        // Add hours portion (hours are charged at full price, no discount)
+        if (hours > 0) {
+            const hoursPrice = (hours / 24) * car.price_per_day;
+            basePrice += hoursPrice;
+        }
+
+        // Calculate additional costs from options (same as Calculator.tsx)
+        const options = (order as any).options || (order as any).features;
+        let parsedOptions: any = {};
+
+
+        if (options) {
+            if (typeof options === 'string') {
+                try {
+                    parsedOptions = JSON.parse(options);
+                } catch (e) {
+                    parsedOptions = {};
+                }
+            } else if (Array.isArray(options)) {
+                // Handle features array from rentals
+                parsedOptions = {};
+                options.forEach((feature: string) => {
+                    const featureLower = feature.toLowerCase();
+                    if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
+                        parsedOptions.unlimitedKm = true;
+                    } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
+                        parsedOptions.speedLimitIncrease = true;
+                    } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
+                        parsedOptions.tireInsurance = true;
+                    } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
+                        parsedOptions.personalDriver = true;
+                    } else if (featureLower.includes('priority')) {
+                        parsedOptions.priorityService = true;
+                    } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
+                        parsedOptions.childSeat = true;
+                    } else if (featureLower.includes('sim') || featureLower.includes('card')) {
+                        parsedOptions.simCard = true;
+                    } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
+                        parsedOptions.roadsideAssistance = true;
+                    }
+                });
+            } else {
+                parsedOptions = options;
+            }
+        }
+
+
+        let additionalCosts = 0;
+        const baseCarPrice = car.price_per_day;
+
+        // Percentage-based options (calculated on discounted price)
+        if (parsedOptions.unlimitedKm) {
+            additionalCosts += baseCarPrice * totalDays * 0.5;
+        }
+        if (parsedOptions.speedLimitIncrease) {
+            additionalCosts += baseCarPrice * totalDays * 0.2;
+        }
+        if (parsedOptions.tireInsurance) {
+            additionalCosts += baseCarPrice * totalDays * 0.2;
+        }
+
+        // Fixed daily costs
+        if (parsedOptions.personalDriver) {
+            additionalCosts += 800 * rentalDays;
+        }
+        if (parsedOptions.priorityService) {
+            additionalCosts += 1000 * rentalDays;
+        }
+        if (parsedOptions.childSeat) {
+            additionalCosts += 100 * rentalDays;
+        }
+        if (parsedOptions.simCard) {
+            additionalCosts += 100 * rentalDays;
+        }
+        if (parsedOptions.roadsideAssistance) {
+            additionalCosts += 500 * rentalDays;
+        }
+
+        // Total price = base price + additional costs
+        const totalPrice = basePrice + additionalCosts;
+
+
+        return Math.round(totalPrice);
+    }, [carsList]);
 
     // Update search query when initialSearch prop changes
     useEffect(() => {
@@ -65,7 +221,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                 } else if (sortBy === 'customer') {
                     diff = a.customerName.localeCompare(b.customerName);
                 } else if (sortBy === 'amount') {
-                    diff = (a.amount || 0) - (b.amount || 0);
+                    diff = calculateOrderTotalPrice(a) - calculateOrderTotalPrice(b);
                 } else if (sortBy === 'status') {
                     const statusOrder: Record<string, number> = {
                         'CONTRACT': 0,
@@ -93,7 +249,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
         }
 
         return filtered;
-    }, [orders, searchQuery, sortBy, sortOrder, showCancelled]);
+    }, [orders, searchQuery, sortBy, sortOrder, showCancelled, calculateOrderTotalPrice]);
 
     const totalPages = Math.ceil(filteredAndSortedOrders.length / pageSize);
 
@@ -356,8 +512,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                 <div className="pt-4 border-t border-white/10">
                                     <p className="text-gray-400 text-xs mb-1">{t('admin.orders.amount')}</p>
                                     <p className="text-white font-semibold text-base">
-                                        {order.amount && order.amount > 0 ? (
-                                            `${order.amount.toFixed(2)} MDL`
+                                        {calculateOrderTotalPrice(order) > 0 ? (
+                                            `${calculateOrderTotalPrice(order).toLocaleString()} MDL`
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -453,8 +609,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                         {getStatusBadge(order.status)}
                                     </td>
                                     <td className="px-6 py-3 text-white font-semibold text-sm">
-                                        {order.amount > 0 ? (
-                                            `${order.amount.toFixed(2)} MDL`
+                                        {calculateOrderTotalPrice(order) > 0 ? (
+                                            `${calculateOrderTotalPrice(order).toLocaleString()} MDL`
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}

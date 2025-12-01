@@ -87,7 +87,7 @@ export const Footer: React.FC = () => {
               {/* Logo */}
               <div className="flex items-center space-x-4">
                 <img
-                  src="/LevelAutoRental/logo-footer.png"
+                  src="/logo-footer.png"
                   alt="LevelAutoRental"
                   className="h-12 w-auto brightness-0 invert"
                 />

@@ -243,7 +243,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
           {/* Logo */}
           <Link to="/" className="flex items-center group">
             <img
-              src="/LevelAutoRental/logo.png"
+              src="/logo.png"
               alt="Level Auto Rental Logo"
               className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${shouldShowWhiteText ? 'brightness-0 invert' : ''
                 }`}
@@ -612,7 +612,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                   <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
                       <img
-                        src="/LevelAutoRental/logo.png"
+                        src="/logo.png"
                         alt="Level Auto Rental Logo"
                         className="w-40 h-auto"
                       />
@@ -791,7 +791,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                     <div className="flex items-center justify-between p-6 border-b border-gray-200">
                       <div className="flex items-center space-x-3">
                         <img
-                          src="/LevelAutoRental/logo.png"
+                          src="/logo.png"
                           alt="Level Auto Rental Logo"
                           className="w-40 h-auto"
                         />

@@ -111,7 +111,7 @@ export const UserDashboard: React.FC = () => {
             <div
               className="absolute inset-0 bg-cover bg-center bg-fixed"
               style={{
-                backgroundImage: "url('/LevelAutoRental/lvl_bg.png')"
+                backgroundImage: "url('/lvl_bg.png')"
               }}
             />
             <div className="absolute inset-0 bg-black/70"></div>
@@ -140,7 +140,7 @@ export const UserDashboard: React.FC = () => {
           <div
             className="fixed inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: "url('/LevelAutoRental/lvl_bg.png')",
+              backgroundImage: "url('/lvl_bg.png')",
               backgroundAttachment: 'fixed',
               zIndex: 0
             }}

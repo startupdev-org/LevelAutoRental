@@ -12,19 +12,19 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ className }) =
   const contactMethods = [
     {
       name: '+373 62 000 112',
-      icon: '/LevelAutoRental/social/mobile.png',
+      icon: '/social/mobile.png',
       href: 'tel:+37362000112',
       delay: 0.1
     },
     {
       name: 'Telegram',
-      icon: '/LevelAutoRental/social/telegram.png',
+      icon: '/social/telegram.png',
       href: 'https://t.me/Level_Auto_Rental',
       delay: 0.2
     },
     {
       name: 'WhatsApp',
-      icon: '/LevelAutoRental/social/whatsapp.png',
+      icon: '/social/whatsapp.png',
       href: 'https://wa.me/37362000112',
       delay: 0.3
     }
@@ -162,7 +162,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ className }) =
               <ChevronUp className="w-7 h-7 text-white font-bold" strokeWidth={3} />
             ) : (
               <img 
-                src="/LevelAutoRental/social/chat.png"
+                src="/social/chat.png"
                 alt="Chat"
                 className="w-7 h-7 object-contain scale-x-[-1]"
               />

@@ -25,7 +25,7 @@ export const FAQIntro: React.FC = () => {
         <section
             className="relative py-32 bg-cover bg-center bg-no-repeat bg-fixed"
             style={{
-                backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
+                backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
                 backgroundPosition: isDesktop ? 'center -400px' : 'center center',
                 backgroundSize: isDesktop ? '115%' : 'cover'
             }}

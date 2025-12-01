@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car as DollarSign, FileText, Download, Loader2 } from 'lucide-react';
+import { X, Calendar, Clock, Car as DollarSign, FileText, Download, Loader2, AlertTriangle } from 'lucide-react';
 import { Rental, OrderDisplay } from '../../lib/orders';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
@@ -18,13 +18,18 @@ interface OrderDetailsModalProps {
     onRedo?: (order: OrderDisplay) => void;
     isProcessing?: boolean;
     onOpenContractModal?: () => void; // Callback to open contract modal from parent
+    showOrderNumber?: boolean; // Whether to show the order number for admins/users
 }
 
 export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     isOpen,
     onClose,
     order,
+    onCancel,
+    onRedo,
+    isProcessing,
     onOpenContractModal,
+    showOrderNumber = true, // Default to showing order number for backward compatibility
 }) => {
     const { t } = useTranslation();
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
@@ -366,6 +371,21 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         }
     };
 
+    const formatTime = (timeString: string) => {
+        try {
+            // If time is in HH:MM:SS format, extract HH:MM
+            if (timeString && timeString.includes(':')) {
+                const parts = timeString.split(':');
+                if (parts.length >= 2) {
+                    return `${parts[0]}:${parts[1]}`;
+                }
+            }
+            return timeString;
+        } catch {
+            return timeString;
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         const statusMap: Record<string, { bg: string; text: string; border: string }> = {
             'PENDING': { bg: 'bg-yellow-500/20', text: 'text-yellow-300', border: 'border-yellow-500/50' },
@@ -426,9 +446,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                 <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                                     <div>
                                         <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails')}</h2>
-                                        <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                                            {t('admin.orders.orderNumber')}{order.id ? order.id.toString().padStart(4, '0') : 'N/A'}
-                                        </p>
+                                        {showOrderNumber && (
+                                            <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                                                {t('admin.orders.orderNumber')}{order.id ? order.id.toString().padStart(4, '0') : 'N/A'}
+                                            </p>
+                                        )}
                                     </div>
                                     <button
                                         onClick={onClose}
@@ -470,7 +492,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{startTime}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(startTime)}</span>
                                                 </div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
@@ -481,7 +503,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{endTime}</span>
+                                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(endTime)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -768,6 +790,49 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             </div>
                                         );
                                     })()}
+
+                                    {/* Action Buttons - Only show for admin views and non-completed orders */}
+                                    {showOrderNumber && (order as any)?.status !== 'COMPLETED' && (
+                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10 mb-4">
+                                        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                                            <span className="text-sm sm:text-base">Acțiuni</span>
+                                        </h3>
+
+                                        <div className="space-y-3">
+                                            {/* Create Contract Button - for CONTRACT status */}
+                                            {(order as any)?.status === 'CONTRACT' && (
+                                                <button
+                                                    onClick={handleOpenContractModal}
+                                                    className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
+                                                    disabled={isGeneratingContract}
+                                                >
+                                                    {isGeneratingContract ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <FileText className="w-4 h-4" />
+                                                    )}
+                                                    <span>Creează Contract</span>
+                                                </button>
+                                            )}
+
+                                            {/* Cancel Order Button - for ACTIVE and CONTRACT status */}
+                                            {((order as any)?.status === 'ACTIVE' || (order as any)?.status === 'CONTRACT') && onCancel && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('Ești sigur că vrei să anulezi această comandă? Această acțiune va anula și cererea corespunzătoare.')) {
+                                                            onCancel(order as OrderDisplay);
+                                                        }
+                                                    }}
+                                                    className="w-full px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                                                >
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                    <span>Anulează Comanda</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    )}
 
                                     {/* Contract Download Only */}
                                     {order.contract_url && (

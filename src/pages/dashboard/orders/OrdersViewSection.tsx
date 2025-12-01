@@ -3,7 +3,7 @@ import { cars as staticCars } from '../../../data/cars';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
 import { OrderDetailsModal } from '../../../components/modals/OrderDetailsModal';
 import { ContractCreationModal } from '../../../components/modals/ContractCreationModal';
-import { OrderDisplay, cancelRentalOrder, redoRentalOrder, fetchRentalsOnly } from '../../../lib/orders';
+import { OrderDisplay, cancelRentalOrder, redoRentalOrder, fetchRentalsOnly, updateBorrowRequest } from '../../../lib/orders';
 import { SalesChartCard } from '../../../components/dashboard/Chart';
 import { motion } from 'framer-motion';
 import { Save, X, Loader2 } from 'lucide-react';
@@ -363,14 +363,38 @@ export const OrdersViewSection: React.FC = () => {
         try {
             const result = await cancelRentalOrder(order.id.toString());
             if (result.success) {
-                showSuccess('Order cancelled successfully!');
+                // If this order was created from a request, also mark the request as REJECTED
+                const requestId = (order as any).request_id;
+                console.log('Order being cancelled:', order.id, 'Request ID:', requestId, 'Order object:', order);
+                if (requestId) {
+                    try {
+                        console.log('Attempting to update request', requestId, 'to REJECTED');
+                        const updateResult = await updateBorrowRequest(requestId.toString(), { status: 'REJECTED' } as any);
+                        console.log('Update result:', updateResult);
+                        if (!updateResult.success) {
+                            console.warn('Failed to update corresponding request status:', updateResult.error);
+                        } else {
+                            console.log('Successfully updated request to REJECTED');
+                        }
+                    } catch (requestError) {
+                        console.warn('Error updating corresponding request:', requestError);
+                    }
+                } else {
+                    console.log('No request_id found for this order');
+                }
+
+                showSuccess('Comanda a fost anulată cu succes și cererea corespunzătoare a fost setată ca respinsă!');
+                // Close the modal after successful cancellation
+                setIsModalOpen(false);
+                setSelectedOrder(null);
+                setOrderNumber(undefined);
                 await loadOrders();
             } else {
-                showError(`Failed to cancel order: ${result.error || 'Unknown error'}`);
+                showError(`Eșuare la anularea comenzii: ${result.error || 'Eroare necunoscută'}`);
             }
         } catch (error) {
             console.error('Error cancelling order:', error);
-            showError('An error occurred while cancelling the order.');
+            showError('A apărut o eroare la anularea comenzii.');
         } finally {
             setProcessingOrder(null);
         }
@@ -382,6 +406,10 @@ export const OrdersViewSection: React.FC = () => {
             const result = await redoRentalOrder(order.id.toString());
             if (result.success) {
                 showSuccess('Order restored successfully!');
+                // Close the modal after successful restoration
+                setIsModalOpen(false);
+                setSelectedOrder(null);
+                setOrderNumber(undefined);
                 await loadOrders();
             } else {
                 showError(`Failed to restore order: ${result.error || 'Unknown error'}`);
@@ -683,15 +711,16 @@ export const OrdersViewSection: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
                 >
-                    <OrdersTable 
-                        title={t('admin.orders.allOrders')} 
+                    <OrdersTable
+                        title={t('admin.orders.allOrders')}
                         orders={orders}
                         loading={false}
-                        onOrderClick={handleOrderClick} 
-                        onAddOrder={() => setShowAddOrderModal(true)} 
+                        onOrderClick={handleOrderClick}
+                        onAddOrder={() => setShowAddOrderModal(true)}
                         initialSearch={initialSearch}
                         showCancelled={showCancelled}
                         onToggleShowCancelled={() => setShowCancelled(!showCancelled)}
+                        cars={cars}
                     />
                 </motion.div>
 

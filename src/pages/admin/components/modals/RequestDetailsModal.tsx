@@ -25,13 +25,12 @@ export interface RequestDetailsModalProps {
     onUndoReject?: (request: OrderDisplay) => void;
     onSetToPending?: (request: OrderDisplay) => void;
     onEdit?: (request: OrderDisplay) => void;
-    onStartRental?: (request: OrderDisplay) => void;
     onCancelRental?: (request: OrderDisplay) => void;
     isProcessing?: boolean;
     cars: CarType[];
 }
 
-export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onStartRental, onCancelRental, isProcessing = false, cars }) => {
+export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onCancelRental, isProcessing = false, cars }) => {
     const { t } = useTranslation();
     const car = cars.find(c => c.id.toString() === request.carId);
     if (!car) return null;
@@ -503,7 +502,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onAccept(request);
-                                    onClose();
+                                    // Don't close the modal here - the contract modal will open
                                 }}
                                 disabled={isProcessing}
                                 className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
@@ -543,30 +542,8 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                             </button>
                         </div>
                     )}
-                    {request.status === 'APPROVED' && (onReject || onSetToPending || onStartRental) && (
+                    {request.status === 'APPROVED' && (onReject || onSetToPending) && (
                         <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
-                            {onStartRental && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onStartRental(request);
-                                    }}
-                                    disabled={isProcessing}
-                                    className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                                >
-                                    {isProcessing ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            {t('admin.requestDetails.processing')}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4" />
-                                            Începe Închirierea
-                                        </>
-                                    )}
-                                </button>
-                            )}
                             {onSetToPending && (
                                 <button
                                     onClick={(e) => {

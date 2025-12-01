@@ -16,8 +16,8 @@ const NotFound: React.FC = () => {
         className="relative bg-cover bg-no-repeat bg-fixed bg-center flex items-center justify-center py-32"
         style={{
           backgroundImage: window.innerWidth < 768
-            ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')"
-            : "url('/LevelAutoRental/backgrounds/bg2-desktop.jpeg')",
+            ? "url('/backgrounds/bg10-mobile.jpeg')"
+            : "url('/backgrounds/bg2-desktop.jpeg')",
           backgroundPosition: 'center center',
           backgroundSize: 'cover',
           minHeight: 'calc(100vh - 80px)' // Full viewport minus approximate header height

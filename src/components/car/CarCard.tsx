@@ -761,7 +761,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                         {/* Rating */}
                         <div className="flex items-center gap-1">
                             <span className="text-sm font-semibold text-gray-900 h-6 flex items-center justify-center">{carWithImages.rating}</span>
-                            <img src="/LevelAutoRental/assets/star.png" alt="Rating" className="w-6 h-6 flex-shrink-0 ml-2 relative bottom-0.5" />
+                            <img src="/assets/star.png" alt="Rating" className="w-6 h-6 flex-shrink-0 ml-2 relative bottom-0.5" />
                         </div>
                     </div>
                 </div>

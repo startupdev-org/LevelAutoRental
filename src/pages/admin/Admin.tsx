@@ -280,7 +280,7 @@ export const Admin: React.FC = () => {
                 <div
                     className="fixed inset-0 bg-cover bg-center bg-no-repeat"
                     style={{
-                        backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                        backgroundImage: "url('/bg-hero.jpg')",
                         backgroundAttachment: 'fixed',
                         zIndex: 0
                     }}
@@ -296,7 +296,7 @@ export const Admin: React.FC = () => {
                             <div className="flex items-center space-x-3">
                                 <div className="w-10 h-10 flex items-center justify-center">
                                     <img
-                                        src="/LevelAutoRental/logo-LVL-white.png"
+                                        src="/logo-LVL-white.png"
                                         alt="LVL Logo"
                                         className="w-full h-full object-contain"
                                     />

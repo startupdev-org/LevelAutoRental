@@ -358,12 +358,12 @@ export const CalendarPage: React.FC<Props> = () => {
     const getMakeLogo = (make: string): string | null => {
         const makeLower = make.toLowerCase();
         const logoMap: { [key: string]: string } = {
-            'mercedes': '/LevelAutoRental/logos/merc.svg',
-            'mercedes-benz': '/LevelAutoRental/logos/merc.svg',
-            'bmw': '/LevelAutoRental/logos/bmw.webp',
-            'audi': '/LevelAutoRental/logos/audi.png',
-            'hyundai': '/LevelAutoRental/logos/hyundai.png',
-            'maserati': '/LevelAutoRental/logos/maserati.png',
+            'mercedes': '/logos/merc.svg',
+            'mercedes-benz': '/logos/merc.svg',
+            'bmw': '/logos/bmw.webp',
+            'audi': '/logos/audi.png',
+            'hyundai': '/logos/hyundai.png',
+            'maserati': '/logos/maserati.png',
         };
         return logoMap[makeLower] || null;
     };

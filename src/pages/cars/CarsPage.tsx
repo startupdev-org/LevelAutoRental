@@ -260,12 +260,12 @@ export const Cars: React.FC = () => {
   const getMakeLogo = (make: string): string | null => {
     const makeLower = make.toLowerCase();
     const logoMap: { [key: string]: string } = {
-      'mercedes': '/LevelAutoRental/logos/merc.svg',
-      'mercedes-benz': '/LevelAutoRental/logos/merc.svg',
-      'bmw': '/LevelAutoRental/logos/bmw.webp',
-      'audi': '/LevelAutoRental/logos/audi.png',
-      'hyundai': '/LevelAutoRental/logos/hyundai.png',
-      'maserati': '/LevelAutoRental/logos/maserati.png',
+      'mercedes': '/logos/merc.svg',
+      'mercedes-benz': '/logos/merc.svg',
+      'bmw': '/logos/bmw.webp',
+      'audi': '/logos/audi.png',
+      'hyundai': '/logos/hyundai.png',
+      'maserati': '/logos/maserati.png',
     };
     return logoMap[makeLower] || null;
   };
@@ -374,7 +374,7 @@ export const Cars: React.FC = () => {
             {/* Background Image Container - Clipped */}
             <div
               className="absolute inset-0 rounded-3xl overflow-hidden bg-cover bg-center md:bg-[center_-400px] z-0"
-              style={{ backgroundImage: 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)' }}
+              style={{ backgroundImage: 'url(/backgrounds/bg10-mobile.jpeg)' }}
             >
               {/* Black Overlay */}
               <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
@@ -637,7 +637,7 @@ export const Cars: React.FC = () => {
           </div>
           {/* Keys Image Overlay - Outside rounded container */}
           <img
-            src="/LevelAutoRental/assets/Design Elements/keys.png"
+            src="/assets/Design Elements/keys.png"
             alt=""
             className="absolute hidden lg:block lg:bottom-[100px] lg:right-[250px] bottom-[400px] right-[0px]  lg:w-[300px] w-[200px] h-auto object-contain z-[10] pointer-events-none"
           />

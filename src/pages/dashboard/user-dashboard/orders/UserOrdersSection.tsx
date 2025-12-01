@@ -246,6 +246,7 @@ export const UserOrdersSection: React.FC = () => {
                     setOrderNumber(undefined);
                 }}
                 order={selectedOrder}
+                showOrderNumber={false}
             />
 
         </div>
