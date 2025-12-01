@@ -45,7 +45,7 @@ export const Terms: React.FC = () => {
             <section
                 className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans text-white"
                 style={{
-                    backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
+                    backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
                     backgroundPosition: isDesktop ? 'center -400px' : 'center center',
                     backgroundSize: isDesktop ? '115%' : 'cover'
                 }}

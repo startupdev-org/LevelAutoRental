@@ -79,12 +79,12 @@ export const Hero: React.FC = () => {
   const getMakeLogo = (make: string): string | null => {
     const makeLower = make.toLowerCase();
     const logoMap: { [key: string]: string } = {
-      'mercedes': '/LevelAutoRental/logos/merc.svg',
-      'mercedes-benz': '/LevelAutoRental/logos/merc.svg',
-      'bmw': '/LevelAutoRental/logos/bmw.webp',
-      'audi': '/LevelAutoRental/logos/audi.png',
-      'hyundai': '/LevelAutoRental/logos/hyundai.png',
-      'maserati': '/LevelAutoRental/logos/maserati.png',
+      'mercedes': '/logos/merc.svg',
+      'mercedes-benz': '/logos/merc.svg',
+      'bmw': '/logos/bmw.webp',
+      'audi': '/logos/audi.png',
+      'hyundai': '/logos/hyundai.png',
+      'maserati': '/logos/maserati.png',
     };
     return logoMap[makeLower] || null;
   };
@@ -235,7 +235,7 @@ export const Hero: React.FC = () => {
       className="relative h-[725px] bg-cover bg-no-repeat bg-fixed pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-hero-desktop md:bg-hero-desktop"
       style={{
         backgroundImage: window.innerWidth < 768
-          ? "url('/LevelAutoRental/backgrounds/bg10-mobile.jpeg')"
+          ? "url('/backgrounds/bg10-mobile.jpeg')"
           : undefined,
         backgroundPosition: window.innerWidth < 768
           ? 'center center'

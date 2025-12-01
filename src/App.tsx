@@ -48,7 +48,7 @@ function App() {
         {initialLoading && <Loader isTransitioning={isTransitioning} onLoadingComplete={handleLoadingComplete} />}
         
         {/* Show content immediately, even during fade-out */}
-        <Router basename="/LevelAutoRental/">
+        <Router basename="/">
           <Layout>
             <RouterWrapper />
           </Layout>

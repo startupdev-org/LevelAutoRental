@@ -97,7 +97,7 @@ export const SignUp: React.FC = () => {
             <div
                 className="absolute inset-0 md:hidden"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
@@ -107,7 +107,7 @@ export const SignUp: React.FC = () => {
             <div
                 className="hidden md:block absolute inset-0"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
@@ -140,7 +140,7 @@ export const SignUp: React.FC = () => {
                 <div
                     className="relative hidden md:block bg-cover bg-center min-h-[600px]"
                     style={{
-                        backgroundImage: "url('/LevelAutoRental/lvl_bg.png')",
+                        backgroundImage: "url('/lvl_bg.png')",
                         minHeight: "560px",
                     }}
                 >

@@ -152,7 +152,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const logoWidth = 25;
     const logoHeight = 23;
     try {
-      const logoBase64 = await loadImageAsBase64('/LevelAutoRental/logo-LVL.png');
+      const logoBase64 = await loadImageAsBase64('/logo-LVL.png');
       const logoX = margin;
       const logoY = headerTopY; // Logo starts at top
       doc.addImage(logoBase64, 'PNG', logoX, logoY, logoWidth, logoHeight);
@@ -1720,7 +1720,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     const carImageWidth = 50; // Width of the car diagram image
     const carImageHeight = 120; // Approximate height for the car diagram
     try {
-      const carImageBase64 = await loadImageAsBase64('/LevelAutoRental/cars/contract_cars.png');
+      const carImageBase64 = await loadImageAsBase64('/cars/contract_cars.png');
       doc.addImage(carImageBase64, 'PNG', margin, carImageStartY, carImageWidth, carImageHeight);
       carImageLoaded = true;
     } catch (error) {
