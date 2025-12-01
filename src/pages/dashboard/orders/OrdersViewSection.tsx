@@ -304,6 +304,7 @@ export const OrdersViewSection: React.FC = () => {
     const [showCancelled, setShowCancelled] = useState(false);
     const [cars, setCars] = useState<Car[]>([]);
     const [loading, setLoading] = useState(true);
+    const [ordersLoading, setOrdersLoading] = useState(true);
 
     // Load cars from database first
     useEffect(() => {
@@ -344,11 +345,14 @@ export const OrdersViewSection: React.FC = () => {
     const loadOrders = async () => {
         if (cars.length === 0) return;
         try {
+            setOrdersLoading(true);
             const data = await fetchRentalsOnly(cars);
             const rentalsOnly = data.filter(order => order.type === 'rental');
             setOrders(rentalsOnly);
         } catch (error) {
             console.error('Failed to load orders:', error);
+        } finally {
+            setOrdersLoading(false);
         }
     };
 
@@ -714,7 +718,7 @@ export const OrdersViewSection: React.FC = () => {
                     <OrdersTable
                         title={t('admin.orders.allOrders')}
                         orders={orders}
-                        loading={false}
+                        loading={ordersLoading}
                         onOrderClick={handleOrderClick}
                         onAddOrder={() => setShowAddOrderModal(true)}
                         initialSearch={initialSearch}

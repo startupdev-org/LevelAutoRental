@@ -147,6 +147,7 @@ export const RequestsView: React.FC = () => {
     const handleAccept = async (request: OrderDisplay) => {
         // Instead of directly accepting, open contract modal
         setSelectedRequestForContract(request);
+        setProcessingRequest(request.id.toString());
         setShowRequestContractModal(true);
         // Close the request details modal
         setShowRequestDetailsModal(false);
@@ -905,28 +906,12 @@ export const RequestsView: React.FC = () => {
                         } as any}
                         car={car}
                         onContractCreated={async () => {
-                            // After contract is created, accept the request
-                            setProcessingRequest(selectedRequestForContract.id.toString());
-                            try {
-                                const result = await acceptBorrowRequest(selectedRequestForContract.id.toString(), cars);
-                                if (result.success) {
-                                    showSuccess('Cerere aprobată și contract creat cu succes!');
-                                    await loadRequests();
-                                    // Optionally navigate to the created rental
-                                    if (result.rentalId) {
-                                        navigate(`/admin?section=orders&orderId=${result.rentalId}`);
-                                    }
-                                } else {
-                                    showError(`Eșuare la aprobarea cererii: ${result.error || 'Eroare necunoscută'}`);
-                                }
-                            } catch (error) {
-                                console.error('Error accepting request after contract creation:', error);
-                                showError('A apărut o eroare la aprobarea cererii după crearea contractului.');
-                            } finally {
-                                setProcessingRequest(null);
-                                setShowRequestContractModal(false);
-                                setSelectedRequestForContract(null);
-                            }
+                            // Contract has been created and request approved, close modal and reload
+                            setProcessingRequest(null);
+                            setShowRequestContractModal(false);
+                            setSelectedRequestForContract(null);
+                            await loadRequests();
+                            showSuccess('Cerere aprobată și contract creat cu succes!');
                         }}
                     />
                 ) : null;

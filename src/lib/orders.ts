@@ -1236,6 +1236,17 @@ export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promi
     }
 
     if (request.status !== 'PENDING') {
+      // Check if a rental already exists for this request
+      const { data: existingRental } = await supabase
+        .from('Rentals')
+        .select('id')
+        .eq('request_id', parseInt(requestId))
+        .single();
+
+      if (existingRental) {
+        console.log('Request already approved with existing rental:', existingRental.id);
+        return { success: true, rentalId: existingRental.id.toString() };
+      }
       return { success: false, error: 'Request is not pending' };
     }
 
@@ -1326,6 +1337,7 @@ export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promi
     }
 
     // Update request status to APPROVED
+    console.log('Updating request status to APPROVED for request:', requestId);
     const { error: updateError } = await supabase
       .from('BorrowRequest')
       .update({ status: 'APPROVED', updated_at: new Date().toISOString() })
@@ -1333,8 +1345,9 @@ export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promi
 
     if (updateError) {
       console.error('Error updating request status:', updateError);
-      // Don't fail the whole operation if status update fails
+      return { success: false, error: 'Failed to update request status: ' + updateError.message };
     }
+    console.log('Request status updated to APPROVED successfully');
 
     console.log('Successfully created rental with ID:', rental.id);
     return { success: true, rentalId: rental.id.toString() };
@@ -1753,43 +1766,8 @@ export async function processActiveRentals(cars: Car[]): Promise<{ success: bool
 
         if (!existingRental) {
           // No rental exists - this shouldn't happen with the new approval flow
-          console.log(`Looking for car with ID ${request.car_id} among ${cars.length} cars`);
-          console.log('Available car IDs:', cars.map(c => ({ id: c.id, idType: typeof c.id })));
-          const car = cars.find(c => c.id.toString() === request.car_id.toString());
-          if (!car) {
-            console.error(`Car not found for request ${request.id}. Request car_id: ${request.car_id} (${typeof request.car_id})`);
-            continue;
-          }
-
-          // Calculate rental amount
-          const startDate = new Date(request.start_date);
-          const endDate = new Date(request.end_date);
-          const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-          const totalAmount = ((car as any)?.pricePerDay || car.price_per_day || 0) * days;
-
-          // Create rental with ACTIVE status
-          const { error: rentalError } = await supabase
-            .from('Rentals')
-            .insert({
-              request_id: request.id,
-              user_id: request.user_id,
-              car_id: request.car_id,
-              start_date: request.start_date,
-              start_time: request.start_time,
-              end_date: request.end_date,
-              end_time: request.end_time,
-              price_per_day: (car as any)?.pricePerDay || car.price_per_day || 0,
-              total_amount: totalAmount,
-              rental_status: 'ACTIVE',
-              payment_status: 'PENDING',
-            });
-
-          if (rentalError) {
-            console.error(`Error creating rental for request ${request.id}:`, rentalError);
-            continue;
-          }
-
           console.warn(`No rental found for approved request ${request.id}`);
+          continue;
         } else {
           // Rental exists (created via contract) - ensure it's ACTIVE
           const { error: updateRentalError } = await supabase
@@ -1805,14 +1783,26 @@ export async function processActiveRentals(cars: Car[]): Promise<{ success: bool
             continue;
           }
 
+          // Also update the BorrowRequest status to EXECUTED when start date has passed
+          const { error: updateRequestError } = await supabase
+            .from('BorrowRequest')
+            .update({
+              status: 'EXECUTED',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', request.id);
+
+          if (updateRequestError) {
+            console.error(`Error updating request status to EXECUTED for request ${request.id}:`, updateRequestError);
+            continue;
+          }
+
           processed++;
-          console.log(`Updated rental to ACTIVE for request ${request.id}`);
+          console.log(`Updated rental to ACTIVE and request to EXECUTED for request ${request.id}`);
         }
 
         // Update car status to "booked" when rental becomes ACTIVE
         await updateCarStatusBasedOnRentals(request.car_id);
-
-        processed++;
       }
     }
 

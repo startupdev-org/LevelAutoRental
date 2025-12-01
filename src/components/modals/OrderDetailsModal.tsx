@@ -35,6 +35,37 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
     const [showContractModal, setShowContractModal] = useState(false);
     const [requestOptions, setRequestOptions] = useState<any>(null);
+    const [currentOrder, setCurrentOrder] = useState<Rental | OrderDisplay | null>(order);
+    const displayOrder = currentOrder || order;
+
+    // Refresh order data when modal opens or order prop changes
+    useEffect(() => {
+        setCurrentOrder(order);
+        // If order doesn't have contract_url but should (based on rental_status), try to refresh
+        if (displayOrder && !displayOrder.contract_url && (displayOrder as any).rental_status === 'ACTIVE') {
+            refreshOrderData();
+        }
+    }, [order, isOpen, displayOrder]);
+
+    const refreshOrderData = async () => {
+        if (!order || !(order as any).id) return;
+
+        try {
+            // Import the fetch function
+            const { fetchRentalsOnly } = await import('../../lib/orders');
+            const cars = await fetchCars();
+
+            const refreshedOrders = await fetchRentalsOnly(cars);
+            const refreshedOrder = refreshedOrders.find(o => o.id === (order as any).id);
+
+            if (refreshedOrder) {
+                console.log('Refreshed order data:', refreshedOrder);
+                setCurrentOrder(refreshedOrder);
+            }
+        } catch (error) {
+            console.error('Error refreshing order data:', error);
+        }
+    };
 
     // If parent provides onOpenContractModal, use it; otherwise use local state
     const handleOpenContractModal = () => {
@@ -93,12 +124,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     // Fetch original request options if request_id exists
     useEffect(() => {
         const fetchRequestOptions = async () => {
-            if (!order) {
+            if (!displayOrder) {
                 setRequestOptions(null);
                 return;
             }
-
-            const requestId = (order as any).request_id;
+            const requestId = (displayOrder as any).request_id;
             console.log('OrderDetailsModal: Checking for request_id. Order:', {
                 id: order.id,
                 request_id: requestId,
@@ -415,8 +445,17 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     const downloadContract = async () => {
         // If contract URL exists, download from bucket
-
-        return;
+        const displayOrder = currentOrder || order;
+        if (displayOrder?.contract_url) {
+            // Create a temporary link to download the file
+            const link = document.createElement('a');
+            link.href = displayOrder.contract_url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     };
 
 
@@ -791,9 +830,31 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         );
                                     })()}
 
-                                    {/* Action Buttons - Only show for admin views and non-completed orders */}
-                                    {showOrderNumber && (order as any)?.status !== 'COMPLETED' && (
+                                    {/* Contract Download - Show first */}
+                                    {displayOrder?.contract_url && (
                                         <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10 mb-4">
+                                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                                                <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
+                                            </h3>
+                                            <a
+                                                href={displayOrder.contract_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                <span>{t('admin.orders.downloadContractPDF')}</span>
+                                            </a>
+                                            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
+                                                Descarcă contractul de închiriere
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Action Buttons - Show after contract */}
+                                    {showOrderNumber && (displayOrder as any)?.status !== 'COMPLETED' && (
+                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                                         <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
                                             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                                             <span className="text-sm sm:text-base">Acțiuni</span>
@@ -801,7 +862,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                                         <div className="space-y-3">
                                             {/* Create Contract Button - for CONTRACT status */}
-                                            {(order as any)?.status === 'CONTRACT' && (
+                                            {(displayOrder as any)?.status === 'CONTRACT' && (
                                                 <button
                                                     onClick={handleOpenContractModal}
                                                     className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
@@ -817,11 +878,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             )}
 
                                             {/* Cancel Order Button - for ACTIVE and CONTRACT status */}
-                                            {((order as any)?.status === 'ACTIVE' || (order as any)?.status === 'CONTRACT') && onCancel && (
+                                            {((displayOrder as any)?.status === 'ACTIVE' || (displayOrder as any)?.status === 'CONTRACT') && onCancel && (
                                                 <button
                                                     onClick={() => {
                                                         if (window.confirm('Ești sigur că vrei să anulezi această comandă? Această acțiune va anula și cererea corespunzătoare.')) {
-                                                            onCancel(order as OrderDisplay);
+                                                            onCancel(displayOrder as OrderDisplay);
                                                         }
                                                     }}
                                                     className="w-full px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
@@ -832,28 +893,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             )}
                                         </div>
                                     </div>
-                                    )}
-
-                                    {/* Contract Download Only */}
-                                    {order.contract_url && (
-                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
-                                            </h3>
-                                            <a
-                                                href={order.contract_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
-                                            >
-                                                <Download className="w-4 h-4" />
-                                                <span>{t('admin.orders.downloadContractPDF')}</span>
-                                            </a>
-                                            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                                Descarcă contractul de închiriere
-                                            </p>
-                                        </div>
                                     )}
                                 </div>
                             </motion.div>

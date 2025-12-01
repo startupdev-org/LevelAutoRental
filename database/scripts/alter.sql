@@ -56,6 +56,36 @@ ALTER TABLE "Rentals"
 ADD CONSTRAINT rentals_profiles_fk FOREIGN KEY (user_id) REFERENCES "Profiles"(id)
 
 ALTER TABLE "BorrowRequest"
-ADD CONSTRAINT borrow_request_profiles_fk FOREIGN KEY (customer_email) REFERENCES "Profiles"(email)
+ADD CONSTRAINT borrow_request_profiles_fk FOREIGN KEY (customer_email) REFERENCES "Profiles"(email);
+
+-- Recreate the trigger to automatically execute approved requests when start date passes
+CREATE OR REPLACE FUNCTION auto_execute_rental_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Only process APPROVED requests
+    IF NEW.status = 'APPROVED' THEN
+        -- Check if start date has passed
+        IF NEW.start_date IS NOT NULL AND (NEW.start_date::date < CURRENT_DATE OR
+           (NEW.start_date::date = CURRENT_DATE AND
+            (NEW.start_time IS NULL OR NEW.start_time <= CURRENT_TIME))) THEN
+
+            -- Update the request status to EXECUTED
+            NEW.status := 'EXECUTED';
+            NEW.updated_at := CURRENT_TIMESTAMP;
+
+            RAISE NOTICE 'Auto-executed rental request % - start date has passed', NEW.id;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+DROP TRIGGER IF EXISTS auto_execute_rental_trigger ON "BorrowRequest";
+CREATE TRIGGER auto_execute_rental_trigger
+    BEFORE INSERT OR UPDATE ON "BorrowRequest"
+    FOR EACH ROW
+    EXECUTE FUNCTION auto_execute_rental_trigger();
 
 
