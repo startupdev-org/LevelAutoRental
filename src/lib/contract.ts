@@ -2111,17 +2111,19 @@ export const generateContractFromOrder = async (
     additionalData
   );
 
-  // Create or update rental in database with CONTRACT status
+  // Create or update rental in database with ACTIVE status
   let rentalId: number | string = order.id; // Default to order.id
   try {
     const { supabase } = await import('./supabase');
     const { createRentalManually } = await import('./orders');
 
-    // Check if rental already exists
+    // Check if rental already exists for this request
+    const requestId = (order as any).request_id || order.id;
+    const numericRequestId = typeof requestId === 'string' ? parseInt(requestId) : requestId;
     const { data: existingRental } = await supabase
       .from('Rentals')
       .select('id, request_id')
-      .eq('id', order.id)
+      .eq('request_id', numericRequestId)
       .single();
 
     const start = new Date(order.pickupDate);
@@ -2147,7 +2149,7 @@ export const generateContractFromOrder = async (
       // Update existing rental
       rentalId = existingRental.id;
       const updateData: any = {
-        rental_status: 'CONTRACT',
+        rental_status: 'ACTIVE',
         subtotal: subtotal,
         taxes_fees: taxesFees,
         total_amount: total,
@@ -2176,9 +2178,47 @@ export const generateContractFromOrder = async (
         .update(updateData)
         .eq('id', rentalId);
     } else {
-      // Create new rental with CONTRACT status
+      // Create new rental with ACTIVE status
+      // Get the correct user_id for the rental (should be UUID from Profiles)
+      let userId = order.userId;
+    console.log('Processing userId for rental creation:', order.userId);
+
+    if (typeof order.userId === 'string' && order.userId.includes('@')) {
+      // If it's an email, find the corresponding UUID from Profiles
+      console.log('Looking up UUID by email:', order.userId);
+      const { data: profileData, error: profileError } = await supabase
+        .from('Profiles')
+        .select('id, email')
+        .eq('email', order.userId)
+        .single();
+      if (profileError) {
+        console.error('Error looking up profile by email:', profileError);
+        return { success: false, error: 'User profile not found for rental creation' };
+      }
+      if (profileData) {
+        userId = profileData.id;
+        console.log('Found UUID from email lookup:', userId);
+      } else {
+        console.error('Profile not found for email:', order.userId);
+        return { success: false, error: 'User not found for rental creation' };
+      }
+    } else if (typeof order.userId === 'string' && order.userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      // Already a UUID, use it directly
+      userId = order.userId;
+      console.log('Using UUID directly:', userId);
+    } else if (typeof order.userId === 'number') {
+      // If it's a number, convert to string (might be legacy data)
+      userId = order.userId.toString();
+      console.log('Converted number to string:', userId);
+    } else {
+      console.error('Unknown userId format:', order.userId, typeof order.userId);
+      return { success: false, error: 'Invalid user ID format for rental creation' };
+    }
+
+    console.log('Final userId for rental:', userId);
+
       const result = await createRentalManually(
-        order.userId,
+        userId,
         order.carId,
         order.pickupDate,
         order.pickupTime || '09:00',
@@ -2189,7 +2229,7 @@ export const generateContractFromOrder = async (
         {
           subtotal,
           taxesFees,
-          rentalStatus: 'CONTRACT',
+          rentalStatus: 'ACTIVE',
           paymentStatus: 'PENDING',
           paymentMethod: additionalData?.paymentMethod,
           notes: additionalData?.notes,
@@ -2219,7 +2259,7 @@ export const generateContractFromOrder = async (
   // Upload PDF to Supabase storage
   const contractUrl = await uploadContractToStorage(pdfBlob, filename, rentalId);
 
-  // Update rental with contract URL and set status to ACTIVE if upload was successful
+  // Update rental with contract URL (status is already set to ACTIVE)
   if (contractUrl) {
     try {
       const { supabase } = await import('./supabase');
@@ -2230,7 +2270,6 @@ export const generateContractFromOrder = async (
         .from('Rentals')
         .update({
           contract_url: contractUrl,
-          rental_status: 'ACTIVE',
           updated_at: new Date().toISOString(),
         })
         .eq('id', dbRentalId)

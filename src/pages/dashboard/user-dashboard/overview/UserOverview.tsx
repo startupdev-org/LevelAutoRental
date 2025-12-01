@@ -1,12 +1,14 @@
 // OverviewTab.tsx
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Car, Check, Calendar } from 'lucide-react';
-import { fetchFavoriteCarsFromStorage, getUserRentals as fetchUsersRentals } from '../../../../lib/db/rentals/rentals';
+import { ArrowRight, Car, Check, Calendar, Eye } from 'lucide-react';
+import { fetchFavoriteCarsFromStorage, getUserBorrowRequests as fetchUserBorrowRequests } from '../../../../lib/db/rentals/rentals';
+import { supabase } from '../../../../lib/supabase';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { TabType } from '../../UserDashboard';
-import { Rental } from '../../../../lib/orders';
+import { BorrowRequest } from '../../../../lib/orders';
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
+import { OrderDetailsModal } from '../../../../components/modals/OrderDetailsModal';
 
 export interface Booking {
     id: string;
@@ -26,11 +28,50 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => {
 
-    const [rentals, setRentals] = useState<Rental[] | null>(null);
+    const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[] | null>(null);
 
     const [favoriteCars, setFavoriteCars] = useState<FavoriteCar[]>([]);
 
     const [loading, setLoading] = useState(true);
+
+    // Modal state for order details
+    const [selectedRequest, setSelectedRequest] = useState<BorrowRequest | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Convert BorrowRequest to OrderDisplay format for modal compatibility
+    const convertBorrowRequestToOrderDisplay = (request: BorrowRequest): any => {
+        const startDate = new Date(request.start_date || new Date());
+        const endDate = new Date(request.end_date || new Date());
+        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+        const amount = request.car ? ((request.car as any)?.pricePerDay || request.car.price_per_day || 0) * days : 0;
+
+        return {
+            id: request.id,
+            type: 'request',
+            customerName: (request as any).customer_name ||
+                ((request as any).customer_first_name && (request as any).customer_last_name ?
+                    `${(request as any).customer_first_name} ${(request as any).customer_last_name}` : ''),
+            customerEmail: (request as any).customer_email || request.user_id,
+            customerPhone: (request as any).customer_phone || '',
+            customerFirstName: (request as any).customer_first_name || '',
+            customerLastName: (request as any).customer_last_name || '',
+            customerAge: (request as any).customer_age || undefined,
+            carName: request.car ? `${request.car.make} ${request.car.model}` : 'Unknown Car',
+            avatar: request.car?.image_url || '',
+            pickupDate: request.start_date ? new Date(request.start_date).toISOString().split('T')[0] : '',
+            pickupTime: request.start_time || '09:00',
+            returnDate: request.end_date ? new Date(request.end_date).toISOString().split('T')[0] : '',
+            returnTime: request.end_time || '17:00',
+            status: request.status,
+            amount: amount,
+            total_amount: amount.toString(),
+            carId: request.car_id.toString(),
+            userId: request.user_id,
+            createdAt: request.created_at,
+            features: request.car?.features || [],
+            options: (request as any).options || {},
+        };
+    };
 
 
     useEffect(() => {
@@ -38,7 +79,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             setLoading(true);
 
             await Promise.all([
-                handleFetchUserRentals(),
+                handleFetchUserBorrowRequests(),
                 handleFetchUserFavoriteCars()
             ]);
 
@@ -46,12 +87,40 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
         }
 
         loadAll();
+
+        // Set up polling to refresh borrow request data every 30 seconds
+        // This ensures the UI updates when database triggers change borrow request status
+        const interval = setInterval(() => {
+            handleFetchUserBorrowRequests();
+        }, 30000); // 30 seconds
+
+        // Set up real-time subscription for borrow request changes
+        const subscription = supabase
+            .channel('borrow-request-updates')
+            .on('postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'BorrowRequest'
+                },
+                (payload) => {
+                    console.log('Borrow request updated:', payload);
+                    // Refresh borrow request data when any borrow request is updated
+                    handleFetchUserBorrowRequests();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            clearInterval(interval);
+            supabase.removeChannel(subscription);
+        };
     }, []);
 
 
-    async function handleFetchUserRentals() {
-        const orders = await fetchUsersRentals();
-        setRentals(orders);
+    async function handleFetchUserBorrowRequests() {
+        const requests = await fetchUserBorrowRequests();
+        setBorrowRequests(requests);
     }
 
     async function handleFetchUserFavoriteCars() {
@@ -86,17 +155,25 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
 
             {/* Current Rentals Status */}
             <div className="mt-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Current Active Rental or No Current Rentals State */}
-                    {rentals && rentals.filter(r => r.rental_status === 'ACTIVE' || r.rental_status === 'CONTRACT').length > 0 ? (
-                        // Show active rental
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ pointerEvents: 'auto' }}>
+                    {/* Current Active Borrow Request or No Current Requests State */}
+                    {borrowRequests && borrowRequests.filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED').length > 0 ? (
+                        // Show active borrow request
                         (() => {
-                            const activeRental = rentals.filter(r => r.rental_status === 'ACTIVE' || r.rental_status === 'CONTRACT')[0];
-                            const isActive = activeRental.rental_status === 'ACTIVE';
+                            const activeRequest = borrowRequests.filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED')[0];
+                            const getStatusInfo = (status: string) => {
+                                switch (status) {
+                                    case 'EXECUTED':
+                                        return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
+                                    case 'APPROVED':
+                                    default:
+                                        return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
+                                }
+                            };
                             return (
-                                <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-md border border-blue-500/30 hover:border-blue-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl">
+                                <div className="group relative rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-md border border-blue-500/30 hover:border-blue-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl pointer-events-auto">
                                     {/* Background Pattern */}
-                                    <div className="absolute inset-0 opacity-[0.03]">
+                                    <div className="absolute inset-0 opacity-[0.03] rounded-xl">
                                         <div className="absolute inset-0" style={{
                                             backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(59,130,246,0.3) 1px, transparent 0)',
                                             backgroundSize: '20px 20px'
@@ -104,10 +181,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                     </div>
 
                                     {/* Car Image - Hero Style */}
-                                    <div className="relative h-40 overflow-hidden">
+                                    <div className="relative h-40 overflow-hidden rounded-t-xl">
                                         <img
-                                            src={activeRental.car?.image_url || '/placeholder-car.jpg'}
-                                            alt={activeRental.car?.make}
+                                            src={activeRequest.car?.image_url || '/placeholder-car.jpg'}
+                                            alt={activeRequest.car?.make}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                             loading="lazy"
                                         />
@@ -116,31 +193,37 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                         {/* Car Info Overlay */}
                                         <div className="absolute bottom-3 left-3 right-3">
                                             <h3 className="text-white font-bold text-base truncate mb-1">
-                                                {activeRental.car?.make} {activeRental.car?.model}
+                                                {activeRequest.car?.make} {activeRequest.car?.model}
                                             </h3>
                                             <p className="text-white/80 text-xs">
-                                                {formatDate(activeRental.start_date)} - {formatDate(activeRental.end_date)}
+                                                {formatDate(activeRequest.start_date)} - {formatDate(activeRequest.end_date)}
                                             </p>
                                         </div>
 
                                         {/* Status Badge */}
                                         <div className="absolute top-3 right-3">
-                                            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/90 text-white border border-blue-400/50 backdrop-blur-sm">
-                                                <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
-                                                <span>{isActive ? 'Activă' : 'Contract'}</span>
+                                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${getStatusInfo(activeRequest.status).color}`}>
+                                                <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+                                                <span>{getStatusInfo(activeRequest.status).text}</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Action Button */}
-                                    <div className="p-3">
-                                        <button
-                                            onClick={() => setActiveTab('overview')}
-                                            className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg"
-                                        >
-                                            <span>Vezi detalii</span>
-                                            <ArrowRight size={14} />
-                                        </button>
+                                    {/* Action Button - Inside card but outside overflow container */}
+                                    <div className="p-3 bg-transparent relative z-10" style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
+                                        <div style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedRequest(activeRequest);
+                                                    setIsModalOpen(true);
+                                                }}
+                                                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg"
+                                                style={{ position: 'relative', zIndex: 30, pointerEvents: 'auto', cursor: 'pointer' }}
+                                            >
+                                                <span>Vezi detalii</span>
+                                                <ArrowRight size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -189,9 +272,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 </div>
             </div>
 
-            {/* Past Rentals */}
+            {/* Past Borrow Requests */}
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-white">Rental History</h3>
+                    <h3 className="text-xl font-bold text-white">Request History</h3>
                     <button
                         onClick={() => setActiveTab('overview')}
                         className="text-gray-400 hover:text-gray-300 transition-colors duration-300 text-sm font-medium hover:underline"
@@ -201,14 +284,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {rentals && rentals.length > 0 ? (
-                    rentals
-                        .filter(rental => rental.rental_status === 'COMPLETED')
+                {borrowRequests && borrowRequests.length > 0 ? (
+                    borrowRequests
+                        .filter(request => request.status === 'EXECUTED')
                         .slice(0, 6)
-                        .map((rental) => (
+                        .map((request) => (
                             <div
-                                key={rental.id}
-                                className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-md border border-white/20 hover:border-white/30 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
+                                key={request.id}
+                                className="group relative rounded-xl bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-md border border-white/20 hover:border-white/30 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
                             >
                                 {/* Background Pattern */}
                                 <div className="absolute inset-0 opacity-[0.03]">
@@ -221,8 +304,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                         {/* Car Image - Hero Style */}
                         <div className="relative h-40 overflow-hidden">
                                     <img
-                                        src={rental.car?.image_url || '/placeholder-car.jpg'}
-                                        alt={rental.car?.make}
+                                        src={request.car?.image_url || '/placeholder-car.jpg'}
+                                        alt={request.car?.make}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         loading="lazy"
                                     />
@@ -231,10 +314,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                     {/* Car Info Overlay */}
                                     <div className="absolute bottom-3 left-3 right-3">
                                         <h3 className="text-white font-bold text-base truncate mb-1">
-                                            {rental.car?.make} {rental.car?.model}
+                                            {request.car?.make} {request.car?.model}
                                         </h3>
                                         <p className="text-white/80 text-xs">
-                                            {formatDate(rental.start_date)} - {formatDate(rental.end_date)}
+                                            {formatDate(request.start_date)} - {formatDate(request.end_date)}
                                         </p>
                                     </div>
 
@@ -247,16 +330,30 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                     </div>
                                 </div>
 
-                                {/* Action Button */}
-                                <div className="p-3">
-                                    <button
-                                        onClick={() => setActiveTab('cars')}
-                                        className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-4 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                                        title="Închiriază această mașină din nou"
-                                    >
-                                        <ArrowRight size={14} />
-                                        <span>Închiriază din nou</span>
-                                    </button>
+                                {/* Action Buttons */}
+                                <div className="p-3 relative z-10">
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setActiveTab('cars')}
+                                            className="w-4/5 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-3 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg relative z-20"
+                                            title="Închiriază această mașină din nou"
+                                            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                        >
+                                            <ArrowRight size={14} />
+                                            <span>Închiriază din nou</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedRequest(request);
+                                                setIsModalOpen(true);
+                                            }}
+                                            className="w-1/5 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 px-3 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg relative z-20"
+                                            title="Vezi detalii închiriere"
+                                            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                        >
+                                            <Eye size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))
@@ -265,9 +362,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                         <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/20">
                             <Calendar className="text-gray-400" size={32} />
                         </div>
-                        <h4 className="text-gray-300 font-medium mb-3 text-lg">Nu ai închirieri finalizate încă</h4>
+                        <h4 className="text-gray-300 font-medium mb-3 text-lg">Nu ai cereri finalizate încă</h4>
                         <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
-                            Închirierile tale finalizate vor apărea aici
+                            Cererile tale finalizate vor apărea aici
                         </p>
                         <button
                             onClick={() => setActiveTab('cars')}
@@ -286,6 +383,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             <div className="mt-8">
                 <FavoriteCarComponent favoriteCars={favoriteCars} />
             </div>
+
+            {/* Order Details Modal */}
+            <OrderDetailsModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setSelectedRequest(null);
+                }}
+                order={selectedRequest ? convertBorrowRequestToOrderDisplay(selectedRequest) : null}
+                showOrderNumber={false}
+            />
 
         </div>
     );

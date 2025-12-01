@@ -444,13 +444,14 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       }
     });
 
-    // Fetch customer information from BorrowRequest table for rentals created from requests
+    // Fetch customer information and options from BorrowRequest table for rentals created from requests
     const requestCustomerMap = new Map<number, { name: string; email: string; phone: string; firstName?: string; lastName?: string }>();
+    const requestOptionsMap = new Map<number, any>();
     if (requestIds.size > 0) {
       try {
         const { data: requestsData, error: requestsError } = await supabase
           .from('BorrowRequest')
-          .select('id, customer_name, customer_email, customer_phone, customer_first_name, customer_last_name')
+          .select('id, customer_name, customer_email, customer_phone, customer_first_name, customer_last_name, options')
           .in('id', Array.from(requestIds));
 
         if (!requestsError && requestsData) {
@@ -462,6 +463,10 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
               firstName: request.customer_first_name,
               lastName: request.customer_last_name,
             });
+            // Store options for later use
+            if (request.options) {
+              requestOptionsMap.set(request.id, request.options);
+            }
           });
         }
       } catch (err) {
@@ -579,41 +584,50 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       };
 
       // Parse features/options from rental
-      let options: Record<string, any> | undefined = undefined;
+      // First priority: options from the original request (if rental was created from a request)
+      const rentalRequestId = (rental as any).request_id;
       const features = (rental as any).features;
-      if (features) {
-        // If features is an array of strings, convert to options object
-        if (Array.isArray(features)) {
-          options = {};
-          features.forEach((feature: string) => {
-            // Map feature names to option keys
-            const featureLower = feature.toLowerCase();
-            if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-              options!.unlimitedKm = true;
-            } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
-              options!.speedLimitIncrease = true;
-            } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-              options!.tireInsurance = true;
-            } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
-              options!.personalDriver = true;
-            } else if (featureLower.includes('priority')) {
-              options!.priorityService = true;
-            } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-              options!.childSeat = true;
-            } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-              options!.simCard = true;
-            } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
-              options!.roadsideAssistance = true;
-            }
-          });
-        } else if (typeof features === 'string') {
-          try {
-            options = JSON.parse(features);
-          } catch (e) {
+      let options: Record<string, any> | undefined = undefined;
+
+      if (rentalRequestId && requestOptionsMap.has(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId))) {
+        // Use options from the original request
+        options = requestOptionsMap.get(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId));
+      } else {
+        // Fallback to features parsing from rental
+        if (features) {
+          // If features is an array of strings, convert to options object
+          if (Array.isArray(features)) {
             options = {};
+            features.forEach((feature: string) => {
+              // Map feature names to option keys
+              const featureLower = feature.toLowerCase();
+              if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
+                options!.unlimitedKm = true;
+              } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
+                options!.speedLimitIncrease = true;
+              } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
+                options!.tireInsurance = true;
+              } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
+                options!.personalDriver = true;
+              } else if (featureLower.includes('priority')) {
+                options!.priorityService = true;
+              } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
+                options!.childSeat = true;
+              } else if (featureLower.includes('sim') || featureLower.includes('card')) {
+                options!.simCard = true;
+              } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
+                options!.roadsideAssistance = true;
+              }
+            });
+          } else if (typeof features === 'string') {
+            try {
+              options = JSON.parse(features);
+            } catch (e) {
+              options = {};
+            }
+          } else {
+            options = features;
           }
-        } else {
-          options = features;
         }
       }
 
@@ -1225,18 +1239,105 @@ export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promi
       return { success: false, error: 'Request is not pending' };
     }
 
+    // Find the car for this request
+    const car = cars.find(c => c.id.toString() === request.car_id.toString());
+    if (!car) {
+      return { success: false, error: 'Car not found for this request' };
+    }
+
+    // Get the correct user_id for the rental (should be UUID from Profiles)
+    let userId = request.user_id;
+    console.log('Processing userId for rental creation:', request.user_id);
+
+    if (typeof request.user_id === 'string' && request.user_id.includes('@')) {
+      // Email-based users cannot create rentals directly
+      console.error('Cannot create rental for email-based user:', request.user_id);
+      return { success: false, error: 'Email-based users cannot create rentals directly' };
+    } else if (typeof request.user_id === 'string' && request.user_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      // UUID - ensure profile exists
+      console.log('Ensuring profile exists for UUID:', request.user_id);
+      const { data: profileData, error: profileError } = await supabase
+        .from('Profiles')
+        .select('id')
+        .eq('id', request.user_id)
+        .single();
+
+      if (profileError || !profileData) {
+        console.warn('Profile not found, creating one:', request.user_id);
+        const { error: createError } = await supabase
+          .from('Profiles')
+          .insert({
+            id: request.user_id,
+            email: null,
+            first_name: '',
+            last_name: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        if (createError && createError.code !== '23505') {
+          console.error('Error creating profile:', createError);
+          return { success: false, error: 'Failed to create user profile' };
+        }
+        console.log('Created profile for:', request.user_id);
+      }
+      userId = request.user_id;
+    } else if (typeof request.user_id === 'number') {
+      userId = request.user_id.toString();
+    } else {
+      console.error('Unknown userId format:', request.user_id, typeof request.user_id);
+      return { success: false, error: 'Invalid user ID format' };
+    }
+
+    console.log('Final userId for rental:', userId);
+
+    // Calculate rental amount
+    const startDate = new Date(request.start_date);
+    const endDate = new Date(request.end_date);
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+    const pricePerDay = (car as any)?.pricePerDay || car.price_per_day || 0;
+    const subtotal = pricePerDay * days;
+    const taxesFees = subtotal * 0.1;
+    const totalAmount = subtotal + taxesFees;
+
+    // Create rental with ACTIVE status
+    const { data: rental, error: rentalError } = await supabase
+      .from('Rentals')
+      .insert({
+        request_id: parseInt(requestId),
+        user_id: userId,
+        car_id: parseInt(request.car_id.toString()),
+        start_date: request.start_date,
+        start_time: request.start_time || '09:00',
+        end_date: request.end_date,
+        end_time: request.end_time || '17:00',
+        price_per_day: pricePerDay,
+        subtotal: subtotal,
+        taxes_fees: taxesFees,
+        total_amount: totalAmount,
+        rental_status: 'ACTIVE',
+        payment_status: 'PENDING',
+      })
+      .select()
+      .single();
+
+    if (rentalError) {
+      console.error('Error creating rental:', rentalError);
+      return { success: false, error: 'Failed to create rental: ' + rentalError.message };
+    }
+
     // Update request status to APPROVED
-    // The rental will be created automatically when pickup time arrives via processExecutedRequests
     const { error: updateError } = await supabase
       .from('BorrowRequest')
       .update({ status: 'APPROVED', updated_at: new Date().toISOString() })
       .eq('id', requestId);
 
     if (updateError) {
-      return { success: false, error: updateError.message };
+      console.error('Error updating request status:', updateError);
+      // Don't fail the whole operation if status update fails
     }
 
-    return { success: true };
+    console.log('Successfully created rental with ID:', rental.id);
+    return { success: true, rentalId: rental.id.toString() };
   } catch (error) {
     console.error('Error accepting borrow request:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -1622,9 +1723,9 @@ function hasDateTimePassed(date: string, time: string): boolean {
 /**
  * Update approved requests to executed when pickup time arrives
  */
-export async function processExecutedRequests(cars: Car[]): Promise<{ success: boolean; processed: number; error?: string }> {
+export async function processActiveRentals(cars: Car[]): Promise<{ success: boolean; processed: number; error?: string }> {
   try {
-    // Fetch all approved requests
+    // Fetch all approved requests that should have active rentals
     const { data: approvedRequests, error: fetchError } = await supabase
       .from('BorrowRequest')
       .select('*')
@@ -1643,34 +1744,7 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
     // Check each approved request
     for (const request of approvedRequests) {
       if (hasDateTimePassed(request.start_date, request.start_time)) {
-        // Update request status to EXECUTED
-        const { error: updateError } = await supabase
-          .from('BorrowRequest')
-          .update({
-            status: 'EXECUTED',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', request.id);
-
-        if (updateError) {
-          console.error(`Error updating request ${request.id} to EXECUTED:`, updateError);
-          continue;
-        }
-
-        // Convert to order (rental) with ACTIVE status
-        const car = cars.find(c => c.id.toString() === request.car_id);
-        if (!car) {
-          console.error(`Car not found for request ${request.id}`);
-          continue;
-        }
-
-        // Calculate rental amount
-        const startDate = new Date(request.start_date);
-        const endDate = new Date(request.end_date);
-        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-        const totalAmount = ((car as any)?.pricePerDay || car.price_per_day || 0) * days;
-
-        // Check if rental already exists for this request
+        // Check if rental already exists for this request (created via contract)
         const { data: existingRental } = await supabase
           .from('Rentals')
           .select('id')
@@ -1678,7 +1752,22 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
           .single();
 
         if (!existingRental) {
-          // Create rental with ACTIVE status (when pickup time arrives)
+          // No rental exists - this shouldn't happen with the new approval flow
+          console.log(`Looking for car with ID ${request.car_id} among ${cars.length} cars`);
+          console.log('Available car IDs:', cars.map(c => ({ id: c.id, idType: typeof c.id })));
+          const car = cars.find(c => c.id.toString() === request.car_id.toString());
+          if (!car) {
+            console.error(`Car not found for request ${request.id}. Request car_id: ${request.car_id} (${typeof request.car_id})`);
+            continue;
+          }
+
+          // Calculate rental amount
+          const startDate = new Date(request.start_date);
+          const endDate = new Date(request.end_date);
+          const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+          const totalAmount = ((car as any)?.pricePerDay || car.price_per_day || 0) * days;
+
+          // Create rental with ACTIVE status
           const { error: rentalError } = await supabase
             .from('Rentals')
             .insert({
@@ -1700,10 +1789,9 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
             continue;
           }
 
-          // Update car status to "booked" when rental becomes ACTIVE
-          await updateCarStatusBasedOnRentals(request.car_id);
+          console.warn(`No rental found for approved request ${request.id}`);
         } else {
-          // Update existing rental to ACTIVE when pickup time arrives
+          // Rental exists (created via contract) - ensure it's ACTIVE
           const { error: updateRentalError } = await supabase
             .from('Rentals')
             .update({
@@ -1717,9 +1805,12 @@ export async function processExecutedRequests(cars: Car[]): Promise<{ success: b
             continue;
           }
 
-          // Update car status to "booked" when rental becomes ACTIVE
-          await updateCarStatusBasedOnRentals(request.car_id);
+          processed++;
+          console.log(`Updated rental to ACTIVE for request ${request.id}`);
         }
+
+        // Update car status to "booked" when rental becomes ACTIVE
+        await updateCarStatusBasedOnRentals(request.car_id);
 
         processed++;
       }
@@ -1785,12 +1876,12 @@ export async function processCompletedOrders(): Promise<{ success: boolean; proc
 }
 
 /**
- * Process all status transitions (executed requests and completed orders)
+ * Process all status transitions (activate rentals at pickup time and completed orders)
  */
 export async function processStatusTransitions(cars: Car[]): Promise<{ success: boolean; executed: number; completed: number; error?: string }> {
   try {
     const [executedResult, completedResult] = await Promise.all([
-      processExecutedRequests(cars),
+      processActiveRentals(cars),
       processCompletedOrders()
     ]);
 

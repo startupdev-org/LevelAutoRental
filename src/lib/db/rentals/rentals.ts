@@ -1,8 +1,8 @@
-import { Car, FavoriteCar, User } from '../../../types';
-import { Rental } from '../../orders';
+import { FavoriteCar } from '../../../types';
+import { Rental, BorrowRequest } from '../../orders';
 import { supabase } from '../../supabase';
 import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
-import { getLoggedUser, getProfile } from '../user/profile';
+import { getLoggedUser } from '../user/profile';
 
 
 export async function getUserRentals(): Promise<Rental[]> {
@@ -66,8 +66,8 @@ export async function getUserRentals(): Promise<Rental[]> {
                     `${car.make}-${car.model}`.toLowerCase(),
                 ].filter(Boolean);
 
-                let mainImage = null;
-                let photoGallery = [];
+                let mainImage: string | null = null;
+                let photoGallery: string[] = [];
 
                 // Try each variation until we find images
                 for (const carName of carNameVariations) {
@@ -88,7 +88,7 @@ export async function getUserRentals(): Promise<Rental[]> {
                 car = {
                     ...car,
                     image_url: mainImage || car.image_url || '/placeholder-car.jpg',
-                    photo_gallery: photoGallery || [],
+                    photo_gallery: photoGallery || ([] as string[]),
                 };
 
             } catch (error) {
@@ -108,6 +108,111 @@ export async function getUserRentals(): Promise<Rental[]> {
     }));
 
     return processedRentals;
+}
+
+export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
+    const user = await getLoggedUser();
+
+    const { data } = await supabase
+        .from('BorrowRequest')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('requested_at', { ascending: false });
+
+    console.log('user borrow requests: ', data);
+
+    // If no borrow requests found, return empty array
+    if (!data || data.length === 0) {
+        return [];
+    }
+
+    // Collect all unique car IDs
+    const carIds = new Set<number>();
+    data.forEach((request: any) => {
+        if (request.car_id) {
+            const carId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id);
+            carIds.add(carId);
+        }
+    });
+
+    // Fetch all cars at once
+    let cars: any[] = [];
+    if (carIds.size > 0) {
+        try {
+            const { data: carsData, error } = await supabase
+                .from('Cars')
+                .select('*')
+                .in('id', Array.from(carIds));
+
+            if (!error && carsData) {
+                cars = carsData;
+                console.log('Fetched cars data for borrow requests:', cars);
+            }
+        } catch (error) {
+            console.error('Error fetching cars for borrow requests:', error);
+        }
+    }
+
+    // Process the borrow requests to include car data with images
+    const processedRequests = await Promise.all(data.map(async (request: any) => {
+        // Find the car for this request
+        const carId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id);
+        let car = cars.find((c: any) => c.id === carId);
+        console.log('Processing borrow request for car ID:', carId, 'Found car:', car);
+
+        // If car exists, ensure it has images from storage
+        if (car) {
+            try {
+                // Try multiple variations of the car name to find images
+                const carNameVariations = [
+                    car.name,
+                    `${car.make} ${car.model}`,
+                    car.model, // Just the model in case that's how folders are named
+                    `${car.make}-${car.model}`.toLowerCase(),
+                ].filter(Boolean);
+
+                let mainImage: string | null = null;
+                let photoGallery: string[] = [];
+
+                // Try each variation until we find images
+                for (const carName of carNameVariations) {
+                    try {
+                        const result = await fetchImagesByCarName(carName as string);
+                        if (result.mainImage) {
+                            mainImage = result.mainImage;
+                            photoGallery = result.photoGallery;
+                            console.log('✅ Found images for car:', carName, '->', mainImage);
+                            break;
+                        }
+                    } catch (e) {
+                        // Continue to next variation
+                    }
+                }
+
+                // Override any existing image_url with the fresh one from storage
+                car = {
+                    ...car,
+                    image_url: mainImage || car.image_url || '/placeholder-car.jpg',
+                    photo_gallery: photoGallery || ([] as string[]),
+                };
+
+            } catch (error) {
+                console.error('❌ Error fetching storage images for', car.make, car.model, ':', error);
+                // Fallback to database image or placeholder
+                car = {
+                    ...car,
+                    image_url: car.image_url || '/placeholder-car.jpg'
+                };
+            }
+        }
+
+        return {
+            ...request,
+            car: car || null,
+        };
+    }));
+
+    return processedRequests;
 }
 
 export async function fetchFavoriteCar(): Promise<FavoriteCar> {
@@ -166,7 +271,7 @@ export async function fetchFavoriteCarsFromStorage(): Promise<FavoriteCar[]> {
 
     for (const carId of favoriteCarIds) {
         try {
-            const car = await fetchCarWithImagesById(carId);
+            const car = await fetchCarWithImagesById(carId.toString());
             if (car) {
                 favoriteCars.push({
                     car,

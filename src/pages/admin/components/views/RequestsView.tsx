@@ -56,6 +56,8 @@ export const RequestsView: React.FC = () => {
     const [editingRequest, setEditingRequest] = useState<OrderDisplay | null>(null);
     const [showContractModal, setShowContractModal] = useState(false);
     const [selectedRentalForContract, setSelectedRentalForContract] = useState<OrderDisplay | null>(null);
+    const [showRequestContractModal, setShowRequestContractModal] = useState(false);
+    const [selectedRequestForContract, setSelectedRequestForContract] = useState<OrderDisplay | null>(null);
 
     useEffect(() => {
         const loadCars = async () => {
@@ -143,29 +145,12 @@ export const RequestsView: React.FC = () => {
     };
 
     const handleAccept = async (request: OrderDisplay) => {
-        if (!window.confirm(`${t('admin.requests.confirmAcceptRequest')} ${request.customerName} ${t('admin.requests.forCar')} ${request.carName}?`)) {
-            return;
-        }
-
-        setProcessingRequest(request.id.toString());
-        try {
-            const result = await acceptBorrowRequest(request.id.toString(), cars);
-            if (result.success) {
-                showSuccess(t('admin.requests.requestAccepted'));
-                await loadRequests();
-                // Optionally navigate to the created rental
-                if (result.rentalId) {
-                    navigate(`/admin?section=orders&orderId=${result.rentalId}`);
-                }
-            } else {
-                showError(`${t('admin.requests.requestAcceptFailed')} ${result.error || t('admin.common.unknownError')}`);
-            }
-        } catch (error) {
-            console.error('Error accepting request:', error);
-            showError(t('admin.requests.requestAcceptErrorOccurred'));
-        } finally {
-            setProcessingRequest(null);
-        }
+        // Instead of directly accepting, open contract modal
+        setSelectedRequestForContract(request);
+        setShowRequestContractModal(true);
+        // Close the request details modal
+        setShowRequestDetailsModal(false);
+        setSelectedRequest(null);
     };
 
     const handleReject = async (request: OrderDisplay) => {
@@ -287,185 +272,6 @@ export const RequestsView: React.FC = () => {
         }
     };
 
-    const handleStartRental = async (request: OrderDisplay) => {
-        setProcessingRequest(request.id.toString());
-        try {
-            const car = cars.find(c => c.id.toString() === request.carId);
-            if (!car) {
-                showError('Mașina nu a fost găsită');
-                setProcessingRequest(null);
-                return;
-            }
-
-            // Calculate total amount (same logic as in RequestDetailsModal)
-            const formatTime = (timeString: string): string => {
-                if (!timeString) return '00:00';
-                if (timeString.includes('AM') || timeString.includes('PM')) {
-                    const [time, period] = timeString.split(' ');
-                    const [hours, minutes] = time.split(':');
-                    let hour24 = parseInt(hours);
-                    if (period === 'PM' && hour24 !== 12) hour24 += 12;
-                    if (period === 'AM' && hour24 === 12) hour24 = 0;
-                    return `${String(hour24).padStart(2, '0')}:${minutes || '00'}`;
-                }
-                if (timeString.includes(':')) {
-                    const [hours, minutes] = timeString.split(':');
-                    return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
-                }
-                return '00:00';
-            };
-
-            const startDate = new Date(request.pickupDate);
-            const endDate = new Date(request.returnDate);
-            const pickupTime = formatTime(request.pickupTime);
-            const returnTime = formatTime(request.returnTime);
-            const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
-            const [returnHour, returnMin] = returnTime.split(':').map(Number);
-
-            const startDateTime = new Date(startDate);
-            startDateTime.setHours(pickupHour, pickupMin, 0, 0);
-            const endDateTime = new Date(endDate);
-            if (returnHour === 0 && returnMin === 0) {
-                endDateTime.setHours(23, 59, 59, 999);
-            } else {
-                endDateTime.setHours(returnHour, returnMin, 0, 0);
-            }
-
-            const diffTime = endDateTime.getTime() - startDateTime.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const days = diffDays;
-            const hours = diffHours >= 0 ? diffHours : 0;
-            const rentalDays = days;
-            const totalDays = days + (hours / 24);
-
-            // Calculate base price (no discounts now)
-            let basePrice = car.price_per_day * rentalDays;
-            if (hours > 0) {
-                const hoursPrice = (hours / 24) * car.price_per_day;
-                basePrice += hoursPrice;
-            }
-
-            // Calculate additional costs
-            const options = (request as any).options;
-            let parsedOptions: any = {};
-            if (options) {
-                if (typeof options === 'string') {
-                    try {
-                        parsedOptions = JSON.parse(options);
-                    } catch (e) {
-                        parsedOptions = {};
-                    }
-                } else {
-                    parsedOptions = options;
-                }
-            }
-
-            let additionalCosts = 0;
-            const baseCarPrice = car.price_per_day;
-            if (parsedOptions.unlimitedKm) {
-                additionalCosts += baseCarPrice * totalDays * 0.5;
-            }
-            if (parsedOptions.speedLimitIncrease) {
-                additionalCosts += baseCarPrice * totalDays * 0.2;
-            }
-            if (parsedOptions.tireInsurance) {
-                additionalCosts += baseCarPrice * totalDays * 0.2;
-            }
-            if (parsedOptions.personalDriver) {
-                additionalCosts += 800 * rentalDays;
-            }
-            if (parsedOptions.priorityService) {
-                additionalCosts += 1000 * rentalDays;
-            }
-            if (parsedOptions.childSeat) {
-                additionalCosts += 100 * rentalDays;
-            }
-            if (parsedOptions.simCard) {
-                additionalCosts += 100 * rentalDays;
-            }
-            if (parsedOptions.roadsideAssistance) {
-                additionalCosts += 500 * rentalDays;
-            }
-
-            const totalPrice = basePrice + additionalCosts;
-
-            // Create rental with CONTRACT status
-            const userId = request.userId || '';
-            const result = await createRentalManually(
-                userId,
-                request.carId,
-                request.pickupDate,
-                request.pickupTime,
-                request.returnDate,
-                request.returnTime,
-                totalPrice,
-                cars,
-                {
-                    rentalStatus: 'CONTRACT',
-                    customerName: request.customerName,
-                    customerEmail: request.customerEmail,
-                    customerPhone: request.customerPhone,
-                    customerFirstName: request.customerFirstName,
-                    customerLastName: request.customerLastName,
-                    customerAge: request.customerAge ? parseInt(String(request.customerAge)) : undefined,
-                    requestId: typeof request.id === 'string' ? request.id : request.id.toString()
-                }
-            );
-
-            if (result.success && result.rentalId) {
-                // Fetch the created rental to pass to contract modal
-                const { data: rentalData } = await supabaseAdmin
-                    .from('Rentals')
-                    .select('*')
-                    .eq('id', result.rentalId)
-                    .single();
-
-                if (rentalData) {
-                    // Convert rental to OrderDisplay format for contract modal
-                    const rentalAsOrder: OrderDisplay = {
-                        id: rentalData.id.toString(),
-                        carId: rentalData.car_id.toString(),
-                        carName: request.carName,
-                        pickupDate: request.pickupDate,
-                        pickupTime: request.pickupTime,
-                        returnDate: request.returnDate,
-                        returnTime: request.returnTime,
-                        amount: rentalData.total_amount || totalPrice,
-                        status: 'CONTRACT',
-                        userId: userId,
-                        customerName: request.customerName,
-                        customerEmail: request.customerEmail,
-                        customerPhone: request.customerPhone,
-                        customerFirstName: request.customerFirstName,
-                        customerLastName: request.customerLastName,
-                        customerAge: request.customerAge,
-                        options: options,
-                        // Include rental database fields for price breakdown
-                        subtotal: rentalData.subtotal,
-                        taxes_fees: rentalData.taxes_fees,
-                        additional_taxes: rentalData.additional_taxes,
-                        total_amount: rentalData.total_amount,
-                        price_per_day: rentalData.price_per_day
-                    } as any;
-
-                    setSelectedRentalForContract(rentalAsOrder);
-                    setShowContractModal(true);
-                    setShowRequestDetailsModal(false);
-                    showSuccess('Închirierea a fost creată cu succes!');
-                } else {
-                    showError('Nu s-a putut găsi închirierea creată');
-                }
-            } else {
-                showError(`Nu s-a putut crea închirierea: ${result.error || 'Eroare necunoscută'}`);
-            }
-        } catch (error) {
-            console.error('Error starting rental:', error);
-            showError('A apărut o eroare la crearea închirierii');
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
 
     const handleSort = (field: 'pickup' | 'return' | 'amount' | 'status') => {
         if (sortBy === field) {
@@ -526,27 +332,31 @@ export const RequestsView: React.FC = () => {
         const days = diffDays;
         const hours = diffHours >= 0 ? diffHours : 0;
 
-        const rentalDays = days;
-        const totalDays = days + (hours / 24);
+        // Calculate pricing using same system as Calculator.tsx
+        const rentalDays = days; // Use full days for discount calculation (same as Calculator)
+        const totalDays = days + (hours / 24); // Use total days for final calculation
 
-        // Base price calculation
+        // Base price calculation (same as Calculator.tsx)
         let basePrice = 0;
+        let discountPercent = 0;
 
         if (rentalDays >= 8) {
-            basePrice = car.price_per_day * 0.96 * rentalDays;
+            discountPercent = 4;
+            basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
         } else if (rentalDays >= 4) {
-            basePrice = car.price_per_day * 0.98 * rentalDays;
+            discountPercent = 2;
+            basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
         } else {
             basePrice = car.price_per_day * rentalDays;
         }
 
-        // Add hours portion
+        // Add hours portion (hours are charged at full price, no discount)
         if (hours > 0) {
             const hoursPrice = (hours / 24) * car.price_per_day;
             basePrice += hoursPrice;
         }
 
-        // Calculate additional costs from options
+        // Calculate additional costs from options (same as Calculator.tsx)
         const options = (request as any).options;
         let parsedOptions: any = {};
 
@@ -565,7 +375,7 @@ export const RequestsView: React.FC = () => {
         let additionalCosts = 0;
         const baseCarPrice = car.price_per_day;
 
-        // Percentage-based options
+        // Percentage-based options (calculated on discounted price)
         if (parsedOptions.unlimitedKm) {
             additionalCosts += baseCarPrice * totalDays * 0.5;
         }
@@ -596,7 +406,7 @@ export const RequestsView: React.FC = () => {
         // Total price = base price + additional costs
         const totalPrice = basePrice + additionalCosts;
         return Math.round(totalPrice);
-    }, []);
+    }, [cars]);
 
     const filteredRequests = useMemo(() => {
         let filtered = requests.filter(request => {
@@ -831,7 +641,9 @@ export const RequestsView: React.FC = () => {
                                                     ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                     : request.status === 'APPROVED'
                                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                        : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                        : request.status === 'EXECUTED'
+                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                            : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                     }`}
                                             >
                                                 {request.status === 'PENDING' ? t('admin.status.pending') : 
@@ -968,7 +780,9 @@ export const RequestsView: React.FC = () => {
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : request.status === 'APPROVED'
                                                                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                                : request.status === 'EXECUTED'
+                                                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                                    : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                             }`}
                                                     >
                                                         {request.status === 'PENDING' ? t('admin.status.pending') : 
@@ -1049,7 +863,6 @@ export const RequestsView: React.FC = () => {
                     onUndoReject={handleUndoReject}
                     onSetToPending={handleSetToPending}
                     onEdit={handleEdit}
-                    onStartRental={handleStartRental}
                     onCancelRental={handleCancelRental}
                     isProcessing={processingRequest === selectedRequest.id.toString()}
                 />
@@ -1071,6 +884,49 @@ export const RequestsView: React.FC = () => {
                             setShowContractModal(false);
                             setSelectedRentalForContract(null);
                             await loadRequests();
+                        }}
+                    />
+                ) : null;
+            })()}
+
+            {/* Contract Creation Modal for Requests */}
+            {showRequestContractModal && selectedRequestForContract && (() => {
+                const car = cars.find(c => c.id.toString() === selectedRequestForContract.carId);
+                return car ? (
+                    <ContractCreationModal
+                        isOpen={showRequestContractModal}
+                        onClose={() => {
+                            setShowRequestContractModal(false);
+                            setSelectedRequestForContract(null);
+                        }}
+                        order={{
+                            ...selectedRequestForContract,
+                            request_id: selectedRequestForContract.id // Set request_id to the request's own ID
+                        } as any}
+                        car={car}
+                        onContractCreated={async () => {
+                            // After contract is created, accept the request
+                            setProcessingRequest(selectedRequestForContract.id.toString());
+                            try {
+                                const result = await acceptBorrowRequest(selectedRequestForContract.id.toString(), cars);
+                                if (result.success) {
+                                    showSuccess('Cerere aprobată și contract creat cu succes!');
+                                    await loadRequests();
+                                    // Optionally navigate to the created rental
+                                    if (result.rentalId) {
+                                        navigate(`/admin?section=orders&orderId=${result.rentalId}`);
+                                    }
+                                } else {
+                                    showError(`Eșuare la aprobarea cererii: ${result.error || 'Eroare necunoscută'}`);
+                                }
+                            } catch (error) {
+                                console.error('Error accepting request after contract creation:', error);
+                                showError('A apărut o eroare la aprobarea cererii după crearea contractului.');
+                            } finally {
+                                setProcessingRequest(null);
+                                setShowRequestContractModal(false);
+                                setSelectedRequestForContract(null);
+                            }
                         }}
                     />
                 ) : null;

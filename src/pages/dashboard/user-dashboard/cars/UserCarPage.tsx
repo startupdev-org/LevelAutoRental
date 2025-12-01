@@ -4,10 +4,10 @@ import {
     Car as CarIcon,
     Eye,
     ArrowRight,
+    Users,
 } from 'lucide-react';
 import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
-import { PiSpeedometerFill } from "react-icons/pi";
 import { Car, CarFilterOptions, Car as CarType } from '../../../../types';
 import { fetchCarsWithMainImageFilteredPaginated } from '../../../../lib/db/cars/cars-page/cars';
 import { LoadingState } from '../../../../components/ui/LoadingState';
@@ -704,7 +704,7 @@ export const CarsView: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4 mb-6">
                         <div className="flex items-center gap-2 text-gray-300">
                             <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                <PiSpeedometerFill className="w-4 h-4 text-gray-300" />
+                                <Users className="w-4 h-4 text-gray-300" />
                             </div>
                             <span className="text-sm font-medium">{carWithImages.seats} locuri</span>
                         </div>
@@ -933,8 +933,8 @@ export const CarsView: React.FC = () => {
                         setSelectedCarForRental(null);
                     }}
                     car={selectedCarForRental}
-                    approvedBorrowRequests={carsAvailability.get(selectedCarForRental.id.toString())?.borrowRequests || []}
-                    carRentalsForCalendar={carsAvailability.get(selectedCarForRental.id.toString())?.rentals || []}
+                    propApprovedBorrowRequests={carsAvailability.get(selectedCarForRental.id.toString())?.borrowRequests || []}
+                    effectiveCarRentalsForCalendar={carsAvailability.get(selectedCarForRental.id.toString())?.rentals || []}
                 />
             )}
         </div>
