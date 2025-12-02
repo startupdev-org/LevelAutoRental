@@ -3,23 +3,23 @@ title Rental Status Lifecycle (Detailed Version)
 
 ' == USER BORROWING PROCESS ==
 
-CONFIRMED --> CANCELED : User canceled the request
-note right of CONFIRMED
+APPROVED --> CANCELED : User canceled the request
+note right of APPROVED
 Triggered by:
 • User cancels before picking up the car  
 • System updates BorrowRequest and Rental records  
 • Car remains AVAILABLE for other users
 end note
 
-CONFIRMED --> IN_USE : User borrowed the car
-note left of IN_USE
+APPROVED --> ACTIVE : User borrowed the car
+note left of ACTIVE
 Triggered by:
 • User picks up the car  
 • Rental officially starts  
 • System marks car as "in use"
 end note
 
-IN_USE --> FINISHED : User returned the car
+ACTIVE --> FINISHED : User returned the car
 note right of FINISHED
 Triggered by:
 • User returns the car  
