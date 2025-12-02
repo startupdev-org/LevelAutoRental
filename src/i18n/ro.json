@@ -891,6 +891,7 @@
             "make": "Marcă",
             "model": "Model",
             "pricePerDay": "Preț pe Zi (MDL)",
+            "priceRanges": "Gama de Prețuri",
             "category": "Categorie",
             "statusAvailable": "Disponibil",
             "statusBooked": "Închiriat",

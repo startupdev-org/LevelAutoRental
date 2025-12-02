@@ -69,15 +69,58 @@ export const CarsView: React.FC = () => {
                         if (!carName || carName.trim() === '') {
                             carName = `${car.make} ${car.model}`;
                         }
-                        console.log(`[Admin] Loading images for car: "${carName}" (make: "${car.make}", model: "${car.model}")`);
-                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-                        return {
-                            ...car,
-                            image_url: mainImage || car.image_url,
-                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
-                        };
+                        console.log(`[Admin] Loading images for car: "${carName}" (make: "${car.make}", model: "${car.model}", id: ${car.id})`);
+                        if (carName.toLowerCase().includes('q7') || car.model?.toLowerCase().includes('q7')) {
+                            console.log(`[Admin] Q7 car detected:`, { car, carName });
+                        }
+
+                        try {
+                            const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                            console.log(`[Admin] Images for "${carName}": main=${!!mainImage}, gallery=${photoGallery.length}`);
+                            const result = {
+                                ...car,
+                                image_url: mainImage || car.image_url,
+                                photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                            };
+                            if (carName.toLowerCase().includes('q7')) {
+                                console.log(`[Admin] Q7 result:`, {
+                                    original_image_url: car.image_url,
+                                    original_photo_gallery: car.photo_gallery,
+                                    final_image_url: result.image_url,
+                                    final_photo_gallery: result.photo_gallery,
+                                    mainImage_found: !!mainImage,
+                                    photoGallery_length: photoGallery.length
+                                });
+                            }
+                            return result;
+                        } catch (error) {
+                            console.warn(`[Admin] Failed to fetch images for car "${carName}":`, error);
+                            // Fall back to database URLs if image fetching fails
+                            console.log(`[Admin] Using fallback URLs for "${carName}": main=${car.image_url}, gallery=${car.photo_gallery?.length || 0}`);
+                            const result = {
+                                ...car,
+                                image_url: car.image_url,
+                                photo_gallery: car.photo_gallery,
+                            };
+                            if (carName.toLowerCase().includes('q7')) {
+                                console.log(`[Admin] Q7 fallback result:`, result);
+                            }
+                            return result;
+                        }
                     })
                 );
+                console.log(`[Admin] Setting ${carsWithImages.length} cars to state`);
+                const q7Car = carsWithImages.find(c => (c as any).name?.toLowerCase().includes('q7') || c.model?.toLowerCase().includes('q7'));
+                if (q7Car) {
+                    console.log(`[Admin] Q7 car in final result:`, {
+                        id: q7Car.id,
+                        name: (q7Car as any).name,
+                        make: q7Car.make,
+                        model: q7Car.model,
+                        image_url: q7Car.image_url,
+                        photo_gallery: q7Car.photo_gallery
+                    });
+                }
                 setLocalCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
@@ -119,8 +162,10 @@ export const CarsView: React.FC = () => {
         // Sort based on selected field
         filtered.sort((a, b) => {
             if (sortBy === 'price') {
-                // Sort by price only
-                const diff = a.price_per_day - b.price_per_day;
+                // Sort by the lowest price range (2-4 days) as default
+                const aPrice = a.price_2_4_days || a.price_5_15_days || a.price_16_30_days || a.price_over_30_days || 0;
+                const bPrice = b.price_2_4_days || b.price_5_15_days || b.price_16_30_days || b.price_over_30_days || 0;
+                const diff = aPrice - bPrice;
                 return sortOrder === 'asc' ? diff : -diff;
             } else if (sortBy === 'year') {
                 // Sort by year only
@@ -248,7 +293,10 @@ export const CarsView: React.FC = () => {
                     name: (carData as any).name,
                     image_url: (carData as any).image || carData.image_url,
                     photo_gallery: (carData as any).photoGallery || carData.photo_gallery,
-                    price_per_day: (carData as any).pricePerDay || carData.price_per_day,
+                    price_2_4_days: (carData as any).price_2_4_days,
+                    price_5_15_days: (carData as any).price_5_15_days,
+                    price_16_30_days: (carData as any).price_16_30_days,
+                    price_over_30_days: (carData as any).price_over_30_days,
                     discount_percentage: (carData as any).discountPercentage !== undefined ? (carData as any).discountPercentage : carData.discount_percentage,
                     fuel_type: (carData as any).fuelType || carData.fuel_type,
                 };
@@ -276,7 +324,10 @@ export const CarsView: React.FC = () => {
                     model: model,
                     image_url: (carData as any).image || carData.image_url,
                     photo_gallery: (carData as any).photoGallery || carData.photo_gallery,
-                    price_per_day: (carData as any).pricePerDay || carData.price_per_day,
+                    price_2_4_days: (carData as any).price_2_4_days,
+                    price_5_15_days: (carData as any).price_5_15_days,
+                    price_16_30_days: (carData as any).price_16_30_days,
+                    price_over_30_days: (carData as any).price_over_30_days,
                     discount_percentage: (carData as any).discountPercentage !== undefined ? (carData as any).discountPercentage : carData.discount_percentage,
                     fuel_type: (carData as any).fuelType || carData.fuel_type,
                     status: 'available',
@@ -465,11 +516,6 @@ export const CarsView: React.FC = () => {
                                 const isBooked = hasActiveRental || displayStatusLower === 'booked' || displayStatusLower === 'borrowed';
                                 const isHidden = !isBooked && (displayStatusLower === 'ascuns' || displayStatusLower === 'hidden');
                                 const isMaintenance = carStatus === 'maintenance';
-                                const basePrice = car.price_per_day || 0;
-                                const discount = car.discount_percentage || 0;
-                                const finalPrice = discount > 0 
-                                    ? basePrice * (1 - discount / 100)
-                                    : basePrice;
 
                                 return (
                                     <div
@@ -533,7 +579,7 @@ export const CarsView: React.FC = () => {
                                         </div>
 
                                         {/* Details Grid */}
-                                        <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-white/10">
+                                        <div className="grid grid-cols-2 gap-4 mb-3 pb-3 border-b border-white/10">
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.cars.category')}</p>
                                                 <p className="text-white text-sm font-medium capitalize">{car.category}</p>
@@ -544,36 +590,119 @@ export const CarsView: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Price and Actions */}
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-gray-400 text-xs mb-1">{t('admin.cars.pricePerDay')}</p>
-                                                {discount > 0 ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-white font-semibold text-sm">{finalPrice.toFixed(2)} MDL</span>
-                                                        <span className="text-gray-400 text-xs line-through">{basePrice} MDL</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-white font-semibold text-sm">{basePrice} MDL</span>
+                                        {/* Price Ranges */}
+                                        <div className="mb-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-gray-400 text-xs font-medium">{t('admin.cars.priceRanges')}</p>
+                                                {car.discount_percentage && car.discount_percentage > 0 && (
+                                                    <span className="px-2 py-0.5 text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30 rounded-full">
+                                                        -{car.discount_percentage}% OFF
+                                                    </span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                            <div className="space-y-1">
+                                                    {(car.price_2_4_days || 0) > 0 && (
+                                                    <div className="bg-white/5 border border-white/10 rounded p-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-gray-300 text-xs">2-4 zile</span>
+                                                            <div className="flex items-center gap-2">
+                                                                {car.discount_percentage && car.discount_percentage > 0 && (
+                                                                    <span className="text-gray-500 text-xs line-through">
+                                                                        {car.price_2_4_days} MDL
+                                                        </span>
+                                                                )}
+                                                                <span className="text-white font-semibold text-xs">
+                                                                    {car.discount_percentage && car.discount_percentage > 0
+                                                                        ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
+                                                                        : car.price_2_4_days
+                                                                    } MDL
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    )}
+                                                    {(car.price_5_15_days || 0) > 0 && (
+                                                    <div className="bg-white/5 border border-white/10 rounded p-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-gray-300 text-xs">5-15 zile</span>
+                                                            <div className="flex items-center gap-2">
+                                                                {car.discount_percentage && car.discount_percentage > 0 && (
+                                                                    <span className="text-gray-500 text-xs line-through">
+                                                                        {car.price_5_15_days} MDL
+                                                        </span>
+                                                                )}
+                                                                <span className="text-white font-semibold text-xs">
+                                                                    {car.discount_percentage && car.discount_percentage > 0
+                                                                        ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
+                                                                        : car.price_5_15_days
+                                                                    } MDL
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    )}
+                                                    {(car.price_16_30_days || 0) > 0 && (
+                                                    <div className="bg-white/5 border border-white/10 rounded p-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-gray-300 text-xs">16-30 zile</span>
+                                                            <div className="flex items-center gap-2">
+                                                                {car.discount_percentage && car.discount_percentage > 0 && (
+                                                                    <span className="text-gray-500 text-xs line-through">
+                                                                        {car.price_16_30_days} MDL
+                                                        </span>
+                                                                )}
+                                                                <span className="text-white font-semibold text-xs">
+                                                                    {car.discount_percentage && car.discount_percentage > 0
+                                                                        ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                        : car.price_16_30_days
+                                                                    } MDL
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    )}
+                                                    {(car.price_over_30_days || 0) > 0 && (
+                                                    <div className="bg-white/5 border border-white/10 rounded p-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-gray-300 text-xs">30+ zile</span>
+                                                            <div className="flex items-center gap-2">
+                                                                {car.discount_percentage && car.discount_percentage > 0 && (
+                                                                    <span className="text-gray-500 text-xs line-through">
+                                                                        {car.price_over_30_days} MDL
+                                                        </span>
+                                                    )}
+                                                                <span className="text-white font-semibold text-xs">
+                                                                    {car.discount_percentage && car.discount_percentage > 0
+                                                                        ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                        : car.price_over_30_days
+                                                                    } MDL
+                                                                </span>
+                                                </div>
+                                            </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex items-center justify-end gap-1 pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
                                                 <button
                                                     onClick={() => handleEditCar(car)}
-                                                    className="p-2 text-white hover:text-gray-300 transition-colors"
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white hover:text-gray-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
                                                     title={t('admin.common.edit')}
                                                 >
                                                     {/* @ts-ignore - react-icons type compatibility */}
-                                                    <LuPencil className="w-4 h-4" />
+                                                <LuPencil className="w-3.5 h-3.5" />
+                                                <span>Edit</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteCar(car.id)}
-                                                    className="p-2 text-red-300 hover:text-red-200 transition-colors"
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-300 hover:text-red-200 bg-red-500/5 border border-red-500/20 rounded-lg hover:bg-red-500/10 transition-colors"
                                                     title={t('admin.common.delete')}
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                <span>Delete</span>
                                                 </button>
-                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -596,7 +725,7 @@ export const CarsView: React.FC = () => {
                                                 onClick={() => handleSort('price')}
                                                 className="flex items-center gap-1.5 hover:text-white transition-colors"
                                             >
-                                                {t('admin.cars.pricePerDay')}
+                                                {t('admin.cars.priceRanges')}
                                                 {sortBy === 'price' ? (
                                                     sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                                                 ) : (
@@ -671,26 +800,60 @@ export const CarsView: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {(() => {
-                                                        const basePrice = car.price_per_day || 0;
-                                                        const discount = car.discount_percentage || 0;
-                                                        const finalPrice = discount > 0 
-                                                            ? basePrice * (1 - discount / 100)
-                                                            : basePrice;
-                                                        
-                                                        return (
-                                                            <div className="flex flex-col">
-                                                                {discount > 0 ? (
-                                                                    <>
-                                                                        <span className="text-white font-semibold">{finalPrice.toFixed(2)} MDL</span>
-                                                                        <span className="text-gray-400 text-xs line-through">{basePrice} MDL</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-white font-semibold">{basePrice} MDL</span>
-                                                                )}
+                                                    <div className="space-y-0.5 max-w-xs">
+                                                        {(car.price_2_4_days || 0) > 0 && (
+                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-gray-300 text-xs">2-4 zile</span>
+                                                                    <span className="text-white font-semibold text-xs">
+                                                                        {car.discount_percentage && car.discount_percentage > 0
+                                                                            ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
+                                                                            : car.price_2_4_days
+                                                                        } MDL
+                                                            </span>
+                                                                </div>
                                                             </div>
-                                                        );
-                                                    })()}
+                                                        )}
+                                                        {(car.price_5_15_days || 0) > 0 && (
+                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-gray-300 text-xs">5-15 zile</span>
+                                                                    <span className="text-white font-semibold text-xs">
+                                                                        {car.discount_percentage && car.discount_percentage > 0
+                                                                            ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
+                                                                            : car.price_5_15_days
+                                                                        } MDL
+                                                            </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {(car.price_16_30_days || 0) > 0 && (
+                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-gray-300 text-xs">16-30 zile</span>
+                                                                    <span className="text-white font-semibold text-xs">
+                                                                        {car.discount_percentage && car.discount_percentage > 0
+                                                                            ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                            : car.price_16_30_days
+                                                                        } MDL
+                                                            </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {(car.price_over_30_days || 0) > 0 && (
+                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-gray-300 text-xs">30+ zile</span>
+                                                                    <span className="text-white font-semibold text-xs">
+                                                                        {car.discount_percentage && car.discount_percentage > 0
+                                                                            ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                            : car.price_over_30_days
+                                                                        } MDL
+                                                            </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-300">{car.year}</td>
                                                 <td className="px-6 py-4">
@@ -796,3 +959,4 @@ export const CarsView: React.FC = () => {
         </motion.div>
     );
 };
+

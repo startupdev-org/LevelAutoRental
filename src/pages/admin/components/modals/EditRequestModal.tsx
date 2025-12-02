@@ -850,13 +850,10 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
         let additionalCosts = 0;
 
         if (options.unlimitedKm) {
-            additionalCosts += baseCarPrice * totalDays * 0.5;
-        }
-        if (options.speedLimitIncrease) {
-            additionalCosts += baseCarPrice * totalDays * 0.2;
+            additionalCosts += pricePerDay * rentalDays * 0.5;
         }
         if (options.tireInsurance) {
-            additionalCosts += baseCarPrice * totalDays * 0.2;
+            additionalCosts += pricePerDay * rentalDays * 0.2;
         }
         if (options.personalDriver) {
             additionalCosts += 800 * rentalDays;
@@ -1905,19 +1902,8 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
                                 const rentalDays = days;
                                 const totalDays = days + (hours / 24);
 
-                                let basePrice = 0;
-                                let discountPercent = 0;
-
-                                // Apply rental duration discounts to already-discounted price
-                                if (rentalDays >= 8) {
-                                    discountPercent = 4;
-                                    basePrice = pricePerDay * 0.96 * rentalDays;
-                                } else if (rentalDays >= 4) {
-                                    discountPercent = 2;
-                                    basePrice = pricePerDay * 0.98 * rentalDays;
-                                } else {
-                                    basePrice = pricePerDay * rentalDays;
-                                }
+                                // Calculate base price using price ranges (no period discounts)
+                                basePrice = pricePerDay * rentalDays;
 
                                 if (hours > 0) {
                                     const hoursPrice = (hours / 24) * pricePerDay;
@@ -1925,7 +1911,6 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
                                 }
 
                                 let additionalCosts = 0;
-                                const baseCarPrice = pricePerDay;
 
                                 if (options.unlimitedKm) {
                                     additionalCosts += baseCarPrice * totalDays * 0.5;
@@ -1977,12 +1962,6 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
                                                 {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}{hours > 0 ? `, ${hours} ${hours === 1 ? 'oră' : 'ore'}` : ''}
                                             </span>
                                         </div>
-                                        {discountPercent > 0 && (
-                                            <div className="flex items-center justify-between text-sm text-emerald-400">
-                                                <span>Reducere durată</span>
-                                                <span className="font-medium">-{discountPercent}%</span>
-                                            </div>
-                                        )}
                                         <div className="pt-2 border-t border-white/10">
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-white font-medium">Preț de bază</span>

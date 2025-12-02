@@ -53,11 +53,25 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                     const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
                     
                     // Ensure name field is included and normalize category to array
-                    const normalizedCategory = Array.isArray(fetchedCar.category) 
-                        ? fetchedCar.category 
-                        : fetchedCar.category 
-                            ? [fetchedCar.category] 
+                    const normalizedCategory = Array.isArray(fetchedCar.category)
+                        ? fetchedCar.category
+                        : fetchedCar.category
+                            ? [fetchedCar.category]
                             : [];
+
+                    // Debug logging
+                    console.log('Fetched car data:', fetchedCar);
+                    console.log('Fetched price ranges:', {
+                        price_2_4_days: fetchedCar.price_2_4_days,
+                        price_5_15_days: fetchedCar.price_5_15_days,
+                        price_16_30_days: fetchedCar.price_16_30_days,
+                        price_over_30_days: fetchedCar.price_over_30_days,
+                    });
+                    console.log('Fetched image URLs:', {
+                        image_url: fetchedCar.image_url,
+                        photo_gallery: fetchedCar.photo_gallery,
+                    });
+
                     setFormData({
                         ...fetchedCar,
                         name: fetchedCar.name || '',
@@ -66,6 +80,11 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                         image_url: mainImage || fetchedCar.image_url,
                         photo_gallery: photoGallery.length > 0 ? photoGallery : fetchedCar.photo_gallery,
                         category: normalizedCategory,
+                        // Ensure price ranges are properly loaded
+                        price_2_4_days: fetchedCar.price_2_4_days,
+                        price_5_15_days: fetchedCar.price_5_15_days,
+                        price_16_30_days: fetchedCar.price_16_30_days,
+                        price_over_30_days: fetchedCar.price_over_30_days,
                     } as any);
                 }
             } catch (error) {
@@ -91,17 +110,71 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                 return;
             }
 
+            // Check if car name changed and update image URLs accordingly
+            let updatedImageUrl = (formData as any).image || formData.image_url;
+            let updatedPhotoGallery = (formData as any).photoGallery || formData.photo_gallery;
+
+            const oldName = (car as any).name || `${car.make} ${car.model}`;
+            const newName = (formData as any).name || `${formData.make} ${formData.model}`;
+
+            console.log(`[CarUpdate] Checking name change: "${oldName}" -> "${newName}" for car ID ${(car as any).id}`);
+
+            if (oldName !== newName && updatedImageUrl && !updatedImageUrl.includes('http')) {
+                // Name changed, update image URLs to new folder structure
+                const oldFolderName = createFolderName(oldName);
+                const newFolderName = createFolderName(newName);
+
+                console.log(`[CarUpdate] Folder names: old="${oldFolderName}", new="${newFolderName}"`);
+                console.log(`[CarUpdate] Original URL: ${updatedImageUrl}`);
+                console.log(`[CarUpdate] URL contains old folder? ${updatedImageUrl.includes(oldFolderName)}`);
+
+                // Only update if the URL actually contains the old folder name
+                if (updatedImageUrl.includes(oldFolderName)) {
+                    updatedImageUrl = updatedImageUrl.replace(oldFolderName, newFolderName);
+                    console.log(`[CarUpdate] Updated URL: ${updatedImageUrl}`);
+                }
+
+                if (updatedPhotoGallery && Array.isArray(updatedPhotoGallery)) {
+                    updatedPhotoGallery = updatedPhotoGallery.map((url: string) => {
+                        if (url && url.includes(oldFolderName)) {
+                            console.log(`[CarUpdate] Updating gallery URL: ${url} -> ${url.replace(oldFolderName, newFolderName)}`);
+                            return url.replace(oldFolderName, newFolderName);
+                        }
+                        return url;
+                    });
+                }
+            } else {
+                console.log(`[CarUpdate] No name change or no local URLs to update`);
+            }
+
             // Map form data to database fields
             const carDataToSave: Partial<CarType> & { name?: string } = {
                 ...formData,
                 name: (formData as any).name,
-                image_url: (formData as any).image || formData.image_url,
-                photo_gallery: (formData as any).photoGallery || formData.photo_gallery,
-                price_per_day: (formData as any).pricePerDay || formData.price_per_day,
+                image_url: updatedImageUrl,
+                photo_gallery: updatedPhotoGallery,
+                price_2_4_days: (formData as any).price_2_4_days || formData.price_2_4_days,
+                price_5_15_days: (formData as any).price_5_15_days || formData.price_5_15_days,
+                price_16_30_days: (formData as any).price_16_30_days || formData.price_16_30_days,
+                price_over_30_days: (formData as any).price_over_30_days || formData.price_over_30_days,
                 discount_percentage: (formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : formData.discount_percentage,
                 fuel_type: (formData as any).fuelType || formData.fuel_type,
                 category: categories.length === 1 ? categories[0] : categories,
             };
+
+            // Debug logging
+            console.log('Car data to save:', carDataToSave);
+            console.log('Price ranges:', {
+                price_2_4_days: carDataToSave.price_2_4_days,
+                price_5_15_days: carDataToSave.price_5_15_days,
+                price_16_30_days: carDataToSave.price_16_30_days,
+                price_over_30_days: carDataToSave.price_over_30_days,
+            });
+            console.log('Image URLs to save:', {
+                image_url: carDataToSave.image_url,
+                photo_gallery: carDataToSave.photo_gallery,
+            });
+
             await onSave(carDataToSave as Partial<CarType>);
             // Show success notification
             showSuccess(t('admin.cars.carSaved'));
@@ -386,26 +459,88 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.pricePerDay')}</label>
-                            <input
-                                type="number"
-                                value={(formData as any).pricePerDay || formData.price_per_day || ''}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    pricePerDay: parseFloat(e.target.value),
-                                    price_per_day: parseFloat(e.target.value)
-                                }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                required
-                            />
+                        {/* Price Ranges */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">2-4 zile</label>
+                                <input
+                                    type="number"
+                                    value={(formData as any).price_2_4_days || formData.price_2_4_days || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        price_2_4_days: parseFloat(e.target.value) || 0
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
+                                />
+                                <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">5-15 zile</label>
+                                <input
+                                    type="number"
+                                    value={(formData as any).price_5_15_days || formData.price_5_15_days || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        price_5_15_days: parseFloat(e.target.value) || 0
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
+                                />
+                                <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">16-30 zile</label>
+                                <input
+                                    type="number"
+                                    value={(formData as any).price_16_30_days || formData.price_16_30_days || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        price_16_30_days: parseFloat(e.target.value) || 0
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
+                                />
+                                <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Peste 30 zile</label>
+                                <input
+                                    type="number"
+                                    value={(formData as any).price_over_30_days || formData.price_over_30_days || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        price_over_30_days: parseFloat(e.target.value) || 0
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
+                                />
+                                <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.discountPercentage')}</label>
@@ -434,39 +569,6 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 }}
                             />
                             <p className="text-xs text-gray-400 mt-1">{t('admin.cars.discountPercentageHint')}</p>
-                            {(() => {
-                                // Get base price - handle both naming conventions
-                                const pricePerDay = (formData as any).pricePerDay;
-                                const price_per_day = formData.price_per_day;
-                                const basePriceValue = pricePerDay !== undefined && pricePerDay !== null
-                                    ? pricePerDay
-                                    : (price_per_day !== undefined && price_per_day !== null ? price_per_day : 0);
-                                const basePrice = typeof basePriceValue === 'number' ? basePriceValue : parseFloat(String(basePriceValue)) || 0;
-                                
-                                // Get discount - handle both naming conventions and null/undefined
-                                const discountPercentage = (formData as any).discountPercentage;
-                                const discount_percentage = formData.discount_percentage;
-                                const discountValue = discountPercentage !== undefined && discountPercentage !== null
-                                    ? discountPercentage
-                                    : (discount_percentage !== undefined && discount_percentage !== null ? discount_percentage : 0);
-                                const discount = typeof discountValue === 'number' ? discountValue : parseFloat(String(discountValue)) || 0;
-                                
-                                // Check if we have valid values
-                                const hasValidPrice = !isNaN(basePrice) && basePrice > 0;
-                                const hasValidDiscount = !isNaN(discount) && discount > 0 && discount <= 100;
-                                
-                                if (hasValidPrice && hasValidDiscount) {
-                                    const discountedPrice = basePrice * (1 - discount / 100);
-                                    return (
-                                        <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                                            <p className="text-xs text-emerald-400 font-medium">
-                                                {t('admin.cars.discountedPrice')}: {discountedPrice.toFixed(2)} MDL
-                                            </p>
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            })()}
                         </div>
                     </div>
 

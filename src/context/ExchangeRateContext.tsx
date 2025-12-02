@@ -6,6 +6,8 @@ interface ExchangeRates {
   loading: boolean;
   error: string | null;
   source: 'api' | 'fallback';
+  selectedCurrency: 'MDL' | 'EUR' | 'USD';
+  setSelectedCurrency: (currency: 'MDL' | 'EUR' | 'USD') => void;
 }
 
 const ExchangeRateContext = createContext<ExchangeRates | undefined>(undefined);
@@ -16,6 +18,14 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<'api' | 'fallback'>('fallback');
+  const [selectedCurrency, setSelectedCurrency] = useState<'MDL' | 'EUR' | 'USD'>(() => {
+    return (localStorage.getItem('selectedCurrency') as 'MDL' | 'EUR' | 'USD') || 'EUR';
+  });
+
+  const handleSetSelectedCurrency = (currency: 'MDL' | 'EUR' | 'USD') => {
+    setSelectedCurrency(currency);
+    localStorage.setItem('selectedCurrency', currency);
+  };
 
   useEffect(() => {
     const fetchExchangeRates = async () => {
@@ -106,7 +116,7 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, []);
 
   return (
-    <ExchangeRateContext.Provider value={{ eur, usd, loading, error, source }}>
+    <ExchangeRateContext.Provider value={{ eur, usd, loading, error, source, selectedCurrency, setSelectedCurrency: handleSetSelectedCurrency }}>
       {children}
     </ExchangeRateContext.Provider>
   );

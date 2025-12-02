@@ -40,6 +40,28 @@ export const UserDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
   const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'overview');
+  const isInitialLoadRef = React.useRef(true);
+
+  // URL sanitization - prevent infinite loops from malformed URLs
+  useEffect(() => {
+    const currentUrl = window.location.href;
+    const searchString = window.location.search;
+
+    // Check for malformed URLs that GitHub Pages creates
+    const hasMalformedParams = (
+      searchString.includes('~and~') ||
+      searchString.includes('~') ||
+      searchString.includes('&/') ||
+      searchString.includes('/&') ||
+      (searchString.match(/&/g) || []).length > 10
+    );
+
+    // If URL is malformed, redirect to clean dashboard URL
+    if (hasMalformedParams) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+  }, []); // Only run once on mount
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,14 +92,15 @@ export const UserDashboard: React.FC = () => {
     }));
   };
 
-  // Update URL when tab changes
+  // Sync URL with active tab (skip on initial load to prevent circular updates)
   useEffect(() => {
-    if (activeTab) {
+    if (!isInitialLoadRef.current && activeTab) {
       setSearchParams({ tab: activeTab }, { replace: true });
     }
+    isInitialLoadRef.current = false;
   }, [activeTab, setSearchParams]);
 
-  // Update active tab when URL changes
+  // Update active tab when URL changes (from external navigation)
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);

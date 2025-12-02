@@ -542,6 +542,7 @@
         "priceDetails": "Детали цены",
         "selectedVehicle": "Выбранный автомобиль",
         "pricePerDay": "Цена за день",
+        "priceRanges": "Диапазоны цен",
         "numberDays": "Количество дней",
         "discount": "Скидка",
         "basePrice": "Базовая цена",

@@ -362,22 +362,92 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.pricePerDay')} *</label>
-                                    <input
-                                        type="number"
-                                        value={(formData as any).pricePerDay || formData.price_per_day || ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, price_per_day: parseFloat(e.target.value), pricePerDay: parseFloat(e.target.value) } as any))}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                        required
-                                    />
+                                {/* Price Ranges */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">2-4 zile *</label>
+                                        <input
+                                            type="number"
+                                            value={(formData as any).price_2_4_days || formData.price_2_4_days || ''}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                price_2_4_days: parseFloat(e.target.value) || 0
+                                            }))}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                            style={{
+                                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'right 12px center',
+                                                backgroundSize: '12px',
+                                                paddingRight: '40px'
+                                            }}
+                                            required
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">5-15 zile *</label>
+                                        <input
+                                            type="number"
+                                            value={(formData as any).price_5_15_days || formData.price_5_15_days || ''}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                price_5_15_days: parseFloat(e.target.value) || 0
+                                            }))}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                            style={{
+                                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'right 12px center',
+                                                backgroundSize: '12px',
+                                                paddingRight: '40px'
+                                            }}
+                                            required
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">16-30 zile *</label>
+                                        <input
+                                            type="number"
+                                            value={(formData as any).price_16_30_days || formData.price_16_30_days || ''}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                price_16_30_days: parseFloat(e.target.value) || 0
+                                            }))}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                            style={{
+                                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'right 12px center',
+                                                backgroundSize: '12px',
+                                                paddingRight: '40px'
+                                            }}
+                                            required
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">Peste 30 zile *</label>
+                                        <input
+                                            type="number"
+                                            value={(formData as any).price_over_30_days || formData.price_over_30_days || ''}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                price_over_30_days: parseFloat(e.target.value) || 0
+                                            }))}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                            style={{
+                                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'right 12px center',
+                                                backgroundSize: '12px',
+                                                paddingRight: '40px'
+                                            }}
+                                            required
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.discountPercentage')}</label>
@@ -406,39 +476,6 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                 }}
                                     />
                                     <p className="text-xs text-gray-400 mt-1">{t('admin.cars.discountPercentageHint')}</p>
-                                    {(() => {
-                                        // Get base price - handle both naming conventions
-                                        const pricePerDay = (formData as any).pricePerDay;
-                                        const price_per_day = formData.price_per_day;
-                                        const basePriceValue = pricePerDay !== undefined && pricePerDay !== null
-                                            ? pricePerDay
-                                            : (price_per_day !== undefined && price_per_day !== null ? price_per_day : 0);
-                                        const basePrice = typeof basePriceValue === 'number' ? basePriceValue : parseFloat(String(basePriceValue)) || 0;
-                                        
-                                        // Get discount - handle both naming conventions and null/undefined
-                                        const discountPercentage = (formData as any).discountPercentage;
-                                        const discount_percentage = formData.discount_percentage;
-                                        const discountValue = discountPercentage !== undefined && discountPercentage !== null
-                                            ? discountPercentage
-                                            : (discount_percentage !== undefined && discount_percentage !== null ? discount_percentage : 0);
-                                        const discount = typeof discountValue === 'number' ? discountValue : parseFloat(String(discountValue)) || 0;
-                                        
-                                        // Check if we have valid values
-                                        const hasValidPrice = !isNaN(basePrice) && basePrice > 0;
-                                        const hasValidDiscount = !isNaN(discount) && discount > 0 && discount <= 100;
-                                        
-                                        if (hasValidPrice && hasValidDiscount) {
-                                            const discountedPrice = basePrice * (1 - discount / 100);
-                                            return (
-                                                <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                                                    <p className="text-xs text-emerald-400 font-medium">
-                                                        {t('admin.cars.discountedPrice')}: {discountedPrice.toFixed(2)} MDL
-                                                    </p>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
                                 </div>
                             </div>
                         </div>

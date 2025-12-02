@@ -944,10 +944,10 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         customerEmail: email,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
-        pickupDate: request.start_date,
-        pickupTime: request.start_time,
-        returnDate: request.end_date,
-        returnTime: request.end_time,
+        pickupDate: request.start_date.includes(' ') ? request.start_date.split(' ')[0] : request.start_date.split('T')[0],
+        pickupTime: request.start_time || (request.start_date.includes(' ') ? request.start_date.split(' ')[1] : request.start_time),
+        returnDate: request.end_date.includes(' ') ? request.end_date.split(' ')[0] : request.end_date.split('T')[0],
+        returnTime: request.return_time || (request.end_date.includes(' ') ? request.end_date.split(' ')[1] : request.return_time),
         status: request.status,
         total_amount: '0',
         amount: 0, // Requests don't have amounts yet
@@ -1192,10 +1192,10 @@ export async function fetchBorrowRequestsForDisplay(cars: Car[]): Promise<OrderD
         customerAge: age,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
-        pickupDate: request.start_date ? new Date(request.start_date).toISOString().split('T')[0] : '',
-        pickupTime: request.start_time || '09:00',
-        returnDate: request.end_date ? new Date(request.end_date).toISOString().split('T')[0] : '',
-        returnTime: request.end_time || '17:00',
+        pickupDate: request.start_date.includes(' ') ? request.start_date.split(' ')[0] : request.start_date.split('T')[0],
+        pickupTime: request.start_time || (request.start_date.includes(' ') ? request.start_date.split(' ')[1] : '09:00'),
+        returnDate: request.end_date.includes(' ') ? request.end_date.split(' ')[0] : request.end_date.split('T')[0],
+        returnTime: request.end_time || (request.end_date.includes(' ') ? request.end_date.split(' ')[1] : '17:00'),
         status: request.status,
         total_amount: amount.toString(),
         amount: amount,
@@ -1551,17 +1551,19 @@ export async function createUserBorrowRequest(
     const customerName = `${customerFirstName} ${customerLastName}`.trim();
 
     // Combine date and time into full timestamps for start_date and end_date
-    // Database expects timestamp, not just date string
+    // Store as local time, not UTC, to avoid timezone conversion issues
     const formatTimestamp = (dateStr: string, timeStr: string): string => {
       // If dateStr is already a full timestamp, use it
       if (dateStr.includes('T') || dateStr.includes(' ')) {
         return dateStr;
       }
-      // Otherwise combine date and time
-      const [hours, minutes] = timeStr.split(':');
-      const date = new Date(dateStr);
-      date.setHours(parseInt(hours || '0', 10), parseInt(minutes || '0', 10), 0, 0);
-      return date.toISOString();
+      // Otherwise combine date and time as local time string
+      // Format: YYYY-MM-DD HH:MM:SS (local time)
+      // Ensure time has seconds format
+      const timeWithSeconds = timeStr.includes(':') && timeStr.split(':').length === 2
+        ? `${timeStr}:00`
+        : timeStr;
+      return `${dateStr} ${timeWithSeconds}`;
     };
 
     const insertData: any = {

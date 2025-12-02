@@ -58,6 +58,27 @@ ADD CONSTRAINT rentals_profiles_fk FOREIGN KEY (user_id) REFERENCES "Profiles"(i
 ALTER TABLE "BorrowRequest"
 ADD CONSTRAINT borrow_request_profiles_fk FOREIGN KEY (customer_email) REFERENCES "Profiles"(email);
 
+-- Add missing columns to Cars table
+ALTER TABLE public."Cars"
+ADD COLUMN IF NOT EXISTS fuel_type VARCHAR(50),
+ADD COLUMN IF NOT EXISTS category TEXT,
+ADD COLUMN IF NOT EXISTS image_url VARCHAR(500),
+ADD COLUMN IF NOT EXISTS photo_gallery TEXT[],
+ADD COLUMN IF NOT EXISTS rating DECIMAL(3,2),
+ADD COLUMN IF NOT EXISTS reviews INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS discount_percentage DECIMAL(5,2);
+
+-- Add comments for the new columns
+COMMENT ON COLUMN public."Cars".fuel_type IS 'Type of fuel (gasoline, diesel, electric, hybrid)';
+COMMENT ON COLUMN public."Cars".category IS 'Car categories (can be JSON array or single value)';
+COMMENT ON COLUMN public."Cars".image_url IS 'Main image URL for the car';
+COMMENT ON COLUMN public."Cars".photo_gallery IS 'Array of photo URLs for the car gallery';
+COMMENT ON COLUMN public."Cars".rating IS 'Average rating (0-5)';
+COMMENT ON COLUMN public."Cars".reviews IS 'Number of reviews';
+COMMENT ON COLUMN public."Cars".name IS 'Alternative name for the car';
+COMMENT ON COLUMN public."Cars".discount_percentage IS 'Discount percentage (0-100)';
+
 -- Recreate the trigger to automatically execute approved requests when start date passes
 CREATE OR REPLACE FUNCTION auto_execute_rental_trigger()
 RETURNS TRIGGER AS $$
