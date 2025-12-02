@@ -25,8 +25,6 @@ export const CalendarPage: React.FC = () => {
 
     const [loading, setLoading] = useState(true);
 
-    console.log('selected car is: ', car)
-
     useEffect(() => {
         async function loadAll() {
             setLoading(true);

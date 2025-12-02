@@ -23,8 +23,7 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
     setFilters,
     setCar
 }) => {
-
-    console.log('selected car id in the calendar filter is: ', filters.carId)
+    // console.log('selected car id in the calendar filter is: ', filters.carId)
     const [cars, setCars] = useState<Car[] | null>(null);
     const [page, setPage] = useState(1);
     const pageSize = 5;
