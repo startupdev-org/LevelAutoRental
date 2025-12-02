@@ -1,25 +1,47 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
-import { Mail, ArrowLeft } from "lucide-react";
+import { Lock, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { sendForgotPasswordEmail } from "../../lib/db/auth/auth";
+import { resetUserPassword } from "../../lib/db/auth/auth";
 
-export const ForgotPassword: React.FC = () => {
-    const [email, setEmail] = useState("");
-    const [isSubmitted, setIsSubmitted] = useState(false);
+export const UpdatePassword: React.FC = () => {
+    const [password, setPassword] = useState("");
 
     const { t } = useTranslation();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        sendForgotPasswordEmail(email)
+        try {
+            const { success, error } = await resetUserPassword(password);
 
-        console.log("forgot password", { email });
-        setIsSubmitted(true);
+            if (error) {
+                setErrorMessage("There was an error updating your password.");
+                setSuccessMessage(null);
+                setIsSubmitted(true);
+                console.error(error);
+                return;
+            }
+
+            if (success) {
+                setSuccessMessage("Password updated successfully!");
+                setErrorMessage(null);
+                setIsSubmitted(true);
+            }
+        } catch (err) {
+            setErrorMessage("An unexpected error occurred.");
+            setSuccessMessage(null);
+            setIsSubmitted(true);
+            console.error(err);
+        }
     };
+
 
     return (
         <section
@@ -100,25 +122,28 @@ export const ForgotPassword: React.FC = () => {
                 <div className="p-6 md:p-16 flex items-center justify-center min-h-[400px] md:min-h-[600px]">
                     <div className="w-full max-w-md">
                         <div className="mb-6 text-center">
-                            <h1 className="text-2xl font-bold text-red-600">{t("auth.forgot.right-part.label")}</h1>
+                            <h1 className="text-2xl font-bold text-red-600">Resetare parola</h1>
                             <p className="text-sm text-gray-500 mt-2">
-                                {t("auth.forgot.right-part.description")}
+                                Introdu noua parola
                             </p>
                         </div>
+
+
 
                         {!isSubmitted ? (
                             <form onSubmit={handleSubmit} className="space-y-5">
                                 <label className="block">
-                                    <span className="text-xs font-medium text-gray-700">{t("auth.forgot.right-part.email")}</span>
+                                    <span className="text-xs font-medium text-gray-700">{t("auth.login.right-part.password")}</span>
                                     <div className="mt-2 relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
                                             required
-                                            className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
-                                            placeholder={t("auth.forgot.right-part.email-placeholder")}
+                                            disabled={isSubmitted}
+                                            className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            placeholder="Introdu noua parola"
                                         />
                                     </div>
                                 </label>
@@ -127,19 +152,39 @@ export const ForgotPassword: React.FC = () => {
                                     type="submit"
                                     className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-shadow shadow-sm hover:shadow-md"
                                 >
-                                    {t("auth.forgot.right-part.send-reset")}
+                                    Reseteaza parola
                                 </button>
                             </form>
                         ) : (
                             <div className="text-center space-y-4">
-                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${successMessage ? 'bg-green-100' : 'bg-red-100'}`}>
+                                    <svg
+                                        className={`w-8 h-8 ${successMessage ? 'text-green-600' : 'text-red-600'}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        {successMessage ? (
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        ) : (
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        )}
                                     </svg>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900">{t("auth.forgot.success.title")}</h3>
-                                <p className="text-sm text-gray-600">{t("auth.forgot.success.description")}</p>
+                                {successMessage && (
+                                    <>
+                                        <h3 className="text-lg font-semibold text-gray-900">{successMessage}</h3>
+                                        <p className="text-sm text-gray-600">{t("auth.forgot.success.description")}</p>
+                                    </>
+                                )}
+                                {errorMessage && (
+                                    <>
+                                        <h3 className="text-lg font-semibold text-red-600">{errorMessage}</h3>
+                                        <p className="text-sm text-gray-600">Please try again or contact support.</p>
+                                    </>
+                                )}
                             </div>
+
                         )}
 
                         {/* Back to Login */}

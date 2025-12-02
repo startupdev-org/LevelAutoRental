@@ -20,6 +20,7 @@ import { Admin } from '../pages/admin/Admin.tsx';
 import { UserDashboard } from '../pages/dashboard/UserDashboard';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdminProtectedRoute } from './AdminProtectedRoute';
+import { UpdatePassword } from '../pages/auth/UpdatePassword.tsx';
 
 const RouterWrapper = () => {
   return (
@@ -45,6 +46,7 @@ const RouterWrapper = () => {
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/signup" element={<SignUp />} />
         <Route path="/auth/forgot" element={<ForgotPassword />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
 
         <Route
           path="/dashboard"
