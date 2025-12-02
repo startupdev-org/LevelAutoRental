@@ -173,7 +173,7 @@ export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarCompon
                                         <img
                                             src={photo}
                                             alt={`${favoriteCar.car?.make} ${favoriteCar.car?.model} - Photo ${index + 1}`}
-                                            className="w-full h-56 object-cover object-center bg-black/10"
+                                            className="w-full h-56 object-cover object-center bg-black/10 rounded-t-3xl"
                                         />
                                         {(() => {
                                             const isLastVisiblePhoto = index === photosToShow.length - 1;
@@ -208,7 +208,7 @@ export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarCompon
                                 <img
                                     src={favoriteCar.car.image_url}
                                     alt={favoriteCar.car.make + ' ' + favoriteCar.car.model}
-                                    className="w-full h-56 object-cover object-center bg-black/10"
+                                    className="w-full h-56 object-cover object-center bg-black/10 rounded-t-3xl"
                                 />
                             ) : (
                                 <div className="w-full h-56 bg-black/10 flex flex-col items-center justify-center text-gray-300 relative overflow-hidden">

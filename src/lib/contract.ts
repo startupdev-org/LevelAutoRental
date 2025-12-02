@@ -2115,16 +2115,59 @@ export const generateContractFromOrder = async (
   let rentalId: number | string = order.id; // Default to order.id
   try {
     const { supabase } = await import('./supabase');
-    const { createRentalManually } = await import('./orders');
+    const { createRentalManually, acceptBorrowRequest } = await import('./orders');
 
-    // Check if rental already exists for this request
+    // Check if this is a request that needs approval first
     const requestId = (order as any).request_id || order.id;
     const numericRequestId = typeof requestId === 'string' ? parseInt(requestId) : requestId;
-    const { data: existingRental } = await supabase
+
+    // Check if this request needs approval (try to approve if it's pending)
+    console.log('Checking if request needs approval:', numericRequestId);
+
+    // Try to approve the request (this will only work if it's pending)
+    let expectedRentalId: string | undefined;
+    try {
+      const approvalResult = await acceptBorrowRequest(numericRequestId.toString(), [car]);
+      if (approvalResult.success) {
+        console.log('Request approved successfully, rental created with ID:', approvalResult.rentalId);
+        expectedRentalId = approvalResult.rentalId;
+      } else {
+        console.log('Request approval failed or already approved:', approvalResult.error);
+      }
+    } catch (approvalError) {
+      console.log('Request approval error (might already be approved):', approvalError);
+    }
+
+    // Now check if rental exists (should exist after approval)
+    console.log('Looking for rental with request_id:', numericRequestId);
+
+    let existingRental = null;
+    const { data: rentalData, error: rentalLookupError } = await supabase
       .from('Rentals')
       .select('id, request_id')
-      .eq('request_id', numericRequestId)
-      .single();
+      .eq('request_id', numericRequestId);
+
+    if (rentalLookupError) {
+      console.error('Error looking up rental:', rentalLookupError);
+    } else if (rentalData && rentalData.length > 0) {
+      existingRental = rentalData[0];
+      console.log('Rental found:', existingRental);
+    } else {
+      console.log('No rental found with request_id:', numericRequestId);
+      // If we expected a rental but can't find it, there might be a timing issue
+      if (expectedRentalId) {
+        console.log('Expected rental ID but not found, trying direct lookup by ID');
+        const { data: directRental } = await supabase
+          .from('Rentals')
+          .select('id, request_id')
+          .eq('id', parseInt(expectedRentalId))
+          .single();
+        if (directRental) {
+          existingRental = directRental;
+          console.log('Found rental by direct ID lookup:', existingRental);
+        }
+      }
+    }
 
     const start = new Date(order.pickupDate);
     const end = new Date(order.returnDate);

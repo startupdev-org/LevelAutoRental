@@ -13,6 +13,7 @@ import { Card } from '../ui/Card';
 import { useNavigate } from 'react-router-dom';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { supabase } from '../../lib/supabase';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 
 interface CarCardProps {
@@ -23,6 +24,7 @@ interface CarCardProps {
 export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const { ref, isInView } = useInView();
     const { t } = useTranslation();
+    const { selectedCurrency, eur: eurRate, usd: usdRate } = useExchangeRates();
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
     const [carWithImages, setCarWithImages] = useState<Car>(car);
@@ -305,6 +307,23 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     }, [car]);
 
     const navigate = useNavigate();
+
+    // ───── HELPER FUNCTIONS ─────
+    const convertPrice = (price: number): number => {
+        if (selectedCurrency === 'MDL') return price;
+        if (selectedCurrency === 'EUR') return Math.round(price / eurRate);
+        if (selectedCurrency === 'USD') return Math.round(price / usdRate);
+        return price;
+    };
+
+    const getCurrencySymbol = (currency: string): string => {
+        switch (currency) {
+            case 'EUR': return '€';
+            case 'USD': return '$';
+            case 'MDL': return 'MDL';
+            default: return currency;
+        }
+    };
 
     const renderTransmissionIcon = (transmission: string | undefined) => {
         if (!transmission) return React.createElement(TbAutomaticGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
@@ -739,7 +758,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     {/* Price and CTA */}
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         {(() => {
-                            const basePrice = (carWithImages as any).pricePerDay || carWithImages.price_per_day || 0;
+                            const basePrice = carWithImages.price_over_30_days || 0;
                             const discount = (carWithImages as any).discount_percentage || carWithImages.discount_percentage || 0;
                             const finalPrice = discount > 0
                                 ? basePrice * (1 - discount / 100)
@@ -748,11 +767,11 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                             return (
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-bold text-gray-800">{finalPrice.toFixed(0)} MDL</span>
-                                        <span className="text-gray-500 text-sm">/zi</span>
+                                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toFixed(0)}</span>
+                                        <span className="text-gray-500 text-sm">pe zi</span>
                                     </div>
                                     {discount > 0 && (
-                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60">{basePrice} MDL</span>
+                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60">{getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice)}</span>
                                     )}
                                 </div>
                             );

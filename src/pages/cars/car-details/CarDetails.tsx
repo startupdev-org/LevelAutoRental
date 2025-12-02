@@ -39,7 +39,7 @@ import { useExchangeRates } from '../../../hooks/useExchangeRates';
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();
     const navigate = useNavigate();
-    const { eur: eurRate, usd: usdRate, loading: ratesLoading } = useExchangeRates();
+    const { eur: eurRate, usd: usdRate, loading: ratesLoading, selectedCurrency, setSelectedCurrency } = useExchangeRates();
 
     // ───── STATE ─────
     const [car, setCar] = useState<Car | null>(null);
@@ -73,6 +73,23 @@ export const CarDetails: React.FC = () => {
     const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
     const [pickupCalendarInitialized, setPickupCalendarInitialized] = useState(false);
     const [returnCalendarInitialized, setReturnCalendarInitialized] = useState(false);
+
+    // ───── HELPER FUNCTIONS ─────
+    const convertPrice = (price: number): number => {
+        if (selectedCurrency === 'MDL') return price;
+        if (selectedCurrency === 'EUR') return Math.round(price / eurRate);
+        if (selectedCurrency === 'USD') return Math.round(price / usdRate);
+        return price;
+    };
+
+    const getCurrencySymbol = (currency: string): string => {
+        switch (currency) {
+            case 'EUR': return '€';
+            case 'USD': return '$';
+            case 'MDL': return 'MDL';
+            default: return currency;
+        }
+    };
 
     // ───── REFS ─────
     const pickupCalendarRef = useRef<HTMLDivElement>(null);
@@ -876,11 +893,23 @@ export const CarDetails: React.FC = () => {
 
         const rentalDays = days;
         const totalDays = days + hours / 24;
-        const basePricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
+
+        // Determine price per day based on rental duration
+        let basePricePerDay = 0;
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            basePricePerDay = car.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            basePricePerDay = car.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            basePricePerDay = car.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            basePricePerDay = car.price_over_30_days || 0;
+        }
+
         const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
         const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
 
-        // No rental duration discounts - use base price for all ranges
+        // Calculate base price using the determined price per day
         let basePrice = pricePerDay * rentalDays;
 
         if (hours > 0) basePrice += (hours / 24) * pricePerDay;
@@ -1146,7 +1175,7 @@ export const CarDetails: React.FC = () => {
                                 {/* Price Display */}
                                 <div className="mb-4">
                                     {(() => {
-                                        const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
+                                        const basePrice = car.price_over_30_days || 0;
                                         const discount = (car as any).discount_percentage || car.discount_percentage || 0;
                                         const finalPrice = discount > 0
                                             ? basePrice * (1 - discount / 100)
@@ -1154,25 +1183,33 @@ export const CarDetails: React.FC = () => {
 
                                         return (
                                             <>
-                                                <div className="text-4xl font-bold text-gray-900 mb-2">
-                                                    {finalPrice.toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MDL <span className="text-lg font-normal text-gray-600">pe zi</span>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="text-4xl font-bold text-gray-900">
+                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} <span className="text-lg font-normal text-gray-600">pe zi</span>
+                                                    </div>
+                                            {/* Currency Dropdown */}
+                                            <div className="relative ml-4">
+                                                <select
+                                                    value={selectedCurrency}
+                                                    onChange={(e) => setSelectedCurrency(e.target.value as 'MDL' | 'EUR' | 'USD')}
+                                                    className="appearance-none bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-sm font-medium text-gray-900 shadow-sm hover:border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 focus:outline-none transition-all duration-200 cursor-pointer"
+                                                >
+                                                    <option value="MDL">MDL</option>
+                                                    <option value="EUR">€ EUR</option>
+                                                    <option value="USD">$ USD</option>
+                                                </select>
+                                                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
                                                 </div>
                                                 {discount > 0 && (
                                                     <div className="text-sm text-gray-400 line-through mb-1">
-                                                        {basePrice.toLocaleString('ro-RO')} MDL
+                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
                                                     </div>
                                                 )}
-                                                <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="text-gray-400">€</span>
-                                                        <span className="font-semibold text-gray-700">{(finalPrice / eurRate).toFixed(0)}</span>
-                                                    </span>
-                                                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="text-gray-400">$</span>
-                                                        <span className="font-semibold text-gray-700">{(finalPrice / usdRate).toFixed(0)}</span>
-                                                    </span>
-                                                </div>
                                             </>
                                         );
                                     })()}
@@ -1854,54 +1891,125 @@ export const CarDetails: React.FC = () => {
                                 </div>
 
                                 {/* Pricing Tiers */}
-                                <div className="border-t border-gray-200 pt-4">
-                                    <h3 className="text-xl font-bold text-gray-900 mb-4">Costul închirierii</h3>
+                                <div className="border-t border-gray-200 pt-6">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-lg md:text-2xl font-bold text-gray-900">Costul închirierii</h3>
+                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                            <div className="px-2 py-1 md:px-3 md:py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full text-xs font-semibold shadow-sm md:shadow-md">
+                                                {car.discount_percentage}% REDUCERE
+                                            </div>
+                                        )}
+                                    </div>
 
-                                    <div className="space-y-3">
+                                    <div className="flex flex-col gap-3">
                                         {/* 2-4 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-base text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>2-4 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">2-4</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_2_4_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* 5-15 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-base text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>5-15 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">5-15</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_5_15_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* 16-30 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-base text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>16-30 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
-                                            </div>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">16-30</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_16_30_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Over 30 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-base text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>Peste 30 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">30+</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_over_30_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -2072,7 +2180,7 @@ export const CarDetails: React.FC = () => {
                                 {/* Price Display */}
                                 <div className="mb-4">
                                     {(() => {
-                                        const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
+                                        const basePrice = car.price_over_30_days || 0;
                                         const discount = (car as any).discount_percentage || car.discount_percentage || 0;
                                         const finalPrice = discount > 0
                                             ? basePrice * (1 - discount / 100)
@@ -2080,25 +2188,33 @@ export const CarDetails: React.FC = () => {
 
                                         return (
                                             <>
-                                                <div className="text-4xl font-bold text-gray-900 mb-2">
-                                                    {finalPrice.toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MDL <span className="text-lg font-normal text-gray-600">pe zi</span>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="text-4xl font-bold text-gray-900">
+                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} <span className="text-lg font-normal text-gray-600">pe zi</span>
+                                                    </div>
+                                            {/* Currency Dropdown */}
+                                            <div className="relative ml-4">
+                                                <select
+                                                    value={selectedCurrency}
+                                                    onChange={(e) => setSelectedCurrency(e.target.value as 'MDL' | 'EUR' | 'USD')}
+                                                    className="appearance-none bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-sm font-medium text-gray-900 shadow-sm hover:border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 focus:outline-none transition-all duration-200 cursor-pointer"
+                                                >
+                                                    <option value="MDL">MDL</option>
+                                                    <option value="EUR">€ EUR</option>
+                                                    <option value="USD">$ USD</option>
+                                                </select>
+                                                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
                                                 </div>
                                                 {discount > 0 && (
                                                     <div className="text-sm text-gray-400 line-through mb-1">
-                                                        {basePrice.toLocaleString('ro-RO')} MDL
+                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
                                                     </div>
                                                 )}
-                                                <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="text-gray-400">€</span>
-                                                        <span className="font-semibold text-gray-700">{(finalPrice / eurRate).toFixed(0)}</span>
-                                                    </span>
-                                                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="text-gray-400">$</span>
-                                                        <span className="font-semibold text-gray-700">{(finalPrice / usdRate).toFixed(0)}</span>
-                                                    </span>
-                                                </div>
                                             </>
                                         );
                                     })()}
@@ -2759,12 +2875,12 @@ export const CarDetails: React.FC = () => {
                                             {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
                                         </div>
                                         <div className="text-2xl font-bold text-gray-900">
-                                            {rentalCalculation.totalPrice.toLocaleString('ro-RO')} MDL
+                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(rentalCalculation.totalPrice).toLocaleString('ro-RO')}
                                         </div>
                                         <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
                                             <span className="text-sm font-medium text-gray-700">Total</span>
                                             <span className="text-lg font-bold text-gray-900">
-                                                {rentalCalculation.totalPrice.toLocaleString('ro-RO')} MDL
+                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(rentalCalculation.totalPrice).toLocaleString('ro-RO')}
                                             </span>
                                         </div>
                                     </div>
@@ -2802,53 +2918,124 @@ export const CarDetails: React.FC = () => {
 
                                 {/* Pricing Tiers */}
                                 <div className="border-t border-gray-200 pt-6">
-                                    <h3 className="text-xl font-bold text-gray-900 mb-4">Costul închirierii</h3>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-lg md:text-2xl font-bold text-gray-900">Costul închirierii</h3>
+                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                            <div className="px-2 py-1 md:px-3 md:py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full text-xs font-semibold shadow-sm md:shadow-md">
+                                                {car.discount_percentage}% REDUCERE
+                                            </div>
+                                        )}
+                                    </div>
 
-                                    <div className="space-y-3">
+                                    <div className="flex flex-col gap-3">
                                         {/* 2-4 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>2-4 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">2-4</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_2_4_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* 5-15 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>5-15 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">5-15</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_5_15_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* 16-30 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>16-30 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
-                                            </div>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">16-30</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_16_30_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Over 30 days */}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-gray-600">
-                                                <span className="text-red-500 mr-2 text-xl">•</span>Peste 30 zile
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {car.price_per_day.toLocaleString('ro-RO')} MDL <span className="text-sm font-normal text-gray-600">pe zi</span>
+                                        <div className="relative group">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
+                                                            <span className="text-white font-semibold text-xs">30+</span>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {car.discount_percentage && car.discount_percentage > 0 && (
+                                                            <span className="text-sm text-gray-500 line-through">
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-lg font-bold text-gray-900">
+                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
+                                                                ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                : (car.price_over_30_days || 0)
+                                                            ).toLocaleString('ro-RO')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

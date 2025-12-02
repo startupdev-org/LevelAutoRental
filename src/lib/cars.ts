@@ -8,7 +8,10 @@ interface CarRow {
   model: string;
   name: string | null;
   year: number | null;
-  price_per_day: number;
+  price_2_4_days?: number | null;
+  price_5_15_days?: number | null;
+  price_16_30_days?: number | null;
+  price_over_30_days?: number | null;
   discount_percentage?: number | null;
   status: string | null;
   body: string | null;
@@ -57,7 +60,10 @@ const mapCarRowToCar = (row: CarRow): Car & { name?: string; color?: string; lic
     model: row.model,
     name: row.name || undefined,
     year: row.year || new Date().getFullYear(),
-    price_per_day: row.price_per_day,
+    price_2_4_days: row.price_2_4_days || undefined,
+    price_5_15_days: row.price_5_15_days || undefined,
+    price_16_30_days: row.price_16_30_days || undefined,
+    price_over_30_days: row.price_over_30_days || undefined,
     discount_percentage: row.discount_percentage || undefined,
     category: category,
     image_url: row.image_url || undefined,
@@ -147,7 +153,10 @@ export const createCar = async (carData: Partial<Car>): Promise<Car | null> => {
       model: carData.model || '',
       name: (carData as any).name || null,
       year: carData.year || new Date().getFullYear(),
-      price_per_day: carData.price_per_day || 0,
+      price_2_4_days: (carData as any).price_2_4_days || null,
+      price_5_15_days: (carData as any).price_5_15_days || null,
+      price_16_30_days: (carData as any).price_16_30_days || null,
+      price_over_30_days: (carData as any).price_over_30_days || null,
       discount_percentage: carData.discount_percentage !== undefined ? carData.discount_percentage : null,
       status: carData.status || 'available',
       body: carData.body || null,
@@ -191,11 +200,18 @@ export const updateCar = async (id: number, carData: Partial<Car>): Promise<Car 
   try {
     const updateData: any = {};
 
+    console.log('updateCar called with data:', carData);
+
     if (carData.make !== undefined) updateData.make = carData.make;
     if (carData.model !== undefined) updateData.model = carData.model;
     if ((carData as any).name !== undefined) updateData.name = (carData as any).name;
     if (carData.year !== undefined) updateData.year = carData.year;
-    if (carData.price_per_day !== undefined) updateData.price_per_day = carData.price_per_day;
+    if ((carData as any).price_2_4_days !== undefined) updateData.price_2_4_days = (carData as any).price_2_4_days;
+    if ((carData as any).price_5_15_days !== undefined) updateData.price_5_15_days = (carData as any).price_5_15_days;
+    if ((carData as any).price_16_30_days !== undefined) updateData.price_16_30_days = (carData as any).price_16_30_days;
+    if ((carData as any).price_over_30_days !== undefined) updateData.price_over_30_days = (carData as any).price_over_30_days;
+
+    console.log('updateData prepared:', updateData);
     if (carData.discount_percentage !== undefined) updateData.discount_percentage = carData.discount_percentage;
     if (carData.status !== undefined) updateData.status = carData.status;
     if (carData.body !== undefined) updateData.body = carData.body;

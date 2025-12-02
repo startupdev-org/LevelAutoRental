@@ -3,7 +3,10 @@ export interface Car {
   make: string;
   model: string;
   year: number;
-  price_per_day: number;
+  price_2_4_days?: number; // Price per day for 2-4 days rentals
+  price_5_15_days?: number; // Price per day for 5-15 days rentals
+  price_16_30_days?: number; // Price per day for 16-30 days rentals
+  price_over_30_days?: number; // Price per day for over 30 days rentals
   discount_percentage?: number; // optional discount percentage (0-100)
   category?: 'suv' | 'sports' | 'luxury' | ('suv' | 'sports' | 'luxury')[]; // optional if nullable in DB, supports single or multiple categories
   image_url?: string | null;

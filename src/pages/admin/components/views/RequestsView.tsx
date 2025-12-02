@@ -147,6 +147,7 @@ export const RequestsView: React.FC = () => {
     const handleAccept = async (request: OrderDisplay) => {
         // Instead of directly accepting, open contract modal
         setSelectedRequestForContract(request);
+        setProcessingRequest(request.id.toString());
         setShowRequestContractModal(true);
         // Close the request details modal
         setShowRequestDetailsModal(false);
@@ -306,8 +307,11 @@ export const RequestsView: React.FC = () => {
             return '00:00';
         };
 
-        const startDate = new Date(request.pickupDate);
-        const endDate = new Date(request.returnDate);
+        // Parse dates safely to avoid timezone issues
+        const [startYear, startMonth, startDay] = request.pickupDate.split('-').map(Number);
+        const [endYear, endMonth, endDay] = request.returnDate.split('-').map(Number);
+        const startDate = new Date(startYear, startMonth - 1, startDay);
+        const endDate = new Date(endYear, endMonth - 1, endDay);
 
         const pickupTime = formatTime(request.pickupTime);
         const returnTime = formatTime(request.returnTime);
@@ -332,27 +336,32 @@ export const RequestsView: React.FC = () => {
         const days = diffDays;
         const hours = diffHours >= 0 ? diffHours : 0;
 
-        // Calculate pricing using same system as Calculator.tsx
-        const rentalDays = days; // Use full days for discount calculation (same as Calculator)
-        const totalDays = days + (hours / 24); // Use total days for final calculation
+        // Calculate pricing using updated price ranges system (no period discounts)
+        const rentalDays = days;
+        const totalDays = days + (hours / 24);
 
-        // Base price calculation (same as Calculator.tsx)
-        let basePrice = 0;
-        let discountPercent = 0;
-
-        if (rentalDays >= 8) {
-            discountPercent = 4;
-            basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
-        } else if (rentalDays >= 4) {
-            discountPercent = 2;
-            basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
-        } else {
-            basePrice = car.price_per_day * rentalDays;
+        // Get price per day based on rental duration ranges
+        let basePricePerDay = 0;
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            basePricePerDay = car.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            basePricePerDay = car.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            basePricePerDay = car.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            basePricePerDay = car.price_over_30_days || 0;
         }
 
-        // Add hours portion (hours are charged at full price, no discount)
+        // Apply car discount if exists
+        const carDiscount = (car as any).discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
+
+        // Calculate base price
+        let basePrice = pricePerDay * rentalDays;
+
+        // Add hours portion (hours are charged at the same rate)
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * car.price_per_day;
+            const hoursPrice = (hours / 24) * pricePerDay;
             basePrice += hoursPrice;
         }
 
@@ -373,17 +382,13 @@ export const RequestsView: React.FC = () => {
         }
 
         let additionalCosts = 0;
-        const baseCarPrice = car.price_per_day;
 
         // Percentage-based options (calculated on discounted price)
         if (parsedOptions.unlimitedKm) {
-            additionalCosts += baseCarPrice * totalDays * 0.5;
-        }
-        if (parsedOptions.speedLimitIncrease) {
-            additionalCosts += baseCarPrice * totalDays * 0.2;
+            additionalCosts += pricePerDay * rentalDays * 0.5;
         }
         if (parsedOptions.tireInsurance) {
-            additionalCosts += baseCarPrice * totalDays * 0.2;
+            additionalCosts += pricePerDay * rentalDays * 0.2;
         }
 
         // Fixed daily costs
@@ -436,12 +441,16 @@ export const RequestsView: React.FC = () => {
             filtered.sort((a, b) => {
                 let diff = 0;
                 if (sortBy === 'pickup') {
-                    const dateA = new Date(a.pickupDate).getTime();
-                    const dateB = new Date(b.pickupDate).getTime();
+                    const [yearA, monthA, dayA] = a.pickupDate.split('-').map(Number);
+                    const [yearB, monthB, dayB] = b.pickupDate.split('-').map(Number);
+                    const dateA = new Date(yearA, monthA - 1, dayA).getTime();
+                    const dateB = new Date(yearB, monthB - 1, dayB).getTime();
                     diff = dateA - dateB;
                 } else if (sortBy === 'return') {
-                    const dateA = new Date(a.returnDate).getTime();
-                    const dateB = new Date(b.returnDate).getTime();
+                    const [yearA, monthA, dayA] = a.returnDate.split('-').map(Number);
+                    const [yearB, monthB, dayB] = b.returnDate.split('-').map(Number);
+                    const dateA = new Date(yearA, monthA - 1, dayA).getTime();
+                    const dateB = new Date(yearB, monthB - 1, dayB).getTime();
                     diff = dateA - dateB;
                 } else if (sortBy === 'amount') {
                     const amountA = calculateRequestTotalPrice(a);
@@ -668,12 +677,20 @@ export const RequestsView: React.FC = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.pickup')}</p>
-                                                <p className="text-white text-sm font-medium">{new Date(request.pickupDate).toLocaleDateString()}</p>
+                                                <p className="text-white text-sm font-medium">{(() => {
+                                                    const [year, month, day] = request.pickupDate.split('-').map(Number);
+                                                    const date = new Date(year, month - 1, day);
+                                                    return date.toLocaleDateString();
+                                                })()}</p>
                                                 <p className="text-gray-400 text-xs">{request.pickupTime}</p>
                                             </div>
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.return')}</p>
-                                                <p className="text-white text-sm font-medium">{new Date(request.returnDate).toLocaleDateString()}</p>
+                                                <p className="text-white text-sm font-medium">{(() => {
+                                                    const [year, month, day] = request.returnDate.split('-').map(Number);
+                                                    const date = new Date(year, month - 1, day);
+                                                    return date.toLocaleDateString();
+                                                })()}</p>
                                                 <p className="text-gray-400 text-xs">{request.returnTime}</p>
                                             </div>
                                         </div>
@@ -759,13 +776,21 @@ export const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{new Date(request.pickupDate).toLocaleDateString()}</span>
+                                                        <span className="text-white text-sm font-medium">{(() => {
+                                                            const [year, month, day] = request.pickupDate.split('-').map(Number);
+                                                            const date = new Date(year, month - 1, day);
+                                                            return date.toLocaleDateString();
+                                                        })()}</span>
                                                         <span className="text-gray-400 text-xs">{request.pickupTime}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{new Date(request.returnDate).toLocaleDateString()}</span>
+                                                        <span className="text-white text-sm font-medium">{(() => {
+                                                            const [year, month, day] = request.returnDate.split('-').map(Number);
+                                                            const date = new Date(year, month - 1, day);
+                                                            return date.toLocaleDateString();
+                                                        })()}</span>
                                                         <span className="text-gray-400 text-xs">{request.returnTime}</span>
                                                     </div>
                                                 </td>
@@ -905,28 +930,12 @@ export const RequestsView: React.FC = () => {
                         } as any}
                         car={car}
                         onContractCreated={async () => {
-                            // After contract is created, accept the request
-                            setProcessingRequest(selectedRequestForContract.id.toString());
-                            try {
-                                const result = await acceptBorrowRequest(selectedRequestForContract.id.toString(), cars);
-                                if (result.success) {
-                                    showSuccess('Cerere aprobată și contract creat cu succes!');
-                                    await loadRequests();
-                                    // Optionally navigate to the created rental
-                                    if (result.rentalId) {
-                                        navigate(`/admin?section=orders&orderId=${result.rentalId}`);
-                                    }
-                                } else {
-                                    showError(`Eșuare la aprobarea cererii: ${result.error || 'Eroare necunoscută'}`);
-                                }
-                            } catch (error) {
-                                console.error('Error accepting request after contract creation:', error);
-                                showError('A apărut o eroare la aprobarea cererii după crearea contractului.');
-                            } finally {
-                                setProcessingRequest(null);
-                                setShowRequestContractModal(false);
-                                setSelectedRequestForContract(null);
-                            }
+                            // Contract has been created and request approved, close modal and reload
+                            setProcessingRequest(null);
+                            setShowRequestContractModal(false);
+                            setSelectedRequestForContract(null);
+                            await loadRequests();
+                            showSuccess('Cerere aprobată și contract creat cu succes!');
                         }}
                     />
                 ) : null;

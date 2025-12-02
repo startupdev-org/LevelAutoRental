@@ -39,6 +39,27 @@ export const Cars: React.FC = () => {
   const navigate = useNavigate();
   const dataFetchedRef = React.useRef(false);
 
+  // URL sanitization - prevent infinite loops from malformed GitHub Pages URLs
+  useEffect(() => {
+    const currentUrl = window.location.href;
+    const searchString = window.location.search;
+
+    // Check for malformed URLs that GitHub Pages creates
+    const hasMalformedParams = (
+      searchString.includes('~and~') ||
+      searchString.includes('~') ||
+      searchString.includes('&/') ||
+      searchString.includes('/&') ||
+      (searchString.match(/&/g) || []).length > 10 // Too many & parameters
+    );
+
+    // If URL is malformed, redirect to clean URL immediately
+    if (hasMalformedParams) {
+      navigate('/cars', { replace: true });
+      return;
+    }
+  }, []); // Only run once on mount
+
   const [cars, setCars] = useState<CarType[]>([]);
   const [loading, setLoading] = useState(true);
   const [makes, setMakes] = useState<string[]>([]);
@@ -124,14 +145,26 @@ export const Cars: React.FC = () => {
   useEffect(() => {
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
-    
+
     // Check if we have URL params, if so, skip the default fetch
     const makeParam = searchParams.get('make');
     const modelParam = searchParams.get('model');
-    
-    if (!makeParam && !modelParam) {
+
+    // Only proceed with URL params if they are valid
+    const isValidParam = (param: string | null): boolean => {
+      return param !== null &&
+             param.trim() !== '' &&
+             param.length < 100 &&
+             !param.includes('~') &&
+             !param.includes('<') &&
+             !param.includes('>') &&
+             !param.includes('&') &&
+             !param.includes('%');
+    };
+
+    if ((!makeParam || !isValidParam(makeParam)) && (!modelParam || !isValidParam(modelParam))) {
       handleFetchCarsWithPhotos();
-    } else {
+    } else if (makeParam && isValidParam(makeParam)) {
       handleFetchCarsMake();
     }
   }, []);
@@ -217,27 +250,40 @@ export const Cars: React.FC = () => {
 
   const [applyError, setApplyError] = useState('');
 
-  // Read URL parameters on mount and apply them
+  // Read URL parameters on mount and apply them (only run once)
   useEffect(() => {
     const makeParam = searchParams.get('make');
     const modelParam = searchParams.get('model');
 
-    if (makeParam || modelParam) {
+    // Validate parameters - only allow non-empty strings without special characters
+    const isValidParam = (param: string | null): boolean => {
+      return !!(param !== null &&
+             param.trim() !== '' &&
+             param.length < 100 && // Reasonable length limit
+             !param.includes('~') && // Block malformed GitHub Pages URLs
+             !param.includes('<') && // Block potential XSS
+             !param.includes('>') &&
+             !param.includes('&') && // Block HTML entities
+             !param.includes('%')); // Block URL encoding issues
+    };
+
+    if ((makeParam && isValidParam(makeParam)) || (modelParam && isValidParam(modelParam))) {
       const initialFilters = {
-        make: makeParam || '',
-        model: modelParam || ''
+        make: (makeParam && isValidParam(makeParam)) ? makeParam : '',
+        model: (modelParam && isValidParam(modelParam)) ? modelParam : ''
       };
       setFilters(initialFilters);
       setAppliedFilters(initialFilters);
-      
+
       // Also trigger the fetch for filtered cars
       handleFetchFilteredCars(initialFilters);
 
-      if (makeParam) {
+      if (makeParam && isValidParam(makeParam)) {
         handleFetchCarsModel(makeParam);
       }
     }
-  }, [searchParams]);
+    // Note: Removed the else clause that was causing redirects - let the URL sanitization handle malformed URLs
+  }, []); // Only run once on mount, no dependencies to prevent re-running
 
   // Validation states (kept for potential future use)
   // const [validationErrors, setValidationErrors] = useState({
@@ -314,8 +360,11 @@ export const Cars: React.FC = () => {
       model: ''
     });
     setSidebarFilters(defaultSidebarFilters);
-    // Clear URL params
-    navigate('/cars', { replace: true });
+    // Clear URL params - only if we're not already on the clean URL
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/cars') {
+      navigate('/cars', { replace: true });
+    }
 
     handleFetchCarsWithPhotos()
   };
@@ -346,18 +395,44 @@ export const Cars: React.FC = () => {
 
     closeAllDropdowns();
 
+    // Validate filter values before updating URL
+    const isValidFilterValue = (value: string): boolean => {
+      return !!(value &&
+             value.trim() !== '' &&
+             value.length < 100 && // Reasonable length limit
+             !value.includes('~') && // Block malformed URLs
+             !value.includes('<') && // Block potential XSS
+             !value.includes('>') &&
+             !value.includes('&') && // Block HTML entities
+             !value.includes('%')); // Block URL encoding issues
+    };
+
+    // Only update URL if filters are valid
+    if ((liveFilters.make && !isValidFilterValue(liveFilters.make)) ||
+        (liveFilters.model && !isValidFilterValue(liveFilters.model))) {
+      setApplyError('Filtrele conțin caractere nevalide.');
+      setTimeout(() => setApplyError(''), 3000);
+      return;
+    }
+
     // Update URL with search parameters
     const params = new URLSearchParams();
 
-    if (liveFilters.make) {
+    if (liveFilters.make && isValidFilterValue(liveFilters.make)) {
       params.set('make', liveFilters.make);
     }
-    if (liveFilters.model) {
+    if (liveFilters.model && isValidFilterValue(liveFilters.model)) {
       params.set('model', liveFilters.model);
     }
 
     const queryString = params.toString();
-    navigate(`/cars${queryString ? `?${queryString}` : ''}`, { replace: true });
+    const newUrl = `/cars${queryString ? `?${queryString}` : ''}`;
+    const currentPath = window.location.pathname + window.location.search;
+
+    // Only navigate if the URL would actually change
+    if (currentPath !== newUrl) {
+      navigate(newUrl, { replace: true });
+    }
 
     // Trigger filtered fetch
     handleFetchFilteredCars(liveFilters);

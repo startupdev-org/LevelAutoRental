@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { createUserBorrowRequest } from '../../lib/orders';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
@@ -49,6 +50,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     approvedBorrowRequests = [],
     carRentalsForCalendar = []
 }) => {
+    const { selectedCurrency, eur: eurRate, usd: usdRate } = useExchangeRates();
+
     // Country codes for phone selector
     const COUNTRY_CODES = [
         { code: '+373', flag: '🇲🇩', country: 'Moldova' },
@@ -72,6 +75,18 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         { code: '+30', flag: '🇬🇷', country: 'Greece' },
         { code: '+90', flag: '🇹🇷', country: 'Turkey' },
     ];
+
+    // ───── HELPER FUNCTIONS ─────
+    // For rental request modal, always convert prices back to MDL
+    const convertPriceToMDL = (price: number): number => {
+        if (selectedCurrency === 'MDL') return price;
+        if (selectedCurrency === 'EUR') return Math.round(price * eurRate);
+        if (selectedCurrency === 'USD') return Math.round(price * usdRate);
+        return price;
+    };
+
+    // Always show MDL in rental request modal
+    const getCurrencySymbol = (): string => 'MDL';
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -113,109 +128,36 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         airportDelivery: false
     });
 
-    const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}.${month}.${year}`;
-    };
-
-    // Calculate base price with discount (same logic as Calculator page and Admin)
-    const calculateBasePrice = () => {
-        if (!rentalCalculation) return 0;
-        // Get price with car discount applied first
-        const basePricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
-        const carDiscount = (car as any).discount_percentage || 0;
-        const pricePerDay = carDiscount > 0
-            ? basePricePerDay * (1 - carDiscount / 100)
-            : basePricePerDay;
-        const rentalDays = rentalCalculation.days; // Use full days for discount calculation
-        const totalDays = rentalDays + (rentalCalculation.hours / 24); // Use total days for final calculation
-
-        // Base price calculation (same as Calculator.tsx and Admin) - using discounted price
-        let basePrice = 0;
-
-        if (rentalDays >= 8) {
-            basePrice = pricePerDay * 0.96 * rentalDays; // -4% discount
-        } else if (rentalDays >= 4) {
-            basePrice = pricePerDay * 0.98 * rentalDays; // -2% discount
-        } else {
-            basePrice = pricePerDay * rentalDays;
-        }
-
-        // Add hours portion if there are extra hours
-        if (rentalCalculation.hours > 0) {
-            const hoursPrice = (rentalCalculation.hours / 24) * pricePerDay;
-            basePrice += hoursPrice;
-        }
-
-        return basePrice;
-    };
-
-    const calculateTotalCost = () => {
-        if (!rentalCalculation) return 0;
-
-        // Use the same calculation logic as Calculator page and Admin
-        const basePrice = calculateBasePrice();
-        const baseCarPrice = car.price_per_day;
-        const rentalDays = rentalCalculation.days; // Use full days for additional costs calculation
-        let additionalCost = 0;
-
-        // Percentage-based options (calculated as percentage of base car price * days, like Calculator and Admin)
-        if (options.unlimitedKm) {
-            additionalCost += baseCarPrice * rentalDays * 0.5; // 50% of daily rate
-        }
-        if (options.tireInsurance) {
-            additionalCost += baseCarPrice * rentalDays * 0.2; // 20% of daily rate
-        }
-
-        // Fixed daily costs (same as Calculator and Admin)
-        if (options.personalDriver) {
-            additionalCost += 800 * rentalDays;
-        }
-        if (options.priorityService) {
-            additionalCost += 1000 * rentalDays;
-        }
-        if (options.childSeat) {
-            additionalCost += 100 * rentalDays;
-        }
-        if (options.simCard) {
-            additionalCost += 100 * rentalDays;
-        }
-        if (options.roadsideAssistance) {
-            additionalCost += 500 * rentalDays;
-        }
-
-        // Pickup/return at address costs are calculated separately (not included in base)
-        // They would be calculated based on location, so we don't add them here
-
-        return Math.round(basePrice + additionalCost);
-    };
-
-    const basePrice = calculateBasePrice();
-    const totalCost = calculateTotalCost();
-
-    // Calculate additional costs separately for display
+    // Calculate additional costs in MDL for rental request modal
     const rentalDays = rentalCalculation?.days || 0;
     let additionalCosts = 0;
 
-    // Get discounted price for additional services
-    const basePricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
+    // Get the base price per day in MDL (not converted)
+    const rentalDaysForPrice = rentalCalculation?.days || 0;
+    let basePricePerDayMDL = 0;
+    if (rentalDaysForPrice >= 2 && rentalDaysForPrice <= 4) {
+        basePricePerDayMDL = car.price_2_4_days || 0;
+    } else if (rentalDaysForPrice >= 5 && rentalDaysForPrice <= 15) {
+        basePricePerDayMDL = car.price_5_15_days || 0;
+    } else if (rentalDaysForPrice >= 16 && rentalDaysForPrice <= 30) {
+        basePricePerDayMDL = car.price_16_30_days || 0;
+    } else if (rentalDaysForPrice > 30) {
+        basePricePerDayMDL = car.price_over_30_days || 0;
+    }
+
+    // Apply car discount if exists
     const carDiscount = (car as any).discount_percentage || 0;
-    const baseCarPrice = carDiscount > 0
-        ? basePricePerDay * (1 - carDiscount / 100)
-        : basePricePerDay;
+    const discountedPricePerDay = carDiscount > 0 ? basePricePerDayMDL * (1 - carDiscount / 100) : basePricePerDayMDL;
 
     // Percentage-based options (calculated as percentage of base car price * days)
     if (options.unlimitedKm) {
-        additionalCosts += baseCarPrice * rentalDays * 0.5; // 50%
+        additionalCosts += discountedPricePerDay * rentalDays * 0.5; // 50%
     }
     if (options.tireInsurance) {
-        additionalCosts += baseCarPrice * rentalDays * 0.2; // 20%
+        additionalCosts += discountedPricePerDay * rentalDays * 0.2; // 20%
     }
 
-    // Fixed daily costs
+    // Fixed daily costs (in MDL)
     if (options.personalDriver) {
         additionalCosts += 800 * rentalDays;
     }
@@ -232,14 +174,61 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         additionalCosts += 500 * rentalDays;
     }
 
+    const formatDate = (dateString: string): string => {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+    };
+
+    // Calculate base price using price ranges (no period-based discounts)
+    const calculateBasePrice = () => {
+        if (!rentalCalculation) return 0;
+
+        const rentalDays = rentalCalculation.days;
+
+        // Determine price per day based on rental duration ranges
+        let basePricePerDay = 0;
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            basePricePerDay = car.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            basePricePerDay = car.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            basePricePerDay = car.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            basePricePerDay = car.price_over_30_days || 0;
+        }
+
+        // Apply car discount if exists
+        const carDiscount = (car as any).discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
+
+        // Calculate total price
+        let basePrice = pricePerDay * rentalDays;
+
+        // Add hours portion if there are extra hours
+        if (rentalCalculation.hours > 0) {
+            basePrice += (rentalCalculation.hours / 24) * pricePerDay;
+        }
+
+        return Math.round(basePrice);
+    };
+
+    const calculateTotalCost = () => {
+        if (!rentalCalculation) return 0;
+
+        // Simple calculation: base price + additional costs
+        const basePrice = calculateBasePrice();
+        return Math.round(basePrice + additionalCosts);
+    };
+
+    const basePrice = calculateBasePrice();
+    const totalCost = calculateTotalCost();
+
     const pricePerDay = rentalCalculation ? Math.round(totalCost / (rentalCalculation.days + (rentalCalculation.hours / 24))) : 0;
 
-    // Calculate discount info
-    const discountPercentage = rentalCalculation && rentalCalculation.days >= 8
-        ? 4
-        : rentalCalculation && rentalCalculation.days >= 4
-            ? 2
-            : 0;
+    // No period-based discounts - only car-level discounts applied in price ranges
 
     const originalPrice = rentalCalculation
         ? car.price_per_day * (rentalCalculation.days + (rentalCalculation.hours / 24))
@@ -559,8 +548,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
             // Format dates for database (YYYY-MM-DD)
             const formatDateForDB = (dateString: string): string => {
-                const date = new Date(dateString);
-                return date.toISOString().split('T')[0];
+                // Always return the date string as-is since frontend sends YYYY-MM-DD format
+                // This avoids any timezone conversion issues
+                return dateString;
             };
 
             // Format time for database (HH:MM:SS)
@@ -799,25 +789,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
 
                                                 {/* Discount indicator */}
-                                                {discountPercentage > 0 && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: -10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        className="p-2.5 md:p-3 bg-emerald-50 border border-emerald-200 rounded-xl"
-                                                    >
-                                                        <div className="flex items-center gap-2 text-emerald-700 text-xs md:text-sm font-semibold">
-                                                            <div className="p-1 bg-emerald-500/20 rounded-lg flex-shrink-0">
-                                                                <Check className="w-3 h-3 text-emerald-600" />
-                                                            </div>
-                                                            <span>
-                                                                {discountPercentage === 4
-                                                                    ? 'Reducere de 4% pentru 8+ zile'
-                                                                    : 'Reducere de 2% pentru 4+ zile'
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    </motion.div>
-                                                )}
 
                                                 <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-gray-300">
                                                     <div>
@@ -1323,7 +1294,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between text-sm md:text-base">
                                                     <span className="text-gray-600">Preț pe zi</span>
-                                                    <span className="text-gray-900 font-medium">{car.price_per_day.toLocaleString('ro-RO')} MDL</span>
+                                                    <span className="text-gray-900 font-medium">{getCurrencySymbol()}{convertPriceToMDL(rentalCalculation.pricePerDay).toLocaleString('ro-RO')}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm md:text-base">
                                                     <span className="text-gray-600">Perioadă</span>
@@ -1332,16 +1303,10 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
                                                     </span>
                                                 </div>
-                                                {discountPercentage > 0 && (
-                                                    <div className="flex items-center justify-between text-sm md:text-base text-green-600">
-                                                        <span>Reducere</span>
-                                                        <span className="font-medium">-{discountPercentage}%</span>
-                                                    </div>
-                                                )}
                                                 <div className="pt-2 border-t border-gray-300">
                                                     <div className="flex items-center justify-between text-sm md:text-base">
                                                         <span className="text-gray-900 font-medium">Preț de bază</span>
-                                                        <span className="text-gray-900 font-medium">{Math.round(basePrice).toLocaleString('ro-RO')} MDL</span>
+                                                        <span className="text-gray-900 font-medium">{getCurrencySymbol()}{convertPriceToMDL(Math.round(basePrice)).toLocaleString('ro-RO')}</span>
                                                     </div>
                                                 </div>
 
@@ -1354,7 +1319,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Kilometraj nelimitat</span>
                                                                         <span className="text-gray-900 font-medium">
-                                                                            {Math.round(car.price_per_day * rentalCalculation.days * 0.5).toLocaleString('ro-RO')} MDL
+                                                                            {getCurrencySymbol()}{convertPriceToMDL(Math.round(rentalCalculation.pricePerDay * rentalCalculation.days * 0.5)).toLocaleString('ro-RO')}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -1362,7 +1327,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Asigurare anvelope & parbriz</span>
                                                                         <span className="text-gray-900 font-medium">
-                                                                            {Math.round(car.price_per_day * rentalCalculation.days * 0.2).toLocaleString('ro-RO')} MDL
+                                                                            {getCurrencySymbol()}{convertPriceToMDL(Math.round(rentalCalculation.pricePerDay * rentalCalculation.days * 0.2)).toLocaleString('ro-RO')}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -1399,7 +1364,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 <div className="pt-2 border-t border-gray-300">
                                                                     <div className="flex justify-between font-medium text-sm md:text-base">
                                                                         <span className="text-gray-900">Total servicii</span>
-                                                                        <span className="text-gray-900">{Math.round(additionalCosts).toLocaleString('ro-RO')} MDL</span>
+                                                                        <span className="text-gray-900">{getCurrencySymbol()}{convertPriceToMDL(Math.round(additionalCosts)).toLocaleString('ro-RO')}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1409,7 +1374,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                                 <div className="pt-3 border-t border-gray-300 flex items-center justify-between">
                                                     <span className="text-gray-900 font-bold text-base md:text-lg">Total</span>
-                                                    <span className="text-gray-900 font-bold text-lg md:text-xl">{totalCost.toLocaleString('ro-RO')} MDL</span>
+                                                    <span className="text-gray-900 font-bold text-lg md:text-xl">{getCurrencySymbol()}{convertPriceToMDL(totalCost).toLocaleString('ro-RO')}</span>
                                                 </div>
                                             </div>
                                         </div>

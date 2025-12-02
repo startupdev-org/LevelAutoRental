@@ -161,14 +161,14 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
             query = query.ilike('model', `%${filters.model}%`);
         }
 
-        // Apply price range filter
+        // Apply price range filter - use price_2_4_days as the base price for filtering
         if (
             filters.minPrice !== undefined &&
             filters.minPrice !== null &&
             typeof filters.minPrice === "number" &&
             Number.isFinite(filters.minPrice)
         ) {
-            query = query.gte('price_per_day', filters.minPrice);
+            query = query.gte('price_2_4_days', filters.minPrice);
         }
 
         if (
@@ -177,7 +177,7 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
             typeof filters.maxPrice === "number" &&
             Number.isFinite(filters.maxPrice)
         ) {
-            query = query.lte('price_per_day', filters.maxPrice);
+            query = query.lte('price_2_4_days', filters.maxPrice);
         }
 
         // Apply year range filter

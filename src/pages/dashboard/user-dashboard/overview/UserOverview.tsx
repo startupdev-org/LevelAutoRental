@@ -156,52 +156,53 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             {/* Current Rentals Status */}
             <div className="mt-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ pointerEvents: 'auto' }}>
-                    {/* Current Active Borrow Request or No Current Requests State */}
+                    {/* Current Active Borrow Requests or No Current Requests State */}
                     {borrowRequests && borrowRequests.filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED').length > 0 ? (
-                        // Show active borrow request
-                        (() => {
-                            const activeRequest = borrowRequests.filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED')[0];
-                            const getStatusInfo = (status: string) => {
-                                switch (status) {
-                                    case 'EXECUTED':
-                                        return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
-                                    case 'APPROVED':
-                                    default:
-                                        return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
-                                }
-                            };
-                            return (
-                                <div className="group relative rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-md border border-blue-500/30 hover:border-blue-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl pointer-events-auto">
-                                    {/* Background Pattern */}
-                                    <div className="absolute inset-0 opacity-[0.03] rounded-xl">
-                                        <div className="absolute inset-0" style={{
-                                            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(59,130,246,0.3) 1px, transparent 0)',
-                                            backgroundSize: '20px 20px'
-                                        }} />
-                                    </div>
-
-                                    {/* Car Image - Hero Style */}
-                                    <div className="relative h-40 overflow-hidden rounded-t-xl">
-                                        <img
-                                            src={activeRequest.car?.image_url || '/placeholder-car.jpg'}
-                                            alt={activeRequest.car?.make}
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                            loading="lazy"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-                                        {/* Car Info Overlay */}
-                                        <div className="absolute bottom-3 left-3 right-3">
-                                            <h3 className="text-white font-bold text-base truncate mb-1">
-                                                {activeRequest.car?.make} {activeRequest.car?.model}
-                                            </h3>
-                                            <p className="text-white/80 text-xs">
-                                                {formatDate(activeRequest.start_date)} - {formatDate(activeRequest.end_date)}
-                                            </p>
+                        // Show all active borrow requests
+                        borrowRequests
+                            .filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED')
+                            .map((activeRequest) => {
+                                const getStatusInfo = (status: string) => {
+                                    switch (status) {
+                                        case 'EXECUTED':
+                                            return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
+                                        case 'APPROVED':
+                                        default:
+                                            return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
+                                    }
+                                };
+                                return (
+                                    <div key={activeRequest.id} className="group relative rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-md border border-blue-500/30 hover:border-blue-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl pointer-events-auto">
+                                        {/* Background Pattern */}
+                                        <div className="absolute inset-0 opacity-[0.03] rounded-xl">
+                                            <div className="absolute inset-0" style={{
+                                                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(59,130,246,0.3) 1px, transparent 0)',
+                                                backgroundSize: '20px 20px'
+                                            }} />
                                         </div>
 
-                                        {/* Status Badge */}
-                                        <div className="absolute top-3 right-3">
+                                        {/* Car Image - Hero Style */}
+                                        <div className="relative h-40 overflow-hidden rounded-t-xl">
+                                            <img
+                                                src={activeRequest.car?.image_url || '/placeholder-car.jpg'}
+                                                alt={activeRequest.car?.make}
+                                                className="w-full h-full object-cover rounded-t-xl transition-transform duration-700 group-hover:scale-110"
+                                                loading="lazy"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                                            {/* Car Info Overlay */}
+                                            <div className="absolute bottom-3 left-3 right-3">
+                                                <h3 className="text-white font-bold text-base truncate mb-1">
+                                                    {activeRequest.car?.make} {activeRequest.car?.model}
+                                                </h3>
+                                                <p className="text-white/80 text-xs">
+                                                    {formatDate(activeRequest.start_date)} - {formatDate(activeRequest.end_date)}
+                                                </p>
+                                            </div>
+
+                                            {/* Status Badge */}
+                                            <div className="absolute top-3 right-3">
                                             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${getStatusInfo(activeRequest.status).color}`}>
                                                 <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
                                                 <span>{getStatusInfo(activeRequest.status).text}</span>
@@ -226,8 +227,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                         </div>
                                     </div>
                                 </div>
-                            );
-                        })()
+                                );
+                            })
                     ) : (
                         // No Current Rentals State
                         <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-md border border-blue-500/30 hover:border-blue-400/50 transition-all duration-500 min-h-[140px] flex items-center justify-center">
@@ -302,11 +303,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                 </div>
 
                         {/* Car Image - Hero Style */}
-                        <div className="relative h-40 overflow-hidden">
+                        <div className="relative h-40 overflow-hidden rounded-t-xl">
                                     <img
                                         src={request.car?.image_url || '/placeholder-car.jpg'}
                                         alt={request.car?.make}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        className="w-full h-full object-cover rounded-t-xl transition-transform duration-700 group-hover:scale-110"
                                         loading="lazy"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

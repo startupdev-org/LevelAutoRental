@@ -53,6 +53,27 @@ export const Admin: React.FC = () => {
     const section = searchParams.get('section') || 'dashboard';
     const orderId = searchParams.get('orderId');
     const carId = searchParams.get('carId');
+
+    // URL sanitization - prevent infinite loops from malformed URLs
+    useEffect(() => {
+        const currentUrl = window.location.href;
+        const searchString = window.location.search;
+
+        // Check for malformed URLs that GitHub Pages creates
+        const hasMalformedParams = (
+            searchString.includes('~and~') ||
+            searchString.includes('~') ||
+            searchString.includes('&/') ||
+            searchString.includes('/&') ||
+            (searchString.match(/&/g) || []).length > 10
+        );
+
+        // If URL is malformed, redirect to clean admin URL
+        if (hasMalformedParams) {
+            navigate('/admin', { replace: true });
+            return;
+        }
+    }, []); // Only run once on mount
     const { signOut, user, loading, isAdmin, roleLoaded, userProfile } = useAuth();
     const { i18n, t } = useTranslation();
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);

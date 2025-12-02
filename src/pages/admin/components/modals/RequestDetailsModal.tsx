@@ -62,8 +62,13 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
         return '00:00';
     };
 
-    const startDate = new Date(request.pickupDate);
-    const endDate = new Date(request.returnDate);
+    // Parse dates correctly to avoid timezone issues
+    // Split date string and create date at local midnight
+    const [startYear, startMonth, startDay] = request.pickupDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = request.returnDate.split('-').map(Number);
+
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
 
     // Parse times and combine with dates for accurate calculation
     const pickupTime = formatTime(request.pickupTime);
@@ -89,27 +94,32 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
     const days = diffDays;
     const hours = diffHours >= 0 ? diffHours : 0; // Ensure hours is never negative
 
-    // Calculate pricing using same system as Calculator.tsx
-    const rentalDays = days; // Use full days for discount calculation (same as Calculator)
-    const totalDays = days + (hours / 24); // Use total days for final calculation
+    // Calculate pricing using updated price ranges system (no period discounts)
+    const rentalDays = days;
+    const totalDays = days + (hours / 24);
 
-    // Base price calculation (same as Calculator.tsx)
-    let basePrice = 0;
-    let discountPercent = 0;
-
-    if (rentalDays >= 8) {
-        discountPercent = 4;
-        basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
-    } else if (rentalDays >= 4) {
-        discountPercent = 2;
-        basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
-    } else {
-        basePrice = car.price_per_day * rentalDays;
+    // Get price per day based on rental duration ranges
+    let basePricePerDay = 0;
+    if (rentalDays >= 2 && rentalDays <= 4) {
+        basePricePerDay = car.price_2_4_days || 0;
+    } else if (rentalDays >= 5 && rentalDays <= 15) {
+        basePricePerDay = car.price_5_15_days || 0;
+    } else if (rentalDays >= 16 && rentalDays <= 30) {
+        basePricePerDay = car.price_16_30_days || 0;
+    } else if (rentalDays > 30) {
+        basePricePerDay = car.price_over_30_days || 0;
     }
 
-    // Add hours portion (hours are charged at full price, no discount)
+    // Apply car discount if exists
+    const carDiscount = (car as any).discount_percentage || 0;
+    const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
+
+    // Calculate base price
+    let basePrice = pricePerDay * rentalDays;
+
+    // Add hours portion (hours are charged at the same rate)
     if (hours > 0) {
-        const hoursPrice = (hours / 24) * car.price_per_day;
+        const hoursPrice = (hours / 24) * pricePerDay;
         basePrice += hoursPrice;
     }
 
@@ -130,18 +140,13 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
     }
 
     let additionalCosts = 0;
-    const baseCarPrice = car.price_per_day;
 
-    // Percentage-based options (calculated as percentage of base car price * totalDays)
-    // These should be calculated on the total rental period (days + hours)
+    // Percentage-based options (calculated as percentage of base car price * rentalDays)
     if (parsedOptions.unlimitedKm) {
-        additionalCosts += baseCarPrice * totalDays * 0.5; // 50%
-    }
-    if (parsedOptions.speedLimitIncrease) {
-        additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+        additionalCosts += pricePerDay * rentalDays * 0.5; // 50%
     }
     if (parsedOptions.tireInsurance) {
-        additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+        additionalCosts += pricePerDay * rentalDays * 0.2; // 20%
     }
 
     // Fixed daily costs
@@ -163,7 +168,6 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
 
     // Total price = base price + additional costs
     const totalPrice = basePrice + additionalCosts;
-    const pricePerDay = totalDays > 0 ? Math.round(totalPrice / totalDays) : car.price_per_day;
 
     // Get customer information - prefer separate fields, fallback to parsing name
     const firstName = request.customerFirstName || request.customerName?.split(' ')[0] || '';
@@ -215,25 +219,6 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                             </div>
 
                             {/* Discount indicator */}
-                            {discountPercent > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="p-2.5 md:p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl"
-                                >
-                                    <div className="flex items-center gap-2 text-emerald-400 text-xs md:text-sm font-semibold">
-                                        <div className="p-1 bg-emerald-500/20 rounded-lg flex-shrink-0">
-                                            <Check className="w-3 h-3 text-emerald-400" />
-                                        </div>
-                                        <span>
-                                            {discountPercent === 4
-                                                ? t('admin.requestDetails.discount4Percent')
-                                                : t('admin.requestDetails.discount2Percent')
-                                            }
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            )}
 
                             <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-white/10">
                                 <div>
@@ -405,12 +390,6 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                     {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}{hours > 0 ? `, ${hours} ${hours === 1 ? 'oră' : 'ore'}` : ''}
                                 </span>
                             </div>
-                            {discountPercent > 0 && (
-                                <div className="flex items-center justify-between text-sm text-emerald-400">
-                                    <span>{t('admin.requestDetails.discount')}</span>
-                                    <span className="font-medium">-{discountPercent}%</span>
-                                </div>
-                            )}
                             <div className="pt-2 border-t border-white/10">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-white font-medium">{t('admin.requestDetails.basePrice')}</span>
@@ -427,7 +406,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Kilometraj nelimitat</span>
                                                     <span className="text-white font-medium">
-                                                        {Math.round(baseCarPrice * totalDays * 0.5).toLocaleString()} MDL
+                                                        {Math.round(pricePerDay * rentalDays * 0.5).toLocaleString()} MDL
                                                     </span>
                                                 </div>
                                             )}
@@ -435,7 +414,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Creșterea limitei de viteză</span>
                                                     <span className="text-white font-medium">
-                                                        {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
+                                                        {Math.round(pricePerDay * rentalDays * 0.2).toLocaleString()} MDL
                                                     </span>
                                                 </div>
                                             )}
@@ -443,7 +422,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Asigurare anvelope & parbriz</span>
                                                     <span className="text-white font-medium">
-                                                        {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
+                                                        {Math.round(pricePerDay * rentalDays * 0.2).toLocaleString()} MDL
                                                     </span>
                                                 </div>
                                             )}
@@ -732,7 +711,11 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Pickup</p>
-                                <span className="text-white text-sm font-medium">{new Date(request.pickupDate).toLocaleDateString()}</span>
+                                <span className="text-white text-sm font-medium">{(() => {
+                                    const [year, month, day] = request.pickupDate.split('-').map(Number);
+                                    const date = new Date(year, month - 1, day);
+                                    return date.toLocaleDateString();
+                                })()}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
@@ -746,7 +729,11 @@ const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Return</p>
-                                <span className="text-white text-sm font-medium">{new Date(request.returnDate).toLocaleDateString()}</span>
+                                <span className="text-white text-sm font-medium">{(() => {
+                                    const [year, month, day] = request.returnDate.split('-').map(Number);
+                                    const date = new Date(year, month - 1, day);
+                                    return date.toLocaleDateString();
+                                })()}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
