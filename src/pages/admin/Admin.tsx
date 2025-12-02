@@ -298,14 +298,34 @@ export const Admin: React.FC = () => {
 
             <div className="relative min-h-screen">
                 {/* Background Image - Lowest layer */}
+                {/* Desktop version with background-attachment: fixed */}
                 <div
-                    className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+                    className="hidden lg:block fixed inset-0 bg-cover bg-center bg-no-repeat"
                     style={{
                         backgroundImage: "url('/bg-hero.jpg')",
                         backgroundAttachment: 'fixed',
+                        backgroundPosition: 'center',
+                        backgroundSize: 'cover',
                         zIndex: 0
                     }}
                 ></div>
+                {/* Mobile version with img element for better mobile support */}
+                <div className="lg:hidden fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+                    <img
+                        src="/bg-hero.jpg"
+                        alt="Background"
+                        className="w-full h-full object-cover fixed inset-0"
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            zIndex: 0
+                        }}
+                    />
+                </div>
                 {/* Dark Overlay - Over the background but under all content */}
                 <div className="fixed inset-0 bg-black/70" style={{ zIndex: 1 }}></div>
 
