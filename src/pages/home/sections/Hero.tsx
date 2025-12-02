@@ -232,15 +232,9 @@ export const Hero: React.FC = () => {
 
   return (
     <section
-      className="relative h-[725px] bg-cover bg-no-repeat bg-fixed pt-36 font-sans bg-mobile-hero bg-hero-mobile md:bg-hero-desktop md:bg-hero-desktop"
+      className="relative h-[725px] bg-cover bg-no-repeat bg-fixed pt-36 font-sans bg-hero-mobile md:bg-hero-desktop"
       style={{
-        backgroundImage: window.innerWidth < 768
-          ? "url('/backgrounds/bg10-mobile.jpeg')"
-          : undefined,
-        backgroundPosition: window.innerWidth < 768
-          ? 'center center'
-          : undefined,
-        backgroundSize: window.innerWidth >= 768 ? '115%' : 'cover'
+        backgroundSize: 'cover'
       }}
     >
       {/* Dark Overlay */}

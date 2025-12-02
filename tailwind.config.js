@@ -118,7 +118,7 @@ module.exports = {
         "fade-out": "fade-out 10s ease-in-out infinite",
       },
       backgroundImage: {
-        'mobile-hero': "url('/backgrounds/bg10-mobile.jpeg')",
+        'hero-mobile': "url('/backgrounds/bg10-mobile.jpeg')",
         'hero-desktop': "url('/lvl_bg.png')",
         'mobile-loader': "url('/backgrounds/bg3-mobile.jpeg')",
         'desktop-loader': "url('/lvl_bg.png')",
@@ -127,7 +127,7 @@ module.exports = {
       },
       backgroundPosition: {
         'hero-mobile': 'center -100px',
-        'hero-desktop': 'center -420px',
+        'hero-desktop': 'center -350px',
         'loader-mobile': 'center center',
         'loader-desktop': 'center center',
         'howto-mobile': 'center center',
