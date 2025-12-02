@@ -1977,7 +1977,7 @@ export const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, on
                                 const totalDays = days + (hours / 24);
 
                                 // Calculate base price using price ranges (no period discounts)
-                                basePrice = pricePerDay * rentalDays;
+                                let basePrice = pricePerDay * rentalDays;
 
                                 if (hours > 0) {
                                     const hoursPrice = (hours / 24) * pricePerDay;

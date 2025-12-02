@@ -34,10 +34,10 @@ export const CardStats: React.FC<CardStatsProps> = ({ title, value, spark, subti
         >
             <div className="absolute inset-0 bg-red-500/10 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="relative bg-white/10 backdrop-blur-xl border top-2 lg:top-0 border-white/20 hover:border-red-500/50 rounded-xl p-6 transition-all duration-300 shadow-lg">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                         <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-2">{title}</p>
-                        <h4 className={`font-bold ${getValueSizeClass()} text-white mb-2 break-words`}>{value}</h4>
+                        <h4 className={`font-bold ${getValueSizeClass()} text-white mb-2 whitespace-nowrap`}>{value}</h4>
                     {trendValue && (
                         <div className="flex items-center gap-1.5">
                             {trend === 'up' ? (
@@ -53,7 +53,7 @@ export const CardStats: React.FC<CardStatsProps> = ({ title, value, spark, subti
                     {subtitle && <div className="mt-1 text-gray-300 text-sm">{subtitle}</div>}
                     </div>
                     {spark && (
-                        <div className="w-32 h-16 flex items-center justify-end opacity-80">
+                        <div className="w-28 h-16 flex items-center justify-end opacity-80">
                             {spark}
                         </div>
                     )}
