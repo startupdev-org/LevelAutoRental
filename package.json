@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist -b production"
+    "deploy": "gh-pages -d dist -b main"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
