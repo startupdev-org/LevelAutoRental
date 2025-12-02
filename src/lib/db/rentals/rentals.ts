@@ -412,16 +412,23 @@ export async function fetchUserRentalsForCalendarPage(
 
     let query = supabase
         .from("Rentals")
-        .select("*")
-        .eq("user_id", user.id);
+        .select("*");
 
     // Filter by month (expects "YYYY-MM")
     if (month) {
         const year = month.getFullYear();
-        const m = month.getMonth();
+        const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
 
+        // First day of current month
         const firstDay = formatDateForSQL(year, m, 1);
-        const nextMonthFirst = formatDateForSQL(year, m + 1, 1);
+
+        // First day of next month using JS Date rollover
+        const nextMonthDate = new Date(year, m + 1, 1);
+        const nextMonthFirst = formatDateForSQL(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(), // always 0–11
+            1
+        );
 
         query = query
             .lt("start_date", nextMonthFirst)
@@ -430,7 +437,11 @@ export async function fetchUserRentalsForCalendarPage(
 
 
     if (carId) {
+        // if there is a selected car, fetch the orders for that car
         query = query.eq('car_id', carId)
+    } else {
+        // otherwise fetch user's calendar 
+        query = query.eq("user_id", user.id)
     }
 
     if (status) {
