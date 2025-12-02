@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
 import { Mail, Lock, AlertCircle } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -12,10 +12,73 @@ export const Login: React.FC = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loginSuccess, setLoginSuccess] = useState(false);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const shouldRedirectRef = useRef(false);
 
     const { t } = useTranslation();
-    const { signIn } = useAuth();
+    const { signIn, isAuthenticated, loading: authLoading, isAdmin, roleLoaded } = useAuth();
     const navigate = useNavigate();
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (!authLoading && isAuthenticated && roleLoaded) {
+            if (isAdmin) {
+                navigate("/admin", { replace: true });
+            } else {
+                navigate("/dashboard", { replace: true });
+            }
+        }
+    }, [isAuthenticated, authLoading, isAdmin, roleLoaded, navigate]);
+
+    // Handle redirect after successful login when role is loaded
+    useEffect(() => {
+        if (loginSuccess && isAuthenticated && roleLoaded) {
+            // Clear timeout if it exists
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+            shouldRedirectRef.current = false;
+            
+            if (isAdmin) {
+                navigate("/admin", { replace: true });
+            } else {
+                navigate("/dashboard", { replace: true });
+            }
+            setLoading(false);
+            setLoginSuccess(false);
+        }
+    }, [loginSuccess, isAuthenticated, roleLoaded, isAdmin, navigate]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Show loading while checking authentication
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Redirect if authenticated and role is loaded
+    if (isAuthenticated && roleLoaded) {
+        if (isAdmin) {
+            return <Navigate to="/admin" replace />;
+        }
+        return <Navigate to="/dashboard" replace />;
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,11 +94,31 @@ export const Login: React.FC = () => {
                 return;
             }
 
-            // Successful login - redirect to dashboard
-            navigate("/dashboard");
+            // Mark login as successful - useEffect will handle redirect when role is loaded
+            setLoginSuccess(true);
+            shouldRedirectRef.current = true;
+            
+            // Set a timeout fallback in case role doesn't load within 3 seconds
+            timeoutRef.current = setTimeout(() => {
+                // Check if we should still redirect (haven't redirected yet)
+                if (shouldRedirectRef.current) {
+                    // Fallback: redirect to dashboard if role doesn't load
+                    navigate("/dashboard");
+                    setLoading(false);
+                    setLoginSuccess(false);
+                    shouldRedirectRef.current = false;
+                }
+                timeoutRef.current = null;
+            }, 3000);
         } catch (err) {
             setError("An unexpected error occurred. Please try again.");
             setLoading(false);
+            setLoginSuccess(false);
+            shouldRedirectRef.current = false;
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
         }
     };
 
@@ -47,7 +130,7 @@ export const Login: React.FC = () => {
             <div 
                 className="absolute inset-0 md:hidden"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
@@ -57,7 +140,7 @@ export const Login: React.FC = () => {
             <div 
                 className="hidden md:block absolute inset-0"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
@@ -90,7 +173,7 @@ export const Login: React.FC = () => {
                 <div
                     className="relative hidden md:block bg-cover bg-center min-h-[600px]"
                     style={{
-                        backgroundImage: "url('/LevelAutoRental/backgrounds/bg5-desktop.jpeg')",
+                        backgroundImage: "url('/backgrounds/bg5-desktop.jpeg')",
                         minHeight: "560px",
                     }}
                 >

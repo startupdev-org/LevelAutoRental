@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Calendar, Car, MapPin, Info, Check } from 'lucide-react';
+import { Calendar, Car, MapPin, Info, Check, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cars } from '../../data/cars';
 import { useTranslation } from 'react-i18next';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 export const Calculator: React.FC = () => {
     const { t, i18n } = useTranslation();
+    const { eur: eurRate, usd: usdRate } = useExchangeRates();
     const [isDesktop, setIsDesktop] = useState(false);
     const [selectedCarId, setSelectedCarId] = useState<number>(cars[0]?.id || 1);
     const [rentalDays, setRentalDays] = useState<number>(1);
@@ -39,7 +41,7 @@ export const Calculator: React.FC = () => {
     
     // Additional options
     const [unlimitedKm, setUnlimitedKm] = useState(false);
-    const [speedLimit, setSpeedLimit] = useState(false);
+    const [airportDelivery, setAirportDelivery] = useState(false);
     const [driver, setDriver] = useState(false);
     const [priority, setPriority] = useState(false);
     const [insurance, setInsurance] = useState(false);
@@ -49,46 +51,52 @@ export const Calculator: React.FC = () => {
 
     const selectedCar = cars.find(c => c.id === selectedCarId);
 
-    // Calculate base price with discounts
+    // Calculate base price (no rental duration discounts)
     const basePrice = useMemo(() => {
         if (!selectedCar) return 0;
-        const pricePerDay = selectedCar.pricePerDay;
+        // Get price with car discount applied first
+        const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
+        const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
+        const pricePerDay = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
         
-        if (rentalDays >= 8) {
-            return pricePerDay * 0.96 * rentalDays; // -4%
-        } else if (rentalDays >= 4) {
-            return pricePerDay * 0.98 * rentalDays; // -2%
-        }
+        // No rental duration discounts - use base price for all ranges
         return pricePerDay * rentalDays;
     }, [selectedCar, rentalDays]);
 
     // Calculate additional services
     const additionalCosts = useMemo(() => {
         let total = 0;
-        const baseCarPrice = selectedCar?.pricePerDay || 0;
+        // Use discounted price for additional services calculation
+        const basePricePerDay = selectedCar ? ((selectedCar as any).pricePerDay || selectedCar.price_per_day || 0) : 0;
+        const carDiscount = selectedCar ? ((selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0) : 0;
+        const baseCarPrice = carDiscount > 0 
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
         
         if (unlimitedKm) total += baseCarPrice * rentalDays * 0.5;
-        if (speedLimit) total += baseCarPrice * rentalDays * 0.2;
         if (insurance) total += baseCarPrice * rentalDays * 0.2;
         if (driver) total += 800 * rentalDays;
         if (priority) total += 1000 * rentalDays;
         if (childSeat) total += 100 * rentalDays;
         if (sim) total += 100 * rentalDays;
         if (assistance) total += 500 * rentalDays;
+        // airportDelivery has no cost specified in the prompt
         
         return total;
-    }, [unlimitedKm, speedLimit, insurance, driver, priority, childSeat, sim, assistance, selectedCar, rentalDays]);
+    }, [unlimitedKm, insurance, driver, priority, childSeat, sim, assistance, selectedCar, rentalDays, airportDelivery]);
 
     const totalPrice = basePrice + additionalCosts;
-    const priceInEUR = (totalPrice / 19.8).toFixed(2);
-    const priceInUSD = (totalPrice / 17.5).toFixed(2);
+    const priceInEUR = (totalPrice / eurRate).toFixed(2);
+    const priceInUSD = (totalPrice / usdRate).toFixed(2);
 
     return (
         <section
             key={i18n.language}
             className="relative py-60 bg-cover bg-center bg-no-repeat bg-fixed"
             style={{
-                backgroundImage: isDesktop ? 'url(/LevelAutoRental/lvl_bg.png)' : 'url(/LevelAutoRental/backgrounds/bg10-mobile.jpeg)',
+                backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
                 backgroundPosition: isDesktop ? 'center -150px' : 'center center',
                 backgroundSize: isDesktop ? '115%' : 'cover'
             }}
@@ -120,17 +128,22 @@ export const Calculator: React.FC = () => {
                                 </div>
                                 {t('calculator.selectVehicle')}
                             </h2>
+                            <div className="relative">
                             <select
                                 value={selectedCarId}
                                 onChange={(e) => setSelectedCarId(Number(e.target.value))}
-                                className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm"
+                                    className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm appearance-none pr-10"
                             >
                                 {cars.map(car => (
-                                    <option key={car.id} value={car.id}>
+                                        <option key={car.id} value={car.id} className="bg-gray-800 text-white">
                                         {car.name} ({car.year}) - {car.pricePerDay} MDL{t('calculator.perDay')}
                                     </option>
                                 ))}
                             </select>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    <ChevronDown className="w-5 h-5 text-white/70" />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Rental Period */}
@@ -164,25 +177,6 @@ export const Calculator: React.FC = () => {
                                     <span>30 {t('calculator.days')}</span>
                                 </div>
                             </div>
-
-                            {/* Discount indicator */}
-                            {rentalDays >= 4 && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-6 p-4 bg-theme-500/20 backdrop-blur-md border border-theme-500/30 rounded-xl"
-                                >
-                                    <div className="flex items-center gap-3 text-white text-sm font-semibold">
-                                        <div className="p-1.5 bg-theme-500 rounded-lg">
-                                            <Check className="w-4 h-4" />
-                                        </div>
-                                        {rentalDays >= 8 
-                                            ? t('calculator.discountApplied4')
-                                            : t('calculator.discountApplied2')
-                                        }
-                                    </div>
-                                </motion.div>
-                            )}
                         </div>
 
                         {/* Locations */}
@@ -198,29 +192,39 @@ export const Calculator: React.FC = () => {
                                     <label className="block text-sm font-semibold text-white mb-3">
                                         {t('calculator.pickup')}
                                     </label>
+                                    <div className="relative">
                                     <select
                                         value={pickupLocation}
                                         onChange={(e) => setPickupLocation(e.target.value)}
-                                        className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm"
+                                            className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm appearance-none pr-10"
                                     >
                                         {locations.map(loc => (
-                                            <option key={loc} value={loc}>{loc}</option>
+                                                <option key={loc} value={loc} className="bg-gray-800 text-white">{loc}</option>
                                         ))}
                                     </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <ChevronDown className="w-5 h-5 text-white/70" />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-white mb-3">
                                         {t('calculator.return')}
                                     </label>
+                                    <div className="relative">
                                     <select
                                         value={returnLocation}
                                         onChange={(e) => setReturnLocation(e.target.value)}
-                                        className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm"
+                                            className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm appearance-none pr-10"
                                     >
                                         {locations.map(loc => (
-                                            <option key={loc} value={loc}>{loc}</option>
+                                                <option key={loc} value={loc} className="bg-gray-800 text-white">{loc}</option>
                                         ))}
                                     </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <ChevronDown className="w-5 h-5 text-white/70" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -233,7 +237,12 @@ export const Calculator: React.FC = () => {
                                 </div>
                                 {t('calculator.additionalOptions')}
                             </h2>
-                            <div className="space-y-2">
+                            
+                            <div className="space-y-8">
+                                {/* Limite */}
+                                <div>
+                                    <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.limits', 'Limite')}</h3>
+                                    <div className="space-y-3">
                                 <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
                                     <div className="flex items-center gap-4">
                                         <div className="relative">
@@ -248,94 +257,22 @@ export const Calculator: React.FC = () => {
                                                     ? 'bg-theme-500 border-theme-500'
                                                     : 'border-white/30 bg-white/10 group-hover:border-theme-400'
                                             }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
                                                         unlimitedKm ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
+                                                        }`} />
                                             </div>
                                         </div>
                                         <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.unlimitedMileage')}</span>
                                     </div>
                                     <span className="text-sm font-bold text-theme-500 bg-theme-500/20 px-3 py-1 rounded-lg">+50%</span>
                                 </label>
-
-                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={speedLimit}
-                                                onChange={(e) => setSpeedLimit(e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                speedLimit
-                                                    ? 'bg-theme-500 border-theme-500'
-                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                            }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                        speedLimit ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.noSpeedLimit')}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-theme-500 bg-theme-500/20 px-3 py-1 rounded-lg">+20%</span>
-                                </label>
-
-                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={insurance}
-                                                onChange={(e) => setInsurance(e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                insurance
-                                                    ? 'bg-theme-500 border-theme-500'
-                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                            }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                        insurance ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.tireInsurance')}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-theme-500 bg-theme-500/20 px-3 py-1 rounded-lg">+20%</span>
-                                </label>
 
+                                {/* Servicii VIP */}
+                                <div>
+                                    <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.vipServices', 'Servicii VIP')}</h3>
+                                    <div className="space-y-3">
                                 <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
                                     <div className="flex items-center gap-4">
                                         <div className="relative">
@@ -350,19 +287,9 @@ export const Calculator: React.FC = () => {
                                                     ? 'bg-theme-500 border-theme-500'
                                                     : 'border-white/30 bg-white/10 group-hover:border-theme-400'
                                             }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
                                                         driver ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
+                                                        }`} />
                                             </div>
                                         </div>
                                         <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.personalDriver')}</span>
@@ -384,26 +311,52 @@ export const Calculator: React.FC = () => {
                                                     ? 'bg-theme-500 border-theme-500'
                                                     : 'border-white/30 bg-white/10 group-hover:border-theme-400'
                                             }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
                                                         priority ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
+                                                        }`} />
                                             </div>
                                         </div>
                                         <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.priorityService')}</span>
                                     </div>
                                     <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">1000 MDL{t('calculator.perDay')}</span>
                                 </label>
+                                    </div>
+                                </div>
 
+                                {/* Asigurare */}
+                                <div>
+                                    <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.insuranceTitle', 'Asigurare')}</h3>
+                                    <div className="space-y-3">
+                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={insurance}
+                                                        onChange={(e) => setInsurance(e.target.checked)}
+                                                        className="sr-only"
+                                                    />
+                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                        insurance
+                                                            ? 'bg-theme-500 border-theme-500'
+                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                                    }`}>
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                            insurance ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        }`} />
+                                                    </div>
+                                                </div>
+                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.tireInsurance')}</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-theme-500 bg-theme-500/20 px-3 py-1 rounded-lg">+20%</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Suplimentar */}
+                                <div>
+                                    <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.extra', 'Suplimentar')}</h3>
+                                    <div className="space-y-3">
                                 <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
                                     <div className="flex items-center gap-4">
                                         <div className="relative">
@@ -418,19 +371,9 @@ export const Calculator: React.FC = () => {
                                                     ? 'bg-theme-500 border-theme-500'
                                                     : 'border-white/30 bg-white/10 group-hover:border-theme-400'
                                             }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
                                                         childSeat ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
+                                                        }`} />
                                             </div>
                                         </div>
                                         <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.childCarSeat')}</span>
@@ -452,19 +395,9 @@ export const Calculator: React.FC = () => {
                                                     ? 'bg-theme-500 border-theme-500'
                                                     : 'border-white/30 bg-white/10 group-hover:border-theme-400'
                                             }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
                                                         sim ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
+                                                        }`} />
                                             </div>
                                         </div>
                                         <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.simWithInternet')}</span>
@@ -486,25 +419,46 @@ export const Calculator: React.FC = () => {
                                                     ? 'bg-theme-500 border-theme-500'
                                                     : 'border-white/30 bg-white/10 group-hover:border-theme-400'
                                             }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
                                                         assistance ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
+                                                        }`} />
                                             </div>
                                         </div>
                                         <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.roadsideAssistance')}</span>
                                     </div>
                                     <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-lg">500 MDL{t('calculator.perDay')}</span>
                                 </label>
+                                    </div>
+                                </div>
+
+                                {/* Livrare */}
+                                <div>
+                                    <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.delivery', 'Livrare')}</h3>
+                                    <div className="space-y-3">
+                                        <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={airportDelivery}
+                                                        onChange={(e) => setAirportDelivery(e.target.checked)}
+                                                        className="sr-only"
+                                                    />
+                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+                                                        airportDelivery
+                                                            ? 'bg-theme-500 border-theme-500'
+                                                            : 'border-white/30 bg-white/10 group-hover:border-theme-400'
+                                                    }`}>
+                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
+                                                            airportDelivery ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        }`} />
+                                                    </div>
+                                                </div>
+                                                <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.airportDelivery', 'Livrare aeroport')}</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -545,14 +499,6 @@ export const Calculator: React.FC = () => {
                                                 <span className="text-gray-200">{t('calculator.numberDays')}</span>
                                                 <span className="font-medium text-white">{rentalDays}</span>
                                             </div>
-                                            {rentalDays >= 4 && (
-                                                <div className="flex justify-between text-green-600">
-                                                    <span>{t('calculator.discount')}</span>
-                                                    <span className="font-medium">
-                                                        {rentalDays >= 8 ? '-4%' : '-2%'}
-                                                    </span>
-                                                </div>
-                                            )}
                                             <div className="pt-2 border-t border-white/20">
                                                 <div className="flex justify-between font-medium">
                                                     <span className="text-white">{t('calculator.basePrice')}</span>
@@ -571,14 +517,6 @@ export const Calculator: React.FC = () => {
                                                         <span className="text-gray-200">{t('calculator.unlimitedMileage')}</span>
                                                         <span className="font-medium text-white">
                                                             {((selectedCar?.pricePerDay || 0) * rentalDays * 0.5).toFixed(0)} MDL
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {speedLimit && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-gray-200">{t('calculator.noSpeedLimitShort')}</span>
-                                                        <span className="font-medium text-white">
-                                                            {((selectedCar?.pricePerDay || 0) * rentalDays * 0.2).toFixed(0)} MDL
                                                         </span>
                                                     </div>
                                                 )}
@@ -618,6 +556,12 @@ export const Calculator: React.FC = () => {
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-200">{t('calculator.assistance')}</span>
                                                         <span className="font-medium text-white">{500 * rentalDays} MDL</span>
+                                                    </div>
+                                                )}
+                                                {airportDelivery && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-200">{t('calculator.airportDelivery', 'Livrare aeroport')}</span>
+                                                        <span className="font-medium text-white">0 MDL</span>
                                                     </div>
                                                 )}
                                                 <div className="pt-2 border-t border-white/20">

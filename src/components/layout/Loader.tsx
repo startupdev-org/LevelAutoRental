@@ -30,27 +30,27 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
     // Define all critical images that need to be preloaded
     const criticalImages = [
       // Logo
-      '/LevelAutoRental/logo.png',
+      '/logo.png',
       
       // Background images
-      '/LevelAutoRental/lvl_bg.png',
-      '/LevelAutoRental/backgrounds/bg2-desktop.jpeg',
-      '/LevelAutoRental/backgrounds/bg3-mobile.jpeg',
-      '/LevelAutoRental/backgrounds/bg4-mobile.jpeg',
-      '/LevelAutoRental/backgrounds/bg10-mobile.jpeg',
+      '/lvl_bg.png',
+      '/backgrounds/bg2-desktop.jpeg',
+      '/backgrounds/bg3-mobile.jpeg',
+      '/backgrounds/bg4-mobile.jpeg',
+      '/backgrounds/bg10-mobile.jpeg',
       
       // Brand logos
-      '/LevelAutoRental/logos/audi.png',
-      '/LevelAutoRental/logos/bmw.webp',
-      '/LevelAutoRental/logos/hyundai.png',
-      '/LevelAutoRental/logos/maserati.png',
-      '/LevelAutoRental/logos/merc.svg',
+      '/logos/audi.png',
+      '/logos/bmw.webp',
+      '/logos/hyundai.png',
+      '/logos/maserati.png',
+      '/logos/merc.svg',
       
       // Car images (main images only for faster loading)
-      '/LevelAutoRental/cars/c43/c43-1.jpg',
-      '/LevelAutoRental/cars/gle/gle-1.jpg',
-      '/LevelAutoRental/cars/cls/cls-1.jpg',
-      '/LevelAutoRental/cars/maserati/maserati-1.jpg',
+      // '/cars/c43/c43-1.jpg',
+      // '/cars/gle/gle-1.jpg',
+      // '/cars/cls/cls-1.jpg',
+      // '/cars/maserati/maserati-1.jpg',
     ];
 
     // Preload images
@@ -105,7 +105,7 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
         {/* Logo */}
         <div className="relative w-64 h-24 flex items-center justify-center">
           <img 
-            src="/LevelAutoRental/logo.png" 
+            src="/logo.png" 
             alt="Level Auto Rental" 
             className="w-64 h-auto brightness-0 invert drop-shadow-lg"
             style={{ 

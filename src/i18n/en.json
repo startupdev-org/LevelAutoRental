@@ -7,7 +7,12 @@
         "reviews": "Reviews",
         "contact": "Contact",
         "auth": "Login",
-        "language": "Language"
+        "language": "Language",
+        "dashboard": "Dashboard",
+        "profile": "Profile",
+        "settings": "Settings",
+        "admin": "Admin",
+        "signOut": "Sign Out"
     },
     "languages": {
         "en": "English",
@@ -539,6 +544,7 @@
         "priceDetails": "Price details",
         "selectedVehicle": "Selected vehicle",
         "pricePerDay": "Price per day",
+        "priceRanges": "Price Ranges",
         "numberDays": "Number of days",
         "discount": "Discount",
         "basePrice": "Base price",
@@ -556,5 +562,39 @@
         "discountApplied4": "Discount applied: -4% for 8+ days",
         "discountApplied2": "Discount applied: -2% for 4+ days",
         "perDay": "/day"
+    },
+    "notFound": {
+        "title": "Page Not Found",
+        "description": "Sorry, the page you are looking for doesn't exist or has been moved.",
+        "goBackHome": "Home page",
+        "goBack": "Go Back"
+    },
+    "dashboard": {
+        "sidebar": {
+            "overview": "Home",
+            "myBookings": "My Bookings",
+            "cars": "Cars",
+            "profile": "Profile",
+            "calendar": "Calendar",
+            "settings": "Settings",
+            "signOut": "Sign Out"
+        },
+        "overview": {
+            "title": "Control Panel",
+            "rentalsInfo": "Rentals Info",
+            "totalBookings": "Total bookings",
+            "finishedBookings": "Finished bookings",
+            "activeBookings": "Active bookings",
+            "lifetimeBookings": "Bookings over time",
+            "totalSpent": "Total spent",
+            "lifetimeSpending": "Lifetime spending",
+            "loyaltyPoints": "Loyalty points",
+            "availablePoints": "Available points",
+            "recentBookings": "Recent bookings",
+            "viewAll": "View all",
+            "favoriteCar": "Favorite Car",
+            "noFavoriteCar": "You haven't borrowed any car, so you don't have a favorite car yet.",
+            "startBorrowing": "Start borrowing"
+        }
     }
 }

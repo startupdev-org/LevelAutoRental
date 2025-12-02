@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Slider from 'react-slick';
 import { useTranslation } from 'react-i18next';
+import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 
 // Add inline styles for the slider
 const SliderStyles = () => (
@@ -90,6 +91,24 @@ interface TestimonialCardProps {
 const TestimonialCard = ({ review }: TestimonialCardProps) => {
   const { t } = useTranslation();
   const cardRef = useRef<HTMLDivElement>(null);
+  const [productImage, setProductImage] = useState<string>(review.product.images?.[0]?.url || '');
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      if (!review.product.name) return;
+
+      try {
+        const { mainImage } = await fetchImagesByCarName(review.product.name);
+        if (mainImage) {
+          setProductImage(mainImage);
+        }
+      } catch (error) {
+        console.error('Error fetching testimonial car image:', error);
+      }
+    };
+
+    fetchImage();
+  }, [review.product.name]);
 
   useEffect(() => {
     const card = cardRef.current;
@@ -134,7 +153,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
       style={{
         transformStyle: 'preserve-3d',
         transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
-        backgroundImage: `url(${review.product.images[0]?.url})`,
+        backgroundImage: `url(${productImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -157,7 +176,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
           <div className="flex items-center space-x-4">
             <div className="relative">
               <img
-                src={review.product.images[0]?.url}
+                src={productImage}
                 alt={review.product.name}
                 className="w-16 h-16 object-cover rounded-xl border-2 shadow-sm"
               />

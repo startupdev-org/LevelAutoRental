@@ -8,7 +8,9 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
+  // Only show loading while checking authentication (not logged in yet)
+  // Once authenticated, show dashboard immediately (don't wait for role to load)
+  if (loading && !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -23,6 +25,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth/login" replace />;
   }
 
+  // Show dashboard immediately once authenticated (role loading happens in background)
   return <>{children}</>;
 };
 

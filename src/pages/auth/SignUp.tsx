@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
 import { Mail, Lock, UserRound, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
+import { createUser } from "../../lib/db/auth/auth";
 
 export const SignUp: React.FC = () => {
     const [firstName, setFirstName] = useState("");
@@ -17,67 +18,108 @@ export const SignUp: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     const { t } = useTranslation();
-    const { signUp } = useAuth();
+    const { signUp, isAuthenticated, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            navigate("/dashboard", { replace: true });
+        }
+    }, [isAuthenticated, authLoading, navigate]);
+
+    // Show loading while checking authentication
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setLoading(true);
 
+
         try {
-            const { error: signUpError } = await signUp(email, password);
-            
-            if (signUpError) {
-                setError(signUpError.message || "Failed to create account");
+            const { data, error: signUpError } = await signUp(email, password);
+
+            // verify the signUp and the id
+            if (signUpError || !data?.user?.id) {
+                setError(signUpError?.message || "Failed to create account");
                 setLoading(false);
                 return;
             }
 
-            // Successful signup - redirect to dashboard
+            const id = data.user.id;
+
+            // Insert profile into your 'profiles' table
+            const { data: createdProfile, error } = await createUser({
+                id,
+                first_name: firstName,
+                last_name: lastName,
+                phone_number: phone,
+                email,
+                role: "USER",
+            });
+
+            if (error || !createdProfile) {
+                console.error("Profile creation error:", error);
+                setError("Failed to create profile. Please try again later.");
+                setLoading(false);
+                return;
+            }
+
+            // Redirect to dashboard
             navigate("/dashboard");
         } catch (err) {
-            setError("An unexpected error occurred. Please try again.");
+            setError("An unexpected error occurred. Please contact the administrator.");
+        } finally {
             setLoading(false);
         }
     };
 
     return (
-        <section 
+        <section
             className="min-h-[calc(100vh+150px)] md:min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-10 md:py-12 relative"
         >
             {/* Mobile Background */}
-            <div 
+            <div
                 className="absolute inset-0 md:hidden"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
                 }}
             />
             {/* Desktop Background */}
-            <div 
+            <div
                 className="hidden md:block absolute inset-0"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
                 }}
             />
             {/* Desktop overlay - darker */}
-            <div 
+            <div
                 className="hidden md:block absolute inset-0"
-                style={{ 
-                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))'
                 }}
             />
             {/* Mobile-specific overlay */}
-            <div 
+            <div
                 className="absolute inset-0 md:hidden"
-                style={{ 
-                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))'
                 }}
             />
             <motion.div
@@ -85,23 +127,23 @@ export const SignUp: React.FC = () => {
                 initial="initial"
                 animate="animate"
                 className="w-full max-w-6xl bg-white rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 relative z-10"
-                style={{ 
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+                style={{
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
                 }}
             >
                 {/* Left - Image */}
                 <div
                     className="relative hidden md:block bg-cover bg-center min-h-[600px]"
                     style={{
-                        backgroundImage: "url('/LevelAutoRental/lvl_bg.png')",
+                        backgroundImage: "url('/lvl_bg.png')",
                         minHeight: "560px",
                     }}
                 >
                     <div className="absolute inset-0 bg-black/70" />
-                    <div 
+                    <div
                         className="absolute inset-0"
-                        style={{ 
-                            background: 'linear-gradient(315deg, rgba(220, 38, 38, 0.3), rgba(0, 0, 0, 0.4))' 
+                        style={{
+                            background: 'linear-gradient(315deg, rgba(220, 38, 38, 0.3), rgba(0, 0, 0, 0.4))'
                         }}
                     />
                     <div className="relative z-10 h-full flex flex-col items-start justify-center p-10 text-white">
@@ -201,7 +243,20 @@ export const SignUp: React.FC = () => {
                                     <input
                                         type="tel"
                                         value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
+                                        onChange={(e) => {
+                                            let value = e.target.value.replace(/[^0-9+]/g, "");
+
+                                            if (value.includes("+") && value.indexOf("+") !== 0) {
+                                                value = value.replace(/\+/g, "");
+                                            }
+
+                                            if (value.length > 13) {
+                                                value = value.slice(0, 13);
+                                            }
+
+                                            setPhone(value);
+                                        }}
+
                                         required
                                         className="pl-3 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
                                         placeholder="+373 62 000 112"

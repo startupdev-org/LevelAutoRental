@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { cars } from '../../../data/cars';
 import { sparkData, mainChart } from '../../../data/index';
 import { Sidebar } from '../../../components/layout/Sidebar';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
 import { SalesChartCard } from '../../../components/dashboard/Chart';
-import { getCurrentFormattedDate } from '../../../utils/date';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 
@@ -31,33 +31,37 @@ const CardStats: React.FC<CardStatsProps> = ({ title, value, spark, subtitle }) 
     </Card>
 );
 
-const RecentCarCard: React.FC<{ car: any }> = ({ car }) => (
-    <Card className="overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition">
-        <div className="relative">
-            <img src={car.image} alt={car.name} className="w-full h-44 object-cover" />
-            <div className="absolute left-3 top-3 bg-white/90 px-2 py-1 rounded-md text-xs font-semibold border border-gray-100">
-                {car.year}
-            </div>
-            <div className="absolute right-3 bottom-3 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                €{car.pricePerDay}
-            </div>
-        </div>
-        <div className="p-4">
-            <div className="flex items-center justify-between mb-1">
-                <div className="text-sm font-semibold">{car.name}</div>
-                <div className="text-xs text-gray-500">{car.seats} seats</div>
-            </div>
-            <div className="flex items-center justify-between text-sm text-gray-500">
-                <div className="capitalize">{car.transmission}</div>
-                <div className="flex items-center gap-2">
-                    <div className="text-yellow-500 font-semibold">★ {car.rating ?? '—'}</div>
+const RecentCarCard: React.FC<{ car: any }> = ({ car }) => {
+    const { t } = useTranslation();
+    return (
+        <Card className="overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition">
+            <div className="relative">
+                <img src={car.image} alt={car.name} className="w-full h-44 object-cover" />
+                <div className="absolute left-3 top-3 bg-white/90 px-2 py-1 rounded-md text-xs font-semibold border border-gray-100">
+                    {car.year}
+                </div>
+                <div className="absolute right-3 bottom-3 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    €{car.pricePerDay}
                 </div>
             </div>
-        </div>
-    </Card>
-);
+            <div className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                    <div className="text-sm font-semibold">{car.name}</div>
+                    <div className="text-xs text-gray-500">{car.seats} {t('dashboard.seats')}</div>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="capitalize">{car.transmission}</div>
+                    <div className="flex items-center gap-2">
+                        <div className="text-yellow-500 font-semibold">★ {car.rating ?? '—'}</div>
+                    </div>
+                </div>
+            </div>
+        </Card>
+    );
+};
 
 export const Dashboard: React.FC = () => {
+    const { t } = useTranslation();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     // Stats
@@ -70,12 +74,12 @@ export const Dashboard: React.FC = () => {
             cars.slice(0, 8).map((c, idx) => ({
                 id: `#${26678 - idx}`,
                 date: format(new Date(Date.now() - idx * 86400000), 'MMM dd, yyyy'),
-                status: idx % 3 === 0 ? 'Paid' : idx % 3 === 1 ? 'Pending' : 'Refunded',
+                status: idx % 3 === 0 ? t('dashboard.paid') : idx % 3 === 1 ? t('dashboard.pending') : t('dashboard.refunded'),
                 amount: (c.pricePerDay * (1 + (idx % 3))).toFixed(2),
-                customer: `Customer ${idx + 1}`,
+                customer: t('dashboard.customer', { number: idx + 1 }),
                 avatar: c.image,
             })),
-        []
+        [t]
     );
 
     return (
@@ -92,7 +96,7 @@ export const Dashboard: React.FC = () => {
                         <div className="flex items-center gap-4">
                             <div>
                                 <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                                    Welcome back, Victorin!
+                                    {t('dashboard.welcomeBack', { name: 'Victorin' })}
                                 </h1>
                             </div>
                         </div>
@@ -102,7 +106,7 @@ export const Dashboard: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button className="bg-theme-500 hover:bg-theme-600 ml-1">
-                                    Export
+                                    {t('dashboard.export')}
                                 </Button>
                             </div>
                         </div>
@@ -110,23 +114,32 @@ export const Dashboard: React.FC = () => {
 
                     {/* Top stat cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <CardStats title="Sales" value="$2,114.40" subtitle={<span className="text-green-600">↑ 2.4%</span>} spark={
+                        <CardStats title={t('dashboard.sales')} value="$2,114.40" subtitle={<span className="text-green-600">↑ 2.4%</span>} spark={
+                            // @ts-ignore - recharts type compatibility issue
                             <ResponsiveContainer width="100%" height={36}>
+                                {/* @ts-ignore */}
                                 <LineChart data={sparkData}>
+                                    {/* @ts-ignore */}
                                     <Line dataKey="y" stroke="#EF4444" strokeWidth={2} dot={false} />
                                 </LineChart>
                             </ResponsiveContainer>
                         } />
-                        <CardStats title="Orders" value={24} subtitle={<span className="text-green-600">↑ 8.6%</span>} spark={
+                        <CardStats title={t('dashboard.orders')} value={24} subtitle={<span className="text-green-600">↑ 8.6%</span>} spark={
+                            // @ts-ignore - recharts type compatibility issue
                             <ResponsiveContainer width="100%" height={36}>
+                                {/* @ts-ignore */}
                                 <LineChart data={sparkData}>
+                                    {/* @ts-ignore */}
                                     <Line dataKey="y" stroke="#EF4444" strokeWidth={2} dot={false} />
                                 </LineChart>
                             </ResponsiveContainer>
                         } />
-                        <CardStats title="Average Order Value" value="$88.10" subtitle={<span className="text-green-600">↑ 6.0%</span>} spark={
+                        <CardStats title={t('dashboard.averageOrderValue')} value="$88.10" subtitle={<span className="text-green-600">↑ 6.0%</span>} spark={
+                            // @ts-ignore - recharts type compatibility issue
                             <ResponsiveContainer width="100%" height={36}>
+                                {/* @ts-ignore */}
                                 <LineChart data={sparkData}>
+                                    {/* @ts-ignore */}
                                     <Line dataKey="y" stroke="#EF4444" strokeWidth={2} dot={false} />
                                 </LineChart>
                             </ResponsiveContainer>
@@ -141,7 +154,7 @@ export const Dashboard: React.FC = () => {
 
                     {/* Orders Table */}
                     <div className="col-span-1 md:col-span-3 mt-10 mb-10">
-                        <OrdersTable title="Recent Orders" />
+                        <OrdersTable title={t('dashboard.recentOrders')} />
                     </div>
                 </div>
             </main>

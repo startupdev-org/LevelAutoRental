@@ -1,0 +1,40 @@
+@startuml
+title User Account Creation Flow (User ↔ Auth Service ↔ Database)
+
+actor User
+participant "Auth Service" as AuthService
+database DB as "Database\n(Users Table)"
+
+== Step 1: User submits registration form ==
+User -> AuthService: POST /register\nBody:\n{\n  name: "John Doe",\n  email: "john@example.com",\n  password: "Secret123!",\n  phone: "+37360000000"\n}
+
+note right of AuthService
+Validations performed:
+• Email format & uniqueness  
+• Password strength (min 8 chars, letters, digits)  
+• Optional phone validation  
+• Required fields check
+end note
+
+== Step 2: Insert new user ==
+AuthService -> DB: INSERT INTO Users (name, email, passwordHash, phone, role, status)
+note right of DB
+**Users (after insert):**
+| userId | name | email | phone | role | status |
+|------|--------|---------------|--------|-------|---------|
+| U124 | John Doe | john@example.com | +37360000000 | USER | ENABLE |
+end note
+
+DB --> AuthService: Returns success message
+
+== Step 3: Registration is verified by supabase ==
+
+
+== Final Database State ==
+note over DB
+**Users Table**
+| userId | name | email  | phone | role | status |
+|--------|------|--------|-------|-------|---------|
+| U124 | John Doe | john@example.com | $2a$10$... | +37360000000 | USER | ENABLE |
+end note
+@enduml

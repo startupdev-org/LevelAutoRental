@@ -243,12 +243,10 @@ body {
     font-feature-settings: "rlig" 1, "calt" 1;
     /* Dark background to match loader */
     background-color: #1f2937 !important;
-    overscroll-behavior: none;
   }
 
   html {
     /* Use black background */
     background-color: #1A0F0F !important;
-    overscroll-behavior: none;
   }
 }

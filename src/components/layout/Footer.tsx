@@ -40,6 +40,7 @@ export const Footer: React.FC = () => {
       links: [
         { name: t("footer.sections.reservations.links.start"), href: '/' },
         { name: t("footer.sections.reservations.links.howTo"), href: '/how-to-rent' },
+        { name: t("footer.sections.reservations.links.calculator"), href: '/calculator' },
         { name: t("footer.sections.reservations.links.faq"), href: '/help' }
       ]
     },
@@ -86,7 +87,7 @@ export const Footer: React.FC = () => {
               {/* Logo */}
               <div className="flex items-center space-x-4">
                 <img
-                  src="/LevelAutoRental/logo-footer.png"
+                  src="/logo-footer.png"
                   alt="LevelAutoRental"
                   className="h-12 w-auto brightness-0 invert"
                 />

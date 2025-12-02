@@ -3,6 +3,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import Loader from './components/layout/Loader';
 import RouterWrapper from './components/RouterWrapper';
+import { ExchangeRateProvider } from './context/ExchangeRateContext';
 
 
 function App() {
@@ -42,15 +43,17 @@ function App() {
 
   return (
     <>
-      {/* Show loader while initial loading */}
-      {initialLoading && <Loader isTransitioning={isTransitioning} onLoadingComplete={handleLoadingComplete} />}
-      
-      {/* Show content immediately, even during fade-out */}
-      <Router basename="/LevelAutoRental/">
-        <Layout>
-          <RouterWrapper />
-        </Layout>
-      </Router>
+      <ExchangeRateProvider>
+        {/* Show loader while initial loading */}
+        {initialLoading && <Loader isTransitioning={isTransitioning} onLoadingComplete={handleLoadingComplete} />}
+        
+        {/* Show content immediately, even during fade-out */}
+        <Router basename="/">
+          <Layout>
+            <RouterWrapper />
+          </Layout>
+        </Router>
+      </ExchangeRateProvider>
     </>
   );
 }

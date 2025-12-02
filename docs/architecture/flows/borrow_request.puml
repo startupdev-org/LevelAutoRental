@@ -1,0 +1,75 @@
+@startuml
+title Borrow Request & Approval Flow (User ↔ Admin ↔ Database)
+
+actor User
+actor Admin
+participant "Request Service" as ReqService
+participant "Car Service" as CarService
+database DB as "Database\n(BorrowRequests + Rentals + Cars)"
+
+== Step 1: User submits borrow request ==
+User -> ReqService: POST /borrow-requests\nBody:\n{\n  userId: U123,\n  carId: C456,\n  startDate: "2025-11-15",\n  startTime: "08:00AM",\n  endDate: "2025-11-20"\n, endTime: "08:00AM"\n}
+
+note right of ReqService
+Validations performed:
+• Car availability  
+• Date format  
+• User permissions
+end note
+
+ReqService -> DB: INSERT INTO BorrowRequests
+note right of DB
+**BorrowRequests (after insert):**
+| requestId | userId | carId | startDate | startTime | endDate | endTime | status |
+| R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00AM | PENDING |
+end note
+
+
+' DB --> ReqService: Returns requestId = R789
+' ReqService --> Admin: Notify pending request (R789)
+
+== Step 2: Admin decision ==
+Admin -> ReqService: PATCH /borrow-requests/{requestId}\nBody:\n{\n  satatus: "APPROVE" | "REJECT",\n  reason?: "decision reason"\n}
+
+alt APPROVED
+    ReqService -> DB: UPDATE request status to 'APPROVED'
+    note right of DB
+    **BorrowRequests (after update):**
+    | requestId | userId | carId | startDate | startTime | endDate | endTime | status |
+    |------------|--------|--------|------------|----------|-----------|---------|---------|
+    | R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00AM | APPROVED |
+    end note
+
+    ReqService -> DB: INSERT the new rental order INTO Rentals Table
+    note right of DB
+    **Rentals (after insert):**
+    | rentalId | requestId | userId | carId | startDate | startTime | endDate | endTime | status |
+    |----------|-------|--------|--------|------------|----------|---------|---------|----|
+    | RL001 | R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00PM | APPROVED |
+    end note
+
+    
+else REJECTED
+    ReqService -> DB: UPDATE request status to 'REJECTED'
+    note right of DB
+    **BorrowRequests (after update):**
+    | requestId | userId | carId | startDate | startTime | endDate | endTime | status |
+    |------------|--------|--------|------------|----------|-----------|---------|---------|
+    | R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00PM | REJECTED |
+    end note
+
+end
+
+== Final Database State ==
+note over DB
+**BorrowRequests**
+| requestId | userId | carId | startDate | startTime | endDate | endTime | status |
+| R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00PM |APPROVED / REJECTED |
+
+== **ONLY IF APPROVED** ==
+**Rentals**
+| rentalId | requestId | userId | carId | startDate startTime | endDate | endTime | status |
+| RL001 | R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00PM | ACTIVE |
+
+end note
+@enduml

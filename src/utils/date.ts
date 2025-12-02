@@ -7,10 +7,84 @@ export const getCurrentFormattedDate = (): string => {
     });
 };
 
+export const getMonthFromDate = (date: Date): string => {
+    const month = date.toLocaleDateString('ro-RO', { month: 'long' });
+    return month.charAt(0).toUpperCase() + month.slice(1);
+};
+
+
+
+
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
+    let d1: Date;
+    let d2: Date;
+
+    if (typeof date1 === 'string' && date1.includes('-')) {
+        // Parse date string safely to avoid timezone issues
+        const [year, month, day] = date1.split('-').map(Number);
+        d1 = new Date(year, month - 1, day);
+    } else {
+        d1 = new Date(date1);
+    }
+
+    if (typeof date2 === 'string' && date2.includes('-')) {
+        // Parse date string safely to avoid timezone issues
+        const [year, month, day] = date2.split('-').map(Number);
+        d2 = new Date(year, month - 1, day);
+    } else {
+        d2 = new Date(date2);
+    }
 
     const diffTime = Math.abs(d2.getTime() - d1.getTime());
     return Math.round(diffTime / (1000 * 60 * 60 * 24));
 }
+
+/**
+ * Calculate rental duration in days and hours
+ * @param startDateStr - start date string (YYYY-MM-DD or ISO)
+ * @param startTimeStr - start time string (HH:mm)
+ * @param endDateStr - end date string (YYYY-MM-DD or ISO)
+ * @param endTimeStr - end time string (HH:mm)
+ * @returns { days: number, hours: number, totalHours: number }
+ */
+export function calculateRentalDuration(
+    startDateStr: string,
+    startTimeStr: string,
+    endDateStr: string,
+    endTimeStr: string
+) {
+    const parseTime = (timeString: string) => {
+        if (!timeString) return { hours: 9, minutes: 0 }; // default 09:00
+        const [h, m] = timeString.split(':').map(Number);
+        return { hours: h || 0, minutes: m || 0 };
+    };
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    const { hours: startHour, minutes: startMin } = parseTime(startTimeStr);
+    const { hours: endHour, minutes: endMin } = parseTime(endTimeStr);
+
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(startHour, startMin, 0, 0);
+
+    const endDateTime = new Date(endDate);
+    if (endHour === 0 && endMin === 0) {
+        // treat 00:00 as end of previous day
+        endDateTime.setHours(23, 59, 59, 999);
+    } else {
+        endDateTime.setHours(endHour, endMin, 0, 0);
+    }
+
+    const diffMs = endDateTime.getTime() - startDateTime.getTime();
+    if (diffMs <= 0) {
+        return { days: 0, hours: 0, totalHours: 0 };
+    }
+
+    const totalHours = diffMs / (1000 * 60 * 60);
+    const days = Math.floor(totalHours / 24);
+    const hours = Math.round(totalHours % 24);
+
+    return { days, hours, totalHours };
+}
+

@@ -4,6 +4,7 @@ import { fadeInUp } from "../../utils/animations";
 import { Mail, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { sendForgotPasswordEmail } from "../../lib/db/auth/auth";
 
 export const ForgotPassword: React.FC = () => {
     const [email, setEmail] = useState("");
@@ -13,47 +14,49 @@ export const ForgotPassword: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: handle forgot password
+
+        sendForgotPasswordEmail(email)
+
         console.log("forgot password", { email });
         setIsSubmitted(true);
     };
 
     return (
-        <section 
+        <section
             className="min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-10 md:py-12 relative"
         >
             {/* Mobile Background */}
-            <div 
+            <div
                 className="absolute inset-0 md:hidden"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
                 }}
             />
             {/* Desktop Background */}
-            <div 
+            <div
                 className="hidden md:block absolute inset-0"
                 style={{
-                    backgroundImage: "url('/LevelAutoRental/bg-hero.jpg')",
+                    backgroundImage: "url('/bg-hero.jpg')",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat"
                 }}
             />
             {/* Desktop overlay - darker */}
-            <div 
+            <div
                 className="hidden md:block absolute inset-0"
-                style={{ 
-                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))'
                 }}
             />
             {/* Mobile-specific overlay */}
-            <div 
+            <div
                 className="absolute inset-0 md:hidden"
-                style={{ 
-                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))' 
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85))'
                 }}
             />
             <motion.div
@@ -61,23 +64,23 @@ export const ForgotPassword: React.FC = () => {
                 initial="initial"
                 animate="animate"
                 className="w-full max-w-6xl bg-white rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 relative z-10"
-                style={{ 
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+                style={{
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
                 }}
             >
                 {/* Left - Image */}
                 <div
                     className="relative hidden md:block bg-cover bg-center min-h-[400px] md:min-h-[600px]"
                     style={{
-                        backgroundImage: "url('/LevelAutoRental/backgrounds/bg5-desktop.jpeg')",
+                        backgroundImage: "url('/backgrounds/bg5-desktop.jpeg')",
                         minHeight: "560px",
                     }}
                 >
                     <div className="absolute inset-0 bg-black/70" />
-                    <div 
+                    <div
                         className="absolute inset-0"
-                        style={{ 
-                            background: 'linear-gradient(315deg, rgba(220, 38, 38, 0.3), rgba(0, 0, 0, 0.4))' 
+                        style={{
+                            background: 'linear-gradient(315deg, rgba(220, 38, 38, 0.3), rgba(0, 0, 0, 0.4))'
                         }}
                     />
                     <div className="relative z-10 h-full flex flex-col items-start justify-center p-10 text-white">

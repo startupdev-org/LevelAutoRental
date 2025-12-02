@@ -53,7 +53,7 @@ export const About: React.FC = () => {
       <section
         className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans text-white"
         style={{
-          backgroundImage: isDesktop ? 'url(/LevelAutoRental/bg-hero.jpg)' : 'url(/LevelAutoRental/backgrounds/bg4-mobile.jpeg)',
+          backgroundImage: isDesktop ? 'url(/bg-hero.jpg)' : 'url(/backgrounds/bg4-mobile.jpeg)',
           backgroundPosition: isDesktop ? 'center -420px' : 'center -300px',
           backgroundSize: isDesktop ? '115%' : 'cover'
         }}>
@@ -179,7 +179,7 @@ export const About: React.FC = () => {
               className="relative"
             >
               <img
-                src="/LevelAutoRental/lvl_bg.png"
+                src="/lvl_bg.png"
                 alt="Our story"
                 className="rounded-2xl shadow-lg"
               />

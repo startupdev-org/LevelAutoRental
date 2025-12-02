@@ -1,8 +1,8 @@
 import { Route, Routes } from 'react-router-dom';
 import { About } from '../pages/about/About';
 import { Booking } from '../pages/booking/Booking';
-import { Cars } from '../pages/cars/Cars';
-import { CarDetails } from '../pages/cars/individual/CarDetails';
+import { Cars } from '../pages/cars/CarsPage.tsx';
+import { CarDetails } from '../pages/cars/car-details/CarDetails.tsx';
 import { Reviews } from '../pages/reviews/Reviews.tsx';
 import { Contact } from '../pages/contact/Contact';
 import { Home } from '../pages/home/Home';
@@ -19,6 +19,8 @@ import ScrollToTop from './ScrollToTop';
 import { Admin } from '../pages/admin/Admin.tsx';
 import { UserDashboard } from '../pages/dashboard/UserDashboard';
 import { ProtectedRoute } from './ProtectedRoute';
+import { AdminProtectedRoute } from './AdminProtectedRoute';
+import { UpdatePassword } from '../pages/auth/UpdatePassword.tsx';
 
 const RouterWrapper = () => {
   return (
@@ -44,17 +46,33 @@ const RouterWrapper = () => {
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/signup" element={<SignUp />} />
         <Route path="/auth/forgot" element={<ForgotPassword />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
 
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <UserDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
 
-        <Route path="/admin" element={<Admin />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute>
+              <Admin />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/"
+          element={
+            <AdminProtectedRoute>
+              <Admin />
+            </AdminProtectedRoute>
+          }
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes >

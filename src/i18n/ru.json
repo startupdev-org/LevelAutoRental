@@ -8,7 +8,12 @@
         "reviews": "Отзывы",
         "contact": "Контакты",
         "auth": "Войти",
-        "language": "Язык"
+        "language": "Язык",
+        "dashboard": "Панель управления",
+        "profile": "Профиль",
+        "settings": "Настройки",
+        "admin": "Админ",
+        "signOut": "Выйти"
     },
     "languages": {
         "en": "Английский",
@@ -537,6 +542,7 @@
         "priceDetails": "Детали цены",
         "selectedVehicle": "Выбранный автомобиль",
         "pricePerDay": "Цена за день",
+        "priceRanges": "Диапазоны цен",
         "numberDays": "Количество дней",
         "discount": "Скидка",
         "basePrice": "Базовая цена",
@@ -554,5 +560,39 @@
         "discountApplied4": "Скидка применена: -4% за 8+ дней",
         "discountApplied2": "Скидка применена: -2% за 4+ дней",
         "perDay": "/день"
+    },
+    "notFound": {
+        "title": "Страница не найдена",
+        "description": "Извините, страница, которую вы ищете, не существует или была перемещена.",
+        "goBackHome": "Вернуться на главную",
+        "goBack": "Назад"
+    },
+    "dashboard": {
+        "sidebar": {
+            "overview": "Главная",
+            "myBookings": "Мои бронирования",
+            "cars": "Автомобили",
+            "profile": "Профиль",
+            "calendar": "Календарь",
+            "settings": "Настройки",
+            "signOut": "Выйти"
+        },
+        "overview": {
+            "title": "Панель управления",
+            "rentalsInfo": "Информация о бронированиях",
+            "totalBookings": "Всего бронирований",
+            "finishedBookings": "Завершенные бронирования",
+            "activeBookings": "Активные бронирования",
+            "lifetimeBookings": "Бронирования за все время",
+            "totalSpent": "Всего потрачено",
+            "lifetimeSpending": "Расходы за все время",
+            "loyaltyPoints": "Баллы лояльности",
+            "availablePoints": "Доступные баллы",
+            "recentBookings": "Недавние бронирования",
+            "viewAll": "Посмотреть все",
+            "favoriteCar": "Любимый автомобиль",
+            "noFavoriteCar": "Вы еще не арендовали автомобиль, поэтому у вас пока нет любимого автомобиля.",
+            "startBorrowing": "Начать аренду"
+        }
     }
 }
