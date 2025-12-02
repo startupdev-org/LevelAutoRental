@@ -4,3 +4,6 @@ WHERE table_schema = 'public'
 AND table_name = 'Cars' 
 AND column_name LIKE 'price%'
 ORDER BY column_name;
+
+
+
