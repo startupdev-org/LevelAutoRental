@@ -432,23 +432,23 @@ export const OrdersViewSection: React.FC = () => {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        // Current month orders (last 30 days)
+        // Current month COMPLETED orders only
         const currentMonthStart = new Date(now);
         currentMonthStart.setDate(1);
         currentMonthStart.setHours(0, 0, 0, 0);
 
         const currentMonthOrders = orders.filter(order => {
             const orderDate = new Date(order.createdAt);
-            return orderDate >= currentMonthStart;
+            return orderDate >= currentMonthStart && order.status === 'COMPLETED';
         });
 
-        // Last month orders
+        // Last month COMPLETED orders only
         const lastMonthStart = new Date(currentYear, currentMonth - 1, 1);
         const lastMonthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
 
         const lastMonthOrders = orders.filter(order => {
             const orderDate = new Date(order.createdAt);
-            return orderDate >= lastMonthStart && orderDate <= lastMonthEnd;
+            return orderDate >= lastMonthStart && orderDate <= lastMonthEnd && order.status === 'COMPLETED';
         });
 
         // Calculate revenues
@@ -485,12 +485,12 @@ export const OrdersViewSection: React.FC = () => {
         });
 
         // Calculate order count metrics
-        // Total orders: count ALL rental orders (like dashboard), not just current month
-        const allRentalOrders = orders.filter(order => 
-            order.type === 'rental' && 
-            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        // Total COMPLETED orders only (as specified by user)
+        const allCompletedOrders = orders.filter(order =>
+            order.type === 'rental' &&
+            order.status === 'COMPLETED'
         );
-        const totalOrders = allRentalOrders.length;
+        const totalOrders = allCompletedOrders.length;
         const lastMonthOrdersCount = lastMonthOrders.length;
         const orderGrowth = lastMonthOrdersCount > 0
             ? ((currentMonthOrders.length - lastMonthOrdersCount) / lastMonthOrdersCount) * 100
@@ -518,10 +518,10 @@ export const OrdersViewSection: React.FC = () => {
 
     // Generate chart data for all periods (like dashboard)
     const calculateChartData = useMemo(() => {
-        // Filter only rental orders (completed or active) for sales calculation
-        const rentalOrders = orders.filter(order => 
-            order.type === 'rental' && 
-            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        // Filter only COMPLETED rental orders for sales calculation
+        const rentalOrders = orders.filter(order =>
+            order.type === 'rental' &&
+            order.status === 'COMPLETED'
         );
 
         const generateChartDataForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
@@ -603,9 +603,9 @@ export const OrdersViewSection: React.FC = () => {
 
     // Calculate sales and change for a specific period
     const calculatePeriodStats = useMemo(() => {
-        const rentalOrders = orders.filter(order => 
-            order.type === 'rental' && 
-            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        const rentalOrders = orders.filter(order =>
+            order.type === 'rental' &&
+            order.status === 'COMPLETED'
         );
 
         const calculateForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {

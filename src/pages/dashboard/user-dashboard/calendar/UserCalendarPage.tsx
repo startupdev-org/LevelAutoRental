@@ -19,7 +19,7 @@ export const CalendarPage: React.FC = () => {
     });
 
     const [car, setCar] = useState<Car | null>(null);
-    const [month, setMonth] = useState(new Date());
+    const [month, setMonth] = useState<Date>(new Date());
 
     const [orders, setOrders] = useState<Rental[] | null>([])
 
@@ -43,8 +43,17 @@ export const CalendarPage: React.FC = () => {
             month,
         );
         setOrders(orders)
-        console.log('the orders for the calendar page are: ', orders)
+        // console.log('the orders for the calendar page are: ', orders)
     }
+
+    function handleSetCar(car: Car | null) {
+        setCar(car); // update the selected car state
+        setFilters(prev => ({
+            ...prev,
+            carId: car?.id || "" // sync the filter
+        }));
+    }
+
 
     if (loading && !showFilters) {
         return (
@@ -86,6 +95,8 @@ export const CalendarPage: React.FC = () => {
                     setMonth={setMonth}
                     t={t}
                     car={car}
+                    onCarChange={(car) => handleSetCar(car)}
+
                 />
             )}
         </div>

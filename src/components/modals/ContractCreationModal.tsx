@@ -120,23 +120,25 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
         const rentalDays = days; // Use full days for discount calculation
         const totalDays = days + (hours / 24); // Use total days for final calculation
 
-        const pricePerDay = (order as any).price_per_day || car.price_per_day || 0;
+        // Get price per day based on rental duration ranges (4-tier pricing)
+        let basePricePerDay = 0;
 
-        // Base price calculation (same as RequestDetailsModal) - with discounts
-        let basePrice = 0;
-        let discountPercent = 0;
-
-        if (rentalDays >= 8) {
-            discountPercent = 4;
-            basePrice = pricePerDay * 0.96 * rentalDays; // -4%
-        } else if (rentalDays >= 4) {
-            discountPercent = 2;
-            basePrice = pricePerDay * 0.98 * rentalDays; // -2%
-        } else {
-            basePrice = pricePerDay * rentalDays;
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            basePricePerDay = car.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            basePricePerDay = car.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            basePricePerDay = car.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            basePricePerDay = car.price_over_30_days || 0;
         }
 
-        // Add hours portion (hours are charged at full price, no discount)
+        const pricePerDay = basePricePerDay;
+
+        // Base price calculation using 4-tier pricing (no additional period-based discounts)
+        let basePrice = pricePerDay * rentalDays;
+
+        // Add hours portion
         if (hours > 0) {
             const hoursPrice = (hours / 24) * pricePerDay;
             basePrice += hoursPrice;
@@ -198,7 +200,6 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
             days,
             hours,
             rentalDays,
-            discountPercent,
             basePrice,
             additionalServices: additionalCosts,
             total: totalPrice
@@ -654,156 +655,6 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                                 ))}
                             </div>
 
-                            {/* Price Breakdown */}
-                            <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Detalii preț</h3>
-                                <div className="space-y-2 sm:space-y-3">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-300">Preț pe zi</span>
-                                        <span className="text-white font-medium">
-                                            {priceBreakdown.pricePerDay.toLocaleString('ro-RO')} MDL
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-300">Număr zile</span>
-                                        <span className="text-white font-medium">
-                                            {priceBreakdown.days} {priceBreakdown.days === 1 ? 'zi' : 'zile'}
-                                            {priceBreakdown.hours > 0 ? `, ${priceBreakdown.hours} ${priceBreakdown.hours === 1 ? 'oră' : 'ore'}` : ''}
-                                        </span>
-                                    </div>
-                                    {priceBreakdown.discountPercent > 0 && (
-                                        <div className="flex items-center justify-between text-sm text-emerald-400">
-                                            <span>Reducere</span>
-                                            <span className="font-semibold">-{priceBreakdown.discountPercent}%</span>
-                                        </div>
-                                    )}
-                                    <div className="pt-2 border-t border-white/10">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-white font-medium">Preț de bază</span>
-                                            <span className="text-white font-medium">
-                                                {Math.round(priceBreakdown.basePrice).toLocaleString('ro-RO')} MDL
-                                            </span>
-                                        </div>
-                                    </div>
-                                    {priceBreakdown.additionalServices > 0 && (() => {
-                                        const options = (order as any).options;
-                                        let parsedOptions: any = {};
-                                        
-                                        if (options) {
-                                            if (typeof options === 'string') {
-                                                try {
-                                                    parsedOptions = JSON.parse(options);
-                                                } catch (e) {
-                                                    parsedOptions = {};
-                                                }
-                                            } else {
-                                                parsedOptions = options;
-                                            }
-                                        }
-                                        
-                                        const serviceNames: Record<string, string> = {
-                                            unlimitedKm: 'Kilometraj nelimitat',
-                                            speedLimitIncrease: 'Creșterea limitei de viteză',
-                                            tireInsurance: 'Asigurare anvelope & parbriz',
-                                            personalDriver: 'Șofer personal',
-                                            priorityService: 'Priority Service',
-                                            childSeat: 'Scaun copil',
-                                            simCard: 'Cartelă SIM cu internet',
-                                            roadsideAssistance: 'Asistență rutieră'
-                                        };
-                                        
-                                        const baseCarPrice = priceBreakdown.pricePerDay;
-                                        const totalDays = priceBreakdown.days + (priceBreakdown.hours / 24);
-                                        const rentalDays = priceBreakdown.rentalDays;
-                                        
-                                        return (
-                                            <div className="pt-3 border-t border-white/10">
-                                                <h4 className="text-sm font-bold text-white mb-3">Servicii suplimentare</h4>
-                                                <div className="space-y-2 text-sm">
-                                                    {parsedOptions.unlimitedKm && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.unlimitedKm}</span>
-                                                            <span className="text-white font-medium">
-                                                                {Math.round(baseCarPrice * totalDays * 0.5).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {parsedOptions.speedLimitIncrease && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.speedLimitIncrease}</span>
-                                                            <span className="text-white font-medium">
-                                                                {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {parsedOptions.tireInsurance && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.tireInsurance}</span>
-                                                            <span className="text-white font-medium">
-                                                                {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {parsedOptions.personalDriver && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.personalDriver}</span>
-                                                            <span className="text-white font-medium">
-                                                                {(800 * rentalDays).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {parsedOptions.priorityService && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.priorityService}</span>
-                                                            <span className="text-white font-medium">
-                                                                {(1000 * rentalDays).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {parsedOptions.childSeat && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.childSeat}</span>
-                                                            <span className="text-white font-medium">
-                                                                {(100 * rentalDays).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {parsedOptions.simCard && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.simCard}</span>
-                                                            <span className="text-white font-medium">
-                                                                {(100 * rentalDays).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {parsedOptions.roadsideAssistance && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-300">{serviceNames.roadsideAssistance}</span>
-                                                            <span className="text-white font-medium">
-                                                                {(500 * rentalDays).toLocaleString('ro-RO')} MDL
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="pt-2 border-t border-white/10 mt-2">
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-gray-300">Total servicii</span>
-                                                        <span className="text-white font-semibold">
-                                                            {Math.round(priceBreakdown.additionalServices).toLocaleString('ro-RO')} MDL
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                    <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                                        <span className="text-white font-bold text-base sm:text-lg">Total</span>
-                                        <span className="text-emerald-400 font-bold text-lg sm:text-xl">
-                                            {Math.round(priceBreakdown.total).toLocaleString('ro-RO')} MDL
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         {/* Footer */}

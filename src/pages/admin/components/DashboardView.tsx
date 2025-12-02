@@ -83,17 +83,31 @@ export const DashboardView: React.FC = () => {
             // Normalize status: handle null, empty string, and different cases
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
-            
-            // Consider available if status is null, empty, 'available', or not explicitly 'ascuns'/'hidden'/'maintenance'
-            return carStatus === '' || carStatus === 'available' || 
-                   (carStatus !== 'ascuns' && carStatus !== 'hidden' && carStatus !== 'maintenance' && carStatus !== 'deleted');
+
+            // Check if car has active rental orders
+            const hasActiveOrder = orders.some(order =>
+                parseInt(order.carId) === parseInt(car.id, 10) &&
+                (order.status === 'ACTIVE' || order.type === 'rental')
+            );
+
+            // Consider available if status is null, empty, 'available', or not explicitly 'ascuns'/'hidden'/'maintenance'/rented
+            const isAvailableStatus = carStatus === '' || carStatus === 'available' ||
+                   (carStatus !== 'ascuns' && carStatus !== 'hidden' && carStatus !== 'maintenance' &&
+                    carStatus !== 'deleted' && carStatus !== 'închiriat' && carStatus !== 'rented' && carStatus !== 'borrowed');
+
+            // Car is free only if it has available status AND no active orders
+            return isAvailableStatus && !hasActiveOrder;
         });
         
         const rentedCars = cars.filter(car => {
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
-            // Handle 'ascuns' and 'hidden' as hidden status (keeping variable name for compatibility)
-            return carStatus === 'ascuns' || carStatus === 'hidden';
+            // Check if car has active rental orders OR status indicates it's rented
+            const hasActiveOrder = orders.some(order =>
+                parseInt(order.carId) === parseInt(car.id, 10) &&
+                (order.status === 'ACTIVE' || order.type === 'rental')
+            );
+            return hasActiveOrder || carStatus === 'închiriat' || carStatus === 'rented' || carStatus === 'borrowed';
         });
 
         console.log(`[Dashboard] Free cars: ${freeCars.length}, Rented cars: ${rentedCars.length}`);
@@ -105,10 +119,10 @@ export const DashboardView: React.FC = () => {
 
     // Calculate chart data from orders based on time period
     const calculateChartData = useMemo(() => {
-        // Filter only rental orders (completed or active) for sales calculation
-        const rentalOrders = orders.filter(order => 
-            order.type === 'rental' && 
-            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        // Filter only COMPLETED rental orders for sales calculation
+        const rentalOrders = orders.filter(order =>
+            order.type === 'rental' &&
+            order.status === 'COMPLETED'
         );
 
         const generateChartDataForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
@@ -190,10 +204,10 @@ export const DashboardView: React.FC = () => {
 
     // Calculate statistics from orders
     const calculateStats = useMemo(() => {
-        // Filter only rental orders (completed or active) for sales calculation
-        const rentalOrders = orders.filter(order => 
-            order.type === 'rental' && 
-            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        // Filter only COMPLETED rental orders for sales calculation
+        const rentalOrders = orders.filter(order =>
+            order.type === 'rental' &&
+            order.status === 'COMPLETED'
         );
         
         // Total sales: sum of all rental amounts
@@ -226,9 +240,9 @@ export const DashboardView: React.FC = () => {
 
     // Calculate sales and change for a specific period
     const calculatePeriodStats = useMemo(() => {
-        const rentalOrders = orders.filter(order => 
-            order.type === 'rental' && 
-            (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+        const rentalOrders = orders.filter(order =>
+            order.type === 'rental' &&
+            order.status === 'COMPLETED'
         );
 
         const calculateForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
@@ -336,7 +350,7 @@ export const DashboardView: React.FC = () => {
                     valueSize="md"
                     spark={(
                         // @ts-ignore - recharts type compatibility issue
-                        <ResponsiveContainer width="100%" height={36}>
+                        <ResponsiveContainer width="65%" height={36}>
                             {/* @ts-ignore */}
                             <LineChart data={sparkData}>
                                 {/* @ts-ignore */}
@@ -353,7 +367,7 @@ export const DashboardView: React.FC = () => {
                     valueSize="md"
                     spark={(
                         // @ts-ignore - recharts type compatibility issue
-                        <ResponsiveContainer width="100%" height={36}>
+                        <ResponsiveContainer width="65%" height={36}>
                             {/* @ts-ignore */}
                             <LineChart data={sparkData}>
                                 {/* @ts-ignore */}
@@ -371,7 +385,7 @@ export const DashboardView: React.FC = () => {
                         valueSize="md"
                         spark={(
                             // @ts-ignore - recharts type compatibility issue
-                            <ResponsiveContainer width="100%" height={36}>
+                            <ResponsiveContainer width="65%" height={36}>
                                 {/* @ts-ignore */}
                                 <LineChart data={sparkData}>
                                     {/* @ts-ignore */}
@@ -553,9 +567,9 @@ export const DashboardView: React.FC = () => {
                                 // Calculate rental counts and revenue per car
                                 const carStats = cars.map(car => {
                                     const carOrders = orders.filter(order =>
-                                        parseInt(order.carId) === car.id &&
+                                        parseInt(order.carId) === parseInt(car.id, 10) &&
                                         order.type === 'rental' &&
-                                        (order.status === 'ACTIVE' || order.status === 'COMPLETED')
+                                        order.status === 'COMPLETED'
                                     );
                                     const revenue = carOrders.reduce((sum, order) => {
                                         const amount = order.amount || parseFloat(order.total_amount || '0');
@@ -569,6 +583,15 @@ export const DashboardView: React.FC = () => {
                                 }).filter(car => car.rentals > 0)
                                     .sort((a, b) => b.revenue - a.revenue)
                                     .slice(0, 5);
+
+                                // If no cars with rentals, show empty state
+                                if (carStats.length === 0) {
+                                    return (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <p className="text-sm">Nu există date disponibile</p>
+                                        </div>
+                                    );
+                                }
 
                                 const maxRevenue = Math.max(...carStats.map(c => c.revenue), 1);
 

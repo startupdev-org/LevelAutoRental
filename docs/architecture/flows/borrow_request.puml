@@ -45,7 +45,7 @@ alt APPROVED
     **Rentals (after insert):**
     | rentalId | requestId | userId | carId | startDate | startTime | endDate | endTime | status |
     |----------|-------|--------|--------|------------|----------|---------|---------|----|
-    | RL001 | R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00PM | ACTIVE |
+    | RL001 | R789 | U123 | C456 | 2025-11-15 | 08:00AM | 2025-11-20 | 08:00PM | APPROVED |
     end note
 
     

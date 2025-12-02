@@ -506,23 +506,26 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         const rentalDays = days;
         const totalDays = days + (hours / 24);
 
-        // Get price with car discount applied first
-        const basePricePerDay = car?.price_per_day || selectedCar?.price_per_day || 0;
+        // Get price per day based on rental duration ranges (4-tier pricing)
         const carDiscount = car?.discount_percentage || selectedCar?.discount_percentage || 0;
+        let basePricePerDay = 0;
+
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            basePricePerDay = car?.price_2_4_days || selectedCar?.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            basePricePerDay = car?.price_5_15_days || selectedCar?.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            basePricePerDay = car?.price_16_30_days || selectedCar?.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            basePricePerDay = car?.price_over_30_days || selectedCar?.price_over_30_days || 0;
+        }
+
         const pricePerDay = carDiscount > 0
             ? basePricePerDay * (1 - carDiscount / 100)
             : basePricePerDay;
 
-        // Base price calculation (same as Calculator.tsx and Admin) - using discounted price
-        let basePrice = 0;
-
-        if (rentalDays >= 8) {
-            basePrice = pricePerDay * 0.96 * rentalDays; // -4% discount
-        } else if (rentalDays >= 4) {
-            basePrice = pricePerDay * 0.98 * rentalDays; // -2% discount
-        } else {
-            basePrice = pricePerDay * rentalDays;
-        }
+        // Base price calculation using 4-tier pricing (no additional period-based discounts)
+        let basePrice = pricePerDay * rentalDays;
 
         // Add hours portion
         if (hours > 0) {
@@ -574,9 +577,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
     ): PriceSummaryResult | null {
         if (!car && !selectedCar) return null;
 
-        const basePricePerDay = car?.price_per_day || selectedCar?.price_per_day || 0;
-        const pricePerDay = basePricePerDay;
-
+        // First, calculate rental duration to determine pricing tier
         const startDate = new Date(formData.startDate || '');
         const endDate = new Date(formData.endDate || '');
         const [startHour, startMin] = (formData.startTime || '09:00').split(':').map(Number);
@@ -597,10 +598,31 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         const rentalDays = days;
         const totalDays = days + hours / 24;
 
-        let basePrice = 0;
+        // Get price per day based on rental duration ranges (4-tier pricing)
+        const carDiscount = car?.discount_percentage || selectedCar?.discount_percentage || 0;
+        let basePricePerDay = 0;
 
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            basePricePerDay = car?.price_2_4_days || selectedCar?.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            basePricePerDay = car?.price_5_15_days || selectedCar?.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            basePricePerDay = car?.price_16_30_days || selectedCar?.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            basePricePerDay = car?.price_over_30_days || selectedCar?.price_over_30_days || 0;
+        }
 
-        basePrice = pricePerDay * rentalDays;
+        const pricePerDay = carDiscount > 0
+            ? basePricePerDay * (1 - carDiscount / 100)
+            : basePricePerDay;
+
+        let basePrice = pricePerDay * rentalDays;
+
+        // Add hours portion
+        if (hours > 0) {
+            const hoursPrice = (hours / 24) * pricePerDay;
+            basePrice += hoursPrice;
+        }
 
         let additionalCosts = 0;
         const baseCarPrice = pricePerDay;

@@ -1,7 +1,12 @@
-import { errorBarReducer } from 'recharts/types/state/errorBarSlice';
 import { User } from '../../../types';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { getLoggedUser } from '../user/profile';
+
+
+const redirectUrl = `${import.meta.env.VITE_BASE_URL}/update-password`;
+
+console.log("Redirect URL:", redirectUrl);
+
 
 /**
  * Create a new user
@@ -65,12 +70,34 @@ export async function updatePassword(currentPassword: string, newPassword: strin
 
     if (loginError) return { succes: false, error: loginError.message }
 
-    const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-    })
+    const { error: updateError } = await resetUserPassword(newPassword)
 
     if (updateError) return { succes: false, error: updateError.message }
 
     return { success: true }
+}
+
+export async function resetUserPassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+    });
+
+    if (error) {
+        return { success: false, error };
+    }
+
+    return { success: true };
+}
+
+
+export async function sendForgotPasswordEmail(email: string) {
+
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+    })
+
+    if (error) return { succes: false, error: error.message }
+
+    return { success: true, data }
 }
 

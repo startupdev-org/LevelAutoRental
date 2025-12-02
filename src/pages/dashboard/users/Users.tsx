@@ -12,7 +12,8 @@ import {
     ArrowDown,
     X,
     Phone,
-    DollarSign
+    DollarSign,
+    Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -26,6 +27,7 @@ export const UsersPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -94,6 +96,8 @@ export const UsersPage: React.FC = () => {
                 console.error('Failed to load users and orders:', error);
                 // Fallback to empty array on error
                 setUsers([]);
+            } finally {
+                setLoading(false);
             }
         };
         loadUsersAndOrders();
@@ -196,6 +200,14 @@ export const UsersPage: React.FC = () => {
                 order.customerName?.toLowerCase() === `${selectedUser.first_name} ${selectedUser.last_name}`.toLowerCase();
         })
         : [];
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-white/50" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

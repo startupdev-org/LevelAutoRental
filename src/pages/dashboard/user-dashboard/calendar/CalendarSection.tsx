@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from "date-fns";
 import { motion } from "framer-motion";
-import { User, Clock } from "lucide-react";
+import { User, Clock, X } from "lucide-react";
 import { Rental } from "../../../../lib/orders";
 import { Car } from "../../../../types";
 
@@ -11,15 +11,17 @@ interface CalendarSectionProps {
     orders: Rental[];
     t: (key: string) => string;
     car: Car | null;
+    onCarChange: (car: Car | null) => void;
 }
 
-export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month, setMonth, t, car }) => {
+export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month, setMonth, t, car, onCarChange }) => {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const prevMonth = () => setMonth(subMonths(month, 1));
-    const nextMonth = () => setMonth(addMonths(month, 1));
+    const nextMonth = () => setMonth(prev => addMonths(prev, 1));
+    const prevMonth = () => setMonth(prev => subMonths(prev, 1));
+
 
     const handleSelectDay = (day: string) => {
         setSelectedDate(day);
@@ -201,7 +203,16 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
             <div className="flex flex-col gap-6">
                 {/* Selected Car Info */}
                 {car && (
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-gray-300">
+                    <div className="relative bg-white/5 border border-white/10 rounded-xl p-4 text-gray-300">
+                        {/* Professional Close Button */}
+                        <button
+                            onClick={() => onCarChange(null)}
+                            aria-label="Close"
+                            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 shadow-lg transition-transform duration-200 transform hover:scale-110"
+                        >
+                            <span className="text-lg font-bold select-none">x</span>
+                        </button>
+
                         <div className="flex items-start justify-between gap-6">
                             <div className="flex-1">
                                 <h3 className="text-xl font-semibold text-white mb-3">Calendar for selected car</h3>
@@ -222,7 +233,10 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-0">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-bold text-white">
-                                {displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                {(() => {
+                                    const dateStr = displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                                    return dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+                                })()}
                                 {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t("admin.calendar.today")})</span>}
                             </h3>
                             {selectedDate && <button onClick={() => setSelectedDate(null)} className="text-gray-400 hover:text-white transition-colors p-1">✕</button>}
@@ -251,6 +265,6 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                     </motion.div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

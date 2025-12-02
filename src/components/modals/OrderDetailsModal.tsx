@@ -347,43 +347,63 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     const rentalDays = days;
     const totalDays = days + hours / 24;
 
-    // Base price calculation with discounts (same as RequestDetailsModal)
+    // Base price calculation using price ranges (no period discounts)
     let basePrice = 0;
-    let discountPercent = 0;
+    let pricePerDay = 0;
 
     if (!car) {
-        // If no car found, try to get price from order
-        const orderPricePerDay = (order as any).price_per_day || (order as any).car?.price_per_day || 0;
-        if (orderPricePerDay > 0) {
-            if (rentalDays >= 8) {
-                discountPercent = 4;
-                basePrice = orderPricePerDay * 0.96 * rentalDays; // -4%
-            } else if (rentalDays >= 4) {
-                discountPercent = 2;
-                basePrice = orderPricePerDay * 0.98 * rentalDays; // -2%
-            } else {
-                basePrice = orderPricePerDay * rentalDays;
+        // If no car found, try to get price from order using price ranges
+        const orderCar = (order as any).car;
+        if (orderCar) {
+            // Determine price per day based on rental duration
+            if (rentalDays >= 2 && rentalDays <= 4) {
+                pricePerDay = orderCar.price_2_4_days || 0;
+            } else if (rentalDays >= 5 && rentalDays <= 15) {
+                pricePerDay = orderCar.price_5_15_days || 0;
+            } else if (rentalDays >= 16 && rentalDays <= 30) {
+                pricePerDay = orderCar.price_16_30_days || 0;
+            } else if (rentalDays > 30) {
+                pricePerDay = orderCar.price_over_30_days || 0;
             }
+
+            // Apply car discount if exists
+            const carDiscount = orderCar.discount_percentage || 0;
+            if (carDiscount > 0) {
+                pricePerDay = pricePerDay * (1 - carDiscount / 100);
+            }
+
+            basePrice = pricePerDay * rentalDays;
+
             // Add hours portion
             if (hours > 0) {
-                const hoursPrice = (hours / 24) * orderPricePerDay;
+                const hoursPrice = (hours / 24) * pricePerDay;
                 basePrice += hoursPrice;
             }
         }
     } else {
-        // Calculate with car price
-        if (rentalDays >= 8) {
-            discountPercent = 4;
-            basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
-        } else if (rentalDays >= 4) {
-            discountPercent = 2;
-            basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
-        } else {
-            basePrice = car.price_per_day * rentalDays;
+        // Calculate with car price ranges
+        // Determine price per day based on rental duration
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            pricePerDay = car.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            pricePerDay = car.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            pricePerDay = car.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            pricePerDay = car.price_over_30_days || 0;
         }
+
+        // Apply car discount if exists
+        const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
+        if (carDiscount > 0) {
+            pricePerDay = pricePerDay * (1 - carDiscount / 100);
+        }
+
+        basePrice = pricePerDay * rentalDays;
+
         // Add hours portion (hours are charged at full price, no discount)
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * car.price_per_day;
+            const hoursPrice = (hours / 24) * pricePerDay;
             basePrice += hoursPrice;
         }
     }
@@ -705,7 +725,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                 <div className="space-y-3">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.pricePerDay')}</span>
-                                                        <span className="text-white font-semibold text-sm sm:text-base">{car ? `${car.price_per_day} MDL` : ((order as any).car ? `${(order as any).car.price_per_day} MDL` : 'N/A')}</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{pricePerDay > 0 ? `${Math.round(pricePerDay)} MDL` : 'N/A'}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.numberOfDays')}</span>
@@ -713,12 +733,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                             {rentalDays} {t('admin.requestDetails.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours')}` : ''}
                                                         </span>
                                                     </div>
-                                                    {discountPercent > 0 && (
-                                                        <div className="flex justify-between items-center text-emerald-400">
-                                                            <span className="text-xs sm:text-sm">{t('admin.requestDetails.discount')}</span>
-                                                            <span className="font-semibold text-sm sm:text-base">-{discountPercent}%</span>
-                                                        </div>
-                                                    )}
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">{t('admin.requestDetails.basePrice')}</span>
