@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animations";
 import { Mail, Lock, UserRound, Eye, EyeOff, AlertCircle } from "lucide-react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import { createUser } from "../../lib/db/auth/auth";
@@ -38,11 +38,6 @@ export const SignUp: React.FC = () => {
                 </div>
             </div>
         );
-    }
-
-    // Redirect if authenticated
-    if (isAuthenticated) {
-        return <Navigate to="/dashboard" replace />;
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -248,7 +243,20 @@ export const SignUp: React.FC = () => {
                                     <input
                                         type="tel"
                                         value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
+                                        onChange={(e) => {
+                                            let value = e.target.value.replace(/[^0-9+]/g, "");
+
+                                            if (value.includes("+") && value.indexOf("+") !== 0) {
+                                                value = value.replace(/\+/g, "");
+                                            }
+
+                                            if (value.length > 13) {
+                                                value = value.slice(0, 13);
+                                            }
+
+                                            setPhone(value);
+                                        }}
+
                                         required
                                         className="pl-3 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
                                         placeholder="+373 62 000 112"
