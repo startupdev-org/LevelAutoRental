@@ -24,7 +24,6 @@ export const CarsView: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterCategory, setFilterCategory] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -134,7 +133,7 @@ export const CarsView: React.FC = () => {
     // Get car status for sorting (based on database status field and active rentals)
     const getCarStatus = (car: CarType): number => {
         // Check if car has active rentals first
-        if (carsWithActiveRentals.has(car.id)) return 2; // Booked cars go to bottom
+        if (carsWithActiveRentals.has(parseInt(car.id, 10))) return 2; // Booked cars go to bottom
         
         // Normalize status: handle null, empty string, and different cases
         const rawStatus = car.status?.trim() || '';
@@ -155,8 +154,7 @@ export const CarsView: React.FC = () => {
 
             const carName = (car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || '';
             const matchesSearch = carName.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesCategory = filterCategory === 'all' || car.category === filterCategory;
-            return matchesSearch && matchesCategory;
+            return matchesSearch;
         });
 
         // Sort based on selected field
@@ -186,7 +184,7 @@ export const CarsView: React.FC = () => {
         });
 
         return filtered;
-    }, [localCars, searchQuery, filterCategory, sortBy, sortOrder]);
+    }, [localCars, searchQuery, sortBy, sortOrder]);
 
     const handleSort = (field: 'price' | 'year' | 'status') => {
         if (sortBy === field) {
@@ -229,7 +227,7 @@ export const CarsView: React.FC = () => {
         e.stopPropagation(); // Prevent row click
         
         // Check if car has active rentals - if so, don't allow toggle
-        if (carsWithActiveRentals.has(car.id)) {
+        if (carsWithActiveRentals.has(parseInt(car.id, 10))) {
             showError(t('admin.cars.cannotToggleRentedCar') || 'Nu poți schimba statusul unei mașini care are închirieri active!');
             return;
         }
@@ -248,8 +246,8 @@ export const CarsView: React.FC = () => {
         }
         
         // Set pending status for visual switch change (doesn't trigger sort)
-        setPendingStatus(prev => new Map(prev).set(car.id, newStatus));
-        setTogglingCarId(car.id);
+        setPendingStatus(prev => new Map(prev).set(parseInt(car.id, 10), newStatus));
+        setTogglingCarId(parseInt(car.id, 10));
         
         // Wait 0.5 seconds before updating actual status (triggers sort)
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -261,12 +259,12 @@ export const CarsView: React.FC = () => {
         
         try {
             // Update database
-            await updateCar(car.id, { status: newStatus });
+            await updateCar(parseInt(car.id, 10), { status: newStatus });
             
             // Clear pending status and toggling state
             setPendingStatus(prev => {
                 const newMap = new Map(prev);
-                newMap.delete(car.id);
+                newMap.delete(parseInt(car.id, 10));
                 return newMap;
             });
             setTogglingCarId(null);
@@ -276,7 +274,7 @@ export const CarsView: React.FC = () => {
             // Revert pending status on error
             setPendingStatus(prev => {
                 const newMap = new Map(prev);
-                newMap.delete(car.id);
+                newMap.delete(parseInt(car.id, 10));
                 return newMap;
             });
             setTogglingCarId(null);
@@ -300,7 +298,7 @@ export const CarsView: React.FC = () => {
                     discount_percentage: (carData as any).discountPercentage !== undefined ? (carData as any).discountPercentage : carData.discount_percentage,
                     fuel_type: (carData as any).fuelType || carData.fuel_type,
                 };
-                const updatedCar = await updateCar(editingCar.id, updateData as Partial<CarType>);
+                const updatedCar = await updateCar(parseInt(editingCar.id, 10), updateData as Partial<CarType>);
                 if (updatedCar) {
                     setLocalCars(prev => prev.map(c => c.id === editingCar.id ? updatedCar : c));
                     setShowAddModal(false);
@@ -335,7 +333,7 @@ export const CarsView: React.FC = () => {
                 if (newCar) {
                     setLocalCars(prev => [...prev, newCar]);
                     // Success notification will be shown by the component
-                    return newCar.id;
+                    return parseInt(newCar.id, 10);
                 }
             }
         } catch (error) {
@@ -508,11 +506,11 @@ export const CarsView: React.FC = () => {
                         <div className="block md:hidden p-4 space-y-4">
                             {filteredCars.map((car) => {
                                 // Use pendingStatus for visual display, actual status for sorting
-                                const displayStatus = pendingStatus.get(car.id) || car.status?.trim() || '';
+                                const displayStatus = pendingStatus.get(parseInt(car.id, 10)) || car.status?.trim() || '';
                                 const rawStatus = car.status?.trim() || '';
                                 const carStatus = rawStatus.toLowerCase() || 'available';
                                 const displayStatusLower = displayStatus.toLowerCase() || 'available';
-                                const hasActiveRental = carsWithActiveRentals.has(car.id);
+                                const hasActiveRental = carsWithActiveRentals.has(parseInt(car.id, 10));
                                 const isBooked = hasActiveRental || displayStatusLower === 'booked' || displayStatusLower === 'borrowed';
                                 const isHidden = !isBooked && (displayStatusLower === 'ascuns' || displayStatusLower === 'hidden');
                                 const isMaintenance = carStatus === 'maintenance';
@@ -545,9 +543,9 @@ export const CarsView: React.FC = () => {
                                                             >
                                                                 <button
                                                                     type="button"
-                                                                    disabled={togglingCarId === car.id}
+                                                                    disabled={togglingCarId === parseInt(car.id, 10)}
                                                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ${
-                                                                        togglingCarId === car.id 
+                                                                        togglingCarId === parseInt(car.id, 10) 
                                                                             ? 'opacity-50 cursor-wait'
                                                                             : ''
                                                                     } ${
@@ -696,7 +694,7 @@ export const CarsView: React.FC = () => {
                                                 <span>Edit</span>
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteCar(car.id)}
+                                                    onClick={() => handleDeleteCar(parseInt(car.id, 10))}
                                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-300 hover:text-red-200 bg-red-500/5 border border-red-500/20 rounded-lg hover:bg-red-500/10 transition-colors"
                                                     title={t('admin.common.delete')}
                                                 >
@@ -767,11 +765,11 @@ export const CarsView: React.FC = () => {
                                 <tbody className="divide-y divide-white/10">
                                     {filteredCars.map((car) => {
                                         // Use pendingStatus for visual display, actual status for sorting
-                                        const displayStatus = pendingStatus.get(car.id) || car.status?.trim() || '';
+                                        const displayStatus = pendingStatus.get(parseInt(car.id, 10)) || car.status?.trim() || '';
                                         const rawStatus = car.status?.trim() || '';
                                         const carStatus = rawStatus.toLowerCase() || 'available';
                                         const displayStatusLower = displayStatus.toLowerCase() || 'available';
-                                        const hasActiveRental = carsWithActiveRentals.has(car.id);
+                                        const hasActiveRental = carsWithActiveRentals.has(parseInt(car.id, 10));
                                         const isBooked = hasActiveRental || displayStatusLower === 'booked' || displayStatusLower === 'borrowed';
                                         const isHidden = !isBooked && (displayStatusLower === 'ascuns' || displayStatusLower === 'hidden');
                                         const isMaintenance = carStatus === 'maintenance';
@@ -800,58 +798,34 @@ export const CarsView: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="space-y-0.5 max-w-xs">
+                                                    <div className="flex items-center gap-1">
                                                         {(car.price_2_4_days || 0) > 0 && (
-                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-gray-300 text-xs">2-4 zile</span>
-                                                                    <span className="text-white font-semibold text-xs">
-                                                                        {car.discount_percentage && car.discount_percentage > 0
-                                                                            ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
-                                                                            : car.price_2_4_days
-                                                                        } MDL
+                                                            <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
+                                                                {car.discount_percentage && car.discount_percentage > 0
+                                                                    ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
+                                                                    : car.price_2_4_days}
                                                             </span>
-                                                                </div>
-                                                            </div>
                                                         )}
                                                         {(car.price_5_15_days || 0) > 0 && (
-                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-gray-300 text-xs">5-15 zile</span>
-                                                                    <span className="text-white font-semibold text-xs">
-                                                                        {car.discount_percentage && car.discount_percentage > 0
-                                                                            ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
-                                                                            : car.price_5_15_days
-                                                                        } MDL
+                                                            <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
+                                                                {car.discount_percentage && car.discount_percentage > 0
+                                                                    ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
+                                                                    : car.price_5_15_days}
                                                             </span>
-                                                                </div>
-                                                            </div>
                                                         )}
                                                         {(car.price_16_30_days || 0) > 0 && (
-                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-gray-300 text-xs">16-30 zile</span>
-                                                                    <span className="text-white font-semibold text-xs">
-                                                                        {car.discount_percentage && car.discount_percentage > 0
-                                                                            ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                            : car.price_16_30_days
-                                                                        } MDL
+                                                            <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
+                                                                {car.discount_percentage && car.discount_percentage > 0
+                                                                    ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                    : car.price_16_30_days}
                                                             </span>
-                                                                </div>
-                                                            </div>
                                                         )}
                                                         {(car.price_over_30_days || 0) > 0 && (
-                                                            <div className="bg-white/5 border border-white/10 rounded px-2 py-1">
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-gray-300 text-xs">30+ zile</span>
-                                                                    <span className="text-white font-semibold text-xs">
-                                                                        {car.discount_percentage && car.discount_percentage > 0
-                                                                            ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                            : car.price_over_30_days
-                                                                        } MDL
+                                                            <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
+                                                                {car.discount_percentage && car.discount_percentage > 0
+                                                                    ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
+                                                                    : car.price_over_30_days}
                                                             </span>
-                                                                </div>
-                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>
@@ -876,9 +850,9 @@ export const CarsView: React.FC = () => {
                                                         >
                                                             <button
                                                                 type="button"
-                                                                disabled={togglingCarId === car.id}
+                                                                disabled={togglingCarId === parseInt(car.id, 10)}
                                                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ${
-                                                                    togglingCarId === car.id 
+                                                                    togglingCarId === parseInt(car.id, 10) 
                                                                         ? 'opacity-50 cursor-wait'
                                                                         : ''
                                                                 } ${
@@ -911,7 +885,7 @@ export const CarsView: React.FC = () => {
                                                             <LuPencil className="w-4 h-4" />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteCar(car.id)}
+                                                            onClick={() => handleDeleteCar(parseInt(car.id, 10))}
                                                             className="p-2 text-red-300 hover:text-red-200 transition-colors"
                                                             title={t('admin.common.delete')}
                                                         >
@@ -928,7 +902,7 @@ export const CarsView: React.FC = () => {
                     </>
                 ) : (
                     <div className="px-6 py-12 text-center text-gray-400">
-                        {searchQuery || filterCategory !== 'all' ? t('admin.cars.noCars') : t('admin.cars.noCars')}
+                        {searchQuery ? t('admin.cars.noCars') : t('admin.cars.noCars')}
                     </div>
                 )}
             </div>

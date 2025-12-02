@@ -81,23 +81,32 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
         const rentalDays = days; // Use full days for discount calculation (same as Calculator)
         const totalDays = days + (hours / 24); // Use total days for final calculation
 
-        // Base price calculation (same as Calculator.tsx)
+        // Base price calculation using price ranges (no period discounts)
         let basePrice = 0;
-        let discountPercent = 0;
+        let pricePerDay = 0;
 
-        if (rentalDays >= 8) {
-            discountPercent = 4;
-            basePrice = car.price_per_day * 0.96 * rentalDays; // -4%
-        } else if (rentalDays >= 4) {
-            discountPercent = 2;
-            basePrice = car.price_per_day * 0.98 * rentalDays; // -2%
-        } else {
-            basePrice = car.price_per_day * rentalDays;
+        // Determine price per day based on rental duration
+        if (rentalDays >= 2 && rentalDays <= 4) {
+            pricePerDay = car.price_2_4_days || 0;
+        } else if (rentalDays >= 5 && rentalDays <= 15) {
+            pricePerDay = car.price_5_15_days || 0;
+        } else if (rentalDays >= 16 && rentalDays <= 30) {
+            pricePerDay = car.price_16_30_days || 0;
+        } else if (rentalDays > 30) {
+            pricePerDay = car.price_over_30_days || 0;
         }
+
+        // Apply car discount if exists
+        const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
+        if (carDiscount > 0) {
+            pricePerDay = pricePerDay * (1 - carDiscount / 100);
+        }
+
+        basePrice = pricePerDay * rentalDays;
 
         // Add hours portion (hours are charged at full price, no discount)
         if (hours > 0) {
-            const hoursPrice = (hours / 24) * car.price_per_day;
+            const hoursPrice = (hours / 24) * pricePerDay;
             basePrice += hoursPrice;
         }
 

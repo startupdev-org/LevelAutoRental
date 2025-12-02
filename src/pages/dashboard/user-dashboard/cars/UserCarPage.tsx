@@ -170,7 +170,7 @@ export const CarsView: React.FC = () => {
             const imagesMap = new Map<string, { mainImage: string, photoGallery: string[] }>();
             imageResults.forEach(result => {
                 imagesMap.set(result.carId, {
-                    mainImage: result.mainImage,
+                    mainImage: result.mainImage || '',
                     photoGallery: result.photoGallery
                 });
             });
@@ -731,6 +731,7 @@ export const CarsView: React.FC = () => {
                         {/* Fuel Type */}
                         <div className="flex items-center gap-2 text-gray-300">
                             <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                                {/* @ts-ignore */}
                                 <FaGasPump className="w-4 h-4 text-gray-300" />
                             </div>
                             <span className="text-sm font-medium">
@@ -746,6 +747,7 @@ export const CarsView: React.FC = () => {
                         <div className="flex items-center justify-end gap-2 text-gray-300">
                             <span className="text-sm font-medium capitalize">{carWithImages.body}</span>
                             <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                                {/* @ts-ignore */}
                                 <TbCar4WdFilled className="w-4 h-4 text-gray-300" />
                             </div>
                         </div>
@@ -754,7 +756,7 @@ export const CarsView: React.FC = () => {
                     {/* Price and CTA */}
                     <div className="flex items-center justify-between pt-4 border-t border-white/20">
                         {(() => {
-                            const basePrice = carWithImages.price_per_day || 0;
+                            const basePrice = carWithImages.price_over_30_days || 0;
                             const discount = (carWithImages as any).discount_percentage || 0;
                             const finalPrice = discount > 0
                                 ? basePrice * (1 - discount / 100)
