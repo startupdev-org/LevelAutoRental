@@ -85,11 +85,8 @@ RETURNS TRIGGER AS $$
 BEGIN
     -- Only process APPROVED requests
     IF NEW.status = 'APPROVED' THEN
-        -- Check if start date has passed
-        IF NEW.start_date IS NOT NULL AND (NEW.start_date::date < CURRENT_DATE OR
-           (NEW.start_date::date = CURRENT_DATE AND
-            (NEW.start_time IS NULL OR NEW.start_time <= CURRENT_TIME))) THEN
-
+        -- Check if start date has passed (BorrowRequest table uses TIMESTAMP, not separate date/time)
+        IF NEW.start_date IS NOT NULL AND NEW.start_date <= CURRENT_TIMESTAMP THEN
             -- Update the request status to EXECUTED
             NEW.status := 'EXECUTED';
             NEW.updated_at := CURRENT_TIMESTAMP;
@@ -108,5 +105,40 @@ CREATE TRIGGER auto_execute_rental_trigger
     BEFORE INSERT OR UPDATE ON "BorrowRequest"
     FOR EACH ROW
     EXECUTE FUNCTION auto_execute_rental_trigger();
+
+-- Trigger to automatically update rental status based on dates
+CREATE OR REPLACE FUNCTION auto_update_rental_status()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Handle CONTRACT -> ACTIVE transition when start_date arrives
+    IF NEW.rental_status = 'CONTRACT' AND NEW.start_date IS NOT NULL THEN
+        IF NEW.start_date::date < CURRENT_DATE OR
+           (NEW.start_date::date = CURRENT_DATE AND CURRENT_TIME >= '09:00:00'::time) THEN
+            NEW.rental_status := 'ACTIVE';
+            NEW.updated_at := CURRENT_TIMESTAMP;
+            RAISE NOTICE 'Auto-activated rental % - start date has arrived', NEW.id;
+        END IF;
+    END IF;
+
+    -- Handle ACTIVE -> COMPLETED transition when end_date passes
+    IF NEW.rental_status = 'ACTIVE' AND NEW.end_date IS NOT NULL THEN
+        IF NEW.end_date::date < CURRENT_DATE OR
+           (NEW.end_date::date = CURRENT_DATE AND CURRENT_TIME >= '18:00:00'::time) THEN
+            NEW.rental_status := 'COMPLETED';
+            NEW.updated_at := CURRENT_TIMESTAMP;
+            RAISE NOTICE 'Auto-completed rental % - end date has passed', NEW.id;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger for Rentals table
+DROP TRIGGER IF EXISTS auto_update_rental_status_trigger ON "Rentals";
+CREATE TRIGGER auto_update_rental_status_trigger
+    BEFORE UPDATE ON "Rentals"
+    FOR EACH ROW
+    EXECUTE FUNCTION auto_update_rental_status();
 
 
