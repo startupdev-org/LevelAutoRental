@@ -520,6 +520,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
             basePricePerDay = car?.price_over_30_days || selectedCar?.price_over_30_days || 0;
         }
 
+        // Always use raw MDL prices - no currency conversion in modal
         const pricePerDay = carDiscount > 0
             ? basePricePerDay * (1 - carDiscount / 100)
             : basePricePerDay;
@@ -612,6 +613,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
             basePricePerDay = car?.price_over_30_days || selectedCar?.price_over_30_days || 0;
         }
 
+        // Always use raw MDL prices - no currency conversion in modal
         const pricePerDay = carDiscount > 0
             ? basePricePerDay * (1 - carDiscount / 100)
             : basePricePerDay;
