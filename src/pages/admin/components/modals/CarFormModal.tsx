@@ -7,9 +7,15 @@ import {
     ArrowRight,
     Upload,
     Loader2,
+    Check,
+    Save,
+    CheckCircle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Car as CarType } from '../../../../types';
+import { useNotification } from '../../../../components/ui/NotificationToaster';
+import { LiaCarSideSolid } from 'react-icons/lia';
+import { supabase, supabaseAdmin } from '../../../../lib/supabase';
 
 interface CarFormModalProps {
     car: CarType | null;
@@ -45,6 +51,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
     const [carAdded, setCarAdded] = useState(false);
     const [newCarId, setNewCarId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
+    const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
     const { showSuccess, showError } = useNotification();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -75,6 +82,12 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                 if (typeof carId === 'number') {
                     setNewCarId(carId);
                     setCarAdded(true);
+
+                    // Upload pending image if one was selected
+                    if (pendingImageFile) {
+                        await uploadPendingImage(carId, (formDataWithCategory as any).name || 'car');
+                    }
+
                     showSuccess(t('admin.cars.carCreated'));
                     // Don't auto-close - let user click Continue or Close
                 }
@@ -125,44 +138,145 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
 
     // Function for uploading main image to Supabase storage
     const handleMainImageUpload = async (file: File) => {
-        setUploadingMainImage(true);
-        try {
-            const carName = (formData as any).name || 'car';
-            const folderName = createFolderName(carName);
-            const modelPart = getModelPart(carName);
-            const fileName = `${modelPart}-main.jpg`;
-            const filePath = `${folderName}/${fileName}`;
+        // For new cars, store the file to upload after car creation
+        // For existing cars, upload immediately
+        if (!car) {
+            setPendingImageFile(file);
+            showSuccess(t('admin.cars.imageSelected'));
+        } else {
+            // Existing car - upload immediately (same as CarDetailsEditView)
+            setUploadingMainImage(true);
+            try {
+                // Check if supabaseAdmin is available (service key required)
+                if (!import.meta.env.VITE_SUPABASE_SERVICE_KEY) {
+                    throw new Error('Service key not available for file upload');
+                }
 
-            // Upload to Supabase storage
-            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-                .from('cars')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: true // Replace if exists
-                });
+                const carName = (formData as any).name || (car as any).name || 'car';
+                const folderName = createFolderName(carName);
+                const modelPart = getModelPart(carName);
+                const fileName = `${modelPart}-main.jpg`;
+                const filePath = `${folderName}/${fileName}`;
+
+            // Upload to Supabase storage (try regular client first, fallback to admin)
+            let uploadData, uploadError;
+            try {
+                const result = await supabase.storage
+                    .from('cars')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true // Replace if exists
+                    });
+                uploadData = result.data;
+                uploadError = result.error;
+            } catch (regularError) {
+                // Fallback to admin client if regular client fails
+                console.warn('Regular client upload failed, trying admin client:', regularError);
+                const adminResult = await supabaseAdmin.storage
+                    .from('cars')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true // Replace if exists
+                    });
+                uploadData = adminResult.data;
+                uploadError = adminResult.error;
+            }
 
             if (uploadError) {
                 throw uploadError;
             }
 
             // Get public URL
-            const { data: { publicUrl } } = supabaseAdmin.storage
+            const { data: { publicUrl } } = supabase.storage
                 .from('cars')
                 .getPublicUrl(filePath);
 
-            // Update form data with the public URL
-            setFormData(prev => ({
-                ...prev,
-                image: publicUrl,
-                image_url: publicUrl
-            }));
+                // Update form data with the public URL
+                setFormData(prev => ({
+                    ...prev,
+                    image: publicUrl,
+                    image_url: publicUrl
+                }));
+
+                showSuccess(t('admin.cars.imageUploaded'));
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                showError(t('admin.cars.imageUploadError'));
+            } finally {
+                setUploadingMainImage(false);
+            }
+        }
+    };
+
+    // Function to upload pending image after car creation
+    const uploadPendingImage = async (carId: number, carName: string) => {
+        if (!pendingImageFile) return;
+
+        setUploadingMainImage(true);
+        try {
+            // Check if supabaseAdmin is available (service key required)
+            if (!import.meta.env.VITE_SUPABASE_SERVICE_KEY) {
+                throw new Error('Service key not available for file upload');
+            }
+
+            const folderName = createFolderName(carName);
+            const modelPart = getModelPart(carName);
+            const fileName = `${modelPart}-main.jpg`;
+            const filePath = `${folderName}/${fileName}`;
+
+            // Upload to Supabase storage (try regular client first, fallback to admin)
+            let uploadData, uploadError;
+            try {
+                const result = await supabase.storage
+                    .from('cars')
+                    .upload(filePath, pendingImageFile, {
+                        cacheControl: '3600',
+                        upsert: true // Replace if exists
+                    });
+                uploadData = result.data;
+                uploadError = result.error;
+            } catch (regularError) {
+                // Fallback to admin client if regular client fails
+                console.warn('Regular client upload failed, trying admin client:', regularError);
+                const adminResult = await supabaseAdmin.storage
+                    .from('cars')
+                    .upload(filePath, pendingImageFile, {
+                        cacheControl: '3600',
+                        upsert: true // Replace if exists
+                    });
+                uploadData = adminResult.data;
+                uploadError = adminResult.error;
+            }
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('cars')
+                .getPublicUrl(filePath);
+
+            // Update the car record with the image URL
+            const { error: updateError } = await supabaseAdmin
+                .from('Cars')
+                .update({
+                    image_url: publicUrl,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', carId);
+
+            if (updateError) {
+                console.error('Error updating car with image URL:', updateError);
+            }
 
             showSuccess(t('admin.cars.imageUploaded'));
         } catch (error) {
-            console.error('Error uploading image:', error);
+            console.error('Error uploading pending image:', error);
             showError(t('admin.cars.imageUploadError'));
         } finally {
             setUploadingMainImage(false);
+            setPendingImageFile(null);
         }
     };
 
@@ -503,6 +617,12 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                 </label>
                                 {uploadingMainImage && (
                                     <p className="text-xs text-gray-400 mb-2">{t('admin.cars.uploadingImage')}</p>
+                                )}
+                                {pendingImageFile && !uploadingMainImage && (
+                                    <p className="text-xs text-green-400 mb-2 flex items-center gap-1">
+                                        <Check className="w-3 h-3" />
+                                        {t('admin.cars.imageSelectedWillUpload')}
+                                    </p>
                                 )}
                                 {((formData as any).image || formData.image_url) && (
                                     <div className="mt-2 inline-block">
