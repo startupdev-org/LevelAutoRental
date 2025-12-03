@@ -145,12 +145,12 @@ export async function fetchImagesByCarName(
     carName: string
 ): Promise<{ mainImage: string | null; photoGallery: string[] }> {
     try {
-        console.log(`[fetchImagesByCarName] Starting for car: "${carName}"`);
+        // console.log(`[fetchImagesByCarName] Starting for car: "${carName}"`);
 
         // Normalize car name to match folder structure
         // "Mercedes-AMG C43" → "mercedes-c43", "BMW X4" → "bmw-x4"
         let folder = normalizeCarNameToFolder(carName);
-        console.log(`[fetchImagesByCarName] Primary folder: "${folder}"`);
+        // console.log(`[fetchImagesByCarName] Primary folder: "${folder}"`);
 
         let { data: files, error } = await supabase.storage
             .from("cars")
@@ -186,7 +186,7 @@ export async function fetchImagesByCarName(
             return { mainImage: null, photoGallery: [] };
         }
 
-        console.log(`[fetchImagesByCarName] Found ${files.length} total files in "${folder}":`, files.map(f => f.name));
+        // console.log(`[fetchImagesByCarName] Found ${files.length} total files in "${folder}":`, files.map(f => f.name));
 
         // Keep only valid image files
         const imageFiles = files.filter(
@@ -195,7 +195,7 @@ export async function fetchImagesByCarName(
                 /\.(jpg|jpeg|png)$/i.test(file.name)
         );
 
-        console.log(`[fetchImagesByCarName] Found ${imageFiles.length} image files:`, imageFiles.map(f => f.name));
+        // console.log(`[fetchImagesByCarName] Found ${imageFiles.length} image files:`, imageFiles.map(f => f.name));
 
         if (imageFiles.length === 0) {
             console.warn(`[fetchImagesByCarName] No image files found in folder "${folder}"`);
@@ -227,7 +227,7 @@ export async function fetchImagesByCarName(
             return false;
         }) || null;
 
-        console.log(`[fetchImagesByCarName] Main file detected:`, mainFile?.name || 'none');
+        // console.log(`[fetchImagesByCarName] Main file detected:`, mainFile?.name || 'none');
 
         // Fallback: use the first image file if no main file is found
 
@@ -252,7 +252,7 @@ export async function fetchImagesByCarName(
             })
             .map((file) => getUrl(file.name));
 
-        console.log(`[fetchImagesByCarName] Gallery images after sorting:`, sortedImages.map(url => url.split('/').pop()));
+        // console.log(`[fetchImagesByCarName] Gallery images after sorting:`, sortedImages.map(url => url.split('/').pop()));
 
         // Final gallery: main first, then sorted rest
         const photoGallery = [
@@ -260,7 +260,7 @@ export async function fetchImagesByCarName(
             ...sortedImages,
         ];
 
-        console.log(`[fetchImagesByCarName] Final result for "${carName}": mainImage=${!!mainImage}, gallery=${photoGallery.length} images`);
+        // console.log(`[fetchImagesByCarName] Final result for "${carName}": mainImage=${!!mainImage}, gallery=${photoGallery.length} images`);
         return { mainImage, photoGallery };
     } catch (err) {
         console.error("Unexpected error in fetchImagesByCarName:", err);
