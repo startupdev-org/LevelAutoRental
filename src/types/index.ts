@@ -103,3 +103,103 @@ export interface FavoriteCar {
   lastRental: string | null;
   borrowCount: number | null;
 }
+
+export interface BorrowRequest {
+  id: string;
+  car_id: string;
+  user_id: string;
+  start_date: string;
+  start_time: string;
+  end_date: string;
+  end_time: string;
+  customer_name: string;
+  customer_first_name: string;
+  customer_last_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  total_amount: number;
+  comment: string;
+  options: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  requested_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BorrowRequestDTO {
+  id: string;
+  car_id: string;
+  user_id: string;
+  start_date: Date;
+  start_time: string;
+  end_date: Date;
+  end_time: string;
+  customer_name: string;
+  customer_first_name: string;
+  customer_last_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  total_amount: number;
+  comment: string;
+  options: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  requested_at: string;
+  created_at: string;
+  updated_at: string;
+  car: Car;
+}
+
+export interface Rental {
+  id: string;
+  request_id: string;
+  user_id: string;
+  car_id: string;
+  start_date: string;
+  start_time: string;
+  end_date: string;
+  end_time: string;
+  rental_status: string;
+  total_amount?: number;
+  subtotal?: number;
+  taxes_fees?: number;
+  additional_taxes?: number;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: string;
+    email: string;
+    user_metadata?: {
+      first_name?: string;
+      last_name?: string;
+      full_name?: string;
+    };
+  };
+  car?: Car;
+}
+
+export interface OrderDisplay {
+  id: number | string,
+  carId: string,
+  userId: string,
+  avatar: string,
+  pickupDate: string,
+  returnDate: string,
+  pickupTime: string,
+  returnTime: string,
+  total_amount: string,
+  status: string,
+  customerName?: string,
+  customerEmail?: string,
+  customerPhone?: string,
+  customerFirstName?: string,
+  customerLastName?: string,
+  customerAge?: string | number,
+  carName?: string,
+  createdAt?: string,
+  type?: 'request' | 'rental',
+  amount?: number,
+  contract_url?: string,
+  features?: string[] | any,
+  options?: any,
+  request_id?: string | number,
+}
