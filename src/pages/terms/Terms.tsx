@@ -37,7 +37,7 @@ export const Terms: React.FC = () => {
         };
     };
 
-    const sections = ['intro', 'cookies', 'personal-data', 'location', 'payment', 'notifications'].map(getSectionContent);
+    const sections = ['intro', 'cookies', 'personal-data', 'notifications'].map(getSectionContent);
 
     return (
         <div className="min-h-screen">

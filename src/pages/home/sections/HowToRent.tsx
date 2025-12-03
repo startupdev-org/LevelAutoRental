@@ -36,7 +36,45 @@ export const HowToRent: React.FC = () => {
     ];
 
     return (
-        <section className="relative py-20 mb-40 bg-cover bg-no-repeat bg-mobile-howto bg-howto-mobile md:bg-desktop-howto md:bg-howto-desktop">
+        <section className="relative py-20 mb-40">
+            {/* Background Image - Desktop */}
+            <div
+                className="hidden lg:block absolute inset-0"
+                style={{
+                    backgroundImage: "url('/backgrounds/bg5-desktop.jpeg')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed',
+                    zIndex: 0
+                }}
+            ></div>
+
+            {/* Background Image - Tablet */}
+            <div
+                className="hidden md:block lg:hidden absolute inset-0"
+                style={{
+                    backgroundImage: "url('/lvl_bg.png')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center center',
+                    backgroundRepeat: 'no-repeat',
+                    zIndex: 0
+                }}
+            ></div>
+
+            {/* Background Image - Mobile */}
+            <div
+                className="md:hidden absolute inset-0"
+                style={{
+                    backgroundImage: "url('/backgrounds/bg6-mobile.jpeg')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed',
+                    zIndex: 0
+                }}
+            ></div>
+
             {/* Background Overlay */}
             <div className="absolute inset-0 bg-black/60"></div>
             
