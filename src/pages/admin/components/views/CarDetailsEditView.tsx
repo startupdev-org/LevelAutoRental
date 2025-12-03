@@ -14,7 +14,7 @@ import { fetchCarById } from '../../../../lib/cars';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 import { Car as CarType } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
-import { supabaseAdmin } from '../../../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../../../lib/supabase';
 
 export interface CarDetailsEditViewProps {
     car: CarType;
@@ -46,7 +46,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
     useEffect(() => {
         const loadCar = async () => {
             try {
-                const fetchedCar = await fetchCarById(car.id);
+                const fetchedCar = await fetchCarById(Number(car.id));
                 if (fetchedCar) {
                     // Fetch images from storage
                     const carName = (fetchedCar as any).name || `${fetchedCar.make} ${fetchedCar.model}`;
@@ -222,20 +222,36 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
             const fileName = `${modelPart}-main.jpg`;
             const filePath = `${folderName}/${fileName}`;
 
-            // Upload to Supabase storage
-            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-                .from('cars')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: true // Replace if exists
-                });
+            // Upload to Supabase storage (try regular client first, fallback to admin)
+            let uploadData, uploadError;
+            try {
+                const result = await supabase.storage
+                    .from('cars')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true // Replace if exists
+                    });
+                uploadData = result.data;
+                uploadError = result.error;
+            } catch (regularError) {
+                // Fallback to admin client if regular client fails
+                console.warn('Regular client upload failed, trying admin client:', regularError);
+                const adminResult = await supabaseAdmin.storage
+                    .from('cars')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true // Replace if exists
+                    });
+                uploadData = adminResult.data;
+                uploadError = adminResult.error;
+            }
 
             if (uploadError) {
                 throw uploadError;
             }
 
             // Get public URL
-            const { data: { publicUrl } } = supabaseAdmin.storage
+            const { data: { publicUrl } } = supabase.storage
                 .from('cars')
                 .getPublicUrl(filePath);
 
