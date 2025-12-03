@@ -12,6 +12,13 @@ export const getMonthFromDate = (date: Date): string => {
     return month.charAt(0).toUpperCase() + month.slice(1);
 };
 
+export const formatDateLocal = (date: string | Date): string => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+
+    if (isNaN(d.getTime())) return '';
+
+    return new Intl.DateTimeFormat('ro-RO').format(d);
+};
 
 
 

@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check, FileText, Cookie, MapPin, CreditCard, Bell, CheckCircle } from 'lucide-react';
 import { Car as CarType } from '../../types';
 import { useTranslation } from 'react-i18next';
-import { createUserBorrowRequest } from '../../lib/orders';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
+import { createUserBorrowRequest } from '../../lib/db/requests/requests';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
@@ -230,9 +230,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     // No period-based discounts - only car-level discounts applied in price ranges
 
-    const originalPrice = rentalCalculation
-        ? car.price_per_day * (rentalCalculation.days + (rentalCalculation.hours / 24))
-        : 0;
+    // const originalPrice = rentalCalculation
+    //     ? car.price_per_day * (rentalCalculation.days + (rentalCalculation.hours / 24))
+    //     : 0;
 
     // Validation functions
     const validateName = (name: string): string | null => {
