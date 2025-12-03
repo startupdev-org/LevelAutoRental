@@ -444,7 +444,7 @@ export const Cars: React.FC = () => {
         {/* Top Filter Section - Full Width */}
         <div className="mt-8 mb-10 relative">
           <div
-            className="rounded-3xl overflow-visible min-h-[620px] md:min-h-[350px] flex flex-col justify-end relative"
+            className="rounded-3xl overflow-visible min-h-[480px] md:min-h-[350px] flex flex-col justify-end relative"
           >
             {/* Background Image Container - Clipped */}
             <div
