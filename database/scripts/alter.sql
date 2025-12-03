@@ -55,8 +55,9 @@ FROM "Rentals"
 ALTER TABLE "Rentals"
 ADD CONSTRAINT rentals_profiles_fk FOREIGN KEY (user_id) REFERENCES "Profiles"(id)
 
-ALTER TABLE "BorrowRequest"
-ADD CONSTRAINT borrow_request_profiles_fk FOREIGN KEY (customer_email) REFERENCES "Profiles"(email);
+-- Removed problematic foreign key constraint that prevented guest users from creating borrow requests
+-- ALTER TABLE "BorrowRequest"
+-- ADD CONSTRAINT borrow_request_profiles_fk FOREIGN KEY (customer_email) REFERENCES "Profiles"(email);
 
 -- Add missing columns to Cars table
 ALTER TABLE public."Cars"

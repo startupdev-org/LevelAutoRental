@@ -231,14 +231,39 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section
-      className="relative h-[725px] bg-cover bg-no-repeat bg-fixed pt-36 font-sans bg-hero-mobile md:bg-hero-desktop"
-      style={{
-        backgroundSize: 'cover'
-      }}
-    >
+    <section className="relative h-[725px] pt-36 font-sans bg-white">
+      {/* Background Image - Desktop version with background-attachment: fixed */}
+      <div
+        className="hidden lg:block absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/lvl_bg.png')",
+          backgroundAttachment: 'fixed',
+          backgroundPosition: 'center -300px',
+          backgroundSize: '100%',
+          zIndex: 0
+        }}
+      ></div>
+
+      {/* Background Image - Mobile version with img element for better mobile support */}
+      <div className="lg:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+        <img
+          src="/backgrounds/bg10-mobile.jpeg"
+          alt="Background"
+          className="w-full h-full object-cover"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0
+          }}
+        />
+      </div>
+
       {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/60"></div>
+      <div className="absolute inset-0 bg-black/60" style={{ zIndex: 1 }}></div>
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
         <div className="flex items-center justify-center h-full lg:pt-24">
