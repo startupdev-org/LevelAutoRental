@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check, FileText, Cookie, MapPin, CreditCard, Bell, CheckCircle } from 'lucide-react';
+import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check, FileText, Cookie, Bell, CheckCircle } from 'lucide-react';
 import { Car as CarType } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { createUserBorrowRequest } from '../../lib/orders';
@@ -1538,29 +1538,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* Payment Section */}
-                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                                                        <CreditCard className="w-5 h-5 text-white" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
-                                                            {t('pages.terms.sections.payment.title')}
-                                                        </h3>
-                                                        <ul className="space-y-2">
-                                                            {[1, 2, 3, 4].map((num) => (
-                                                                <li key={num} className="flex items-start gap-2">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
-                                                                        {t(`pages.terms.sections.payment.bullet${num}`)}
-                                                                    </span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
@@ -1588,29 +1565,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* Location Section */}
-                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                                                        <MapPin className="w-5 h-5 text-white" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
-                                                            {t('pages.terms.sections.location.title')}
-                                                        </h3>
-                                                        <ul className="space-y-2">
-                                                            {[1, 2, 3, 4].map((num) => (
-                                                                <li key={num} className="flex items-start gap-2">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
-                                                                        {t(`pages.terms.sections.location.bullet${num}`)}
-                                                                    </span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
 
                                             {/* Notifications Section */}
                                             <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">

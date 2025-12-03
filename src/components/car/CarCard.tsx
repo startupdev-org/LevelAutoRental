@@ -352,8 +352,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
             >
                 {/* Image Container */}
                 <div
-                    className="relative overflow-hidden cursor-pointer"
-                    onClick={() => navigate(`/cars/${carWithImages.id}`)}
+                    className="relative overflow-hidden"
                     onMouseMove={(e) => {
                         if (carWithImages.photo_gallery && carWithImages.photo_gallery.length > 1) {
                             const container = e.currentTarget;
@@ -392,20 +391,23 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 const totalPhotos = carWithImages.photo_gallery.length;
                                 const remainingPhotos = totalPhotos - maxPhotos;
 
-                                return photosToShow.map((photo, index) => (
-                                    <div
-                                        key={index}
-                                        className="relative w-full h-56 flex-shrink-0"
-                                        style={{ minWidth: '100%' }}
-                                    >
+                                return photosToShow.map((photo, index) => {
+                                    const isLastVisiblePhoto = index === photosToShow.length - 1;
+                                    const shouldBeClickable = isLastVisiblePhoto && (remainingPhotos > 0 || remainingPhotos === 0);
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`relative w-full h-56 flex-shrink-0 ${shouldBeClickable ? 'cursor-pointer' : ''}`}
+                                            style={{ minWidth: '100%' }}
+                                            onClick={shouldBeClickable ? () => navigate(`/cars/${carWithImages.id}`) : undefined}
+                                        >
                                         <img
                                             src={photo}
                                             alt={`${carWithImages.make} ${carWithImages.model} - Photo ${index + 1}`}
                                             className="w-full h-56 object-cover object-center bg-gray-100"
                                         />
                                         {(() => {
-                                            const isLastVisiblePhoto = index === photosToShow.length - 1;
-
                                             if (isLastVisiblePhoto && remainingPhotos > 0) {
                                                 return (
                                                     <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
@@ -428,8 +430,9 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                                             return null;
                                         })()}
-                                    </div>
-                                ));
+                                        </div>
+                                    );
+                                });
                             })()
                         ) : (
                             carWithImages.image_url ? (

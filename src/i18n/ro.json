@@ -187,24 +187,10 @@
                 },
                 "personal-data": {
                     "title": "Date personale",
-                    "bullet1": "Colectăm informații personale: nume, email, număr de telefon și adresa IP",
+                    "bullet1": "Colectăm informații personale: nume, email, număr de telefon",
                     "bullet2": "Colectăm date doar atunci când efectuați o achiziție pe site",
                     "bullet3": "Informațiile sunt folosite pentru identificare, confirmare și comunicare cu clienții",
                     "bullet4": "Noi nu transmitem aceste informații terților - datele sunt stocate în siguranță"
-                },
-                "location": {
-                    "title": "Locația dumneavoastră",
-                    "bullet1": "Folosim adresa dvs. IP pentru a determina locația dumneavoastră",
-                    "bullet2": "Informațiile despre locație ne ajută să vă personalizăm experiența",
-                    "bullet3": "Locația vă ajută să afișăm anunțuri relevante din apropierea dumneavoastră",
-                    "bullet4": "Folosim locația pentru a difuza anunțuri direcționate și relevante"
-                },
-                "payment": {
-                    "title": "Informații despre cardul dvs. de credit",
-                    "bullet1": "Când efectuați o achiziție, introduceți detaliile cardului dvs. de credit sau PayPal",
-                    "bullet2": "Întregul proces de plată este procesat de sistemele de plată specializate",
-                    "bullet3": "Nu stocăm detaliile cardului dvs. de credit",
-                    "bullet4": "Nu avem acces la informațiile de plată în nicio etapă a procesului de cumpărare"
                 },
                 "notifications": {
                     "title": "Notificări de sistem",
@@ -420,7 +406,7 @@
                 "links": {
                     "about": "Despre noi",
                     "reviews": "Recenzii",
-                    "rental-conditions": "Termeni de inchiriere"
+                    "rental-conditions": "Termeni si Conditii"
                 }
             }
         },
