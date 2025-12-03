@@ -7,6 +7,7 @@ import { createUserBorrowRequest } from '../../lib/orders';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
+import { fetchCarById } from '../../lib/cars';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
@@ -77,11 +78,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     ];
 
     // ───── HELPER FUNCTIONS ─────
-    // For rental request modal, always convert prices back to MDL
+    // For rental request modal, prices should always be in MDL
     const convertPriceToMDL = (price: number): number => {
-        if (selectedCurrency === 'MDL') return price;
-        if (selectedCurrency === 'EUR') return Math.round(price * eurRate);
-        if (selectedCurrency === 'USD') return Math.round(price * usdRate);
+        // Always return the price as-is since modal should display MDL prices
         return price;
     };
 
@@ -104,6 +103,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    // Always fetch fresh car data to ensure MDL prices
+    const [freshCarData, setFreshCarData] = useState<CarType | null>(null);
     const [fieldErrors, setFieldErrors] = useState<{
         firstName?: string;
         lastName?: string;
@@ -132,21 +134,24 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const rentalDays = rentalCalculation?.days || 0;
     let additionalCosts = 0;
 
+    // Use fresh car data if available, otherwise fallback to provided car
+    const carData = freshCarData || car;
+
     // Get the base price per day in MDL (not converted)
     const rentalDaysForPrice = rentalCalculation?.days || 0;
     let basePricePerDayMDL = 0;
     if (rentalDaysForPrice >= 2 && rentalDaysForPrice <= 4) {
-        basePricePerDayMDL = car.price_2_4_days || 0;
+        basePricePerDayMDL = carData.price_2_4_days || 0;
     } else if (rentalDaysForPrice >= 5 && rentalDaysForPrice <= 15) {
-        basePricePerDayMDL = car.price_5_15_days || 0;
+        basePricePerDayMDL = carData.price_5_15_days || 0;
     } else if (rentalDaysForPrice >= 16 && rentalDaysForPrice <= 30) {
-        basePricePerDayMDL = car.price_16_30_days || 0;
+        basePricePerDayMDL = carData.price_16_30_days || 0;
     } else if (rentalDaysForPrice > 30) {
-        basePricePerDayMDL = car.price_over_30_days || 0;
+        basePricePerDayMDL = carData.price_over_30_days || 0;
     }
 
     // Apply car discount if exists
-    const carDiscount = (car as any).discount_percentage || 0;
+    const carDiscount = (carData as any).discount_percentage || 0;
     const discountedPricePerDay = carDiscount > 0 ? basePricePerDayMDL * (1 - carDiscount / 100) : basePricePerDayMDL;
 
     // Percentage-based options (calculated as percentage of base car price * days)
@@ -186,22 +191,24 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const calculateBasePrice = () => {
         if (!rentalCalculation) return 0;
 
+        // Use fresh car data if available, otherwise fallback to provided car
+        const carData = freshCarData || car;
         const rentalDays = rentalCalculation.days;
 
         // Determine price per day based on rental duration ranges
         let basePricePerDay = 0;
         if (rentalDays >= 2 && rentalDays <= 4) {
-            basePricePerDay = car.price_2_4_days || 0;
+            basePricePerDay = carData.price_2_4_days || 0;
         } else if (rentalDays >= 5 && rentalDays <= 15) {
-            basePricePerDay = car.price_5_15_days || 0;
+            basePricePerDay = carData.price_5_15_days || 0;
         } else if (rentalDays >= 16 && rentalDays <= 30) {
-            basePricePerDay = car.price_16_30_days || 0;
+            basePricePerDay = carData.price_16_30_days || 0;
         } else if (rentalDays > 30) {
-            basePricePerDay = car.price_over_30_days || 0;
+            basePricePerDay = carData.price_over_30_days || 0;
         }
 
         // Apply car discount if exists
-        const carDiscount = (car as any).discount_percentage || 0;
+        const carDiscount = (carData as any).discount_percentage || 0;
         const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
 
         // Calculate total price
@@ -668,6 +675,26 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         }
     }, [isOpen]);
 
+    // Fetch fresh car data to ensure MDL prices
+    useEffect(() => {
+        const fetchFreshCarData = async () => {
+            if (isOpen && car?.id) {
+                try {
+                    const freshCar = await fetchCarById(typeof car.id === 'string' ? parseInt(car.id) : car.id);
+                    if (freshCar) {
+                        setFreshCarData(freshCar);
+                    }
+                } catch (error) {
+                    console.error('Error fetching fresh car data:', error);
+                    // Fallback to provided car data
+                    setFreshCarData(car);
+                }
+            }
+        };
+
+        fetchFreshCarData();
+    }, [isOpen, car?.id]);
+
     if (!rentalCalculation) return null;
 
     return (
@@ -700,7 +727,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             <div className="sticky top-0 bg-white border-b border-gray-300 px-6 md:px-8 py-6 flex items-center justify-between rounded-t-2xl z-10">
                                 <div>
                                     <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">Cerere de închiriere</h2>
-                                    <p className="mt-1 text-sm text-gray-500">{car.make + ' ' + car.model}</p>
+                                    <p className="mt-1 text-sm text-gray-500">{(freshCarData || car).make + ' ' + (freshCarData || car).model}</p>
                                 </div>
                                 <button
                                     onClick={onClose}

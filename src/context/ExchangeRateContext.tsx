@@ -19,7 +19,8 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<'api' | 'fallback'>('fallback');
   const [selectedCurrency, setSelectedCurrency] = useState<'MDL' | 'EUR' | 'USD'>(() => {
-    return (localStorage.getItem('selectedCurrency') as 'MDL' | 'EUR' | 'USD') || 'EUR';
+    // Force MDL as default for all users
+    return 'MDL';
   });
 
   const handleSetSelectedCurrency = (currency: 'MDL' | 'EUR' | 'USD') => {
