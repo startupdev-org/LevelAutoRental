@@ -239,13 +239,24 @@ export const Hero: React.FC = () => {
           backgroundImage: "url('/lvl_bg.png')",
           backgroundAttachment: 'fixed',
           backgroundPosition: 'center -300px',
-          backgroundSize: '100%',
+          backgroundSize: 'cover',
+          zIndex: 0
+        }}
+      ></div>
+
+      {/* Background Image - Tablet version */}
+      <div
+        className="hidden md:block lg:hidden absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/lvl_bg.png')",
+          backgroundPosition: 'center 25px',
+          backgroundSize: 'cover',
           zIndex: 0
         }}
       ></div>
 
       {/* Background Image - Mobile version with img element for better mobile support */}
-      <div className="lg:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+      <div className="md:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
         <img
           src="/backgrounds/bg10-mobile.jpeg"
           alt="Background"
@@ -300,12 +311,25 @@ export const Hero: React.FC = () => {
                     }}
                   />
 
-                  <motion.button
-                    className="relative px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => window.open('tel:+37362000112', '_self')}
-                  >
+                  <div className="relative">
+                    <motion.button
+                      className="relative px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 overflow-hidden"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => window.open('tel:+37362000112', '_self')}
+                      animate={{
+                        boxShadow: [
+                          "0 4px 15px rgba(239, 68, 68, 0.3)",
+                          "0 8px 25px rgba(239, 68, 68, 0.6)",
+                          "0 4px 15px rgba(239, 68, 68, 0.3)"
+                        ]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
                     <motion.div
                       animate={{
                         rotate: [0, 5, -5, 0]
@@ -319,7 +343,8 @@ export const Hero: React.FC = () => {
                       {BiSolidPhoneCall({ className: "w-6 h-6" })}
                     </motion.div>
                     {t('hero.start')}
-                  </motion.button>
+                    </motion.button>
+                  </div>
                 </div>
                 <button
                   className="px-10 py-4 border-2 border-white hover:border-theme-500 text-white hover:text-theme-500 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 bg-white/10 backdrop-blur-sm"

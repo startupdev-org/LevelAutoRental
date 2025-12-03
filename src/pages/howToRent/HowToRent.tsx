@@ -19,11 +19,12 @@ export const HowToRent: React.FC = () => {
 
     return (
         <div 
-            className="relative min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
+            className="relative min-h-screen bg-cover bg-center bg-no-repeat"
             style={{
                 backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
                 backgroundPosition: isDesktop ? 'center -150px' : 'center center',
-                backgroundSize: isDesktop ? '115%' : 'cover'
+                backgroundSize: isDesktop ? '115%' : 'cover',
+                backgroundAttachment: isDesktop ? 'fixed' : 'scroll'
             }}
         >
             {/* Dark Overlay */}

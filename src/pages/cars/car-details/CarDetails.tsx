@@ -123,7 +123,7 @@ export const CarDetails: React.FC = () => {
         if (!car) return;
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
-        saveFavorite(car.id, newFavoriteState);
+        saveFavorite(Number(car.id), newFavoriteState);
     };
 
     const formatDate = (dateString: string): string => {
@@ -390,7 +390,7 @@ export const CarDetails: React.FC = () => {
     useEffect(() => {
         if (car) {
             const favorites = getFavorites();
-            setIsFavorite(favorites.includes(car.id));
+            setIsFavorite(favorites.includes(Number(car.id)));
             setSelectedImage(car.image_url || '');
         }
     }, [car]);
@@ -412,7 +412,7 @@ export const CarDetails: React.FC = () => {
                     const rentalStatus = (rental as any).status || rental.rental_status || '';
                     
                     // Include ACTIVE, CONTRACT, or any rental that hasn't ended yet
-                    if (rentalCarId !== car.id) return false;
+                    if (rentalCarId !== Number(car.id)) return false;
                     
                     if (rentalStatus === 'ACTIVE' || rentalStatus === 'CONTRACT') {
                         return true;
@@ -1916,7 +1916,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_2_4_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
@@ -1944,7 +1944,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_5_15_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
@@ -1972,7 +1972,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_16_30_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
@@ -2000,7 +2000,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_over_30_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
@@ -2025,16 +2025,16 @@ export const CarDetails: React.FC = () => {
                                 <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
                                     Specificații
                                 </span>
-                                <h2 className="mt-3 text-3xl font-bold text-gray-800 leading-tight">
+                                <h2 className="mt-3 text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
                                     Caracteristici vehicul
                                 </h2>
                             </div>
                             
                             {/* Main Specs Grid - Compact Layout */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
-                                        <Users className="w-5 h-5 text-white" />
+                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
+                                        <Users className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Locuri</div>
@@ -2042,8 +2042,8 @@ export const CarDetails: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
+                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
                                         {(() => {
                                             const trans = car.transmission?.trim() || '';
                                             const isManual = trans.toLowerCase() === 'manual' || trans === 'Manual';
@@ -2068,8 +2068,8 @@ export const CarDetails: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
+                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
                                         {React.createElement(RiGasStationLine as any, { className: "w-5 h-5 text-white" })}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -2084,8 +2084,8 @@ export const CarDetails: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
+                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
                                         {React.createElement(LiaCarSideSolid as any, { className: "w-5 h-5 text-white" })}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -2104,27 +2104,27 @@ export const CarDetails: React.FC = () => {
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {car.power && (
-                                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Zap className="w-4 h-4 text-theme-600" />
+                                            <div className="bg-gray-50 rounded-lg p-2 md:p-4 border border-gray-100">
+                                                <div className="flex items-center gap-1 md:gap-2 mb-2">
+                                                    <Zap className="w-2.5 h-2.5 md:w-4 md:h-4 text-theme-600" />
                                                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Putere</div>
                                                 </div>
                                                 <div className="text-lg font-bold text-gray-900">{car.power}</div>
                                             </div>
                                         )}
                                         {car.acceleration && (
-                                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Gauge className="w-4 h-4 text-theme-600" />
+                                            <div className="bg-gray-50 rounded-lg p-2 md:p-4 border border-gray-100">
+                                                <div className="flex items-center gap-1 md:gap-2 mb-2">
+                                                    <Gauge className="w-2.5 h-2.5 md:w-4 md:h-4 text-theme-600" />
                                                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Accelerație</div>
                                                 </div>
                                                 <div className="text-lg font-bold text-gray-900">{car.acceleration}</div>
                                             </div>
                                         )}
                                         {car.fuel_consumption && (
-                                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Fuel className="w-4 h-4 text-theme-600" />
+                                            <div className="bg-gray-50 rounded-lg p-2 md:p-4 border border-gray-100">
+                                                <div className="flex items-center gap-1 md:gap-2 mb-2">
+                                                    <Fuel className="w-1.5 h-1.5 md:w-4 md:h-4 text-theme-600" />
                                                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Consum</div>
                                                 </div>
                                                 <div className="text-lg font-bold text-gray-900">{car.fuel_consumption} L/100km</div>
@@ -2142,7 +2142,7 @@ export const CarDetails: React.FC = () => {
                                     <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
                                         Echipament
                                     </span>
-                                    <h2 className="mt-3 text-3xl font-bold text-gray-800 leading-tight">
+                                    <h2 className="mt-3 text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
                                         Echipament inclus
                                     </h2>
                                 </div>
@@ -2942,7 +2942,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_2_4_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
@@ -2970,7 +2970,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_5_15_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
@@ -2998,7 +2998,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_16_30_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
@@ -3026,7 +3026,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100)).toLocaleString('ro-RO')}
+                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_over_30_days || 0).toLocaleString('ro-RO')}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
