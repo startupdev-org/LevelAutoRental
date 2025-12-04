@@ -19,9 +19,11 @@ import { EditRequestModal } from '../modals/EditRequestModal';
 import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { getInitials } from '../../../../utils/customer';
 import { getCarName } from '../../../../utils/car';
-import { BorrowRequestFilters, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
+import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';
+import { RequestDetailsModal } from '../modals/RequestDetailsModal';
+import { supabase } from '../../../../lib/supabase';
 
 export const RequestsView: React.FC = () => {
     const { t } = useTranslation();
@@ -34,10 +36,10 @@ export const RequestsView: React.FC = () => {
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
     const [selectedCarIdForRental, setSelectedCarIdForRental] = useState<string | undefined>(undefined);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
-    const [selectedRequest, setSelectedRequest] = useState<BorrowRequest | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestDTO | null>(null);
     const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editingRequest, setEditingRequest] = useState<BorrowRequest | null>(null);
+    const [editingRequest, setEditingRequest] = useState<BorrowRequestDTO | null>(null);
     const [showContractModal, setShowContractModal] = useState(false);
     const [selectedRentalForContract, setSelectedRentalForContract] = useState<OrderDisplay | null>(null);
     const [showRequestContractModal, setShowRequestContractModal] = useState(false);
@@ -119,7 +121,7 @@ export const RequestsView: React.FC = () => {
 
 
 
-    const handleAccept = async (request: BorrowRequest) => {
+    const handleAccept = async (request: BorrowRequestDTO) => {
         // Instead of directly accepting, open contract modal
         setSelectedRequestForContract(request);
         setProcessingRequest(request.id.toString());
@@ -129,7 +131,7 @@ export const RequestsView: React.FC = () => {
         setSelectedRequest(null);
     };
 
-    const handleReject = async (request: BorrowRequest) => {
+    const handleReject = async (request: BorrowRequestDTO) => {
         const reason = window.prompt(`${t('admin.requests.confirmRejectRequest')} ${request.customer_name}? ${t('admin.requests.rejectReasonPrompt')}`);
         if (reason === null) return; // User cancelled
 
@@ -205,48 +207,48 @@ export const RequestsView: React.FC = () => {
         }
     };
 
-    const handleEdit = (request: BorrowRequest) => {
+    const handleEdit = (request: BorrowRequestDTO) => {
         setEditingRequest(request);
         setShowEditModal(true);
     };
 
-    // const handleCancelRental = async (request: BorrowRequest) => {
-    //     if (!window.confirm(`Sunteți sigur că doriți să anulați închirierea pentru ${request.customer_name}? Această acțiune va seta cererea la In Asteptare și va șterge comanda de închiriere.`)) {
-    //         return;
-    //     }
+    const handleCancelRental = async (request: BorrowRequestDTO) => {
+        if (!window.confirm(`Sunteți sigur că doriți să anulați închirierea pentru ${request.customer_name}? Această acțiune va seta cererea la In Asteptare și va șterge comanda de închiriere.`)) {
+            return;
+        }
 
-    //     setProcessingRequest(request.id.toString());
-    //     try {
-    //         const requestId = typeof request.id === 'string' ? parseInt(request.id) : request.id;
+        setProcessingRequest(request.id.toString());
+        try {
+            const requestId = typeof request.id === 'string' ? parseInt(request.id) : request.id;
 
-    //         // First, delete the rental with matching request_id
-    //         const { error: deleteError } = await supabaseAdmin
-    //             .from('Rentals')
-    //             .delete()
-    //             .eq('request_id', requestId);
+            // First, delete the rental with matching request_id
+            const { error: deleteError } = await supabase
+                .from('Rentals')
+                .delete()
+                .eq('request_id', requestId);
 
-    //         if (deleteError) {
-    //             console.error('Error deleting rental:', deleteError);
-    //             showError(`Eroare la ștergerea închirierii: ${deleteError.message}`);
-    //             setProcessingRequest(null);
-    //             return;
-    //         }
+            if (deleteError) {
+                console.error('Error deleting rental:', deleteError);
+                showError(`Eroare la ștergerea închirierii: ${deleteError.message}`);
+                setProcessingRequest(null);
+                return;
+            }
 
-    //         // Then, set the request status to PENDING
-    //         const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
-    //         if (result.success) {
-    //             showSuccess('Închirierea a fost anulată și cererea a fost setată la În Asteptare');
-    //             await loadRequests();
-    //         } else {
-    //             showError(`Eroare la actualizarea cererii: ${result.error || 'Eroare necunoscută'}`);
-    //         }
-    //     } catch (error) {
-    //         console.error('Error canceling rental:', error);
-    //         showError('Eroare la anularea închirierii');
-    //     } finally {
-    //         setProcessingRequest(null);
-    //     }
-    // };
+            // Then, set the request status to PENDING
+            const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
+            if (result.success) {
+                showSuccess('Închirierea a fost anulată și cererea a fost setată la În Asteptare');
+                await loadRequests();
+            } else {
+                showError(`Eroare la actualizarea cererii: ${result.error || 'Eroare necunoscută'}`);
+            }
+        } catch (error) {
+            console.error('Error canceling rental:', error);
+            showError('Eroare la anularea închirierii');
+        } finally {
+            setProcessingRequest(null);
+        }
+    };
 
 
     const handleSort = (field: 'start_date' | 'amount') => {
@@ -259,6 +261,12 @@ export const RequestsView: React.FC = () => {
             setSortOrder('asc');
         }
     };
+
+    function handleSelectRequest(request: BorrowRequestDTO) {
+        console.log('should select this request: ', request)
+        setSelectedRequest(request);
+        setShowRequestDetailsModal(true);
+    }
 
     function clearSort() {
         setSortBy(null);
@@ -412,8 +420,7 @@ export const RequestsView: React.FC = () => {
                                         key={request.id}
                                         className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition cursor-pointer"
                                         onClick={() => {
-                                            // setSelectedRequest(request);
-                                            setShowRequestDetailsModal(true);
+                                            handleSelectRequest(request)
                                         }}
                                     >
                                         {/* Header: Customer and Status */}
@@ -512,8 +519,7 @@ export const RequestsView: React.FC = () => {
                                                 key={request.id}
                                                 className="border-b border-white/10 hover:bg-white/5 transition cursor-pointer"
                                                 onClick={() => {
-                                                    // setSelectedRequest(request);
-                                                    setShowRequestDetailsModal(true);
+                                                    handleSelectRequest(request)
                                                 }}
                                             >
                                                 <td className="px-6 py-4">
@@ -617,7 +623,7 @@ export const RequestsView: React.FC = () => {
             </div>
 
             {/* Add Rental Modal */}
-            {/* {showAddRentalModal && (
+            {showAddRentalModal && (
                 <CreateRentalModal
                     cars={cars}
                     initialCarId={selectedCarIdForRental}
@@ -657,12 +663,11 @@ export const RequestsView: React.FC = () => {
                         setSelectedCarIdForRental(undefined);
                     }}
                 />
-            )} */}
+            )}
 
             {/* Request Details Modal */}
-            {/* {showRequestDetailsModal && selectedRequest && (
+            {showRequestDetailsModal && selectedRequest && (
                 <RequestDetailsModal
-                    cars={cars}
                     request={selectedRequest}
                     onClose={() => {
                         setShowRequestDetailsModal(false);
@@ -676,10 +681,10 @@ export const RequestsView: React.FC = () => {
                     onCancelRental={handleCancelRental}
                     isProcessing={processingRequest === selectedRequest.id.toString()}
                 />
-            )} */}
+            )}
 
             {/* Contract Creation Modal */}
-            {showContractModal && selectedRentalForContract && (() => {
+            {/* {showContractModal && selectedRentalForContract && (() => {
                 const car = cars.find(c => c.id.toString() === selectedRentalForContract.carId);
                 return car ? (
                     <ContractCreationModal
@@ -697,7 +702,7 @@ export const RequestsView: React.FC = () => {
                         }}
                     />
                 ) : null;
-            })()}
+            })()} */}
 
             {/* Contract Creation Modal for Requests */}
             {/* {showRequestContractModal && selectedRequestForContract && (() => {

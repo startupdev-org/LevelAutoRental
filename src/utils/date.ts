@@ -21,28 +21,27 @@ export const formatDateLocal = (date: string | Date): string => {
 };
 
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {
-    let d1: Date;
-    let d2: Date;
+    const toMidnight = (d: string | Date) => {
+        let dateObj: Date;
 
-    if (typeof date1 === 'string' && date1.includes('-')) {
-        // Parse date string safely to avoid timezone issues
-        const [year, month, day] = date1.split('-').map(Number);
-        d1 = new Date(year, month - 1, day);
-    } else {
-        d1 = new Date(date1);
-    }
+        if (typeof d === 'string') {
+            dateObj = new Date(d); // Let JS parse ISO strings correctly
+        } else {
+            dateObj = new Date(d);
+        }
 
-    if (typeof date2 === 'string' && date2.includes('-')) {
-        // Parse date string safely to avoid timezone issues
-        const [year, month, day] = date2.split('-').map(Number);
-        d2 = new Date(year, month - 1, day);
-    } else {
-        d2 = new Date(date2);
-    }
+        dateObj.setHours(0, 0, 0, 0);
+        return dateObj;
+    };
 
-    const diffTime = Math.abs(d2.getTime() - d1.getTime());
+    const d1 = toMidnight(date1);
+    const d2 = toMidnight(date2);
+
+    const diffTime = d2.getTime() - d1.getTime();
     return Math.round(diffTime / (1000 * 60 * 60 * 24));
-}
+};
+
+
 
 /**
  * Calculate rental duration in days and hours

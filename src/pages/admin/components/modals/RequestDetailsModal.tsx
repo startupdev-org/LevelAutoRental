@@ -1,78 +1,49 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     X,
     CheckCircle,
-    XIcon,
     Loader2,
     Edit,
-    Check,
     RefreshCw,
-    Calendar,
-    Clock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Car as CarType } from '../../../../types';
-import { OrderDisplay } from '../../../../lib/orders';
-import { getDateDiffInDays } from '../../../../utils/date';
+import { BorrowRequestDTO, Car } from '../../../../types';
+import { formatDateLocal, getDateDiffInDays } from '../../../../utils/date';
+import { formatTime } from '../../../../utils/time';
+import { getCarPrice } from '../../../../utils/car/pricing';
+import { formatAmount } from '../../../../utils/currency';
+import { parseRequestOptions, RequestOption } from '../../../../utils/car/options';
 
 export interface RequestDetailsModalProps {
-    request: OrderDisplay;
+    request: BorrowRequestDTO;
     onClose: () => void;
-    onAccept: (request: OrderDisplay) => void;
-    onReject: (request: OrderDisplay) => void;
-    onUndoReject?: (request: OrderDisplay) => void;
-    onSetToPending?: (request: OrderDisplay) => void;
-    onEdit?: (request: OrderDisplay) => void;
-    onCancelRental?: (request: OrderDisplay) => void;
+    onAccept: (request: BorrowRequestDTO) => void;
+    onReject: (request: BorrowRequestDTO) => void;
+    onUndoReject?: (request: BorrowRequestDTO) => void;
+    onSetToPending?: (request: BorrowRequestDTO) => void;
+    onEdit?: (request: BorrowRequestDTO) => void;
+    onCancelRental?: (request: BorrowRequestDTO) => void;
     isProcessing?: boolean;
-    cars: CarType[];
 }
 
-export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onCancelRental, isProcessing = false, cars }) => {
+export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, isProcessing = false }) => {
     const { t } = useTranslation();
-    const car = cars.find(c => c.id.toString() === request.carId);
-    if (!car) return null;
 
-    const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}.${month}.${year}`;
-    };
+    const car = request.car as Car;
 
-    const formatTime = (timeString: string): string => {
-        if (!timeString) return '00:00';
-        // Convert to 24-hour format if needed
-        if (timeString.includes('AM') || timeString.includes('PM')) {
-            const [time, period] = timeString.split(' ');
-            const [hours, minutes] = time.split(':');
-            let hour24 = parseInt(hours);
-            if (period === 'PM' && hour24 !== 12) hour24 += 12;
-            if (period === 'AM' && hour24 === 12) hour24 = 0;
-            return `${String(hour24).padStart(2, '0')}:${minutes || '00'}`;
-        }
-        // If already in HH:MM format, ensure it's padded
-        if (timeString.includes(':')) {
-            const [hours, minutes] = timeString.split(':');
-            return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
-        }
-        return '00:00';
-    };
+    console.log('the request details modal should be shown')
 
     // Parse dates correctly to avoid timezone issues
     // Split date string and create date at local midnight
-    const [startYear, startMonth, startDay] = request.pickupDate.split('-').map(Number);
-    const [endYear, endMonth, endDay] = request.returnDate.split('-').map(Number);
+    const startDate = formatDateLocal(request.start_date)
+    const endDate = formatDateLocal(request.end_date)
 
-    const startDate = new Date(startYear, startMonth - 1, startDay);
-    const endDate = new Date(endYear, endMonth - 1, endDay);
 
     // Parse times and combine with dates for accurate calculation
-    const pickupTime = formatTime(request.pickupTime);
-    const returnTime = formatTime(request.returnTime);
+    const pickupTime = formatTime(request.start_time);
+    const returnTime = formatTime(request.end_time);
     const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
     const [returnHour, returnMin] = returnTime.split(':').map(Number);
 
@@ -87,92 +58,8 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
         endDateTime.setHours(returnHour, returnMin, 0, 0);
     }
 
-    const diffTime = endDateTime.getTime() - startDateTime.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-    const days = diffDays;
-    const hours = diffHours >= 0 ? diffHours : 0; // Ensure hours is never negative
-
-    // Calculate pricing using updated price ranges system (no period discounts)
-    const rentalDays = days;
-    const totalDays = days + (hours / 24);
-
-    // Get price per day based on rental duration ranges
-    let basePricePerDay = 0;
-    if (rentalDays >= 2 && rentalDays <= 4) {
-        basePricePerDay = car.price_2_4_days || 0;
-    } else if (rentalDays >= 5 && rentalDays <= 15) {
-        basePricePerDay = car.price_5_15_days || 0;
-    } else if (rentalDays >= 16 && rentalDays <= 30) {
-        basePricePerDay = car.price_16_30_days || 0;
-    } else if (rentalDays > 30) {
-        basePricePerDay = car.price_over_30_days || 0;
-    }
-
-    // Apply car discount if exists
-    const carDiscount = (car as any).discount_percentage || 0;
-    const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
-
-    // Calculate base price
-    let basePrice = pricePerDay * rentalDays;
-
-    // Add hours portion (hours are charged at the same rate)
-    if (hours > 0) {
-        const hoursPrice = (hours / 24) * pricePerDay;
-        basePrice += hoursPrice;
-    }
-
-    // Calculate additional costs from options (same as Calculator.tsx)
-    const options = (request as any).options;
-    let parsedOptions: any = {};
-
-    if (options) {
-        if (typeof options === 'string') {
-            try {
-                parsedOptions = JSON.parse(options);
-            } catch (e) {
-                parsedOptions = {};
-            }
-        } else {
-            parsedOptions = options;
-        }
-    }
-
-    let additionalCosts = 0;
-
-    // Percentage-based options (calculated as percentage of base car price * rentalDays)
-    if (parsedOptions.unlimitedKm) {
-        additionalCosts += pricePerDay * rentalDays * 0.5; // 50%
-    }
-    if (parsedOptions.tireInsurance) {
-        additionalCosts += pricePerDay * rentalDays * 0.2; // 20%
-    }
-
-    // Fixed daily costs
-    if (parsedOptions.personalDriver) {
-        additionalCosts += 800 * rentalDays;
-    }
-    if (parsedOptions.priorityService) {
-        additionalCosts += 1000 * rentalDays;
-    }
-    if (parsedOptions.childSeat) {
-        additionalCosts += 100 * rentalDays;
-    }
-    if (parsedOptions.simCard) {
-        additionalCosts += 100 * rentalDays;
-    }
-    if (parsedOptions.roadsideAssistance) {
-        additionalCosts += 500 * rentalDays;
-    }
-
-    // Total price = base price + additional costs
-    const totalPrice = basePrice + additionalCosts;
-
-    // Get customer information - prefer separate fields, fallback to parsing name
-    const firstName = request.customerFirstName || request.customerName?.split(' ')[0] || '';
-    const lastName = request.customerLastName || request.customerName?.split(' ').slice(1).join(' ') || '';
-    const age = request.customerAge || undefined;
+    const rentalDays = getDateDiffInDays(request.start_date, request.end_date);
+    const pricePerDay = getCarPrice(rentalDays, car)
 
     return createPortal(
         <motion.div
@@ -208,28 +95,28 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
 
                 {/* Content */}
                 <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+
                     {/* Rental Period */}
                     <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
                         <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4">{t('admin.requestDetails.rentalPeriod')}</h3>
                         <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-300 text-sm md:text-base">
-                                    {days} {t('admin.requestDetails.days')}{days !== 1 ? '' : ''}, {hours} {t('admin.requestDetails.hours')}{hours !== 1 ? '' : ''}
+                                    {rentalDays} {t('admin.requestDetails.days')}
                                 </span>
                             </div>
 
                             {/* Discount indicator */}
-
                             <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-white/10">
                                 <div>
                                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.requestDetails.pickupDate')}</p>
-                                    <p className="text-white font-semibold text-sm md:text-base">{formatDate(request.pickupDate)}</p>
-                                    <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.pickupTime)}</p>
+                                    <p className="text-white font-semibold text-sm md:text-base">{formatDateLocal(request.start_date)}</p>
+                                    <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.start_time)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.requestDetails.returnDate')}</p>
-                                    <p className="text-white font-semibold text-sm md:text-base">{formatDate(request.returnDate)}</p>
-                                    <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.returnTime)}</p>
+                                    <p className="text-white font-semibold text-sm md:text-base">{formatDateLocal(request.end_date)}</p>
+                                    <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.end_time)}</p>
                                 </div>
                             </div>
                         </div>
@@ -241,33 +128,33 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                         <div className="grid grid-cols-2 gap-3 md:gap-4">
                             <div>
                                 <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.firstName')}</label>
-                                <p className="text-white font-medium text-sm md:text-base">{firstName || '—'}</p>
+                                <p className="text-white font-medium text-sm md:text-base">{request.customer_first_name || '—'}</p>
                             </div>
                             <div>
                                 <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.lastName')}</label>
-                                <p className="text-white font-medium text-sm md:text-base">{lastName || '—'}</p>
+                                <p className="text-white font-medium text-sm md:text-base">{request.customer_last_name || '—'}</p>
                             </div>
-                            <div>
+                            {/* <div>
                                 <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.age')}</label>
-                                <p className="text-white font-medium text-sm md:text-base">{age ? `${age}` : '—'}</p>
-                            </div>
+                                <p className="text-white font-medium text-sm md:text-base">{request.cu ? `${age}` : '—'}</p>
+                            </div> */}
                             <div>
                                 <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.phone')}</label>
-                                {request.customerPhone ? (
+                                {request.customer_phone ? (
                                     <a
-                                        href={`tel:${request.customerPhone.replace(/\s/g, '')}`}
+                                        href={`tel:${request.customer_phone.replace(/\s/g, '')}`}
                                         className="text-white font-medium text-sm md:text-base hover:text-emerald-400 transition-colors"
                                     >
-                                        {request.customerPhone}
+                                        {request.customer_phone}
                                     </a>
                                 ) : (
-                                    <p className="text-white font-medium text-sm md:text-base">🇲🇩 +373</p>
+                                    <p className="text-white font-medium text-xs md:text-base">No phone number provided</p>
                                 )}
                             </div>
-                            {request.customerEmail && (
+                            {request.customer_email && (
                                 <div className="col-span-2">
                                     <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.form.emailOptional')}</label>
-                                    <p className="text-white text-sm md:text-base">{request.customerEmail}</p>
+                                    <p className="text-white text-sm md:text-base">{request.customer_email}</p>
                                 </div>
                             )}
                         </div>
@@ -275,78 +162,26 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
 
                     {/* Rental Options */}
                     <div className="bg-white/5 rounded-xl p-4 md:p-6 border border-white/10">
-                        <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6">{t('admin.requestDetails.rentalOptions')}</h3>
+                        <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6">
+                            {t('admin.requestDetails.rentalOptions')}
+                        </h3>
 
-                        {/* Parse options from request */}
                         {(() => {
-                            const options = (request as any).options;
-                            let parsedOptions: any = {};
+                            const options = parseRequestOptions(request); // Use the helper function
 
-                            if (options) {
-                                if (typeof options === 'string') {
-                                    try {
-                                        parsedOptions = JSON.parse(options);
-                                    } catch (e) {
-                                        parsedOptions = {};
-                                    }
-                                } else {
-                                    parsedOptions = options;
-                                }
-                            }
-
-                            const selectedOptions: Array<{ label: string; price: string; category: string }> = [];
-
-                            // Pickup and Return
-                            if (parsedOptions.pickupAtAddress) {
-                                selectedOptions.push({ label: 'Preluarea la adresă', price: 'Cost separat', category: 'pickup-return' });
-                            }
-                            if (parsedOptions.returnAtAddress) {
-                                selectedOptions.push({ label: 'Returnarea la adresă', price: 'Cost separat', category: 'pickup-return' });
-                            }
-
-                            // Limits
-                            if (parsedOptions.unlimitedKm) {
-                                selectedOptions.push({ label: 'Kilometraj nelimitat', price: '+50%', category: 'limits' });
-                            }
-                            if (parsedOptions.speedLimitIncrease) {
-                                selectedOptions.push({ label: 'Creșterea limitei de viteză', price: '+20%', category: 'limits' });
-                            }
-
-                            // VIP Services
-                            if (parsedOptions.personalDriver) {
-                                selectedOptions.push({ label: 'Șofer personal', price: '800 MDL/zi', category: 'vip' });
-                            }
-                            if (parsedOptions.priorityService) {
-                                selectedOptions.push({ label: 'Priority Service', price: '1 000 MDL/zi', category: 'vip' });
-                            }
-
-                            // Insurance
-                            if (parsedOptions.tireInsurance) {
-                                selectedOptions.push({ label: 'Asigurare anvelope & parbriz', price: '+20%', category: 'insurance' });
-                            }
-
-                            // Additional
-                            if (parsedOptions.childSeat) {
-                                selectedOptions.push({ label: 'Scaun auto pentru copii', price: '100 MDL/zi', category: 'additional' });
-                            }
-                            if (parsedOptions.simCard) {
-                                selectedOptions.push({ label: 'Cartelă SIM cu internet', price: '100 MDL/zi', category: 'additional' });
-                            }
-                            if (parsedOptions.roadsideAssistance) {
-                                selectedOptions.push({ label: 'Asistență rutieră', price: '500 MDL/zi', category: 'additional' });
-                            }
-
-                            if (selectedOptions.length === 0) {
+                            if (options.length === 0) {
                                 return (
                                     <div className="text-center py-6 md:py-8">
-                                        <p className="text-gray-400 text-sm">{t('admin.requestDetails.noOptionsSelected')}</p>
+                                        <p className="text-gray-400 text-sm">
+                                            {t('admin.requestDetails.noOptionsSelected')}
+                                        </p>
                                     </div>
                                 );
                             }
 
                             return (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3">
-                                    {selectedOptions.map((option, index) => (
+                                    {options.map((option, index) => (
                                         <div
                                             key={index}
                                             className="flex items-center justify-between p-3 md:p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
@@ -355,10 +190,12 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                                 <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></div>
                                                 <span className="text-white text-sm font-medium">{option.label}</span>
                                             </div>
-                                            <span className={`text-xs font-semibold px-2 py-1 rounded ${option.price.includes('%')
-                                                ? 'text-emerald-400 bg-emerald-400/10'
-                                                : 'text-gray-300 bg-white/5'
-                                                }`}>
+                                            <span
+                                                className={`text-xs font-semibold px-2 py-1 rounded ${option.price.includes('%')
+                                                    ? 'text-emerald-400 bg-emerald-400/10'
+                                                    : 'text-gray-300 bg-white/5'
+                                                    }`}
+                                            >
                                                 {option.price}
                                             </span>
                                         </div>
@@ -367,6 +204,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                             );
                         })()}
                     </div>
+
 
                     {/* Comment - Only show if comment exists */}
                     {((request as any).comment || (request as any).customerComment) && (
@@ -382,22 +220,22 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                         <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-300">{t('admin.requestDetails.pricePerDay')}</span>
-                                <span className="text-white font-medium">{car.price_per_day} MDL</span>
+                                <span className="text-white font-medium">{formatAmount(pricePerDay)}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-300">Durată</span>
                                 <span className="text-white font-medium">
-                                    {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}{hours > 0 ? `, ${hours} ${hours === 1 ? 'oră' : 'ore'}` : ''}
+                                    {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}
                                 </span>
                             </div>
                             <div className="pt-2 border-t border-white/10">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-white font-medium">{t('admin.requestDetails.basePrice')}</span>
-                                    <span className="text-white font-medium">{Math.round(basePrice).toLocaleString()} MDL</span>
+                                    <span className="text-white font-medium">{formatAmount(pricePerDay)}</span>
                                 </div>
                             </div>
 
-                            {additionalCosts > 0 && (
+                            {/* {additionalCosts > 0 && (
                                 <>
                                     <div className="pt-2 md:pt-3 border-t border-white/10">
                                         <h4 className="text-sm font-bold text-white mb-2 md:mb-3">{t('admin.requestDetails.additionalServices')}</h4>
@@ -465,11 +303,11 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                         </div>
                                     </div>
                                 </>
-                            )}
+                            )} */}
 
                             <div className="pt-2 md:pt-3 border-t border-white/10 flex items-center justify-between">
                                 <span className="text-white font-bold text-base md:text-lg">{t('admin.requestDetails.total')}</span>
-                                <span className="text-white font-bold text-lg md:text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
+                                <span className="text-white font-bold text-lg md:text-xl">{formatAmount(request.total_amount)}</span>
                             </div>
                         </div>
                     </div>
@@ -612,7 +450,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                             )}
                         </div>
                     )}
-                    {request.status === 'EXECUTED' && onCancelRental && (
+                    {request.status === 'APPROVED' && (
                         <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
                             <button
                                 onClick={(e) => {
@@ -623,17 +461,10 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                                 disabled={isProcessing}
                                 className="flex-1 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 hover:border-orange-500/60 text-orange-300 hover:text-orange-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                             >
-                                {isProcessing ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        {t('admin.requestDetails.processing')}
-                                    </>
-                                ) : (
-                                    <>
-                                        <X className="w-4 h-4" />
-                                        Anulează Închirierea
-                                    </>
-                                )}
+                                <>
+                                    <X className="w-4 h-4" />
+                                    Anulează Închirierea
+                                </>
                             </button>
                         </div>
                     )}
@@ -643,281 +474,3 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
         document.body
     );
 };
-
-// Request Details View Component
-interface RequestDetailsViewProps {
-    request: OrderDisplay;
-    onBack: () => void;
-    onAccept: (request: OrderDisplay) => void;
-    onReject: (request: OrderDisplay) => void;
-    onUndoReject?: (request: OrderDisplay) => void;
-    onSetToPending?: (request: OrderDisplay) => void;
-    onEdit?: (request: OrderDisplay) => void;
-    cars: CarType[];
-}
-
-const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, cars }) => {
-    const car = cars.find(c => c.id.toString() === request.carId);
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image_url ?? undefined);
-
-    useEffect(() => {
-        if (car) {
-            setSelectedImage(car.image_url ?? undefined);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }, [car]);
-
-    if (!car) return null;
-
-    return (
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="flex flex-col lg:grid lg:grid-cols-[1fr_360px] gap-8"
-        >
-            {/* LEFT COLUMN: Request Info */}
-            <div className="space-y-6">
-                {/* Car Summary */}
-                <motion.div
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="bg-white/10 backdrop-blur-xl border border-white/20 hover:border-red-500/50 rounded-xl p-6 transition-all shadow-lg"
-                >
-                    <div className="flex items-center gap-4">
-                        <img
-                            src={selectedImage}
-                            alt={(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}
-                            className="w-32 h-20 object-cover rounded-lg border border-white/20"
-                        />
-                        <div>
-                            <h2 className="text-xl font-bold text-white">{(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}</h2>
-                            <div className="text-sm text-gray-300">{car.transmission} · {car.seats} seats</div>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Booking Details */}
-                <motion.div
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.1 }}
-                    className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 space-y-6 shadow-lg"
-                >
-                    <h2 className="text-xl font-bold text-white">Request Information</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
-                            <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs text-gray-400 uppercase tracking-wide">Pickup</p>
-                                <span className="text-white text-sm font-medium">{(() => {
-                                    const [year, month, day] = request.pickupDate.split('-').map(Number);
-                                    const date = new Date(year, month - 1, day);
-                                    return date.toLocaleDateString();
-                                })()}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
-                            <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{request.pickupTime || '--:--'}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
-                            <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs text-gray-400 uppercase tracking-wide">Return</p>
-                                <span className="text-white text-sm font-medium">{(() => {
-                                    const [year, month, day] = request.returnDate.split('-').map(Number);
-                                    const date = new Date(year, month - 1, day);
-                                    return date.toLocaleDateString();
-                                })()}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
-                            <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                            <div>
-                                <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{request.returnTime || '--:--'}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                        <div>
-                            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Rental Days</p>
-                            <span className="text-white text-lg font-bold">{getDateDiffInDays(request.pickupDate, request.returnDate)}</span>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Estimated Price</p>
-                            <span className="text-white text-lg font-bold">{request.amount ? `${request.amount} MDL` : '—'}</span>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Customer Info */}
-                <motion.div
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.2 }}
-                    className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
-                >
-                    <h2 className="text-xl font-bold text-white mb-4">Customer</h2>
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
-                            {request.customerName?.[0]?.toUpperCase() || 'C'}
-                        </div>
-                        <div>
-                            <div className="text-white font-semibold">{request.customerName}</div>
-                            <div className="text-gray-300 text-sm">{request.customerEmail}</div>
-                            {request.customerPhone && (
-                                <div className="text-gray-300 text-sm mt-1">{request.customerPhone}</div>
-                            )}
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Status */}
-                <motion.div
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.3 }}
-                    className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
-                >
-                    <h2 className="text-xl font-bold text-white mb-4">Status</h2>
-                    <div className="flex items-center gap-4">
-                        <span
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold border backdrop-blur-xl ${request.status === 'PENDING'
-                                ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                : request.status === 'APPROVED'
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                    : 'bg-red-500/20 text-red-300 border-red-500/50'
-                                }`}
-                        >
-                            {request.status.charAt(0) + request.status.slice(1).toLowerCase()}
-                        </span>
-                        {request.createdAt && (
-                            <span className="text-gray-400 text-sm">
-                                Requested on {new Date(request.createdAt).toLocaleDateString()}
-                            </span>
-                        )}
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* RIGHT COLUMN: Actions */}
-            <aside className="lg:col-start-2">
-                <motion.div
-                    initial={{ opacity: 1, x: 0 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="sticky top-24 space-y-3"
-                >
-                    <button
-                        onClick={onBack}
-                        className="w-full bg-white/10 backdrop-blur-xl hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg"
-                    >
-                        Back to Requests
-                    </button>
-                    {request.status === 'PENDING' && (
-                        <>
-                            <button
-                                onClick={() => onAccept(request)}
-                                className="w-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
-                            >
-                                <CheckCircle className="w-4 h-4" />
-                                Accept Request
-                            </button>
-                            <button
-                                onClick={() => onReject(request)}
-                                className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
-                            >
-                                <X className="w-4 h-4" />
-                                Respinge Cererea
-                            </button>
-                        </>
-                    )}
-                    {request.status === 'APPROVED' && (typeof onSetToPending !== 'undefined' || typeof onReject !== 'undefined') && (
-                        <>
-                            {onSetToPending && (
-                                <button
-                                    onClick={() => onSetToPending(request)}
-                                    className="w-full bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 hover:border-yellow-500/60 text-yellow-300 hover:text-yellow-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
-                                >
-                                    <RefreshCw className="w-4 h-4" />
-                                    Set to Pending
-                                </button>
-                            )}
-                            {onReject && (
-                                <button
-                                    onClick={() => onReject(request)}
-                                    className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
-                                >
-                                    <X className="w-4 h-4" />
-                                    Respinge Cererea
-                                </button>
-                            )}
-                        </>
-                    )}
-                    {request.status === 'REJECTED' && (onUndoReject || onEdit) && (
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            {onUndoReject && (
-                                <button
-                                    onClick={() => onUndoReject(request)}
-                                    className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
-                                >
-                                    <RefreshCw className="w-4 h-4" />
-                                    Undo Reject
-                                </button>
-                            )}
-                            {onEdit && (
-                                <button
-                                    onClick={() => onEdit(request)}
-                                    className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/60 text-blue-300 hover:text-blue-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
-                                >
-                                    <Edit className="w-4 h-4" />
-                                    Edit Request
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </motion.div>
-            </aside>
-        </motion.div>
-    );
-};
-
-// Create Rental Modal Component
-interface CreateRentalModalProps {
-    onSave: (rentalData: Partial<OrderDisplay>) => void;
-    onClose: () => void;
-    cars: CarType[];
-    initialCarId?: string;
-}
-
-// Country codes for phone selector
-const COUNTRY_CODES = [
-    { code: '+373', flag: '🇲🇩', country: 'Moldova' },
-    { code: '+40', flag: '🇷🇴', country: 'Romania' },
-    { code: '+380', flag: '🇺🇦', country: 'Ukraine' },
-    { code: '+7', flag: '🇷🇺', country: 'Russia' },
-    { code: '+1', flag: '🇺🇸', country: 'USA' },
-    { code: '+44', flag: '🇬🇧', country: 'UK' },
-    { code: '+49', flag: '🇩🇪', country: 'Germany' },
-    { code: '+33', flag: '🇫🇷', country: 'France' },
-    { code: '+39', flag: '🇮🇹', country: 'Italy' },
-    { code: '+34', flag: '🇪🇸', country: 'Spain' },
-    { code: '+32', flag: '🇧🇪', country: 'Belgium' },
-    { code: '+31', flag: '🇳🇱', country: 'Netherlands' },
-    { code: '+41', flag: '🇨🇭', country: 'Switzerland' },
-    { code: '+43', flag: '🇦🇹', country: 'Austria' },
-    { code: '+48', flag: '🇵🇱', country: 'Poland' },
-    { code: '+420', flag: '🇨🇿', country: 'Czech Republic' },
-    { code: '+36', flag: '🇭🇺', country: 'Hungary' },
-    { code: '+359', flag: '🇧🇬', country: 'Bulgaria' },
-    { code: '+30', flag: '🇬🇷', country: 'Greece' },
-    { code: '+90', flag: '🇹🇷', country: 'Turkey' },
-];
-
