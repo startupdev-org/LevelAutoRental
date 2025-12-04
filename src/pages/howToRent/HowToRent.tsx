@@ -1,32 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { HowToRentHero } from './sections/HowToRentHero';
 import { ContractSection } from '../cars/sections/ContractSection';
 
 export const HowToRent: React.FC = () => {
-    const [isDesktop, setIsDesktop] = useState(false);
-
-    useEffect(() => {
-        // Check once on mount
-        const handleResize = () => {
-            setIsDesktop(window.innerWidth >= 768);
-        };
-        handleResize();
-
-        // Update on resize
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
 
     return (
-        <div 
-            className="relative min-h-screen bg-cover bg-center bg-no-repeat"
+        <div className="relative min-h-screen">
+            {/* Background Image - Desktop */}
+            <div
+                className="hidden md:block absolute inset-0"
+                style={{
+                    backgroundImage: 'url(/lvl_bg.png)',
+                    backgroundPosition: 'center -150px',
+                    backgroundSize: '115%',
+                    backgroundAttachment: 'fixed',
+                    zIndex: 0
+                }}
+            ></div>
+
+            {/* Background Image - Mobile */}
+            <div className="md:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+                <img
+                    src="/backgrounds/bg10-mobile.jpeg"
+                    alt="Background"
+                    className="w-full h-full object-cover"
             style={{
-                backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
-                backgroundPosition: isDesktop ? 'center -150px' : 'center center',
-                backgroundSize: isDesktop ? '115%' : 'cover',
-                backgroundAttachment: isDesktop ? 'fixed' : 'scroll'
-            }}
-        >
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        zIndex: 0
+                    }}
+                />
+            </div>
+
             {/* Dark Overlay */}
             <div className="absolute inset-0 bg-black/60 pointer-events-none"></div>
 
