@@ -43,6 +43,7 @@ export const CarDetails: React.FC = () => {
 
     // ───── STATE ─────
     const [car, setCar] = useState<Car | null>(null);
+    const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<string | undefined>();
     const [isFavorite, setIsFavorite] = useState(false);
 
@@ -358,30 +359,40 @@ export const CarDetails: React.FC = () => {
     // Fetch car and images from storage
     useEffect(() => {
         if (!carId) {
+            setLoading(false);
             return;
         }
+
         const fetchCar = async () => {
-            const fetchedCar = await fetchCarById(Number(carId));
-            if (!fetchedCar) {
-                return;
+            setLoading(true);
+            try {
+                const fetchedCar = await fetchCarById(Number(carId));
+                if (!fetchedCar) {
+                    setLoading(false);
+                    return;
+                }
+
+                // Fetch images from storage for this car
+                let carName = (fetchedCar as any).name;
+                if (!carName || carName.trim() === '') {
+                    carName = `${fetchedCar.make} ${fetchedCar.model}`;
+                }
+
+                const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+
+                // Update car with images from storage
+                const carWithImages = {
+                    ...fetchedCar,
+                    image_url: mainImage || fetchedCar.image_url,
+                    photo_gallery: photoGallery.length > 0 ? photoGallery : fetchedCar.photo_gallery,
+                };
+
+                setCar(carWithImages);
+            } catch (error) {
+                console.error('Error fetching car:', error);
+            } finally {
+                setLoading(false);
             }
-            
-            // Fetch images from storage for this car
-            let carName = (fetchedCar as any).name;
-            if (!carName || carName.trim() === '') {
-                carName = `${fetchedCar.make} ${fetchedCar.model}`;
-            }
-            
-            const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-            
-            // Update car with images from storage
-            const carWithImages = {
-                ...fetchedCar,
-                image_url: mainImage || fetchedCar.image_url,
-                photo_gallery: photoGallery.length > 0 ? photoGallery : fetchedCar.photo_gallery,
-            };
-            
-            setCar(carWithImages);
         };
         fetchCar();
     }, [carId, navigate]);
@@ -873,9 +884,35 @@ export const CarDetails: React.FC = () => {
     // ───── DERIVED DATA ─────
     // gallery is defined earlier before useEffect hooks
 
-    if (!carId || car === null) {
-        // Show placeholder / not found component while loading or if invalid
+    if (!carId || (car === null && !loading)) {
+        // Show car not found component only after loading is complete and car is still null
         return <CarNotFound />;
+    }
+
+    if (loading) {
+        // Show loading state while fetching car data
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6 py-20">
+                <motion.div
+                    className="text-center py-16 px-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <div className="max-w-md mx-auto">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-theme-500 to-theme-600 flex items-center justify-center shadow-lg">
+                            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                            Se încarcă mașina...
+                        </h3>
+                        <p className="text-gray-600">
+                            Te rugăm să aștepți în timp ce pregătim detaliile mașinii
+                        </p>
+                    </div>
+                </motion.div>
+            </div>
+        );
     }
 
     // rental calculation, etc.
