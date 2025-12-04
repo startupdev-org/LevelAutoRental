@@ -19,7 +19,7 @@ import { EditRequestModal } from '../modals/EditRequestModal';
 import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { getInitials } from '../../../../utils/customer';
 import { getCarName } from '../../../../utils/car';
-import { fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
+import { BorrowRequestFilters, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';
 
@@ -31,11 +31,6 @@ export const RequestsView: React.FC = () => {
     const [requests, setRequests] = useState<BorrowRequestDTO[]>([]);
     const [loading, setLoading] = useState(false);
     const [cars, setCars] = useState<CarType[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<'pickup' | 'return' | 'amount' | 'status' | null>('status');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [showRejected, setShowRejected] = useState(false);
-    const [showExecuted, setShowExecuted] = useState(false);
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
     const [selectedCarIdForRental, setSelectedCarIdForRental] = useState<string | undefined>(undefined);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
@@ -53,6 +48,23 @@ export const RequestsView: React.FC = () => {
     const [requestsPerPage] = useState(5);
     const [totalPages, setTotalPages] = useState(0);
 
+    const [sortBy, setSortBy] = useState<'start_date' | 'amount' | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [status, setStatus] = useState<'PENDING' | 'REJECTED' | 'APPROVED' | null>(null);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearch] = useState(searchQuery);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setCurrentPage(1);
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+
 
     // Open modal if carId is in URL params
     useEffect(() => {
@@ -66,25 +78,45 @@ export const RequestsView: React.FC = () => {
         }
     }, [carId, cars.length, searchParams, setSearchParams]);
 
+    // Trigger when filters change
     useEffect(() => {
-        loadRequests(currentPage);
-    }, [currentPage]);
+        setCurrentPage(1);
+    }, [debouncedSearchQuery, status, sortBy, sortOrder]);
+
+    // Trigger loadRequests when page or filters change
+    useEffect(() => {
+        loadRequests();
+    }, [currentPage, debouncedSearchQuery, status, sortBy, sortOrder]);
 
 
-    const loadRequests = async (page = 1) => {
+
+    const loadRequests = async () => {
         setLoading(true);
         try {
-            const { data, total } = await fetchBorrowRequestsForDisplay(page, requestsPerPage);
+            const filters = getCurrentFilters();
+            const { data, total } = await fetchBorrowRequestsForDisplay(currentPage, requestsPerPage, filters);
+            const totalPages = Math.ceil(total / requestsPerPage);
             setRequests(data);
             setTotalRequests(total);
-            setTotalPages(Math.ceil(total / requestsPerPage));
-
+            setTotalPages(totalPages);
         } catch (error) {
             console.error('Failed to load requests:', error);
         } finally {
             setLoading(false);
         }
     };
+
+    const getCurrentFilters = (): BorrowRequestFilters | undefined => {
+        if (!debouncedSearchQuery && !sortBy && !status) return undefined
+
+        return {
+            searchQuery: debouncedSearchQuery || undefined,
+            sortBy: sortBy || undefined,
+            sortOrder: sortOrder === 'asc', // converts to boolean
+            status: status || undefined,
+        }
+    }
+
 
 
     const handleAccept = async (request: BorrowRequest) => {
@@ -217,7 +249,7 @@ export const RequestsView: React.FC = () => {
     // };
 
 
-    const handleSort = (field: 'pickup' | 'return' | 'amount' | 'status') => {
+    const handleSort = (field: 'start_date' | 'amount') => {
         if (sortBy === field) {
             // Toggle sort order if clicking the same field
             setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -227,6 +259,11 @@ export const RequestsView: React.FC = () => {
             setSortOrder('asc');
         }
     };
+
+    function clearSort() {
+        setSortBy(null);
+        setSortOrder('asc');
+    }
 
     const goToPage = (page: number) => {
         if (page < 1 || page > totalPages) return;
@@ -252,35 +289,43 @@ export const RequestsView: React.FC = () => {
                             </div>
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                                 <button
-                                    onClick={() => {
-                                        if (showExecuted) {
-                                            setShowExecuted(false);
-                                        }
-                                        setShowRejected(!showRejected);
-                                    }}
-                                    disabled={showExecuted}
-                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showRejected
+                                    onClick={() => setStatus(prev => prev === 'PENDING' ? null : 'PENDING')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'PENDING'
+                                        ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50 hover:bg-yellow-500/30 hover:border-yellow-500/60'
+                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                >
+                                    {status === 'PENDING'
+                                        ? t('admin.requests.hideInPending')
+                                        : t('admin.requests.showInPending')}
+                                </button>
+
+
+                                <button
+                                    onClick={() => setStatus(prev => prev === 'REJECTED' ? null : 'REJECTED')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'REJECTED'
                                         ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        } ${showExecuted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        }`}
                                 >
-                                    {showRejected ? t('admin.requests.hideRejected') : t('admin.requests.showRejected')}
+                                    {status === 'REJECTED'
+                                        ? t('admin.requests.hideRejected')
+                                        : t('admin.requests.showRejected')}
                                 </button>
+
+
                                 <button
-                                    onClick={() => {
-                                        if (showRejected) {
-                                            setShowRejected(false);
-                                        }
-                                        setShowExecuted(!showExecuted);
-                                    }}
-                                    disabled={showRejected}
-                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showExecuted
-                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 hover:bg-blue-500/30 hover:border-blue-500/60'
+                                    onClick={() => setStatus(prev => prev === 'APPROVED' ? null : 'APPROVED')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'APPROVED'
+                                        ? 'bg-green-500/20 text-green-300 border-green-500/50 hover:bg-green-500/30 hover:border-green-500/60'
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        } ${showRejected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        }`}
                                 >
-                                    {showExecuted ? 'Ascunde Începute' : 'Arată Începute'}
+                                    {status === 'APPROVED'
+                                        ? t('admin.requests.hideApproved')
+                                        : t('admin.requests.showApproved')}
                                 </button>
+
                                 <button
                                     onClick={() => setShowAddRentalModal(true)}
                                     className="px-3 md:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-xs md:text-sm whitespace-nowrap flex items-center justify-center gap-2"
@@ -311,22 +356,26 @@ export const RequestsView: React.FC = () => {
                                 <span className="md:hidden text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{t('admin.requests.sortBy')}</span>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <button
-                                        onClick={() => handleSort('pickup')}
-                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'pickup'
-                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                        onClick={() => handleSort('start_date')}
+                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'start_date'
+                                            ? sortOrder === 'asc'
+                                                ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
                                             : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                             }`}
                                     >
                                         <span className="truncate">{t('admin.requests.pickupDate')}</span>
-                                        {sortBy === 'pickup' && (
+                                        {sortBy === 'start_date' && (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
                                         )}
-                                        {sortBy !== 'pickup' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
+                                        {sortBy !== 'start_date' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
                                     </button>
                                     <button
                                         onClick={() => handleSort('amount')}
                                         className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'amount'
-                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            ? sortOrder === 'asc'
+                                                ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
                                             : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                             }`}
                                     >
@@ -336,17 +385,12 @@ export const RequestsView: React.FC = () => {
                                         )}
                                         {sortBy !== 'amount' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
                                     </button>
-                                    {sortBy && sortBy !== 'status' && (
-                                        <button
-                                            onClick={() => {
-                                                setSortBy('status');
-                                                setSortOrder('asc');
-                                            }}
-                                            className="px-2.5 md:px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
-                                        >
-                                            {t('admin.requests.clearSort')}
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={clearSort}
+                                        className="px-2.5 md:px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+                                    >
+                                        {t('admin.requests.clearSort')}
+                                    </button>
                                 </div>
                             </div>
                         </div>

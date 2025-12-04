@@ -20,8 +20,6 @@ export const formatDateLocal = (date: string | Date): string => {
     return new Intl.DateTimeFormat('ro-RO').format(d);
 };
 
-
-
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {
     let d1: Date;
     let d2: Date;

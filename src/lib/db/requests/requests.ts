@@ -1,6 +1,6 @@
 import { BorrowRequest, BorrowRequestDTO, Car } from '../../../types';
 import { supabase, supabaseAdmin } from '../../supabase';
-import { fetchCarWithImagesById } from '../cars/cars';
+import { fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 
 
 
@@ -58,39 +58,79 @@ export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
     }
 }
 
+export interface BorrowRequestFilters {
+    searchQuery?: string;
+    sortBy?: 'amount' | 'start_date' | string,
+    sortOrder?: boolean;
+    status?: string;
+}
+
 /**
  * Fetch borrow requests formatted for display
  */
 export async function fetchBorrowRequestsForDisplay(
     page = 1,
-    limit = 10
+    limit = 10,
+    filters?: BorrowRequestFilters
 ): Promise<{ data: BorrowRequestDTO[]; total: number }> {
     try {
-        const from = (page - 1) * limit;
-        const to = from + limit - 1;
+        const from = (page - 1) * limit
+        const to = from + limit - 1
 
-        const { data: allRequests, count, error } = await supabaseAdmin
+        let query = supabase
             .from('BorrowRequest')
             .select('*', { count: 'exact' })
-            .range(from, to)
-            .order('start_date', { ascending: false });
+
+
+        // searchQuery
+        if (filters?.searchQuery?.trim()) {
+            const carIds = await fetchCarIdsByQuery(filters.searchQuery)
+
+            // If no cars match -> return empty instantly
+            if (!carIds.length) {
+                return { data: [], total: 0 }
+            }
+
+            query = query.in('car_id', carIds)
+        }
+
+        // status 
+        if (filters?.status) {
+            query = query.eq('status', filters.status)
+        }
+
+        // status
+        if (filters?.sortBy) {
+            query = query.order('total_amount', {
+                ascending: filters?.sortOrder ?? false
+            })
+        } else {
+            // default
+            query = query.order('start_date', { ascending: false })
+        }
+
+        // pagination logic
+        query = query.range(from, to)
+
+        const { data: allRequests, count, error } = await query
 
         if (error) {
-            console.error('Error fetching requests:', error);
-            return { data: [], total: 0 };
+            console.error('Error fetching requests:', error)
+            return { data: [], total: 0 }
         }
 
         const borrowRequestDTOs = await Promise.all(
             allRequests.map(async (request) => {
-                const car = await fetchCarWithImagesById(request.car_id);
-                return toBorrowRequestDTO(request, car);
+                const car = await fetchCarWithImagesById(request.car_id)
+                return toBorrowRequestDTO(request, car)
             })
-        );
+        )
 
-        return { data: borrowRequestDTOs, total: count || 0 };
+        return { data: borrowRequestDTOs, total: count || 0 }
+
     } catch (err) {
-        console.error('Unexpected error fetching requests:', err);
-        return { data: [], total: 0 };
+        console.error('Unexpected error fetching requests:', err)
+        return { data: [], total: 0 }
     }
 }
 
