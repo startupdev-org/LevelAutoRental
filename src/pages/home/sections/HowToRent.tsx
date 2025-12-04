@@ -63,17 +63,22 @@ export const HowToRent: React.FC = () => {
             ></div>
 
             {/* Background Image - Mobile */}
-            <div
-                className="md:hidden absolute inset-0"
+            <div className="md:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+                <img
+                    src="/backgrounds/bg6-mobile.jpeg"
+                    alt="Background"
+                    className="w-full h-full object-cover"
                 style={{
-                    backgroundImage: "url('/backgrounds/bg6-mobile.jpeg')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundAttachment: 'fixed',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
                     zIndex: 0
                 }}
-            ></div>
+                />
+            </div>
 
             {/* Background Overlay */}
             <div className="absolute inset-0 bg-black/60"></div>
@@ -95,7 +100,7 @@ export const HowToRent: React.FC = () => {
                     </motion.span>
                     <motion.h2
                         variants={fadeInUp}
-                        className="mt-4 text-4xl md:text-6xl font-bold text-white leading-tight max-w-4xl mx-auto drop-shadow-lg"
+                        className="mt-4 text-4xl md:text-6xl font-bold text-white leading-tight max-w-4xl mx-auto drop-shadow-lg px-4 md:px-0"
                     >
                         {t("howToRent.sectionTitle")}
                     </motion.h2>

@@ -5,7 +5,7 @@ import { Search, Filter, X } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from '../../components/car/CarCard';
-import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchCarsModels, fetchFilteredCarsWithPhotos, fetchCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
+import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchFilteredCarsWithPhotos, fetchCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
 import { Car as CarType } from '../../types';
 
 import { RentalOptionsSection } from './sections/RentalOptionsSection'
@@ -61,23 +61,36 @@ export const Cars: React.FC = () => {
   }, []); // Only run once on mount
 
   const [cars, setCars] = useState<CarType[]>([]);
+  const [allCars, setAllCars] = useState<CarType[]>([]); // Keep full dataset for model lookups
   const [loading, setLoading] = useState(true);
   const [makes, setMakes] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
 
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
 
   async function handleFetchCarsWithPhotos() {
     setLoading(true);
     try {
-      const fetchedCars = await fetchCarsWithPhotos();
+      const fetchedCars = await fetchCars();
       setCars(fetchedCars);
-      
-      // Extract unique makes from fetched cars (no need for separate DB call)
-      const uniqueMakes = [...new Set(fetchedCars.map(car => car.make).filter(Boolean))];
+      setAllCars(fetchedCars); // Store full dataset for model lookups
+
+      // Extract unique makes (same logic as hero searchbar)
+      const makes = fetchedCars.map(car => {
+        const make = car.make || '';
+        const normalizedMake = make.includes('-') ? make.split('-')[0] : make;
+        return normalizedMake.trim().toLowerCase();
+      });
+      const uniqueNormalizedMakes = Array.from(new Set(makes)).filter(Boolean);
+
+      // Convert back to title case for display
+      const uniqueMakes = uniqueNormalizedMakes.map(make =>
+        make.charAt(0).toUpperCase() + make.slice(1).toLowerCase()
+      );
       setMakes(uniqueMakes);
     } catch (error) {
-      console.error('Error fetching cars with photos:', error);
+      console.error('Error fetching cars:', error);
     } finally {
       setLoading(false);
     }
@@ -85,12 +98,26 @@ export const Cars: React.FC = () => {
 
 
   async function handleFetchCarsModel(make: string) {
-    // setLoading(true);
+    // Get models for the selected make from ALL cars (not filtered)
+    setLoadingModels(true);
     try {
-      const fetchedMakeModels = await fetchCarsModels(make);
-      setModels(fetchedMakeModels)
-    } catch (error) {
-      console.error('Error fetching make models:', error);
+      // Small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const normalizedMake = make.trim().toLowerCase();
+      const modelsForMake = allCars
+        .filter(car => {
+          const carMake = car.make || '';
+          const carNormalizedMake = carMake.includes('-') ? carMake.split('-')[0] : carMake;
+          return carNormalizedMake.trim().toLowerCase() === normalizedMake;
+        })
+        .map(car => car.model)
+        .filter((model): model is string => model !== null && model !== undefined && model.trim() !== '')
+        .filter((model, index, self) => self.indexOf(model) === index); // Remove duplicates
+
+      setModels(modelsForMake);
+    } finally {
+      setLoadingModels(false);
     }
   }
 
@@ -135,6 +162,9 @@ export const Cars: React.FC = () => {
 
       const fetchedCars = await fetchFilteredCarsWithPhotos(filters);
       setCars(fetchedCars);
+
+      // For filtered results, we don't need to update mappings anymore
+      // Models will be calculated dynamically from the current cars array
     } catch (error) {
       console.error('Error fetching filtered cars:', error);
     } finally {
@@ -146,27 +176,8 @@ export const Cars: React.FC = () => {
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
-    // Check if we have URL params, if so, skip the default fetch
-    const makeParam = searchParams.get('make');
-    const modelParam = searchParams.get('model');
-
-    // Only proceed with URL params if they are valid
-    const isValidParam = (param: string | null): boolean => {
-      return param !== null &&
-             param.trim() !== '' &&
-             param.length < 100 &&
-             !param.includes('~') &&
-             !param.includes('<') &&
-             !param.includes('>') &&
-             !param.includes('&') &&
-             !param.includes('%');
-    };
-
-    if ((!makeParam || !isValidParam(makeParam)) && (!modelParam || !isValidParam(modelParam))) {
-      handleFetchCarsWithPhotos();
-    } else if (makeParam && isValidParam(makeParam)) {
-      handleFetchCarsMake();
-    }
+    // Always fetch all cars initially to populate the make-to-models mapping
+    handleFetchCarsWithPhotos();
   }, []);
 
   // Filter state
@@ -277,13 +288,30 @@ export const Cars: React.FC = () => {
 
       // Also trigger the fetch for filtered cars
       handleFetchFilteredCars(initialFilters);
-
-      if (makeParam && isValidParam(makeParam)) {
-        handleFetchCarsModel(makeParam);
-      }
     }
     // Note: Removed the else clause that was causing redirects - let the URL sanitization handle malformed URLs
   }, []); // Only run once on mount, no dependencies to prevent re-running
+
+  // Handle model loading after cars are fetched
+  useEffect(() => {
+    const makeParam = searchParams.get('make');
+    const isValidParam = (param: string | null): boolean => {
+      return !!(param !== null &&
+             param.trim() !== '' &&
+             param.length < 100 &&
+             !param.includes('~') &&
+             !param.includes('<') &&
+             !param.includes('>') &&
+             !param.includes('&') &&
+             !param.includes('%'));
+    };
+
+    // Only load models if we have a valid make param and all cars are loaded
+    // But don't override if user has manually selected a different make
+    if (makeParam && isValidParam(makeParam) && allCars.length > 0 && !filters.make) {
+      handleFetchCarsModel(makeParam);
+    }
+  }, [allCars, searchParams]); // Run when allCars change or search params change
 
   // Validation states (kept for potential future use)
   // const [validationErrors, setValidationErrors] = useState({
@@ -312,6 +340,8 @@ export const Cars: React.FC = () => {
       'audi': '/logos/audi.png',
       'hyundai': '/logos/hyundai.png',
       'maserati': '/logos/maserati.png',
+      'volkswagen': '/logos/volkswagen-1-logo-black-and-white.png',
+      'vw': '/logos/volkswagen-1-logo-black-and-white.png',
     };
     return logoMap[makeLower] || null;
   };
@@ -331,18 +361,35 @@ export const Cars: React.FC = () => {
 
       // If make is being changed, reset model if it's not valid for the new make
       if (key === 'make') {
-        const newMake = value;
+        const newMake = value as string;
+        if (newMake && prev.model) {
+          // Check if current model is available for the new make in all cars
+          const normalizedNewMake = newMake.trim().toLowerCase();
+          const modelsForNewMake = allCars
+            .filter(car => {
+              const carMake = car.make || '';
+              const carNormalizedMake = carMake.includes('-') ? carMake.split('-')[0] : carMake;
+              return carNormalizedMake.trim().toLowerCase() === normalizedNewMake;
+            })
+            .map(car => car.model)
+            .filter((model): model is string => model !== null && model !== undefined && model.trim() !== '');
 
-        // Load models from DB when make changes
+          const currentModelValid = modelsForNewMake.some(model =>
+            model.toLowerCase() === prev.model.toLowerCase()
+          );
+          if (!currentModelValid) {
+            newFilters.model = '';
+          }
+        } else if (!newMake) {
+          // If make is cleared, also clear model
+          newFilters.model = '';
+        }
+
+        // Load models locally when make changes
         if (newMake) {
           handleFetchCarsModel(newMake);
         } else {
           setModels([]);
-        }
-
-        // Reset model if invalid for new make
-        if (prev.model) {
-          newFilters.model = '';
         }
       }
       return newFilters;
@@ -644,15 +691,21 @@ export const Cars: React.FC = () => {
                     </label>
                     <div className="relative overflow-visible">
                       <div
-                        className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : filters.model ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
-                        onClick={() => filters.make && models && openDropdown('model')}
+                        className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : (filters.model || loadingModels) ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
+                        onClick={() => filters.make && !loadingModels && openDropdown('model')}
                       >
-                        {!filters.make ? 'Selectează marca' : (filters.model || 'Selectează modelul')}
+                        {!filters.make ? 'Selectează marca' :
+                         loadingModels ? 'Se încarcă...' :
+                         (filters.model || 'Selectează modelul')}
                       </div>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                        {loadingModels ? (
+                          <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        )}
                       </div>
 
                       {/* Model Dropdown */}
@@ -666,30 +719,37 @@ export const Cars: React.FC = () => {
                             className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <div className="py-1">
-                              {models.length > 0 ? (
-                                models.map((model, index) => {
-                                  const isFirst = index === 0;
-                                  const isLast = index === models.length - 1;
-                                  return (
-                                    <div
-                                      key={model}
-                                      className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                      onClick={() => {
-                                        handleFilterChange('model', model);
-                                        closeAllDropdowns();
-                                      }}
-                                    >
-                                      {model}
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <div className="px-4 py-2 text-sm text-gray-500">
-                                  Nu sunt modele disponibile
-                                </div>
-                              )}
+                        <div className="py-1">
+                          {loadingModels ? (
+                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                Se încarcă...
+                              </div>
                             </div>
+                          ) : models.length > 0 ? (
+                            models.map((model, index) => {
+                              const isFirst = index === 0;
+                              const isLast = index === models.length - 1;
+                              return (
+                                <div
+                                  key={model}
+                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                  onClick={() => {
+                                    handleFilterChange('model', model);
+                                    closeAllDropdowns();
+                                  }}
+                                >
+                                  {model}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                              Nu sunt modele disponibile
+                            </div>
+                          )}
+                        </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
