@@ -241,6 +241,26 @@
             "story": {
                 "label": "Povestea noastră",
                 "title": "De la începuturi modeste la lideri în industrie",
+                "evolutionLabel": "Evoluția noastră în Moldova",
+                "timelineLabels": {
+                    "2023": "2023",
+                    "2023-2024": "2023—2024",
+                    "today": "Astăzi"
+                },
+                "timeline": {
+                    "2023": {
+                        "title": "Lansarea",
+                        "description": "Am început cu 3 mașini și o viziune: să facem închirierile auto accesibile în Moldova."
+                    },
+                    "2023-2024": {
+                        "title": "Primul an",
+                        "description": "Am ajuns la 15 mașini și 200+ clienți fideli. Procese mai simple, prețuri transparente."
+                    },
+                    "today": {
+                        "title": "Acum",
+                        "description": "25+ mașini, rezervări online, livrare la domiciliu. Continuăm să creștem pas cu pas."
+                    }
+                },
                 "paragraph1": "Fondată în 2009, Level Auto Rental a început ca o mică afacere de familie cu o misiune simplă: să ofere soluții de transport fiabile și accesibile pentru toți. Ceea ce a început cu doar cinci vehicule a devenit astăzi una dintre cele mai de încredere companii de închirieri auto din Moldova.",
                 "paragraph2": "De-a lungul anilor, ne-am extins flota la peste 500 de vehicule, de la mașini economice până la sedanuri de lux și SUV-uri. Angajamentul nostru față de satisfacția clienților și calitatea serviciilor a rămas neschimbat, aducându-ne loialitatea a mii de clienți și numeroase premii în industrie.",
                 "paragraph3": "Astăzi continuăm să inovăm și să îmbunătățim serviciile noastre, adoptând tehnologii noi și practici sustenabile pentru a deservi mai bine clienții și pentru a proteja mediul pentru generațiile viitoare."
@@ -290,7 +310,7 @@
                 "message": "Mesaj",
                 "message-cta": "Lasă-ne un mesaj...",
                 "question": "De unde ai auzit despre noi",
-                "start": "Începe acum"
+                "start": "Trimite acum"
             }
         },
         "reviews": {
@@ -588,24 +608,16 @@
         "numberOfDays": "Număr de zile",
         "day": "zi",
         "days": "zile",
-        "locations": {
-            "title": "Locații",
-            "chisinauAirport": "Aeroportul Chișinău",
-            "chisinauCenter": "Centrul Chișinău",
-            "chisinauNord": "Chișinău Nord"
-        },
         "pickup": "Preluare",
         "return": "Returnare",
         "additionalOptions": "Opțiuni suplimentare",
         "limits": "Limite",
         "vipServices": "Servicii VIP",
-        "insuranceTitle": "Asigurare",
         "extra": "Suplimentar",
         "delivery": "Livrare",
         "airportDelivery": "Livrare aeroport",
         "unlimitedMileage": "Kilometraj nelimitat",
         "noSpeedLimit": "Fără limită de viteză",
-        "tireInsurance": "Asigurare anvelope & parbriz",
         "personalDriver": "Șofer personal",
         "priorityService": "Priority Service",
         "childCarSeat": "Scaun auto copii",
@@ -631,7 +643,20 @@
         "pricesDescription": "Pentru o ofertă exactă și personalizată, vă rugăm să ne contactați direct.",
         "discountApplied4": "Discount aplicat: -4% pentru 8+ zile",
         "discountApplied2": "Discount aplicat: -2% pentru 4+ zile",
-        "perDay": "/zi"
+        "perDay": "/zi",
+        "pricingTiers": "Niveluri de prețuri",
+        "currentTier": "Actual:",
+        "pickupDate": "Data preluării",
+        "returnDate": "Data returnării",
+        "totalDays": "Total zile:",
+        "selectPickupDate": "Selectează data preluării",
+        "selectReturnDate": "Selectează data returnării",
+        "selectPickupInstruction": "Selectează data de început",
+        "changePickupInstruction": "Clic pentru a schimba data de început",
+        "selectReturnInstruction": "Selectează data de sfârșit",
+        "changeReturnInstruction": "Clic pentru a schimba data de sfârșit",
+        "dateUnavailable": "Această dată nu este disponibilă",
+        "beforePickup": "Nu poate fi înainte de data preluării"
     },
     "rentalOptions": {
         "sectionLabel": "Servicii Suplimentare",

@@ -42,14 +42,12 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   // Check if we're on auth pages for transparent header
   const isAuthPage = location.pathname === '/auth/login' || location.pathname === '/auth/signup';
   
-  // Check if we're on the homepage
-  const isHomePage = location.pathname === '/';
-  
   // Pages with hero sections that need white text when header is transparent
   const pagesWithHeroSections = [
     '/',
     '/about',
     '/contact',
+    '/help',
     '/how-to-rent',
     '/reviews',
     '/terms',
