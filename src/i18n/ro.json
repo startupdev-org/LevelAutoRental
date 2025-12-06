@@ -31,7 +31,11 @@
         "selectPickUpDate": "Selectați data de preluare",
         "returnDate": "Data de returnare",
         "selectReturnDate": "Selectați data de returnare",
-        "search": "Căutare"
+        "search": "Căutare",
+        "make": "Marcă",
+        "model": "Model",
+        "selectMake": "Selectează marca",
+        "selectModel": "Selectează modelul"
     },
     "popularCars": {
         "sectionLabel": "Mașini Populare",
@@ -62,6 +66,7 @@
         "sectionLabel": "Procesul de inchiriere",
         "sectionTitle": "În doar 5 pași simpli",
         "sectionDescription": "Alege mașina, trimite detaliile și pornește la drum fără griji.",
+        "pageTitle": "Cum decurge închirierea unei mașini la Level Auto Rental",
         "steps": {
             "contact": {
                 "title": "Contactează-ne",
@@ -83,7 +88,26 @@
                 "title": "Returnezi mașina",
                 "description": "Returnezi mașina conform termenilor din contract."
             }
-        }
+        },
+        "journey": {
+            "reservation": {
+                "title": "Rezervare online",
+                "description": "Clientul își rezervă mașina perfectă direct de pe site-ul nostru – proces rapid, simplu și fără complicații inutile."
+            },
+            "airport": {
+                "title": "Întâlnire la aeroport",
+                "description": "La aterizarea avionului, echipa noastră vă întâmpină la Aeroportul Chișinău pentru a finaliza formalitățile în doar câteva minute."
+            },
+            "handover": {
+                "title": "Predarea mașinii",
+                "description": "Vă înmânăm cheile și documentele pentru mașina pregătită, curată și verificată tehnic, gata pentru călătoria dumneavoastră."
+            },
+            "departure": {
+                "title": "Plecarea în călătorie",
+                "description": "Cu totul pregătit, porniți spre destinația dorită, beneficiind de libertatea și confortul oferit de flota noastră premium."
+            }
+        },
+        "tagline": "Level Auto Rental – ușor, rapid, comod"
     },
     "testimonials": {
         "sectionLabel": "Recenzii",
@@ -502,7 +526,61 @@
         "seeMorePhotos": "Vezi încă {{count}} fotografii",
         "seeMorePhotos_one": "Vezi încă o fotografie",
         "seeMorePhotos_few": "Vezi încă {{count}} fotografii",
-        "seeMorePhotos_other": "Vezi încă {{count}} de fotografii"
+        "seeMorePhotos_other": "Vezi încă {{count}} de fotografii",
+        "noImage": "Nicio Imagine",
+        "transmission": {
+            "automatic": "Automată",
+            "manual": "Manuală"
+        },
+        "fuel": {
+            "gasoline": "Benzină",
+            "diesel": "Diesel",
+            "petrol": "Benzină",
+            "hybrid": "Hibrid",
+            "electric": "Electric"
+        },
+        "perDay": "pe zi"
+    },
+    "filters": {
+        "title": "Filtre",
+        "category": {
+            "label": "Categorie",
+            "all": "Toate",
+            "suv": "SUV",
+            "sport": "Sport",
+            "luxury": "Lux"
+        },
+        "price": {
+            "label": "Preț (lei)",
+            "from": "De la",
+            "to": "Până la"
+        },
+        "year": {
+            "label": "An fabricație",
+            "from": "De la",
+            "to": "Până la"
+        },
+        "transmission": {
+            "label": "Transmisie",
+            "any": "Oricare",
+            "manual": "Manuală",
+            "automatic": "Automată"
+        },
+        "fuel": {
+            "label": "Combustibil",
+            "any": "Oricare",
+            "petrol": "Benzină",
+            "gasoline": "Benzină",
+            "diesel": "Diesel",
+            "hybrid": "Hibrid",
+            "electric": "Electric"
+        },
+        "seats": {
+            "label": "Locuri",
+            "minSeats": "Număr minim de locuri"
+        },
+        "apply": "Aplică filtre",
+        "clear": "Șterge toate"
     },
     "calculator": {
         "selectVehicle": "Selectați vehiculul",
@@ -554,6 +632,88 @@
         "discountApplied4": "Discount aplicat: -4% pentru 8+ zile",
         "discountApplied2": "Discount aplicat: -2% pentru 4+ zile",
         "perDay": "/zi"
+    },
+    "rentalOptions": {
+        "sectionLabel": "Servicii Suplimentare",
+        "sectionTitle": "Opțiuni de închiriere",
+        "unlimitedMileage": {
+            "title": "Kilometraj nelimitat",
+            "description": "Prețul închirierii va fi cu 50% mai mare"
+        },
+        "personalDriver": {
+            "title": "Șofer personal",
+            "price": "de la 800 MDL pe zi"
+        },
+        "priorityService": {
+            "title": "Priority Service",
+            "price": "de la 1000 MDL pe zi"
+        },
+        "childCarSeat": {
+            "title": "Scaun auto pentru copii",
+            "price": "de la 100 MDL pe zi"
+        },
+        "simCard": {
+            "title": "Cartelă SIM cu internet",
+            "price": "de la 100 MDL pe zi"
+        },
+        "roadsideAssistance": {
+            "title": "Asistență rutieră",
+            "price": "de la 500 MDL pe zi"
+        },
+        "airportDelivery": {
+            "title": "Livrare aeroport",
+            "price": "Gratuit"
+        }
+    },
+    "contract": {
+        "sectionLabel": "Informații Legale",
+        "sectionTitle": "Contract",
+        "description": "Compania noastră oferă servicii de închiriere auto pe teritoriul Republicii Moldova, respectând cu strictețe legislația în vigoare. Interacțiunea cu clienții se bazează pe Contractul de închiriere, care garantează protecția juridică a intereselor acestora.",
+        "requirementsTitle": "Condiții și cerințe",
+        "requirementsDescription": "Pentru a închiria o mașină, trebuie îndeplinite următoarele cerințe:",
+        "age": {
+            "label": "Vârstă",
+            "value": "de la 21 de ani"
+        },
+        "license": {
+            "label": "Permis",
+            "value": "categoria B"
+        },
+        "experience": {
+            "label": "Experiență",
+            "value": "cel puțin 3 ani"
+        },
+        "mileage": {
+            "label": "km/zi",
+            "value": "până la 200km"
+        },
+        "moreDetails": "Mai Multe Detalii",
+        "details": {
+            "identityCard": "Deținerea buletinului de identitate.",
+            "fullPayment": "Achitarea integrală (100%) a taxei de închiriere pentru mașina selectată.",
+            "finesResponsibility": "Toate amenzile primite în timpul utilizării vehiculului revin în responsabilitatea șoferului.",
+            "cascoResponsibility": "În lipsa poliței CASCO, responsabilitatea pentru accidente revine șoferului.",
+            "paymentMethods": "Plata se poate efectua în numerar, prin transfer bancar sau cu cardul.",
+            "earlyReturn": "Clientul are dreptul la recalcularea costului în caz de returnare anticipată a vehiculului.",
+            "extension": "Prelungirea Contractului de închiriere este posibilă în format la distanță, dar nu este garantată.",
+            "delivery": "Este posibilă livrarea sau returnarea mașinii la adresa convenabilă. Costul se confirmă la telefon +373 62 000 112.",
+            "deposit": {
+                "title": "Depozit",
+                "description": "Depunerea unui depozit conform valorii stabilite în Contract. Depozitul reprezintă o asigurare a îndeplinirii obligațiilor de către Chiriaș și este returnat după 10 zile de la predarea mașinii, în absența încălcărilor majore."
+            },
+            "mileageLimit": {
+                "title": "Limita de kilometraj",
+                "description": "În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat."
+            },
+            "secondDriver": {
+                "title": "Al doilea șofer",
+                "description": "Înainte de semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 0 lei. După semnarea Contractului de închiriere, costul adăugării unui al doilea șofer este de 500 lei."
+            },
+            "depositReturn": {
+                "title": "Returnarea depozitului",
+                "description": "Dacă depozitul este lăsat cash, se returnează la predarea automobilului. Dacă este reținut de pe card, returnarea are loc în termen de 10 zile lucrătoare după predarea automobilului."
+            }
+        }
     },
     "notFound": {
         "title": "Pagina nu a fost găsită",
@@ -1132,5 +1292,15 @@
             "rejected": "Respins",
             "executed": "Executat"
         }
+    },
+    "carsPage": {
+        "title": "Închiriază Mașina Ta Ideală",
+        "subtitle": "Flotă variată de vehicule premium • Servicii complete cu sau fără șofer • Asistență permanentă și prețuri clare",
+        "clearFilters": "Șterge toate filtrele",
+        "make": "Marcă",
+        "selectMake": "Selectează marca",
+        "model": "Model",
+        "selectModel": "Selectează modelul",
+        "search": "Caută"
     }
 }

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Search, Filter, X } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
@@ -25,6 +26,7 @@ interface DisplayCar extends CarType {
 interface SidebarFilters {
   transmission: 'Any' | 'Automatic' | 'Manual';
   fuelType: FuelTypeUI;
+  category: 'Any' | 'SUV' | 'Sport' | 'Lux';
   make?: string;
   model?: string;
   priceRange: [number, number];
@@ -34,9 +36,10 @@ interface SidebarFilters {
 }
 
 export const Cars: React.FC = () => {
-  const { ref, isInView } = useInView();
+  const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const dataFetchedRef = React.useRef(false);
 
   // URL sanitization - prevent infinite loops from malformed GitHub Pages URLs
@@ -75,7 +78,7 @@ export const Cars: React.FC = () => {
       const fetchedCars = await fetchCars();
       setCars(fetchedCars);
       setAllCars(fetchedCars); // Store full dataset for model lookups
-
+      
       // Extract unique makes (same logic as hero searchbar)
       const makes = fetchedCars.map(car => {
         const make = car.make || '';
@@ -158,6 +161,7 @@ export const Cars: React.FC = () => {
           : undefined,
         transmission: sidebarFilters.transmission !== 'Any' ? sidebarFilters.transmission as 'Automatic' | 'Manual' : undefined,
         seats: sidebarFilters.seats !== undefined ? sidebarFilters.seats : undefined,
+        category: sidebarFilters.category !== 'Any' ? sidebarFilters.category : undefined,
       };
 
       const fetchedCars = await fetchFilteredCarsWithPhotos(filters);
@@ -177,7 +181,7 @@ export const Cars: React.FC = () => {
     dataFetchedRef.current = true;
 
     // Always fetch all cars initially to populate the make-to-models mapping
-    handleFetchCarsWithPhotos();
+      handleFetchCarsWithPhotos();
   }, []);
 
   // Filter state
@@ -201,6 +205,16 @@ export const Cars: React.FC = () => {
   const closeAllDropdowns = () => {
     setShowMakeDropdown(false);
     setShowModelDropdown(false);
+  };
+
+  // Close sidebar and apply filters
+  const closeSidebarAndApply = () => {
+    setShowAdvancedFilters(false);
+    // Apply the current sidebar filters automatically when closing
+    handleFetchFilteredCars({
+      make: filters.make,
+      model: filters.model
+    });
   };
 
   // Handle opening a specific dropdown and closing others
@@ -253,6 +267,7 @@ export const Cars: React.FC = () => {
     yearRange: [new Date().getFullYear() - 10, new Date().getFullYear()],
     transmission: 'Any',
     fuelType: 'Any',
+    category: 'Any',
     seats: undefined,
   };
 
@@ -406,7 +421,7 @@ export const Cars: React.FC = () => {
       make: '',
       model: ''
     });
-    setSidebarFilters(defaultSidebarFilters);
+    setSidebarFilters(prev => ({ ...prev, ...defaultSidebarFilters }));
     // Clear URL params - only if we're not already on the clean URL
     const currentPath = window.location.pathname + window.location.search;
     if (currentPath !== '/cars') {
@@ -491,7 +506,7 @@ export const Cars: React.FC = () => {
         {/* Top Filter Section - Full Width */}
         <div className="mt-8 mb-10 relative">
           <div
-            className="rounded-3xl overflow-visible min-h-[480px] md:min-h-[350px] flex flex-col justify-end relative"
+            className="rounded-3xl overflow-visible min-h-[500px] md:min-h-[350px] flex flex-col justify-end relative"
           >
             {/* Background Image Container - Clipped */}
             <div
@@ -518,7 +533,7 @@ export const Cars: React.FC = () => {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4"
               >
-                Închiriază Mașina Ta Ideală
+                {t('carsPage.title')}
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -526,7 +541,7 @@ export const Cars: React.FC = () => {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="text-sm md:text-base lg:text-lg text-white/90 font-medium leading-relaxed"
               >
-                Flotă variată de vehicule premium • Servicii complete cu sau fără șofer • Asistență permanentă și prețuri clare
+                {t('carsPage.subtitle')}
               </motion.p>
             </div>
 
@@ -578,7 +593,7 @@ export const Cars: React.FC = () => {
                   className="text-sm md:text-base text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
                 >
                   <X className="w-3 h-3 md:w-4 md:h-4" />
-                  Clear all filters
+                  {t('carsPage.clearFilters')}
                 </button>
               </div>
 
@@ -590,7 +605,7 @@ export const Cars: React.FC = () => {
                   className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap"
                 >
                   <X className="w-4 h-4" />
-                  Clear all filters
+                  {t('carsPage.clearFilters')}
                 </button>
 
                 {/* Advanced Filters Button - Mobile */}
@@ -608,7 +623,7 @@ export const Cars: React.FC = () => {
                   {/* Car Brand */}
                   <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
                     <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.make ? 'text-white' : 'text-white/80'}`}>
-                      Marca
+                      {t('carsPage.make')}
                     </label>
                     <div className="relative overflow-visible">
                       <div
@@ -628,7 +643,7 @@ export const Cars: React.FC = () => {
                             />
                           ) : null;
                         })()}
-                        <span>{filters.make || 'Selectează marca'}</span>
+                        <span>{filters.make || t('carsPage.selectMake')}</span>
                       </div>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
                         <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -687,24 +702,24 @@ export const Cars: React.FC = () => {
                   {/* Car Model */}
                   <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
                     <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.model ? 'text-white' : 'text-white/80'}`}>
-                      Model
+                      {t('carsPage.model')}
                     </label>
                     <div className="relative overflow-visible">
                       <div
                         className={`text-base font-medium transition-colors pr-8 ${!filters.make ? 'text-white/50 cursor-not-allowed' : (filters.model || loadingModels) ? 'text-white cursor-pointer' : 'text-white/70 cursor-pointer'}`}
                         onClick={() => filters.make && !loadingModels && openDropdown('model')}
                       >
-                        {!filters.make ? 'Selectează marca' :
+                        {!filters.make ? t('carsPage.selectMake') :
                          loadingModels ? 'Se încarcă...' :
-                         (filters.model || 'Selectează modelul')}
+                         (filters.model || t('carsPage.selectModel'))}
                       </div>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
                         {loadingModels ? (
                           <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin"></div>
                         ) : (
-                          <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
+                        <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                         )}
                       </div>
 
@@ -719,7 +734,7 @@ export const Cars: React.FC = () => {
                             className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
                             onClick={(e) => e.stopPropagation()}
                           >
-                        <div className="py-1">
+                            <div className="py-1">
                           {loadingModels ? (
                             <div className="px-4 py-3 text-sm text-gray-500 text-center">
                               <div className="flex items-center justify-center gap-2">
@@ -728,28 +743,28 @@ export const Cars: React.FC = () => {
                               </div>
                             </div>
                           ) : models.length > 0 ? (
-                            models.map((model, index) => {
-                              const isFirst = index === 0;
-                              const isLast = index === models.length - 1;
-                              return (
-                                <div
-                                  key={model}
-                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                                  onClick={() => {
-                                    handleFilterChange('model', model);
-                                    closeAllDropdowns();
-                                  }}
-                                >
-                                  {model}
+                                models.map((model, index) => {
+                                  const isFirst = index === 0;
+                                  const isLast = index === models.length - 1;
+                                  return (
+                                    <div
+                                      key={model}
+                                      className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                      onClick={() => {
+                                        handleFilterChange('model', model);
+                                        closeAllDropdowns();
+                                      }}
+                                    >
+                                      {model}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="px-4 py-2 text-sm text-gray-500">
+                                  Nu sunt modele disponibile
                                 </div>
-                              );
-                            })
-                          ) : (
-                            <div className="px-4 py-2 text-sm text-gray-500">
-                              Nu sunt modele disponibile
+                              )}
                             </div>
-                          )}
-                        </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -763,7 +778,7 @@ export const Cars: React.FC = () => {
                       className="w-full py-3.5 md:py-4 lg:py-3.5 bg-gradient-to-r from-theme-500 to-theme-600 hover:from-theme-600 hover:to-theme-700 text-white font-bold px-6 md:px-8 rounded-2xl text-sm md:text-base flex items-center justify-center gap-2.5 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                     >
                       <Search className="w-4 h-4 md:w-5 md:h-5 stroke-[2.5]" />
-                      Caută
+                      {t('carsPage.search')}
                     </button>
                   </div>
                 </div>
@@ -789,7 +804,7 @@ export const Cars: React.FC = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 bg-black/50 z-[9998]"
-                onClick={() => setShowAdvancedFilters(false)}
+                onClick={closeSidebarAndApply}
               />
               {/* Drawer */}
               <motion.div
@@ -797,7 +812,7 @@ export const Cars: React.FC = () => {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[9999] overflow-y-auto"
+                className="fixed top-0 right-0 h-full w-[80%] md:w-[20%] bg-white shadow-2xl z-[9999] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="p-6">
@@ -805,7 +820,7 @@ export const Cars: React.FC = () => {
                   <div className="flex justify-between items-center mb-8">
                     <h3 className="text-lg font-semibold text-gray-900">Filtre</h3>
                     <button
-                      onClick={() => setShowAdvancedFilters(false)}
+                      onClick={closeSidebarAndApply}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <X className="w-5 h-5 text-gray-600" />
@@ -821,145 +836,193 @@ export const Cars: React.FC = () => {
                       }}
                       className="text-lg font-medium text-gray-500 hover:text-gray-900 transition-colors"
                     >
-                      Clear all
+                      {t('filters.clear')}
                     </button>
                   </div>
 
-                  <div className="space-y-8">
-                    {/* Price Range */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-900 mb-4 block">Price Range</label>
-
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center text-sm gap-2">
-                          <input
-                            type="number"
-                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
-                            value={sidebarFilters.priceRange[0]}
-                            onChange={(e) =>
-                              setSidebarFilters({
-                                ...sidebarFilters,
-                                priceRange: [Number(e.target.value), sidebarFilters.priceRange[1]],
-                              })
-                            }
-                          />
-
-                          <span className="text-gray-400">—</span>
-
-                          <input
-                            type="number"
-                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
-                            value={sidebarFilters.priceRange[1]}
-                            onChange={(e) =>
-                              setSidebarFilters({
-                                ...sidebarFilters,
-                                priceRange: [sidebarFilters.priceRange[0], Number(e.target.value)],
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Year Range */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-900 mb-4 block">Year</label>
-
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center text-sm gap-2">
-                          <input
-                            type="number"
-                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
-                            value={sidebarFilters.yearRange[0]}
-                            onChange={(e) =>
-                              setSidebarFilters({
-                                ...sidebarFilters,
-                                yearRange: [Number(e.target.value), sidebarFilters.yearRange[1]],
-                              })
-                            }
-                          />
-
-                          <span className="text-gray-400">—</span>
-
-                          <input
-                            type="number"
-                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
-                            value={sidebarFilters.yearRange[1]}
-                            onChange={(e) =>
-                              setSidebarFilters({
-                                ...sidebarFilters,
-                                yearRange: [sidebarFilters.yearRange[0], Number(e.target.value)],
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Transmission */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-900 mb-4 block">Transmission</label>
+                  {/* Filter Sections */}
+                  <div className="space-y-6">
+                    {/* Category Section */}
+                    <div className="border-b border-gray-200 pb-6">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.category.label')}</h4>
                       <div className="flex flex-wrap gap-2">
-                        {['Any', 'Manual', 'Automatic'].map((type) => {
-                          const value = type === 'Any' ? undefined : type; // store undefined for "Any"
+                        {[
+                          { key: 'Any', label: t('filters.category.all') },
+                          { key: 'SUV', label: t('filters.category.suv') },
+                          { key: 'Sport', label: t('filters.category.sport') },
+                          { key: 'Lux', label: t('filters.category.luxury') }
+                        ].map((category) => {
+                          const value = category.key === 'Any' ? 'Any' : category.key;
+                          const isActive = sidebarFilters.category === value;
+
+                          return (
+                            <button
+                              key={category.key}
+                              onClick={() => handleSidebarFilterChange('category', value)}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                isActive
+                                  ? 'bg-red-500 text-white shadow-md transform scale-105'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                              }`}
+                            >
+                              {category.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Price Range Section */}
+                    <div className="border-b border-gray-200 pb-6">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.price.label')}</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <label className="block text-xs text-gray-600 mb-1">{t('filters.price.from')}</label>
+                            <input
+                              type="number"
+                              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              value={sidebarFilters.priceRange[0]}
+                              onChange={(e) =>
+                                setSidebarFilters({
+                                  ...sidebarFilters,
+                                  priceRange: [Number(e.target.value), sidebarFilters.priceRange[1]],
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-xs text-gray-600 mb-1">{t('filters.price.to')}</label>
+                            <input
+                              type="number"
+                              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              value={sidebarFilters.priceRange[1]}
+                              onChange={(e) =>
+                                setSidebarFilters({
+                                  ...sidebarFilters,
+                                  priceRange: [sidebarFilters.priceRange[0], Number(e.target.value)],
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Year Range Section */}
+                    <div className="border-b border-gray-200 pb-6">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.year.label')}</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <label className="block text-xs text-gray-600 mb-1">{t('filters.year.from')}</label>
+                            <input
+                              type="number"
+                              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              value={sidebarFilters.yearRange[0]}
+                              onChange={(e) =>
+                                setSidebarFilters({
+                                  ...sidebarFilters,
+                                  yearRange: [Number(e.target.value), sidebarFilters.yearRange[1]],
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-xs text-gray-600 mb-1">{t('filters.year.to')}</label>
+                            <input
+                              type="number"
+                              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              value={sidebarFilters.yearRange[1]}
+                              onChange={(e) =>
+                                setSidebarFilters({
+                                  ...sidebarFilters,
+                                  yearRange: [sidebarFilters.yearRange[0], Number(e.target.value)],
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transmission Section */}
+                    <div className="border-b border-gray-200 pb-6">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.transmission.label')}</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: 'Any', label: t('filters.transmission.any') },
+                          { key: 'Manual', label: t('filters.transmission.manual') },
+                          { key: 'Automatic', label: t('filters.transmission.automatic') }
+                        ].map((transmission) => {
+                          const value = transmission.key === 'Any' ? undefined : transmission.key;
                           const isActive = sidebarFilters.transmission === value || value === undefined && sidebarFilters.transmission === 'Any';
 
                           return (
                             <button
-                              key={type}
+                              key={transmission.key}
                               onClick={() => handleSidebarFilterChange('transmission', value)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                ? 'bg-theme-500 text-white hover:bg-theme-600'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                isActive
+                                  ? 'bg-red-500 text-white shadow-md transform scale-105'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                              }`}
                             >
-                              {type}
+                              {transmission.label}
                             </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Fuel Type */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-900 mb-4 block">Fuel Type</label>
+                    {/* Fuel Type Section */}
+                    <div className="border-b border-gray-200 pb-6">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.fuel.label')}</h4>
                       <div className="flex flex-wrap gap-2">
-                        {(['Any', ...Object.keys(FUEL_TYPE_MAP)] as FuelTypeUI[]).map((type) => {
-                          const value = type === 'Any' ? undefined : type; // lowercase to match your filters
-                          const isActive = sidebarFilters.fuelType === value || value === undefined && sidebarFilters.fuelType === 'Any';
+                        {[
+                          { key: 'Any', label: t('filters.fuel.any'), value: undefined },
+                          { key: 'Petrol', label: t('filters.fuel.petrol'), value: 'petrol' },
+                          { key: 'Gasoline', label: t('filters.fuel.gasoline'), value: 'gasoline' },
+                          { key: 'Diesel', label: t('filters.fuel.diesel'), value: 'diesel' },
+                          { key: 'Hybrid', label: t('filters.fuel.hybrid'), value: 'hybrid' },
+                          { key: 'Electric', label: t('filters.fuel.electric'), value: 'electric' }
+                        ].map((fuelType) => {
+                          const isActive = sidebarFilters.fuelType === fuelType.value || fuelType.value === undefined && sidebarFilters.fuelType === 'Any';
 
                           return (
                             <button
-                              key={type}
-                              onClick={() => handleSidebarFilterChange('fuelType', value)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                ? 'bg-theme-500 text-white hover:bg-theme-600'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
+                              key={fuelType.key}
+                              onClick={() => handleSidebarFilterChange('fuelType', fuelType.value)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                isActive
+                                  ? 'bg-red-500 text-white shadow-md transform scale-105'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                              }`}
                             >
-                              {type}
+                              {fuelType.label}
                             </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Seats */}
+                    {/* Seats Section */}
                     <div>
-                      <label className="text-sm font-medium text-gray-900 mb-4 block">Seats</label>
-
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center text-sm gap-2">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.seats.label')}</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-2">{t('filters.seats.minSeats')}</label>
                           <input
                             type="number"
-                            className="w-20 px-2 py-1 rounded-md border border-gray-300 text-gray-900"
-                            value={sidebarFilters.seats}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            value={sidebarFilters.seats || ''}
                             onChange={(e) =>
                               setSidebarFilters({
                                 ...sidebarFilters,
-                                seats: parseInt((e.target.value)),
+                                seats: parseInt(e.target.value) || undefined,
                               })
                             }
+                            placeholder="Ex: 5"
                           />
                         </div>
                       </div>
