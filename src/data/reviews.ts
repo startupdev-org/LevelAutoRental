@@ -38,8 +38,8 @@ export const reviews: Review[] = [
     },
     {
         id: '3',
-        userName: 'Igor Karpov',
-        userInitial: 'I',
+        userName: 'Vasile Moraru',
+        userInitial: 'V',
         userInitialColor: 'bg-purple-500',
         rating: 5,
         date: '30 ianuarie 2025',
@@ -60,8 +60,8 @@ export const reviews: Review[] = [
     },
     {
         id: '5',
-        userName: 'Artiom Rebrov',
-        userInitial: 'A',
+        userName: 'Gheorghe Luca',
+        userInitial: 'G',
         userInitialColor: 'bg-green-500',
         rating: 5,
         date: '28 ianuarie 2025',
@@ -86,8 +86,8 @@ export const reviews: Review[] = [
     },
     {
         id: '7',
-        userName: 'Andriy Vovchok',
-        userInitial: 'A',
+        userName: 'Dumitru Ciobanu',
+        userInitial: 'D',
         userInitialColor: 'bg-green-500',
         rating: 5,
         date: '19 ianuarie 2025',
@@ -134,7 +134,7 @@ export const reviews: Review[] = [
     },
     {
         id: '11',
-        userName: 'Maxim',
+        userName: 'Maxim Popovici',
         userInitial: 'M',
         userInitialColor: 'bg-green-500',
         rating: 5,
@@ -174,7 +174,7 @@ export const reviews: Review[] = [
     },
     {
         id: '15',
-        userName: 'Vadim',
+        userName: 'Vladimir Bulat',
         userInitial: 'V',
         userInitialColor: 'bg-indigo-500',
         rating: 5,
@@ -214,7 +214,7 @@ export const reviews: Review[] = [
     },
     {
         id: '19',
-        userName: 'Sergey',
+        userName: 'Sergiu Marian',
         userInitial: 'S',
         userInitialColor: 'bg-slate-500',
         rating: 5,
@@ -231,5 +231,44 @@ export const reviews: Review[] = [
         date: '28 martie 2025',
         category: 'Închiriere',
         comment: 'Am fost foarte mulțumit de serviciul oferit. Prețuri competitive, mașini bune și personal prietenos. Voi reveni cu siguranță pentru următoarea închiriere!'
+    },
+    {
+        id: '21',
+        userName: 'Vasile Popescu',
+        userInitial: 'V',
+        userInitialColor: 'bg-blue-500',
+        rating: 5,
+        date: '5 aprilie 2025',
+        category: 'Închiriere',
+        comment: 'Amazing service! The car was clean, reliable, and the booking process was incredibly simple. I will definitely use it again!',
+        isTranslated: true,
+        originalLanguage: 'engleză'
+    },
+    {
+        id: '22',
+        userName: 'Ion Grosu',
+        userInitial: 'I',
+        userInitialColor: 'bg-red-500',
+        rating: 5,
+        date: '8 aprilie 2025',
+        category: 'Închiriere',
+        comment: 'Отличный сервис! Машина была в идеальном состоянии, процесс бронирования очень простой. Цены разумные, рекомендую всем!',
+        isTranslated: true,
+        originalLanguage: 'rusă'
+    },
+    {
+        id: '23',
+        userName: 'Petru Rotaru',
+        userInitial: 'P',
+        userInitialColor: 'bg-green-500',
+        rating: 4,
+        date: '12 aprilie 2025',
+        category: 'Închiriere',
+        comment: 'Very satisfied with the service! The car matched the description, staff was professional. Will definitely use again.',
+        isTranslated: true,
+        originalLanguage: 'engleză',
+        product: {
+            name: 'Hyundai Santa Fe'
+        }
     }
 ];

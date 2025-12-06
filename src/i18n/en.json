@@ -31,7 +31,11 @@
         "selectPickUpDate": "Select pick-up date",
         "returnDate": "Return Date",
         "selectReturnDate": "Select return date",
-        "search": "Search"
+        "search": "Search",
+        "make": "Make",
+        "model": "Model",
+        "selectMake": "Select make",
+        "selectModel": "Select model"
     },
     "popularCars": {
         "sectionLabel": "Popular Cars",
@@ -62,6 +66,7 @@
         "sectionLabel": "How the rental process works",
         "sectionTitle": "In just 5 simple steps",
         "sectionDescription": "Choose your car, send the details and hit the road without worries.",
+        "pageTitle": "How car rental works at Level Auto Rental",
         "steps": {
             "contact": {
                 "title": "Contact Us",
@@ -83,7 +88,26 @@
                 "title": "Return Car",
                 "description": "Return the car according to the contract terms."
             }
-        }
+        },
+        "journey": {
+            "reservation": {
+                "title": "Online reservation",
+                "description": "The client books the perfect car directly from our website – fast, simple process without unnecessary complications."
+            },
+            "airport": {
+                "title": "Airport meeting",
+                "description": "Upon plane landing, our team welcomes you at Chisinau Airport to complete the formalities in just a few minutes."
+            },
+            "handover": {
+                "title": "Car handover",
+                "description": "We hand you the keys and documents for the prepared car, clean and technically checked, ready for your journey."
+            },
+            "departure": {
+                "title": "Departure on journey",
+                "description": "With everything prepared, you head to your desired destination, benefiting from the freedom and comfort offered by our premium fleet."
+            }
+        },
+        "tagline": "Level Auto Rental – easy, fast, comfortable"
     },
     "testimonials": {
         "sectionLabel": "Reviews",
@@ -515,7 +539,71 @@
     "car": {
         "mileageLimit": "200km/day",
         "seeCar": "See car",
-        "seeMorePhotos": "See {{count}} more photos"
+        "seeMorePhotos": "See {{count}} more photos",
+        "noImage": "No Image",
+        "transmission": {
+            "automatic": "Automatic",
+            "manual": "Manual"
+        },
+        "fuel": {
+            "gasoline": "Gasoline",
+            "diesel": "Diesel",
+            "petrol": "Petrol",
+            "hybrid": "Hybrid",
+            "electric": "Electric"
+        },
+        "perDay": "per day"
+    },
+    "carsPage": {
+        "title": "Rent Your Ideal Car",
+        "subtitle": "Varied fleet of premium vehicles • Complete services with or without driver • Permanent assistance and clear prices",
+        "clearFilters": "Clear all filters",
+        "make": "Make",
+        "selectMake": "Select make",
+        "model": "Model",
+        "selectModel": "Select model",
+        "search": "Search"
+    },
+    "filters": {
+        "title": "Filters",
+        "category": {
+            "label": "Category",
+            "all": "All",
+            "suv": "SUV",
+            "sport": "Sport",
+            "luxury": "Luxury"
+        },
+        "price": {
+            "label": "Price (lei)",
+            "from": "From",
+            "to": "To"
+        },
+        "year": {
+            "label": "Year of manufacture",
+            "from": "From",
+            "to": "To"
+        },
+        "transmission": {
+            "label": "Transmission",
+            "any": "Any",
+            "manual": "Manual",
+            "automatic": "Automatic"
+        },
+        "fuel": {
+            "label": "Fuel",
+            "any": "Any",
+            "petrol": "Petrol",
+            "gasoline": "Gasoline",
+            "diesel": "Diesel",
+            "hybrid": "Hybrid",
+            "electric": "Electric"
+        },
+        "seats": {
+            "label": "Seats",
+            "minSeats": "Minimum number of seats"
+        },
+        "apply": "Apply filters",
+        "clear": "Clear all"
     },
     "calculator": {
         "selectVehicle": "Select vehicle",
@@ -562,6 +650,88 @@
         "discountApplied4": "Discount applied: -4% for 8+ days",
         "discountApplied2": "Discount applied: -2% for 4+ days",
         "perDay": "/day"
+    },
+    "rentalOptions": {
+        "sectionLabel": "Additional Services",
+        "sectionTitle": "Rental Options",
+        "unlimitedMileage": {
+            "title": "Unlimited mileage",
+            "description": "Rental price will be 50% higher"
+        },
+        "personalDriver": {
+            "title": "Personal driver",
+            "price": "from 800 MDL per day"
+        },
+        "priorityService": {
+            "title": "Priority Service",
+            "price": "from 1000 MDL per day"
+        },
+        "childCarSeat": {
+            "title": "Child car seat",
+            "price": "from 100 MDL per day"
+        },
+        "simCard": {
+            "title": "SIM card with internet",
+            "price": "from 100 MDL per day"
+        },
+        "roadsideAssistance": {
+            "title": "Roadside assistance",
+            "price": "from 500 MDL per day"
+        },
+        "airportDelivery": {
+            "title": "Airport delivery",
+            "price": "Free"
+        }
+    },
+    "contract": {
+        "sectionLabel": "Legal Information",
+        "sectionTitle": "Contract",
+        "description": "Our company provides car rental services on the territory of the Republic of Moldova, strictly respecting the current legislation. Customer interaction is based on the Rental Contract, which guarantees the legal protection of their interests.",
+        "requirementsTitle": "Terms and Requirements",
+        "requirementsDescription": "To rent a car, the following requirements must be met:",
+        "age": {
+            "label": "Age",
+            "value": "from 21 years"
+        },
+        "license": {
+            "label": "License",
+            "value": "category B"
+        },
+        "experience": {
+            "label": "Experience",
+            "value": "at least 3 years"
+        },
+        "mileage": {
+            "label": "km/day",
+            "value": "up to 200km"
+        },
+        "moreDetails": "More Details",
+        "details": {
+            "identityCard": "Possession of identity card.",
+            "fullPayment": "Full payment (100%) of the rental fee for the selected car.",
+            "finesResponsibility": "All fines received during vehicle use are the driver's responsibility.",
+            "cascoResponsibility": "In the absence of CASCO insurance, accident liability falls to the driver.",
+            "paymentMethods": "Payment can be made in cash, by bank transfer or by card.",
+            "earlyReturn": "The client has the right to cost recalculation in case of early vehicle return.",
+            "extension": "Extension of the rental contract is possible remotely, but is not guaranteed.",
+            "delivery": "Delivery or return of the car to a convenient address is possible. Cost is confirmed by phone +373 62 000 112.",
+            "deposit": {
+                "title": "Deposit",
+                "description": "Deposit payment according to the value established in the Contract. The deposit represents insurance of the Tenant's obligations fulfillment and is returned after 10 days from the car handover, in the absence of major violations."
+            },
+            "mileageLimit": {
+                "title": "Mileage limit",
+                "description": "In case of rental for several days, the limit is calculated in total. In case of exceeding the limit and in the absence of the activated 'Unlimited mileage' option, the excess is paid separately."
+            },
+            "secondDriver": {
+                "title": "Second driver",
+                "description": "Before signing the Rental Contract, the cost of adding a second driver is 0 lei. After signing the Rental Contract, the cost of adding a second driver is 500 lei."
+            },
+            "depositReturn": {
+                "title": "Deposit return",
+                "description": "If the deposit is left in cash, it is returned upon car handover. If retained from the card, return takes place within 10 working days after car handover."
+            }
+        }
     },
     "notFound": {
         "title": "Page Not Found",
