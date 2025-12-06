@@ -23,51 +23,39 @@ export const FAQIntro: React.FC = () => {
 
     return (
         <section
-            className="relative py-32 bg-cover bg-center bg-no-repeat bg-fixed"
-            style={{
-                backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
-                backgroundPosition: isDesktop ? 'center -400px' : 'center center',
-                backgroundSize: isDesktop ? '115%' : 'cover'
-            }}
+          className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans text-white"
+          style={{
+            backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
+            backgroundPosition: isDesktop ? 'center -400px' : 'center center',
+            backgroundSize: isDesktop ? '115%' : 'cover'
+          }}
         >
-            {/* Background Overlay */}
-            <div className="absolute inset-0 bg-black/60"></div>
+          {/* Dark Overlay */}
+          <div className="absolute inset-0 bg-black/70" />
 
-            {/* Bottom Gradient Fade */}
-            <div className="absolute bottom-0 left-0 w-full h-40 
-                bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))] 
-                z-10 pointer-events-none">
-            </div>
+          {/* Bottom Gradient Fade */}
+          <div className="absolute bottom-0 left-0 w-full h-40
+              bg-[linear-gradient(to_top,rgba(15,15,15,1),rgba(15,15,15,0))]
+              z-10 pointer-events-none">
+          </div>
 
-            <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header Section */}
-                <motion.div
-                    variants={staggerContainer}
-                    initial="initial"
-                    whileInView="animate"
-                    viewport={{ once: true }}
-                    className="text-center mb-12"
-                >
-                    <motion.span
-                        variants={fadeInUp}
-                        className="text-sm font-semibold tracking-wider text-red-500 uppercase"
-                    >
-                        {t('pages.faq.hero.label')}
-                    </motion.span>
-                    <motion.h2
-                        variants={fadeInUp}
-                        className="mt-4 text-4xl md:text-6xl font-bold text-white leading-tight max-w-4xl mx-auto drop-shadow-lg"
-                    >
-                        {t('pages.faq.hero.title')}
-                    </motion.h2>
-                    <motion.p
-                        variants={fadeInUp}
-                        className="mt-6 text-xl text-gray-100 max-w-3xl mx-auto leading-relaxed drop-shadow-md"
-                    >
-                        {t('pages.faq.hero.description')}
-                    </motion.p>
-                </motion.div>
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 overflow-visible relative z-10">
+            <div className="flex items-center justify-center h-full pt-16">
+              {/* Centered Text Content */}
+              <div className="text-center space-y-10 max-w-4xl">
+                <div className="space-y-8">
+                  <div className="space-y-6">
+                    <p className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+                      {t('pages.faq.hero.label')}
+                    </p>
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
+                      {t('pages.faq.hero.title')}
+                    </h1>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
         </section>
     );
 };

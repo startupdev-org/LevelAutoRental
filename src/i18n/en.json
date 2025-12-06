@@ -255,6 +255,26 @@
             "story": {
                 "label": "Our Story",
                 "title": "From Humble Beginnings to Industry Leaders",
+                "evolutionLabel": "Our Evolution in Moldova",
+                "timelineLabels": {
+                    "2023": "2023",
+                    "2023-2024": "2023—2024",
+                    "today": "Today"
+                },
+                "timeline": {
+                    "2023": {
+                        "title": "Launch",
+                        "description": "We started with 3 cars and a vision: to make car rentals accessible in Moldova."
+                    },
+                    "2023-2024": {
+                        "title": "First Year",
+                        "description": "We reached 15 cars and 200+ loyal customers. Simpler processes, transparent prices."
+                    },
+                    "today": {
+                        "title": "Today",
+                        "description": "25+ cars, online bookings, home delivery. We continue to grow step by step."
+                    }
+                },
                 "paragraph1": "Founded in 2009, Level Auto Rental began as a small family business with a simple mission: to provide reliable, affordable transportation solutions for everyone. What started with just five vehicles has grown into one of Moldova's most trusted car rental services.",
                 "paragraph2": "Over the years, we've expanded our fleet to include over 500 vehicles ranging from economy cars to luxury sedans and SUVs. Our commitment to customer satisfaction and quality service has remained unchanged, earning us the loyalty of thousands of customers and numerous industry awards.",
                 "paragraph3": "Today, we continue to innovate and improve our services, embracing new technologies and sustainable practices to better serve our customers and protect the environment for future generations."
@@ -304,7 +324,7 @@
                 "message": "Message",
                 "message-cta": "Leave us a message...",
                 "question": "Where you heard about us",
-                "start": "Get started"
+                "start": "Send now"
             }
         },
         "reviews": {
@@ -622,7 +642,6 @@
         "additionalOptions": "Additional options",
         "unlimitedMileage": "Unlimited mileage",
         "noSpeedLimit": "No speed limit",
-        "tireInsurance": "Tire insurance",
         "personalDriver": "Personal driver",
         "priorityService": "Priority Service",
         "childCarSeat": "Child car seat",
@@ -649,7 +668,20 @@
         "pricesDescription": "For an exact and personalized offer, please contact us directly.",
         "discountApplied4": "Discount applied: -4% for 8+ days",
         "discountApplied2": "Discount applied: -2% for 4+ days",
-        "perDay": "/day"
+        "perDay": "/day",
+        "pricingTiers": "Pricing Tiers",
+        "currentTier": "Current:",
+        "pickupDate": "Pickup Date",
+        "returnDate": "Return Date",
+        "totalDays": "Total Days:",
+        "selectPickupDate": "Select pickup date",
+        "selectReturnDate": "Select return date",
+        "selectPickupInstruction": "Select pickup date",
+        "changePickupInstruction": "Click to change pickup date",
+        "selectReturnInstruction": "Select return date",
+        "changeReturnInstruction": "Click to change return date",
+        "dateUnavailable": "Date unavailable",
+        "beforePickup": "Cannot be before pickup date"
     },
     "rentalOptions": {
         "sectionLabel": "Additional Services",

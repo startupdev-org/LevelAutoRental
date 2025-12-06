@@ -1,14 +1,15 @@
 import { motion } from 'framer-motion';
 import { Award, Car, Clock, Shield, Users, CheckCircle } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 import { Card } from '../../components/ui/Card';
 import { useTranslation } from 'react-i18next';
 
 export const About: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [isDesktop, setIsDesktop] = useState(false);
+
 
   useEffect(() => {
     // Check once on mount
@@ -22,33 +23,33 @@ export const About: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const stats = [
-    { icon: Car, label: t('pages.about.stats.vehicles'), value: '500+' },
-    { icon: Users, label: t('pages.about.stats.customers'), value: '10,000+' },
-    { icon: Clock, label: t('pages.about.stats.experience'), value: '15+' },
-    { icon: Award, label: t('pages.about.stats.awards'), value: '25+' }
-  ];
+  const stats = useMemo(() => [
+    { icon: Car, label: t('pages.about.stats.vehicles') || 'Vehicles', value: '500+' },
+    { icon: Users, label: t('pages.about.stats.customers') || 'Happy Customers', value: '10,000+' },
+    { icon: Clock, label: t('pages.about.stats.experience') || 'Years Experience', value: '15+' },
+    { icon: Award, label: t('pages.about.stats.awards') || 'Awards Won', value: '25+' }
+  ], [t, i18n.language]);
 
-  const values = [
+  const values = useMemo(() => [
     {
       icon: Shield,
-      title: t('pages.about.values.safety.title'),
-      description: t('pages.about.values.safety.description')
+      title: t('pages.about.values.safety.title') || 'Safety First',
+      description: t('pages.about.values.safety.description') || 'All our vehicles undergo rigorous safety inspections and maintenance.'
     },
     {
       icon: Users,
-      title: t('pages.about.values.customer.title'),
-      description: t('pages.about.values.customer.description')
+      title: t('pages.about.values.customer.title') || 'Customer Focus',
+      description: t('pages.about.values.customer.description') || 'We prioritize customer satisfaction with 24/7 support.'
     },
     {
       icon: Award,
-      title: t('pages.about.values.quality.title'),
-      description: t('pages.about.values.quality.description')
+      title: t('pages.about.values.quality.title') || 'Quality Service',
+      description: t('pages.about.values.quality.description') || 'Our commitment to excellence has earned us industry recognition.'
     }
-  ];
+  ], [t, i18n.language]);
 
   return (
-    <div className="min-h-screen">
+    <div key={i18n.language} className="min-h-screen">
       {/* Hero Section */}
       <section
         className="relative h-[500px] bg-fixed bg-cover bg-center bg-no-repeat pt-36 font-sans text-white"
@@ -106,7 +107,7 @@ export const About: React.FC = () => {
               variants={fadeInUp}
               className="mt-3 text-3xl md:text-5xl font-bold text-gray-800 leading-tight max-w-3xl mx-auto"
             >
-              Evoluția noastră în Moldova
+              {t('pages.about.story.evolutionLabel')}
             </motion.h2>
           </motion.div>
 
@@ -128,12 +129,12 @@ export const About: React.FC = () => {
                   <div className="hidden lg:flex absolute left-4 w-4 h-4 bg-red-500 rounded-full border-4 border-white shadow-lg z-10" />
                   <div className="lg:ml-16">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">2023</div>
+                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">{t('pages.about.story.timelineLabels.2023')}</div>
                       <Shield className="w-4 h-4 text-red-500" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Lansarea</h3>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{t('pages.about.story.timeline.2023.title')}</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Am început cu 3 mașini și o viziune: să facem închirierile auto accesibile în Moldova.
+                      {t('pages.about.story.timeline.2023.description')}
                     </p>
                   </div>
                 </div>
@@ -143,12 +144,12 @@ export const About: React.FC = () => {
                   <div className="hidden lg:flex absolute left-4 w-4 h-4 bg-red-500 rounded-full border-4 border-white shadow-lg z-10" />
                   <div className="lg:ml-16">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">2023—2024</div>
+                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">{t('pages.about.story.timelineLabels.2023-2024')}</div>
                       <Award className="w-4 h-4 text-red-500" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Primul an</h3>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{t('pages.about.story.timeline.2023-2024.title')}</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Am ajuns la 15 mașini și 200+ clienți fideli. Procese mai simple, prețuri transparente.
+                      {t('pages.about.story.timeline.2023-2024.description')}
                     </p>
                   </div>
                 </div>
@@ -158,12 +159,12 @@ export const About: React.FC = () => {
                   <div className="hidden lg:flex absolute left-4 w-4 h-4 bg-red-500 rounded-full border-4 border-white shadow-lg z-10" />
                   <div className="lg:ml-16">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">Astăzi</div>
+                      <div className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">{t('pages.about.story.timelineLabels.today')}</div>
                       <CheckCircle className="w-4 h-4 text-red-500" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Acum</h3>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{t('pages.about.story.timeline.today.title')}</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      25+ mașini, rezervări online, livrare la domiciliu. Continuăm să creștem pas cu pas.
+                      {t('pages.about.story.timeline.today.description')}
                     </p>
                   </div>
                 </div>

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "../../utils/animations";
 import { useTranslation } from "react-i18next";
-import { Phone, Mail, MapPin, Send, Clock } from "lucide-react";
+import { Phone, Mail, MapPin, Send } from "lucide-react";
 import { FaFacebookF } from "react-icons/fa";
 import { GrInstagram } from "react-icons/gr";
-import { BiSolidPhoneCall } from "react-icons/bi";
+import emailjs from '@emailjs/browser';
 
 // TikTok Icon Component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -26,6 +26,12 @@ export const Contact: React.FC = () => {
 
     setIsDesktop(mediaQuery.matches);
     mediaQuery.addEventListener("change", handleChange);
+
+    // Initialize EmailJS with public key from environment variables
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    if (publicKey && emailjs) {
+      emailjs.init(publicKey);
+    }
 
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
@@ -50,13 +56,84 @@ export const Contact: React.FC = () => {
     message: "",
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{
+    type: 'success' | 'error' | null;
+    message: string;
+  }>({ type: null, message: '' });
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    setIsLoading(true);
+    setSubmitStatus({ type: null, message: '' });
+
+    try {
+      // Check if EmailJS is initialized
+      if (!emailjs) {
+        throw new Error('EmailJS not loaded');
+      }
+
+      // Prepare template parameters to match the EmailJS template variables
+      const templateParams = {
+        prenume: formData.firstName,
+        nume: formData.lastName,
+        email: formData.email,
+        telefon: formData.phone,
+        mesaj: formData.message,
+      };
+
+      // Send email using EmailJS
+      await emailjs.send(
+        'service_ku8aes8', // Service ID
+        'template_9cyhfh4', // Template ID
+        templateParams
+      );
+
+      // Success
+      setSubmitStatus({
+        type: 'success',
+        message: 'Mesajul dumneavoastră a fost trimis cu succes! Vă vom contacta în curând.'
+      });
+
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        message: "",
+      });
+
+    } catch (error: any) {
+
+      // More specific error messages
+      let errorMessage = 'A apărut o eroare la trimiterea mesajului. Vă rugăm să încercați din nou.';
+
+      if (error?.text?.includes('Invalid service ID')) {
+        errorMessage = 'Eroare de configurare: Service ID invalid.';
+      } else if (error?.text?.includes('Invalid template ID')) {
+        errorMessage = 'Eroare de configurare: Template ID invalid.';
+      } else if (error?.text?.includes('Invalid public key')) {
+        errorMessage = 'Eroare de configurare: Cheie publică invalidă.';
+      } else if (error?.text?.includes('rate limit')) {
+        errorMessage = 'Prea multe încercări. Vă rugăm să așteptați câteva minute.';
+      } else if (error?.text?.includes('Template not found')) {
+        errorMessage = 'Eroare: Template-ul nu a fost găsit. Verificați configurația.';
+      } else if (error?.text?.includes('Service not found')) {
+        errorMessage = 'Eroare: Serviciul nu a fost găsit. Verificați configurația.';
+      }
+
+      setSubmitStatus({
+        type: 'error',
+        message: errorMessage
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -273,13 +350,38 @@ export const Contact: React.FC = () => {
                   <motion.button
                     type="submit"
                     variants={fadeInUp}
-                    className="w-full py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    disabled={isLoading}
+                    className="w-full py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:shadow-none transform hover:scale-[1.02] disabled:hover:scale-100 disabled:cursor-not-allowed"
+                    whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
                   >
-                    <Send className="w-5 h-5" />
-                    {t('pages.contact.form.start')}
+                    {isLoading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Se trimite...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5" />
+                        {t('pages.contact.form.start')}
+                      </>
+                    )}
                   </motion.button>
+
+                  {/* Status Message */}
+                  {submitStatus.type && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`mt-4 p-4 rounded-2xl text-center ${
+                        submitStatus.type === 'success'
+                          ? 'bg-green-50 text-green-800 border border-green-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}
+                    >
+                      {submitStatus.message}
+                    </motion.div>
+                  )}
                 </motion.form>
               </motion.div>
             </div>

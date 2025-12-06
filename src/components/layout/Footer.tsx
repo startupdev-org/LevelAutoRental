@@ -38,7 +38,7 @@ export const Footer: React.FC = () => {
     {
       title: t("footer.sections.reservations.title"),
       links: [
-        { name: t("footer.sections.reservations.links.start"), href: '/' },
+        { name: t("footer.sections.reservations.links.start"), href: '/cars' },
         { name: t("footer.sections.reservations.links.howTo"), href: '/how-to-rent' },
         { name: t("footer.sections.reservations.links.calculator"), href: '/calculator' },
         { name: t("footer.sections.reservations.links.faq"), href: '/help' }
@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
 
   const contactInfo = [
     { icon: Phone, text: '+373 62 000 112', href: 'tel:+37362000112' },
-    { icon: Mail, text: 'levelauto@yahoo.com', href: 'mailto:levelauto@yahoo.com' },
+    { icon: Mail, text: 'level.autorent@yahoo.com', href: 'mailto:level.autorent@yahoo.com' },
     { icon: MapPin, text: 'Chisinau, Moldova', href: '#' }
   ];
 
