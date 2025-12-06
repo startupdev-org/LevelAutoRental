@@ -251,7 +251,7 @@ export const Hero: React.FC = () => {
           src="/lvl_bg.png"
           alt="Background"
           className="w-full h-full object-cover"
-          style={{
+        style={{
             position: 'absolute',
             top: '-300px',
             left: 0,
@@ -259,8 +259,8 @@ export const Hero: React.FC = () => {
             height: 'calc(100% + 300px)',
             objectFit: 'cover',
             objectPosition: 'center center',
-            zIndex: 0
-          }}
+          zIndex: 0
+        }}
         />
       </div>
 
@@ -270,7 +270,7 @@ export const Hero: React.FC = () => {
           src="/lvl_bg.png"
           alt="Background"
           className="w-full h-full object-cover"
-          style={{
+        style={{
             position: 'absolute',
             top: '25px',
             left: 0,
@@ -278,8 +278,8 @@ export const Hero: React.FC = () => {
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center center',
-            zIndex: 0
-          }}
+          zIndex: 0
+        }}
         />
       </div>
 
@@ -396,7 +396,7 @@ export const Hero: React.FC = () => {
               {/* Make */}
               <div className="w-full dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Marca
+                  {t('hero.make')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
@@ -416,7 +416,7 @@ export const Hero: React.FC = () => {
                         />
                       ) : null;
                     })()}
-                    <span className="flex-1">{bookingForm.make || 'Selectează marca'}</span>
+                    <span className="flex-1">{bookingForm.make || t('hero.selectMake')}</span>
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -473,14 +473,14 @@ export const Hero: React.FC = () => {
               {/* Model */}
               <div className="w-full dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Model
+                  {t('hero.model')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
                     className={`w-full text-sm font-medium text-gray-900 bg-transparent border border-gray-200 rounded-xl py-3 px-4 cursor-pointer flex items-center gap-2 ${!bookingForm.make ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => bookingForm.make && openDropdown('model')}
                   >
-                    <span className="flex-1">{!bookingForm.make ? 'Selectează marca' : (bookingForm.model || 'Selectează modelul')}</span>
+                    <span className="flex-1">{!bookingForm.make ? t('hero.selectMake') : (bookingForm.model || t('hero.selectModel'))}</span>
                     <svg className={`w-4 h-4 text-gray-400 ${!bookingForm.make ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -708,7 +708,7 @@ export const Hero: React.FC = () => {
               {/* Make */}
               <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Marca
+                  {t('hero.make')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
@@ -728,7 +728,7 @@ export const Hero: React.FC = () => {
                         />
                       ) : null;
                     })()}
-                    <span className="flex-1">{bookingForm.make || 'Selectează marca'}</span>
+                    <span className="flex-1">{bookingForm.make || t('hero.selectMake')}</span>
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -790,14 +790,14 @@ export const Hero: React.FC = () => {
               {/* Model */}
               <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Model
+                  {t('hero.model')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
                     className={`w-full text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer hover:text-gray-700 transition-colors pr-8 flex items-center gap-2 ${!bookingForm.make ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => bookingForm.make && openDropdown('model')}
                   >
-                    <span className="flex-1">{!bookingForm.make ? 'Selectează marca' : (bookingForm.model || 'Selectează modelul')}</span>
+                    <span className="flex-1">{!bookingForm.make ? t('hero.selectMake') : (bookingForm.model || t('hero.selectModel'))}</span>
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
                     <svg className={`w-4 h-4 ${!bookingForm.make ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

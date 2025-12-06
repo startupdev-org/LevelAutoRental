@@ -15,6 +15,7 @@ export interface CarFilters {
     drivetrain?: string;
     transmission?: 'Automatic' | 'Manual';
     fuelType?: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' | undefined;
+    category?: 'SUV' | 'Sport' | 'Lux';
     seats?: number;
     status?: string;
 }

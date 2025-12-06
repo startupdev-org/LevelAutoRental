@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Leaf, Image } from 'lucide-react';
 import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
@@ -6,9 +5,7 @@ import { PiSpeedometerFill } from "react-icons/pi";
 import { BiSolidHeart } from "react-icons/bi";
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useInView } from '../../hooks/useInView';
 import { Car } from '../../types';
-import { fadeInUp } from '../../utils/animations';
 import { Card } from '../ui/Card';
 import { useNavigate } from 'react-router-dom';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
@@ -21,11 +18,11 @@ interface CarCardProps {
     index: number;
 }
 
-export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
-    const { ref, isInView } = useInView();
+export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     const { t } = useTranslation();
     const { selectedCurrency, eur: eurRate, usd: usdRate } = useExchangeRates();
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+    const [imageError, setImageError] = useState(false);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
     const [carWithImages, setCarWithImages] = useState<Car>(car);
     const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<any[]>([]);
@@ -43,7 +40,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
     const [isFavorite, setIsFavorite] = useState(() => {
         const favorites = getFavorites();
-        return favorites.includes(carWithImages.id);
+        return favorites.includes(Number(carWithImages.id));
     });
 
     // Save favorites to localStorage
@@ -66,30 +63,33 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
     const handleFavoriteToggle = () => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
-        saveFavorite(carWithImages.id, newFavoriteState);
+        saveFavorite(Number(carWithImages.id), newFavoriteState);
     };
 
     // Fetch car images from storage
     useEffect(() => {
         const fetchCarImages = async () => {
             if (!car) return;
-            
+
+            // Reset error state when fetching new images
+            setImageError(false);
+
             try {
                 // Fetch images from storage for this car
                 let carName = (car as any).name;
                 if (!carName || carName.trim() === '') {
                     carName = `${car.make} ${car.model}`;
                 }
-                
+
                 const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-                
+
                 // Update car with images from storage
                 const updatedCar = {
                     ...car,
                     image_url: mainImage || car.image_url,
                     photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
                 };
-                
+
                 setCarWithImages(updatedCar);
             } catch (error) {
                 console.error('Error fetching car images:', error);
@@ -97,7 +97,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                 setCarWithImages(car);
             }
         };
-        
+
         fetchCarImages();
     }, [car]);
 
@@ -325,6 +325,14 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
         }
     };
 
+    const formatPrice = (amount: number, currency: string): string => {
+        const symbol = getCurrencySymbol(currency);
+        if (currency === 'MDL') {
+            return `${amount} ${symbol}`;
+        }
+        return `${symbol}${amount}`;
+    };
+
     const renderTransmissionIcon = (transmission: string | undefined) => {
         if (!transmission) return React.createElement(TbAutomaticGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
         switch (transmission.toLowerCase()) {
@@ -339,14 +347,28 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
         }
     };
 
+    // Handle image loading error
+    const handleImageError = () => {
+        setImageError(true);
+    };
+
+    // Check if car has any images
+    const hasImages = carWithImages.image_url || (carWithImages.photo_gallery && carWithImages.photo_gallery.length > 0);
+
+    // No image placeholder component
+    const NoImagePlaceholder = () => (
+        <div className="w-full h-56 bg-gray-50 flex flex-col items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-3 shadow-sm border border-gray-100">
+                <Image className="w-8 h-8 text-gray-300" />
+            </div>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                {t('car.noImage')}
+            </span>
+        </div>
+    );
+
     return (
-        <motion.div
-            ref={ref}
-            variants={fadeInUp}
-            initial="initial"
-            animate={isInView ? "animate" : "initial"}
-            transition={{ delay: index * 0.1 }}
-        >
+        <div>
             <Card
                 className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-3xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}
             >
@@ -406,6 +428,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                             src={photo}
                                             alt={`${carWithImages.make} ${carWithImages.model} - Photo ${index + 1}`}
                                             className="w-full h-56 object-cover object-center bg-gray-100"
+                                            onError={() => {
+                                                // Handle individual gallery image errors
+                                                // Could implement more sophisticated error handling here
+                                            }}
                                         />
                                         {(() => {
                                             if (isLastVisiblePhoto && remainingPhotos > 0) {
@@ -435,24 +461,15 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 });
                             })()
                         ) : (
-                            carWithImages.image_url ? (
+                            hasImages && !imageError && carWithImages.image_url ? (
                                 <img
                                     src={carWithImages.image_url}
                                     alt={carWithImages.make + ' ' + carWithImages.model}
                                     className="w-full h-56 object-cover object-center bg-gray-100"
+                                    onError={handleImageError}
                                 />
                             ) : (
-                                <div className="w-full h-56 bg-gray-50 flex flex-col items-center justify-center text-gray-300 relative overflow-hidden">
-                                    <div className="absolute inset-0 opacity-[0.03]"
-                                        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, black 1px, transparent 0)', backgroundSize: '16px 16px' }}>
-                                    </div>
-                                    <div className="relative z-10 flex flex-col items-center">
-                                        <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-3 shadow-sm border border-gray-100">
-                                            <Image className="w-8 h-8 text-gray-300" />
-                                        </div>
-                                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Fără fotografii</span>
-                                    </div>
-                                </div>
+                                <NoImagePlaceholder />
                             )
                         )}
                     </div>
@@ -722,12 +739,12 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 {(() => {
                                     const trans = carWithImages.transmission?.trim() || '';
                                     if (trans.toLowerCase() === 'automatic' || trans === 'Automatic') {
-                                        return 'Automată';
+                                        return t('car.transmission.automatic');
                                     }
                                     if (trans.toLowerCase() === 'manual' || trans === 'Manual') {
-                                        return 'Manuală';
+                                        return t('car.transmission.manual');
                                     }
-                                    return trans || 'Automată';
+                                    return trans || t('car.transmission.automatic');
                                 })()}
                             </span>
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -741,11 +758,11 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                                 {React.createElement(FaGasPump as any, { className: "w-4 h-4 text-gray-600" })}
                             </div>
                             <span className="text-sm font-medium">
-                                {carWithImages.fuel_type === 'gasoline' ? 'Benzină' :
-                                    carWithImages.fuel_type === 'diesel' ? 'Diesel' :
-                                        carWithImages.fuel_type === 'petrol' ? 'Benzină' :
-                                            carWithImages.fuel_type === 'hybrid' ? 'Hibrid' :
-                                                carWithImages.fuel_type === 'electric' ? 'Electric' : carWithImages.fuel_type}
+                                {carWithImages.fuel_type === 'gasoline' ? t('car.fuel.gasoline') :
+                                    carWithImages.fuel_type === 'diesel' ? t('car.fuel.diesel') :
+                                        carWithImages.fuel_type === 'petrol' ? t('car.fuel.petrol') :
+                                            carWithImages.fuel_type === 'hybrid' ? t('car.fuel.hybrid') :
+                                                carWithImages.fuel_type === 'electric' ? t('car.fuel.electric') : carWithImages.fuel_type}
                             </span>
                         </div>
 
@@ -769,12 +786,12 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
 
                             return (
                                 <div className="flex items-center gap-2">
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toFixed(0)}</span>
-                                        <span className="text-gray-500 text-sm">pe zi</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xl font-bold text-gray-800">{formatPrice(convertPrice(finalPrice), selectedCurrency)}</span>
+                                        <span className="text-gray-500 text-sm">{t('car.perDay')}</span>
                                     </div>
                                     {discount > 0 && (
-                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60">{getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice)}</span>
+                                        <span className="text-xs text-red-300 line-through font-semibold decoration-red-400/60">{formatPrice(convertPrice(basePrice), selectedCurrency)}</span>
                                     )}
                                 </div>
                             );
@@ -788,6 +805,6 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index }) => {
                     </div>
                 </div>
             </Card>
-        </motion.div>
+        </div>
     );
 };

@@ -52,68 +52,68 @@ export const CarNotFound: React.FC = () => {
                             {/* Decorative elements */}
                             <div className="absolute -top-2 -right-2 w-6 h-6 bg-theme-400 rounded-full animate-pulse"></div>
                             <div className="absolute -bottom-1 -left-1 w-4 h-4 bg-theme-300 rounded-full animate-pulse delay-150"></div>
-                        </div>
+                </div>
 
-                        {/* Heading */}
+                {/* Heading */}
                         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                            Mașina nu a fost găsită
-                        </h2>
+                    Mașina nu a fost găsită
+                </h2>
 
-                        {/* Description */}
+                {/* Description */}
                         <p className="text-gray-600 text-lg mb-8 leading-relaxed max-w-lg mx-auto">
                             Ne pare rău — nu am găsit o mașină cu acel ID. Poți reveni la lista completă de mașini sau încerca una din sugestiile de mai jos.
-                        </p>
+                </p>
 
                         {/* Action buttons with modern design */}
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                            <Link
-                                to="/cars"
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                    <Link
+                        to="/cars"
                                 className="px-8 py-4 bg-gradient-to-r from-theme-500 to-theme-600 hover:from-theme-600 hover:to-theme-700 text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
-                            >
+                    >
                                 <CarFront className="w-5 h-5" />
-                                Vezi toate mașinile
-                            </Link>
+                        Vezi toate mașinile
+                    </Link>
 
-                            <button
-                                onClick={() => navigate(-1)}
+                    <button
+                        onClick={() => navigate(-1)}
                                 className="px-8 py-4 border-2 border-theme-500 text-theme-500 hover:bg-theme-500 hover:text-white font-semibold rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
-                            >
-                                Înapoi
-                            </button>
+                    >
+                        Înapoi
+                    </button>
 
-                            <Link
-                                to="/contact"
+                    <Link
+                        to="/contact"
                                 className="px-8 py-4 border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
-                            >
-                                Contactează-ne
-                            </Link>
-                        </div>
+                    >
+                        Contactează-ne
+                    </Link>
+                </div>
 
-                        {/* Suggestions */}
-                        {cars && cars.length > 0 && (
+                {/* Suggestions */}
+                {cars && cars.length > 0 && (
                             <div className="mt-8">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-6">
                                     Poate te interesează
                                 </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                    {cars.map((car) => (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {cars.map((car) => (
                                         <motion.div
                                             key={car.id}
                                             whileHover={{ scale: 1.02 }}
                                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                         >
-                                            <Link
-                                                to={`/cars/${car.id}`}
+                                <Link
+                                    to={`/cars/${car.id}`}
                                                 className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl border border-gray-200 hover:shadow-xl hover:border-theme-300 transition-all duration-300 bg-white/60 backdrop-blur-sm"
-                                            >
+                                >
                                                 <div className="relative">
-                                                    <img
-                                                        src={car.image_url || ''}
-                                                        alt={car.make + ' ' + car.model}
+                                    <img
+                                        src={car.image_url || ''}
+                                        alt={car.make + ' ' + car.model}
                                                         className="w-20 h-16 object-cover rounded-xl flex-shrink-0 shadow-sm"
-                                                    />
+                                    />
                                                 </div>
-                                                <div className="text-left sm:flex-1">
+                                    <div className="text-left sm:flex-1">
                                                     <div className="text-sm font-semibold text-gray-900 truncate mb-1">
                                                         {car.make + ' ' + car.model}
                                                     </div>
@@ -121,13 +121,13 @@ export const CarNotFound: React.FC = () => {
                                                     <div className="text-sm text-theme-600 font-bold">
                                                         {car.price_per_day ? `${car.price_per_day} € / zi` : 'Contactează-ne'}
                                                     </div>
-                                                </div>
-                                            </Link>
+                                    </div>
+                                </Link>
                                         </motion.div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                            ))}
+                        </div>
+                    </div>
+                )}
                     </div>
                 </div>
             </div>

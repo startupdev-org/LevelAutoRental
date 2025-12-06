@@ -96,22 +96,19 @@
   
   
   <!-- Favicons -->
-  <!-- Standard favicon -->
+  <!-- Primary favicon for Google - should be in root -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicons/dark-theme/favicon.svg" type="image/svg+xml">
+
+  <!-- Standard PNG favicons -->
   <link rel="icon" type="image/png" sizes="32x32" href="/favicons/dark-theme/favicon-96x96.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicons/dark-theme/favicon-96x96.png">
 
-  <!-- Dark mode / light mode variants -->
-  <link rel="icon" href="/favicons/light-theme/favicon.svg" media="(prefers-color-scheme: light)">
-  <link rel="icon" href="/favicons/dark-theme/favicon.svg" media="(prefers-color-scheme: dark)">
-
-  <!-- Apple / mobile -->
+  <!-- Apple touch icon -->
   <link rel="apple-touch-icon" href="/favicons/dark-theme/apple-touch-icon.png">
 
-  <!-- Fallback -->
-  <link rel="shortcut icon" href="/favicons/dark-theme/favicon.ico">
-
-  <!-- Google Search Logo -->
-  <link rel="icon" type="image/png" href="/logo-LVL-white.png">
+  <!-- Web app manifest -->
+  <link rel="manifest" href="/favicons/dark-theme/site.webmanifest">
   
   <!-- Preload critical resources for instant loader display -->
   <link rel="preload" href="/logo.png" as="image" />
@@ -303,10 +300,13 @@
         });
       });
       
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      // Only observe if document.body exists
+      if (document.body) {
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
     })();
     
 
@@ -443,10 +443,13 @@
         });
       });
       
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      // Only observe if document.body exists
+      if (document.body) {
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
     })();
   </script>
   
