@@ -366,28 +366,28 @@ export const CarDetails: React.FC = () => {
         const fetchCar = async () => {
             setLoading(true);
             try {
-                const fetchedCar = await fetchCarById(Number(carId));
-                if (!fetchedCar) {
+            const fetchedCar = await fetchCarById(Number(carId));
+            if (!fetchedCar) {
                     setLoading(false);
-                    return;
-                }
-
-                // Fetch images from storage for this car
-                let carName = (fetchedCar as any).name;
-                if (!carName || carName.trim() === '') {
-                    carName = `${fetchedCar.make} ${fetchedCar.model}`;
-                }
-
-                const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-
-                // Update car with images from storage
-                const carWithImages = {
-                    ...fetchedCar,
-                    image_url: mainImage || fetchedCar.image_url,
-                    photo_gallery: photoGallery.length > 0 ? photoGallery : fetchedCar.photo_gallery,
-                };
-
-                setCar(carWithImages);
+                return;
+            }
+            
+            // Fetch images from storage for this car
+            let carName = (fetchedCar as any).name;
+            if (!carName || carName.trim() === '') {
+                carName = `${fetchedCar.make} ${fetchedCar.model}`;
+            }
+            
+            const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+            
+            // Update car with images from storage
+            const carWithImages = {
+                ...fetchedCar,
+                image_url: mainImage || fetchedCar.image_url,
+                photo_gallery: photoGallery.length > 0 ? photoGallery : fetchedCar.photo_gallery,
+            };
+            
+            setCar(carWithImages);
             } catch (error) {
                 console.error('Error fetching car:', error);
             } finally {

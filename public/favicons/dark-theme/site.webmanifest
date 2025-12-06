@@ -1,21 +1,32 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "Level Auto Rental - Chirie Auto Chisinau",
+  "short_name": "Level Auto",
+  "description": "Chirie auto Chisinau premium. Închirieri Mercedes, BMW, Audi, Maserati în Moldova cu servicii complete.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ef4444",
+  "orientation": "portrait-primary",
+  "categories": ["business", "lifestyle", "travel"],
+  "lang": "ro-MD",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
+      "src": "/favicons/dark-theme/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
+      "src": "/favicons/dark-theme/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicons/dark-theme/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
-  ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  ]
 }
