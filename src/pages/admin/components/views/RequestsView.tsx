@@ -19,7 +19,7 @@ import { EditRequestModal } from '../modals/EditRequestModal';
 import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { getInitials } from '../../../../utils/customer';
 import { getCarName } from '../../../../utils/car';
-import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
+import { acceptBorrowRequest, BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';
 import { RequestDetailsModal } from '../modals/RequestDetailsModal';
@@ -122,13 +122,13 @@ export const RequestsView: React.FC = () => {
 
 
     const handleAccept = async (request: BorrowRequestDTO) => {
-        // Instead of directly accepting, open contract modal
-        setSelectedRequestForContract(request);
-        setProcessingRequest(request.id.toString());
-        setShowRequestContractModal(true);
-        // Close the request details modal
-        setShowRequestDetailsModal(false);
-        setSelectedRequest(null);
+        console.log('should accept the request: ', request)
+        const success = await acceptBorrowRequest(request.id)
+        console.log('result: ', success)
+
+        // setProcessingRequest(request.id.toString());
+        // setShowRequestDetailsModal(false);
+        // setSelectedRequest(null);
     };
 
     const handleReject = async (request: BorrowRequestDTO) => {
@@ -669,16 +669,16 @@ export const RequestsView: React.FC = () => {
             {showRequestDetailsModal && selectedRequest && (
                 <RequestDetailsModal
                     request={selectedRequest}
-                    onClose={() => {
+                    handleClose={() => {
                         setShowRequestDetailsModal(false);
                         setSelectedRequest(null);
                     }}
-                    onAccept={handleAccept}
-                    onReject={handleReject}
-                    onUndoReject={handleUndoReject}
-                    onSetToPending={handleSetToPending}
-                    onEdit={handleEdit}
-                    onCancelRental={handleCancelRental}
+                    handleAccept={handleAccept}
+                    handleReject={handleReject}
+                    handleUndoReject={handleUndoReject}
+                    handleSetToPending={handleSetToPending}
+                    handleEdit={handleEdit}
+                    handleCancel={handleCancelRental}
                     isProcessing={processingRequest === selectedRequest.id.toString()}
                 />
             )}

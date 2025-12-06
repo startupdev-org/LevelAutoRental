@@ -14,36 +14,31 @@ import { formatDateLocal, getDateDiffInDays } from '../../../../utils/date';
 import { formatTime } from '../../../../utils/time';
 import { getCarPrice } from '../../../../utils/car/pricing';
 import { formatAmount } from '../../../../utils/currency';
-import { parseRequestOptions, RequestOption } from '../../../../utils/car/options';
+import { parseRequestOptions } from '../../../../utils/car/options';
 
 export interface RequestDetailsModalProps {
     request: BorrowRequestDTO;
-    onClose: () => void;
-    onAccept: (request: BorrowRequestDTO) => void;
-    onReject: (request: BorrowRequestDTO) => void;
-    onUndoReject?: (request: BorrowRequestDTO) => void;
-    onSetToPending?: (request: BorrowRequestDTO) => void;
-    onEdit?: (request: BorrowRequestDTO) => void;
-    onCancelRental?: (request: BorrowRequestDTO) => void;
+    handleClose: () => void;
+    handleAccept: (request: BorrowRequestDTO) => void;
+    handleReject: (request: BorrowRequestDTO) => void;
+    handleUndoReject?: (request: BorrowRequestDTO) => void;
+    handleSetToPending?: (request: BorrowRequestDTO) => void;
+    handleEdit?: (request: BorrowRequestDTO) => void;
+    handleCancel?: (request: BorrowRequestDTO) => void;
     isProcessing?: boolean;
 }
 
-export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ request, onClose, onAccept, onReject, onUndoReject, onSetToPending, onEdit, isProcessing = false }) => {
+export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({
+    request, handleClose, handleAccept, handleReject, handleUndoReject, handleSetToPending, handleEdit, handleCancel, isProcessing = false }) => {
     const { t } = useTranslation();
 
     const car = request.car as Car;
 
-    console.log('the request details modal should be shown')
-
-    // Parse dates correctly to avoid timezone issues
-    // Split date string and create date at local midnight
     const startDate = formatDateLocal(request.start_date)
     const endDate = formatDateLocal(request.end_date)
-
-
-    // Parse times and combine with dates for accurate calculation
     const pickupTime = formatTime(request.start_time);
     const returnTime = formatTime(request.end_time);
+
     const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
     const [returnHour, returnMin] = returnTime.split(':').map(Number);
 
@@ -61,13 +56,15 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
     const rentalDays = getDateDiffInDays(request.start_date, request.end_date);
     const pricePerDay = getCarPrice(rentalDays, car)
 
+
+
     return createPortal(
         <motion.div
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 1 }}
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-2 md:p-4"
-            onClick={onClose}
+            onClick={handleClose}
             style={{ zIndex: 10000 }}
         >
             <motion.div
@@ -86,7 +83,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                         <p className="text-gray-400 text-sm md:text-sm mt-1">{(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}</p>
                     </div>
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5 text-white" />
@@ -313,161 +310,79 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({ reques
                     </div>
 
                     {/* Action Buttons */}
-                    {request.status === 'PENDING' && (
-                        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onAccept(request);
-                                    // Don't close the modal here - the contract modal will open
-                                }}
-                                disabled={isProcessing}
-                                className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                                {isProcessing ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        {t('admin.requestDetails.processing')}
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle className="w-4 h-4" />
-                                        {t('admin.requestDetails.acceptRequest')}
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onReject(request);
-                                    onClose();
-                                }}
-                                disabled={isProcessing}
-                                className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                                {isProcessing ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        {t('admin.requestDetails.processing')}
-                                    </>
-                                ) : (
-                                    <>
-                                        <X className="w-4 h-4" />
-                                        {t('admin.requestDetails.rejectRequest')}
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    )}
-                    {request.status === 'APPROVED' && (onReject || onSetToPending) && (
-                        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
-                            {onSetToPending && (
+                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
+                        {request.status === 'PENDING' && (
+                            <>
+                                {/* ACCEPT */}
                                 <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onSetToPending(request);
-                                        onClose();
-                                    }}
+                                    onClick={() => handleAccept(request)}
                                     disabled={isProcessing}
-                                    className="flex-1 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 hover:border-yellow-500/60 text-yellow-300 hover:text-yellow-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                    className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-semibold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    {isProcessing ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            {t('admin.requestDetails.processing')}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshCw className="w-4 h-4" />
-                                            {t('admin.requestDetails.setToPending')}
-                                        </>
-                                    )}
+                                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                    {t('admin.requestDetails.acceptRequest')}
                                 </button>
-                            )}
-                            {onReject && (
+
+                                {/* REJECT */}
                                 <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onReject(request);
-                                        onClose();
-                                    }}
+                                    onClick={() => handleReject(request)}
                                     disabled={isProcessing}
-                                    className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                    className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    {isProcessing ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Processing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <X className="w-4 h-4" />
-                                            Respinge Cererea
-                                        </>
-                                    )}
+                                    <X className="w-4 h-4" />
+                                    {t('admin.requestDetails.rejectRequest')}
                                 </button>
-                            )}
-                        </div>
-                    )}
-                    {request.status === 'REJECTED' && (onUndoReject || onEdit) && (
-                        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
-                            {onUndoReject && (
+
+                                {/* EDIT */}
                                 <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onUndoReject(request);
-                                        onClose();
-                                    }}
-                                    disabled={isProcessing}
-                                    className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                                >
-                                    {isProcessing ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            {t('admin.requestDetails.processing')}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshCw className="w-4 h-4" />
-                                            {t('admin.requestDetails.undoReject')}
-                                        </>
-                                    )}
-                                </button>
-                            )}
-                            {onEdit && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onEdit(request);
-                                        onClose();
-                                    }}
-                                    disabled={isProcessing}
-                                    className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/60 text-blue-300 hover:text-blue-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                    onClick={() => handleEdit}
+                                    className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 font-semibold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2"
                                 >
                                     <Edit className="w-4 h-4" />
                                     {t('admin.requestDetails.editRequest')}
                                 </button>
-                            )}
-                        </div>
-                    )}
-                    {request.status === 'APPROVED' && (
-                        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-3 md:pt-4">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onCancelRental(request);
-                                    onClose();
-                                }}
-                                disabled={isProcessing}
-                                className="flex-1 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 hover:border-orange-500/60 text-orange-300 hover:text-orange-200 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                                <>
+                            </>
+                        )}
+
+                        {request.status === 'APPROVED' && (
+                            <>
+                                {/* CANCEL */}
+                                <button
+                                    onClick={() => handleCancel}
+                                    disabled={isProcessing}
+                                    className="flex-1 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-300 font-semibold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
                                     <X className="w-4 h-4" />
-                                    Anulează Închirierea
-                                </>
-                            </button>
-                        </div>
-                    )}
+                                    {t('admin.requestDetails.cancelRental')}
+                                </button>
+
+                                {/* EDIT */}
+                                <button
+                                    onClick={() => handleEdit}
+                                    className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 font-semibold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                    {t('admin.requestDetails.editRequest')}
+                                </button>
+                            </>
+                        )}
+
+                        {request.status === 'REJECTED' && (
+                            <>
+                                {/* APPROVE */}
+                                <button
+                                    onClick={() => handleAccept(request)}
+                                    disabled={isProcessing}
+                                    className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-semibold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    {t('admin.requestDetails.acceptRequest')}
+                                </button>
+                            </>
+                        )}
+
+                    </div>
+
                 </div>
             </motion.div>
         </motion.div>,

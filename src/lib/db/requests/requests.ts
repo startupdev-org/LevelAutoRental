@@ -1,6 +1,10 @@
-import { BorrowRequest, BorrowRequestDTO, Car } from '../../../types';
+import { BorrowRequest, BorrowRequestDTO, Car, Rental } from '../../../types';
+import { getCarPrice } from '../../../utils/car/pricing';
+import { getDateDiffInDays } from '../../../utils/date';
+import { formatTimestamp } from '../../../utils/time/time';
 import { supabase, supabaseAdmin } from '../../supabase';
-import { fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
+import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
+import { getLoggedUser } from '../user/profile';
 
 
 
@@ -138,138 +142,70 @@ export async function fetchBorrowRequestsForDisplay(
 /**
  * Accept a borrow request and create a rental
  */
-export async function acceptBorrowRequest(requestId: string, cars: Car[]): Promise<{ success: boolean; rentalId?: string; error?: string }> {
+export async function acceptBorrowRequest(
+    requestId: string
+): Promise<{ success: boolean; rentalId?: string; error?: string }> {
     try {
-        // Fetch the request
+        // 1️⃣ Fetch the pending borrow request
         const { data: request, error: fetchError } = await supabase
             .from('BorrowRequest')
             .select('*')
             .eq('id', requestId)
+            .eq('status', 'PENDING')
             .single();
 
         if (fetchError || !request) {
-            return { success: false, error: 'Request not found' };
+            return { success: false, error: 'Request not found or not pending' };
         }
 
-        if (request.status !== 'PENDING') {
-            // Check if a rental already exists for this request
-            const { data: existingRental } = await supabase
-                .from('Rentals')
-                .select('id')
-                .eq('request_id', parseInt(requestId))
-                .single();
+        const rentalData: Rental = {
+            car_id: request.car_id,
+            request_id: request.id,
+            rental_status: 'APPROVED',
+            start_date: request.start_date,
+            start_time: request.start_time,
+            end_date: request.end_date,
+            end_time: request.end_time,
+            price_per_day: request.price_per_day,
+            total_amount: request.total_amount,
+            subtotal: request.subtotal,
+            taxes_fees: request.taxes_fees,
+            additional_taxes: request.additional_taxes,
+        };
 
-            if (existingRental) {
-                console.log('Request already approved with existing rental:', existingRental.id);
-                return { success: true, rentalId: existingRental.id.toString() };
-            }
-            return { success: false, error: 'Request is not pending' };
+        // If the request has a user_id, set it. Otherwise, use guest_email
+        if (request.user_id) {
+            rentalData.user_id = request.user_id;
+        } else if (request.email) {
+            rentalData.customer_email = request.email;
         }
 
-        // Find the car for this request
-        const car = cars.find(c => c.id.toString() === request.car_id.toString());
-        if (!car) {
-            return { success: false, error: 'Car not found for this request' };
-        }
-
-        // Get the correct user_id for the rental (should be UUID from Profiles)
-        let userId = request.user_id;
-        console.log('Processing userId for rental creation:', request.user_id);
-
-        if (typeof request.user_id === 'string' && request.user_id.includes('@')) {
-            // Email-based users cannot create rentals directly
-            console.error('Cannot create rental for email-based user:', request.user_id);
-            return { success: false, error: 'Email-based users cannot create rentals directly' };
-        } else if (typeof request.user_id === 'string' && request.user_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            // UUID - ensure profile exists
-            console.log('Ensuring profile exists for UUID:', request.user_id);
-            const { data: profileData, error: profileError } = await supabase
-                .from('Profiles')
-                .select('id')
-                .eq('id', request.user_id)
-                .single();
-
-            if (profileError || !profileData) {
-                console.warn('Profile not found, creating one:', request.user_id);
-                const { error: createError } = await supabase
-                    .from('Profiles')
-                    .insert({
-                        id: request.user_id,
-                        email: null,
-                        first_name: '',
-                        last_name: '',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    });
-                if (createError && createError.code !== '23505') {
-                    console.error('Error creating profile:', createError);
-                    return { success: false, error: 'Failed to create user profile' };
-                }
-                console.log('Created profile for:', request.user_id);
-            }
-            userId = request.user_id;
-        } else if (typeof request.user_id === 'number') {
-            userId = request.user_id.toString();
-        } else {
-            console.error('Unknown userId format:', request.user_id, typeof request.user_id);
-            return { success: false, error: 'Invalid user ID format' };
-        }
-
-        console.log('Final userId for rental:', userId);
-
-        // Calculate rental amount
-        const startDate = new Date(request.start_date);
-        const endDate = new Date(request.end_date);
-        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-        const pricePerDay = (car as any)?.pricePerDay || car.price_per_day || 0;
-        const subtotal = pricePerDay * days;
-        const taxesFees = subtotal * 0.1;
-        const totalAmount = subtotal + taxesFees;
-
-        // Create rental with ACTIVE status
-        const { data: rental, error: rentalError } = await supabase
+        const { data: rental, error: insertError } = await supabase
             .from('Rentals')
-            .insert({
-                request_id: parseInt(requestId),
-                user_id: userId,
-                car_id: parseInt(request.car_id.toString()),
-                start_date: request.start_date,
-                start_time: request.start_time || '09:00',
-                end_date: request.end_date,
-                end_time: request.end_time || '17:00',
-                price_per_day: pricePerDay,
-                subtotal: subtotal,
-                taxes_fees: taxesFees,
-                total_amount: totalAmount,
-                rental_status: 'ACTIVE',
-                payment_status: 'PENDING',
-            })
+            .insert([rentalData])
             .select()
             .single();
 
-        if (rentalError) {
-            console.error('Error creating rental:', rentalError);
-            return { success: false, error: 'Failed to create rental: ' + rentalError.message };
+        if (insertError || !rental) {
+            return { success: false, error: insertError?.message || 'Failed to create rental' };
         }
 
-        // Update request status to APPROVED
-        console.log('Updating request status to APPROVED for request:', requestId);
         const { error: updateError } = await supabase
             .from('BorrowRequest')
-            .update({ status: 'APPROVED', updated_at: new Date().toISOString() })
+            .update({ status: 'APPROVED' })
             .eq('id', requestId);
 
         if (updateError) {
-            console.error('Error updating request status:', updateError);
-            return { success: false, error: 'Failed to update request status: ' + updateError.message };
+            return { success: false, error: updateError.message || 'Failed to update borrow request' };
         }
-        console.log('Request status updated to APPROVED successfully');
 
-        console.log('Successfully created rental with ID:', rental.id);
-        return { success: true, rentalId: rental.id.toString() };
+        return { success: true, rentalId: rental.id };
     } catch (error) {
         console.error('Error accepting borrow request:', error);
-        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }
 
@@ -443,95 +379,52 @@ export async function createBorrowRequest(
  * Create a new borrow request (by user - status PENDING)
  */
 export async function createUserBorrowRequest(
-    carId: string,
-    startDate: string,
-    startTime: string,
-    endDate: string,
-    endTime: string,
-    customerFirstName: string,
-    customerLastName: string,
-    customerEmail: string,
-    customerPhone: string,
-    customerAge?: string,
-    comment?: string,
-    options?: any,
-    totalAmount?: number,
-    userId?: string
+    request: BorrowRequest
 ): Promise<{ success: boolean; requestId?: string; error?: string }> {
     try {
-        // Use provided userId (which should be email for logged-in users) or use customerEmail for guest requests
-        // Both logged-in users and guests use email as user_id
-        const finalUserId = userId || customerEmail;
 
-        // Combine first and last name for customer_name
-        const customerName = `${customerFirstName} ${customerLastName}`.trim();
+        console.log('the total amount: ', request.total_amount)
 
-        // Combine date and time into full timestamps for start_date and end_date
-        // Store as local time, not UTC, to avoid timezone conversion issues
-        const formatTimestamp = (dateStr: string, timeStr: string): string => {
-            // If dateStr is already a full timestamp, use it
-            if (dateStr.includes('T') || dateStr.includes(' ')) {
-                return dateStr;
-            }
-            // Otherwise combine date and time as local time string
-            // Format: YYYY-MM-DD HH:MM:SS (local time)
-            // Ensure time has seconds format
-            const timeWithSeconds = timeStr.includes(':') && timeStr.split(':').length === 2
-                ? `${timeStr}:00`
-                : timeStr;
-            return `${dateStr} ${timeWithSeconds}`;
-        };
+        let finalUserId: string | null = null;
+        try {
+            const user = await getLoggedUser()
+            if (user !== null)
+                finalUserId = user.id
+        } catch {
+            console.log('the user is not logged in')
+            console.log('using null values for the user id')
+        }
 
-        const insertData: any = {
+        const rentalDays = getDateDiffInDays(request.start_date, request.end_date)
+
+        const car = await fetchCarById(request.car_id);
+
+        if (car === null) throw Error('Car not found!')
+
+        const price_per_day = getCarPrice(rentalDays, car)
+
+        const insertData: BorrowRequest = {
             user_id: finalUserId,
-            car_id: parseInt(carId, 10),
-            start_date: formatTimestamp(startDate, startTime),
-            start_time: startTime,
-            end_date: formatTimestamp(endDate, endTime),
-            end_time: endTime,
+            car_id: request.car_id,
+            start_date: request.start_date,
+            start_time: request.start_time,
+            end_date: request.end_date,
+            end_time: request.end_time,
+            price_per_day: price_per_day,
             status: 'PENDING', // User-submitted requests start as PENDING
-            customer_name: customerName,
-            customer_first_name: customerFirstName,
-            customer_last_name: customerLastName,
-            customer_email: customerEmail,
-            customer_phone: customerPhone,
+            customer_name: request.customer_name,
+            customer_first_name: request.customer_first_name,
+            customer_last_name: request.customer_last_name,
+            customer_email: request.customer_email,
+            customer_phone: request.customer_phone,
             requested_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            total_amount: request.total_amount,
+            comment: request.comment,
+            options: request.options
         };
 
-        if (customerAge) insertData.customer_age = parseInt(customerAge, 10);
-        if (comment) insertData.comment = comment;
-        if (options) {
-            // Ensure options is properly formatted as JSONB for Supabase
-            // If it's already an object, Supabase will handle it, but we ensure it's valid JSON
-            if (typeof options === 'string') {
-                try {
-                    insertData.options = JSON.parse(options);
-                } catch (e) {
-                    console.error('Error parsing options string:', e);
-                    insertData.options = {};
-                }
-            } else if (typeof options === 'object' && options !== null) {
-                // Ensure it's a plain object (not a class instance or array)
-                insertData.options = JSON.parse(JSON.stringify(options));
-            } else {
-                insertData.options = {};
-            }
-        } else {
-            // Default to empty object if no options provided
-            insertData.options = {};
-        }
-        if (totalAmount !== undefined) insertData.total_amount = totalAmount;
-
-        // Check if user is authenticated
-        const { data: { session } } = await supabase.auth.getSession();
-        const isAuthenticated = !!session;
-
-        // Use regular supabase client for authenticated users (now that RLS policies are fixed)
-        // Fall back to supabaseAdmin for unauthenticated users
-        const clientToUse = isAuthenticated ? supabase : supabaseAdmin;
-
-        const { data, error } = await clientToUse
+        const { data, error } = await supabase
             .from('BorrowRequest')
             .insert(insertData)
             .select()
@@ -639,7 +532,7 @@ export async function createRentalManually(
 
 export function toBorrowRequestDTO(
     borrowRequest: BorrowRequest,
-    car?: Car
+    car: Car
 ): BorrowRequestDTO {
     return {
         ...borrowRequest,

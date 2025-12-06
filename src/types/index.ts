@@ -1,3 +1,5 @@
+import { OptionsState } from "../constants/rentalOptions";
+
 export interface Car {
   id: string;
   make: string;
@@ -105,25 +107,25 @@ export interface FavoriteCar {
 }
 
 export interface BorrowRequest {
-  id: string;
+  id?: string;
   car_id: string;
-  user_id: string;
-  start_date: string;
+  user_id?: string | null;
+  start_date: Date | string;
   start_time: string;
-  end_date: string;
+  end_date: Date | string;
   end_time: string;
+  price_per_day: string;
   customer_name: string;
   customer_first_name: string;
   customer_last_name: string;
   customer_email: string;
   customer_phone?: string;
   total_amount: number;
-  comment: string;
-  options: string;
+  options: OptionsState | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requested_at: string;
-  created_at: string;
   updated_at: string;
+  comment?: string;
 }
 
 export interface BorrowRequestDTO {
@@ -134,6 +136,7 @@ export interface BorrowRequestDTO {
   start_time: string;
   end_date: Date;
   end_time: string;
+  price_per_day: string;
   customer_name: string;
   customer_first_name: string;
   customer_last_name: string;
@@ -150,10 +153,15 @@ export interface BorrowRequestDTO {
 }
 
 export interface Rental {
-  id: string;
+  id?: string;
   request_id: string;
-  user_id: string;
+
+  user_id?: string;
+  customer_email?: string;
+
   car_id: string;
+  price_per_day: string;
+
   start_date: string;
   start_time: string;
   end_date: string;
@@ -163,18 +171,32 @@ export interface Rental {
   subtotal?: number;
   taxes_fees?: number;
   additional_taxes?: number;
-  created_at: string;
-  updated_at: string;
-  user?: {
-    id: string;
-    email: string;
-    user_metadata?: {
-      first_name?: string;
-      last_name?: string;
-      full_name?: string;
-    };
-  };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RentalDTO {
+  id?: string;
+  request_id: string;
+
+  user_id?: string;
+  customer_email?: string;
+
   car?: Car;
+  car_id: string;
+  price_per_day: string;
+
+  start_date: string;
+  start_time: string;
+  end_date: string;
+  end_time: string;
+  rental_status: string;
+  total_amount?: number;
+  subtotal?: number;
+  taxes_fees?: number;
+  additional_taxes?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface OrderDisplay {

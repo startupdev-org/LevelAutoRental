@@ -9,12 +9,16 @@ import {
     CheckCircle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Car as CarType, User } from '../../types';
+import { BorrowRequest, Car, Car as CarType, User } from '../../types';
 import { getLoggedUser } from '../../lib/db/user/profile';
 import { OptionsState, RentalOption, rentalOptions } from '../../constants/rentalOptions';
 import { OptionItem } from '../dashboard/user/orders-requests/OptionItem';
 import { CarsFilterList } from '../dashboard/user-dashboard/orders/CarsSection';
 import { createUserBorrowRequest } from '../../lib/db/requests/requests';
+import { getCarPrice } from '../../utils/car/pricing';
+import { formatDateLocal, getDateDiffInDays } from '../../utils/date';
+import { formatAmount } from '../../utils/currency';
+import { fetchCarById } from '../../lib/db/cars/cars';
 
 
 // Country codes for phone selector
@@ -44,7 +48,6 @@ const COUNTRY_CODES = [
 interface PriceSummaryResult {
     pricePerDay: number;
     rentalDays: number;
-    hours: number;
     basePrice: number;
     additionalCosts: number;
     totalPrice: number;
@@ -82,31 +85,25 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
     const categories: RentalOption["category"][] = ["Limits", "VIP Services", "Insurance", "Additional", "Delivery"];
 
 
-    const defaultFormData: Partial<OrderDisplay> & {
-        firstName?: string;
-        lastName?: string;
-        age?: string;
-        comment?: string;
-        startDate?: string;
-        endDate?: string;
-        startTime?: string;
-        endTime?: string;
-    } = {
-        customerName: '',
-        firstName: user?.first_name,
-        lastName: user?.last_name,
-        customerEmail: user?.email || '',
-        customerPhone: user?.phone_number,
-        carId: initialCarId || '',
-        startDate: '',
-        startTime: '',
-        endDate: '',
-        endTime: '',
-        status: 'ACTIVE',
-        amount: 0,
-        userId: '',
-        age: '',
+    const defaultFormData: BorrowRequest = {
+        customer_name: '',
+        customer_first_name: user?.first_name || '',
+        customer_last_name: user?.last_name || '',
+        customer_email: user?.email || '',
+        customer_phone: user?.phone_number,
+        car_id: initialCarId || '',
+        start_date: '',
+        start_time: '',
+        end_date: '',
+        end_time: '',
+        status: 'APPROVED',
+        total_amount: 0,
+        price_per_day: '',
+        user_id: '',
         comment: '',
+        options: null,
+        requested_at: '',
+        updated_at: ''
     };
 
     const [selectedCar, setSelectedCar] = useState<CarType | null>(car || null);
@@ -116,7 +113,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         setSelectedCar(car);
         setFormData(prev => ({
             ...prev,
-            carId: car ? car.id.toString() : '',
+            car_id: car ? car.id.toString() : '',
         }));
     }
 
@@ -126,11 +123,10 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
             setSelectedCar(car);
             setFormData(prev => ({
                 ...prev,
-                carId: car.id.toString(),
+                car_id: car.id.toString(),
             }));
         }
     }, [car]);
-
 
     useEffect(() => {
         async function loadUser() {
@@ -146,15 +142,17 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         if (user) {
             setFormData(prev => ({
                 ...prev,
-                customerName: `${user.first_name ?? ""} ${user.last_name ?? ""}`,
-                firstName: user.first_name ?? undefined,
-                lastName: user.last_name ?? undefined,
-                customerEmail: user.email ?? undefined,
-                customerPhone: user.phone_number ?? undefined,
-                userId: user.id
+                customer_name: `${user.first_name || ''} ${user.last_name || ''}`,
+                customer_first_name: user.first_name || '',
+                customer_last_name: user.last_name || '',
+                customer_email: user.email || '',
+                customer_phone: user.phone_number || '',
+                user_id: user.id
             }));
         }
     }, [user]);
+
+
 
     // Update selectedCar when car prop changes
     useEffect(() => {
@@ -169,7 +167,8 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         setSubmitSuccess(false);
     }, [car]);
 
-    const [formData, setFormData] = useState(defaultFormData);
+    const [formData, setFormData] = useState<BorrowRequest>(() => (defaultFormData));
+
 
     const [selectedCountryCode, setSelectedCountryCode] = useState(COUNTRY_CODES[0]);
     const [showCountryCodeDropdown, setShowCountryCodeDropdown] = useState(false);
@@ -203,15 +202,6 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
     const pickupTimeRef = React.useRef<HTMLDivElement>(null);
     const returnTimeRef = React.useRef<HTMLDivElement>(null);
 
-    // Helper functions
-    const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}.${month}.${year}`;
-    };
-
     const generateCalendarDays = (date: Date): (string | null)[] => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -234,14 +224,6 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         return days;
     };
 
-    // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
-    const formatDateLocal = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
     const generateHours = (minHour?: number): string[] => {
         const hours: string[] = [];
         const startHour = minHour !== undefined ? minHour : 0;
@@ -250,6 +232,17 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         }
         return hours;
     };
+
+    const handleDateChange = (type: 'start' | 'end', date: Date) => {
+        const formattedDate = formatDateLocal(date);
+
+        setFormData(prev => ({
+            ...prev,
+            start_date: type === 'start' ? formattedDate : prev.start_date,
+            end_date: type === 'end' ? formattedDate : prev.end_date,
+        }));
+    };
+
 
     // Check if a date/time is in a maintenance period (12 hours after rental ends)
     const isInMaintenancePeriod = (checkDate: Date, checkTime?: string): boolean => {
@@ -456,7 +449,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
             const isInApprovedRequest = isDateInApprovedRequest(dayString);
 
             // For return calendar, also check if date is before pickup
-            const isBeforePickup = isReturnCalendar && formData.startDate && dayString <= formData.startDate;
+            const isBeforePickup = isReturnCalendar && formData.start_date && dayString <= formData.start_date;
 
             return isPast || isBeforeAvailable || isInApprovedRequest || isBeforePickup;
         });
@@ -464,7 +457,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         return allBlocked && monthDays.length > 0;
     };
 
-    const [options, setOptions] = useState<OptionsState>({
+    const [options, setOptions] = useState({
         pickupAtAddress: false,
         returnAtAddress: false,
         unlimitedKm: false,
@@ -478,59 +471,10 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         airportDelivery: false
     });
 
-    const calculateAmount = () => {
-        if (!formData.startDate || !formData.endDate || !formData.carId || !car) return 0;
+    const calculateAmount = (totalDays: number, pricePerDay: number) => {
+        if (!formData.start_date || !formData.end_date || !formData.car_id || !car) return 0;
 
-        // Calculate days and hours
-        const startDate = new Date(formData.startDate);
-        const endDate = new Date(formData.endDate);
-        const startTime = formData.startTime || '09:00';
-        const endTime = formData.endTime || '17:00';
-
-        const [startHour, startMin] = startTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(startHour, startMin, 0, 0);
-
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(endHour, endMin, 0, 0);
-
-        const diffTime = endDateTime.getTime() - startDateTime.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-        const days = diffDays;
-        const hours = diffHours >= 0 ? diffHours : 0;
-        const rentalDays = days;
-        const totalDays = days + (hours / 24);
-
-        // Get price per day based on rental duration ranges (4-tier pricing)
-        const carDiscount = car?.discount_percentage || selectedCar?.discount_percentage || 0;
-        let basePricePerDay = 0;
-
-        if (rentalDays >= 2 && rentalDays <= 4) {
-            basePricePerDay = car?.price_2_4_days || selectedCar?.price_2_4_days || 0;
-        } else if (rentalDays >= 5 && rentalDays <= 15) {
-            basePricePerDay = car?.price_5_15_days || selectedCar?.price_5_15_days || 0;
-        } else if (rentalDays >= 16 && rentalDays <= 30) {
-            basePricePerDay = car?.price_16_30_days || selectedCar?.price_16_30_days || 0;
-        } else if (rentalDays > 30) {
-            basePricePerDay = car?.price_over_30_days || selectedCar?.price_over_30_days || 0;
-        }
-
-        const pricePerDay = carDiscount > 0
-            ? basePricePerDay * (1 - carDiscount / 100)
-            : basePricePerDay;
-
-        // Base price calculation using 4-tier pricing (no additional period-based discounts)
-        let basePrice = pricePerDay * rentalDays;
-
-        // Add hours portion
-        if (hours > 0) {
-            const hoursPrice = (hours / 24) * pricePerDay;
-            basePrice += hoursPrice;
-        }
+        let basePrice = pricePerDay * totalDays;
 
         // Calculate additional costs from options
         let additionalCosts = 0;
@@ -549,86 +493,52 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
 
         // Fixed daily costs
         if (options.personalDriver) {
-            additionalCosts += 800 * rentalDays;
+            additionalCosts += 800 * totalDays;
         }
         if (options.priorityService) {
-            additionalCosts += 1000 * rentalDays;
+            additionalCosts += 1000 * totalDays;
         }
         if (options.childSeat) {
-            additionalCosts += 100 * rentalDays;
+            additionalCosts += 100 * totalDays;
         }
         if (options.simCard) {
-            additionalCosts += 100 * rentalDays;
+            additionalCosts += 100 * totalDays;
         }
         if (options.roadsideAssistance) {
-            additionalCosts += 500 * rentalDays;
+            additionalCosts += 500 * totalDays;
         }
 
-        // Total price = base price + additional costs
-        return Math.round(basePrice + additionalCosts);
+        const total = basePrice + additionalCosts;
+
+        console.log('the total is: ', total)
+
+        // optional: round to 2 decimals for storage
+        return Math.round(total * 100) / 100;
     };
 
     function calculatePriceSummary(
-        car: any,
-        selectedCar: any,
-        formData: any,
+        selectedCar: Car,
+        formData: BorrowRequest,
         options: OptionsState
     ): PriceSummaryResult | null {
-        if (!car && !selectedCar) return null;
+        console.log('calculating the summary price')
 
-        // First, calculate rental duration to determine pricing tier
-        const startDate = new Date(formData.startDate || '');
-        const endDate = new Date(formData.endDate || '');
-        const [startHour, startMin] = (formData.startTime || '09:00').split(':').map(Number);
-        const [endHour, endMin] = (formData.endTime || '17:00').split(':').map(Number);
+        if (!selectedCar) return null;
 
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(startHour, startMin, 0, 0);
 
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(endHour, endMin, 0, 0);
+        const rentalDays = getDateDiffInDays(formData.start_date, formData.end_date);
+        const pricePerDay = parseFloat(getCarPrice(rentalDays, selectedCar))
 
-        const diffTime = endDateTime.getTime() - startDateTime.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-        const days = diffDays;
-        const hours = diffHours >= 0 ? diffHours : 0;
-        const rentalDays = days;
-        const totalDays = days + hours / 24;
-
-        // Get price per day based on rental duration ranges (4-tier pricing)
-        const carDiscount = car?.discount_percentage || selectedCar?.discount_percentage || 0;
-        let basePricePerDay = 0;
-
-        if (rentalDays >= 2 && rentalDays <= 4) {
-            basePricePerDay = car?.price_2_4_days || selectedCar?.price_2_4_days || 0;
-        } else if (rentalDays >= 5 && rentalDays <= 15) {
-            basePricePerDay = car?.price_5_15_days || selectedCar?.price_5_15_days || 0;
-        } else if (rentalDays >= 16 && rentalDays <= 30) {
-            basePricePerDay = car?.price_16_30_days || selectedCar?.price_16_30_days || 0;
-        } else if (rentalDays > 30) {
-            basePricePerDay = car?.price_over_30_days || selectedCar?.price_over_30_days || 0;
-        }
-
-        const pricePerDay = carDiscount > 0
-            ? basePricePerDay * (1 - carDiscount / 100)
-            : basePricePerDay;
 
         let basePrice = pricePerDay * rentalDays;
 
-        // Add hours portion
-        if (hours > 0) {
-            const hoursPrice = (hours / 24) * pricePerDay;
-            basePrice += hoursPrice;
-        }
 
         let additionalCosts = 0;
         const baseCarPrice = pricePerDay;
 
-        if (options.unlimitedKm) additionalCosts += baseCarPrice * totalDays * 0.5;
-        if (options.speedLimitIncrease) additionalCosts += baseCarPrice * totalDays * 0.2;
-        if (options.tireInsurance) additionalCosts += baseCarPrice * totalDays * 0.2;
+        if (options.unlimitedKm) additionalCosts += baseCarPrice * rentalDays * 0.5;
+        if (options.speedLimitIncrease) additionalCosts += baseCarPrice * rentalDays * 0.2;
+        if (options.tireInsurance) additionalCosts += baseCarPrice * rentalDays * 0.2;
         if (options.personalDriver) additionalCosts += 800 * rentalDays;
         if (options.priorityService) additionalCosts += 1000 * rentalDays;
         if (options.childSeat) additionalCosts += 100 * rentalDays;
@@ -637,22 +547,17 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
 
         const totalPrice = basePrice + additionalCosts;
 
+        console.log('total price from price summary is: ', totalPrice)
+
         return {
             pricePerDay,
             rentalDays,
-            hours,
             basePrice,
             additionalCosts,
             totalPrice,
             baseCarPrice,
         };
     }
-
-
-    useEffect(() => {
-        const amount = calculateAmount();
-        setFormData(prev => ({ ...prev, amount }));
-    }, [formData.startDate, formData.endDate, formData.startTime, formData.endTime, formData.carId, options]);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -683,36 +588,36 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
 
     // Sync calendar month with selected dates
     useEffect(() => {
-        if (formData.startDate) {
-            setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.startDate || '') }));
+        if (formData.start_date) {
+            setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.start_date || '') }));
         }
-    }, [formData.startDate]);
+    }, [formData.start_date]);
 
     useEffect(() => {
-        if (formData.endDate) {
-            setCalendarMonth(prev => ({ ...prev, return: new Date(formData.endDate || '') }));
-        } else if (formData.startDate) {
-            const nextMonth = new Date(formData.startDate);
+        if (formData.end_date) {
+            setCalendarMonth(prev => ({ ...prev, return: new Date(formData.end_date || '') }));
+        } else if (formData.start_date) {
+            const nextMonth = new Date(formData.start_date);
             nextMonth.setMonth(nextMonth.getMonth() + 1);
             setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
         }
-    }, [formData.endDate, formData.startDate]);
+    }, [formData.end_date, formData.start_date]);
 
     // Sync calendar months with selected dates (same as CarDetails)
     useEffect(() => {
-        if (formData.startDate) setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.startDate || '') }));
-    }, [formData.startDate]);
+        if (formData.start_date) setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.start_date || '') }));
+    }, [formData.start_date]);
 
     useEffect(() => {
-        if (formData.endDate) {
-            setCalendarMonth(prev => ({ ...prev, return: new Date(formData.endDate || '') }));
-        } else if (formData.startDate) {
+        if (formData.end_date) {
+            setCalendarMonth(prev => ({ ...prev, return: new Date(formData.end_date || '') }));
+        } else if (formData.start_date) {
             // Always show the same month as pickup date for return calendar
             // This ensures the calendar doesn't jump to next month when pickup is selected
-            const pickup = new Date(formData.startDate);
+            const pickup = new Date(formData.start_date);
             setCalendarMonth(prev => ({ ...prev, return: new Date(pickup) }));
         }
-    }, [formData.endDate, formData.startDate]);
+    }, [formData.end_date, formData.start_date]);
 
     // Auto-advance to next month if current month is fully booked when calendar first opens
     useEffect(() => {
@@ -741,7 +646,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
             // Reset when calendar closes so it can auto-advance again on next open
             setReturnCalendarInitialized(false);
         }
-    }, [showReturnCalendar, calendarMonth.return, effectiveNextAvailableDate, effectiveApprovedBorrowRequests, formData.startDate, returnCalendarInitialized]);
+    }, [showReturnCalendar, calendarMonth.return, effectiveNextAvailableDate, effectiveApprovedBorrowRequests, formData.start_date, returnCalendarInitialized]);
 
     // Click outside for calendars & time selectors (same as CarDetails)
     useEffect(() => {
@@ -775,66 +680,84 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         };
     }, [showPickupCalendar, showReturnCalendar, showPickupTime, showReturnTime, isClosingWithDelay]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+
         console.log('form data: ', formData)
-        if (!formData.firstName || !formData.lastName || !formData.age || !formData.customerPhone || !formData.carId || !formData.startDate || !formData.endDate) {
+
+        if (!formData.customer_first_name || !formData.customer_last_name || !formData.customer_phone || !formData.car_id || !formData.start_date || !formData.end_date) {
             alert(t('admin.requests.fillRequiredFields'));
             return;
         }
 
         // Combine firstName and lastName into customerName
-        const customerName = `${formData.firstName} ${formData.lastName}`;
+        const customerName = `${formData.customer_first_name} ${formData.customer_last_name}`;
 
         // Include country code in phone number
-        const fullPhoneNumber = `${selectedCountryCode.code} ${formData.customerPhone}`.trim();
+        const fullPhoneNumber = `${selectedCountryCode.code} ${formData.customer_phone}`.trim();
+
+        const rentalDays = getDateDiffInDays(formData.start_date, formData.end_date)
+        const car = await fetchCarById(formData.car_id)
+
+        if (car === null) throw Error('Car not found')
+
+        const pricePerDay = parseFloat(getCarPrice(rentalDays, car))
+
 
         // Calculate total amount
-        const totalAmount = calculateAmount();
+        const totalAmount = calculateAmount(rentalDays, pricePerDay);
 
         // Prepare data with all fields including options - map to correct database column names
-        const rentalData = {
-            car_id: parseInt(formData.carId || '0'),
-            user_id: formData.userId || '',
-            start_date: formData.startDate,
-            start_time: formData.startTime,
-            end_date: formData.endDate,
-            end_time: formData.endTime,
+        const rentalData: BorrowRequest = {
+            car_id: formData.car_id,
+            user_id: formData.user_id || '',
+            start_date: formData.start_date,
+            start_time: formData.start_time,
+            end_date: formData.end_date,
+            end_time: formData.end_time,
             status: 'PENDING',
+            price_per_day: pricePerDay.toString(),
             customer_name: customerName,
-            customer_first_name: formData.firstName,
-            customer_last_name: formData.lastName,
-            customer_email: formData.customerEmail,
+            customer_first_name: formData.customer_first_name,
+            customer_last_name: formData.customer_last_name,
+            customer_email: formData.customer_email,
             customer_phone: fullPhoneNumber,
-            customer_age: formData.age ? parseInt(formData.age) : null,
-            comment: formData.comment || null,
+            comment: formData.comment,
             options: options,
+            requested_at: new Date().toString(),
+            updated_at: new Date().toString(),
             total_amount: totalAmount,
         };
 
         handleSaveRental(rentalData);
     };
 
-    async function handleSaveRental(rentalData: any) {
+    async function handleSaveRental(rentalData: BorrowRequest) {
         console.log('saving the rentals request with the following info: ', rentalData)
-
         try {
-            const result = await createUserBorrowRequest(
-                rentalData.car_id.toString(),
-                rentalData.start_date,
-                rentalData.start_time,
-                rentalData.end_date,
-                rentalData.end_time,
-                rentalData.customer_first_name,
-                rentalData.customer_last_name,
-                rentalData.customer_email,
-                rentalData.customer_phone,
-                rentalData.customer_age?.toString(),
-                rentalData.comment,
-                rentalData.options,
-                rentalData.total_amount,
-                rentalData.user_id
-            );
+            // Assuming rentalData is your form / car rental info
+            const borrowRequest: BorrowRequest = {
+                car_id: rentalData.car_id.toString(),
+                user_id: rentalData.user_id || null,
+                start_date: new Date(rentalData.start_date),
+                start_time: rentalData.start_time,
+                end_date: new Date(rentalData.end_date),
+                end_time: rentalData.end_time,
+                price_per_day: rentalData.price_per_day,
+                customer_name: rentalData.customer_name,
+                customer_first_name: rentalData.customer_first_name,
+                customer_last_name: rentalData.customer_last_name,
+                customer_email: rentalData.customer_email,
+                customer_phone: rentalData.customer_phone || '',
+                total_amount: Number(rentalData.total_amount), // ensure number
+                options: rentalData.options, // serialize object to string
+                status: 'PENDING', // default status for new requests
+                requested_at: new Date().toString(),
+                updated_at: new Date().toString(),
+                comment: rentalData.comment || '',
+            };
+
+            const result = await createUserBorrowRequest(borrowRequest);
 
             if (result.success) {
                 console.log('Borrow request created successfully:', result.requestId);
@@ -925,7 +848,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.firstName || ''}
+                                        value={formData.customer_first_name || ''}
                                         onChange={(e) =>
                                             setFormData((prev) => ({ ...prev, firstName: e.target.value }))
                                         }
@@ -945,7 +868,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                     <label className="block text-sm font-medium text-gray-300 mb-2">Nume *</label>
                                     <input
                                         type="text"
-                                        value={formData.lastName || ''}
+                                        value={formData.customer_last_name || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                                         style={{
@@ -961,7 +884,8 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                     <label className="block text-sm font-medium text-gray-300 mb-2">Vârstă *</label>
                                     <input
                                         type="number"
-                                        value={formData.age || ''}
+                                        // TODO: think about the age parameter
+                                        // value={formData.age || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
                                         min="18"
                                         max="100"
@@ -1012,8 +936,8 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                         </div>
                                         <input
                                             type="tel"
-                                            value={formData.customerPhone || ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
+                                            value={formData.customer_phone || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
                                             placeholder="000 00 000"
                                             className="w-full pl-[100px] pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                             required
@@ -1024,8 +948,8 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                     <label className="block text-sm font-medium text-gray-300 mb-2">E-mail (opțional)</label>
                                     <input
                                         type="email"
-                                        value={formData.customerEmail || ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
+                                        value={formData.customer_email || ''}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, customer_email: e.target.value }))}
                                         placeholder={t('admin.placeholders.email')}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                                         style={{
@@ -1090,13 +1014,13 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                             setShowPickupTime(false);
                                             setShowReturnTime(false);
                                         }}
-                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startDate
+                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.start_date
                                             ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
                                             : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
                                             }`}
                                     >
                                         <Calendar className="w-4 h-4" />
-                                        <span>{formData.startDate ? formatDate(formData.startDate) : 'Data primirii'}</span>
+                                        <span>{formData.start_date ? formatDateLocal(formData.start_date) : 'Data primirii'}</span>
                                     </button>
                                     <AnimatePresence>
                                         {showPickupCalendar && (
@@ -1174,13 +1098,13 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                         const isInActualRequest = isDateInActualApprovedRequest(dayString);
                                                         // For pickup date, don't block by future rentals - allow selecting any future date
                                                         const isBlocked = isPast || isBeforeAvailable || isInActualRequest;
-                                                        const isSelected = dayString === formData.startDate;
+                                                        const isSelected = dayString === formData.start_date;
                                                         // Check if this is the return date (visible in pickup calendar)
-                                                        const isReturnDate = formData.endDate && dayString === formData.endDate;
+                                                        const isReturnDate = formData.end_date && dayString === formData.end_date;
                                                         // Check if date is in range between pickup and return (only if return date is selected)
-                                                        const isInRange = formData.startDate && formData.endDate &&
-                                                            dayString > formData.startDate &&
-                                                            dayString < formData.endDate;
+                                                        const isInRange = formData.start_date && formData.end_date &&
+                                                            dayString > formData.start_date &&
+                                                            dayString < formData.end_date;
 
                                                         // Get message for blocked dates
                                                         const getBlockedMessage = () => {
@@ -1206,24 +1130,24 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                                 onClick={() => {
                                                                     if (!isBlocked) {
                                                                         // Check if pickup date is being changed (different from current selection)
-                                                                        const isChangingPickupDate = formData.startDate && formData.startDate !== day;
+                                                                        const isChangingPickupDate = formData.start_date && formData.start_date !== day;
 
                                                                         // If user is reselecting/changing the pickup date, clear all other inputs first
                                                                         if (isChangingPickupDate) {
-                                                                            setFormData(prev => ({ ...prev, endDate: '', startTime: '', endTime: '' }));
+                                                                            setFormData(prev => ({ ...prev, end_date: '', start_time: '', end_time: '' }));
                                                                         }
 
-                                                                        setFormData(prev => ({ ...prev, startDate: day }));
+                                                                        setFormData(prev => ({ ...prev, start_date: day }));
 
                                                                         // If not changing, only clear return date if it's invalid (before pickup or less than 2 days)
-                                                                        if (!isChangingPickupDate && formData.endDate && day >= formData.endDate) {
-                                                                            const returnDay = new Date(formData.endDate);
+                                                                        if (!isChangingPickupDate && formData.end_date && day >= formData.end_date) {
+                                                                            const returnDay = new Date(formData.end_date);
                                                                             const pickupDay = new Date(day);
                                                                             const diffTime = returnDay.getTime() - pickupDay.getTime();
                                                                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                                                             // Clear return date if less than 2 days
                                                                             if (diffDays < 2) {
-                                                                                setFormData(prev => ({ ...prev, endDate: '' }));
+                                                                                setFormData(prev => ({ ...prev, end_date: '' }));
                                                                             }
                                                                         }
                                                                         // Close calendar after 0.3s delay so user can see what they clicked
@@ -1231,7 +1155,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                                         setTimeout(() => {
                                                                             setShowPickupCalendar(false);
                                                                             setIsClosingWithDelay(false);
-                                                                            if (!formData.startTime) {
+                                                                            if (!formData.start_time) {
                                                                                 setShowPickupTime(true);
                                                                             }
                                                                         }, 300);
@@ -1268,13 +1192,13 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                             setShowPickupCalendar(false);
                                             setShowReturnCalendar(false);
                                         }}
-                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startTime
+                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.start_time
                                             ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
                                             : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
                                             }`}
                                     >
                                         <Clock className="w-4 h-4" />
-                                        <span>{formData.startTime || '__ : __'}</span>
+                                        <span>{formData.start_time || '__ : __'}</span>
                                     </button>
                                     <AnimatePresence>
                                         {showPickupTime && (
@@ -1292,12 +1216,12 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                         let minHour: number | undefined = undefined;
 
                                                         // Check if selected date is today - if so, start from 2 hours from now
-                                                        if (formData.startDate) {
+                                                        if (formData.start_date) {
                                                             const today = new Date();
                                                             today.setHours(0, 0, 0, 0);
                                                             const todayString = formatDateLocal(today);
 
-                                                            if (formData.startDate === todayString) {
+                                                            if (formData.start_date === todayString) {
                                                                 // Selected date is today - start from 2 hours from now
                                                                 const now = new Date();
                                                                 const currentHour = now.getHours();
@@ -1310,8 +1234,8 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                                 minHour = targetHour;
                                                             } else if (effectiveNextAvailableDate) {
                                                                 // Check if effectiveNextAvailableDate matches selected date
-                                                                const effectiveNextAvailableDateStr = effectiveNextAvailableDate.toISOString().split('T')[0];
-                                                                if (formData.startDate === effectiveNextAvailableDateStr) {
+                                                                const effectiveNextAvailableDateStr = effectiveNextAvailableDate.toString().split('T')[0];
+                                                                if (formData.start_date === effectiveNextAvailableDateStr) {
                                                                     // Car becomes free on this date, only show hours from that time onwards
                                                                     const availableHour = effectiveNextAvailableDate.getHours();
                                                                     const availableMinutes = effectiveNextAvailableDate.getMinutes();
@@ -1324,8 +1248,8 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
 
                                                         // Filter out hours that are in maintenance periods
                                                         const availableHours = generateHours(minHour).filter((hour) => {
-                                                            if (!formData.startDate) return true;
-                                                            const checkDate = new Date(formData.startDate);
+                                                            if (!formData.start_date) return true;
+                                                            const checkDate = new Date(formData.start_date);
                                                             return !isInMaintenancePeriod(checkDate, hour);
                                                         });
 
@@ -1335,19 +1259,19 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                                 type="button"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    setFormData(prev => ({ ...prev, startTime: hour }));
+                                                                    setFormData(prev => ({ ...prev, start_time: hour }));
                                                                     // Close time picker after 0.3s delay so user can see what they clicked
                                                                     setIsClosingWithDelay(true);
                                                                     setTimeout(() => {
                                                                         setShowPickupTime(false);
                                                                         setIsClosingWithDelay(false);
-                                                                        if (!formData.endDate) {
+                                                                        if (!formData.end_date) {
                                                                             setShowReturnCalendar(true);
                                                                         }
                                                                     }, 300);
                                                                 }}
                                                                 onMouseDown={(e) => e.stopPropagation()}
-                                                                className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${formData.startTime === hour
+                                                                className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${formData.start_time === hour
                                                                     ? 'bg-red-500 text-white font-medium'
                                                                     : 'text-white hover:bg-white/20'
                                                                     }`}
@@ -1373,13 +1297,13 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                             setShowPickupTime(false);
                                             setShowReturnTime(false);
                                         }}
-                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endDate
+                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.end_date
                                             ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
                                             : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
                                             }`}
                                     >
                                         <Calendar className="w-4 h-4" />
-                                        <span>{formData.endDate ? formatDate(formData.endDate) : 'Data returnării'}</span>
+                                        <span>{formData.end_date ? formatDateLocal(formData.end_date) : 'Data returnării'}</span>
                                     </button>
                                     <AnimatePresence>
                                         {showReturnCalendar && (
@@ -1454,10 +1378,10 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                                 return nextAvailDate <= today && dayDate < nextAvailDate;
                                                             })()
                                                             : false;
-                                                        const isBeforePickup = formData.startDate && dayString <= formData.startDate;
+                                                        const isBeforePickup = formData.start_date && dayString <= formData.start_date;
                                                         // Minimum rental is 2 days - block dates that are less than 2 days after pickup
-                                                        const isLessThanMinDays = formData.startDate && (() => {
-                                                            const pickup = new Date(formData.startDate);
+                                                        const isLessThanMinDays = formData.start_date && (() => {
+                                                            const pickup = new Date(formData.start_date);
                                                             const returnDay = new Date(dayString);
                                                             const diffTime = returnDay.getTime() - pickup.getTime();
                                                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -1466,11 +1390,11 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                         const isInActualRequest = isDateInActualApprovedRequest(dayString);
                                                         // Only block by future rental if pickup date is before the future rental start
                                                         // If pickup is after future rental, allow return dates after it too
-                                                        const isBlockedByFuture = formData.startDate ? (() => {
+                                                        const isBlockedByFuture = formData.start_date ? (() => {
                                                             const earliestStart = getEarliestFutureRentalStart();
                                                             if (!earliestStart) return false;
 
-                                                            const pickupDateObj = new Date(formData.startDate);
+                                                            const pickupDateObj = new Date(formData.start_date);
                                                             pickupDateObj.setHours(0, 0, 0, 0);
                                                             const earliestStartDate = new Date(earliestStart);
                                                             earliestStartDate.setHours(0, 0, 0, 0);
@@ -1486,13 +1410,13 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                             return returnDateObj >= earliestStartDate;
                                                         })() : isDateBlockedByFutureRental(dayString);
                                                         const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInActualRequest || isBlockedByFuture;
-                                                        const isSelected = dayString === formData.endDate;
+                                                        const isSelected = dayString === formData.end_date;
                                                         // Check if this is the pickup date (visible in return calendar)
-                                                        const isPickupDate = formData.startDate && dayString === formData.startDate;
+                                                        const isPickupDate = formData.start_date && dayString === formData.start_date;
                                                         // Check if date is in range between pickup and return
-                                                        const isInRange = formData.startDate && formData.endDate &&
-                                                            dayString > formData.startDate &&
-                                                            dayString < formData.endDate;
+                                                        const isInRange = formData.start_date && formData.end_date &&
+                                                            dayString > formData.start_date &&
+                                                            dayString < formData.end_date;
 
                                                         // Get message for blocked dates
                                                         const getBlockedMessage = () => {
@@ -1536,13 +1460,13 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                                         return;
                                                                     }
                                                                     if (!isBlocked) {
-                                                                        setFormData(prev => ({ ...prev, endDate: day }));
+                                                                        setFormData(prev => ({ ...prev, end_date: day }));
                                                                         // Close calendar after 0.3s delay so user can see what they clicked
                                                                         setIsClosingWithDelay(true);
                                                                         setTimeout(() => {
                                                                             setShowReturnCalendar(false);
                                                                             setIsClosingWithDelay(false);
-                                                                            if (!formData.endTime) {
+                                                                            if (!formData.end_time) {
                                                                                 setShowReturnTime(true);
                                                                             }
                                                                         }, 300);
@@ -1586,13 +1510,13 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                             setShowPickupCalendar(false);
                                             setShowReturnCalendar(false);
                                         }}
-                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endTime
+                                        className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.end_time
                                             ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
                                             : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
                                             }`}
                                     >
                                         <Clock className="w-4 h-4" />
-                                        <span>{formData.endTime || '__ : __'}</span>
+                                        <span>{formData.end_time || '__ : __'}</span>
                                     </button>
                                     <AnimatePresence>
                                         {showReturnTime && (
@@ -1610,10 +1534,10 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                             key={hour}
                                                             type="button"
                                                             onClick={() => {
-                                                                setFormData(prev => ({ ...prev, endTime: hour }));
+                                                                setFormData(prev => ({ ...prev, end_time: hour }));
                                                                 setShowReturnTime(false);
                                                             }}
-                                                            className={`px-3 py-2 text-xs rounded transition-colors ${formData.endTime === hour
+                                                            className={`px-3 py-2 text-xs rounded transition-colors ${formData.end_time === hour
                                                                 ? 'bg-red-500 text-white font-medium'
                                                                 : 'text-white hover:bg-white/20'
                                                                 }`}
@@ -1670,8 +1594,9 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                         <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
                             <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Detalii preț</h3>
                             <div className="space-y-3">
-                                {formData.carId && selectedCar && (() => {
-                                    const summary = calculatePriceSummary(car, selectedCar, formData, options);
+                                {formData.car_id && car && (() => {
+                                    console.log('should claculate the summary')
+                                    const summary = calculatePriceSummary(car, formData, options);
                                     if (!summary) return null;
 
                                     return (
@@ -1685,7 +1610,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-300">Durată</span>
                                                 <span className="text-white font-medium">
-                                                    {summary.rentalDays} {summary.rentalDays === 1 ? 'zi' : 'zile'}{summary.hours > 0 ? `, ${summary.hours} ${summary.hours === 1 ? 'oră' : 'ore'}` : ''}
+                                                    {summary.rentalDays} {summary.rentalDays === 1 ? 'zi' : 'zile'}
                                                 </span>
                                             </div>
                                             <div className="pt-2 border-t border-white/10">
@@ -1757,7 +1682,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
                                                             <div className="pt-2 border-t border-white/10">
                                                                 <div className="flex justify-between font-medium">
                                                                     <span className="text-white">Total servicii</span>
-                                                                    <span className="text-white">{Math.round(summary.additionalCosts).toLocaleString()} MDL</span>
+                                                                    <span className="text-white">{formatAmount(summary.additionalCosts)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1767,7 +1692,7 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
 
                                             <div className="pt-3 border-t border-white/10 flex items-center justify-between">
                                                 <span className="text-white font-bold text-lg">Total</span>
-                                                <span className="text-white font-bold text-xl">{Math.round(summary.totalPrice).toLocaleString()} MDL</span>
+                                                <span className="text-white font-bold text-xl">{formatAmount(summary.totalPrice)}</span>
                                             </div>
                                         </>
                                     );
@@ -1799,24 +1724,3 @@ export const UserCreateRentalModal: React.FC<CreateRentalModalProps> = ({
         document.body
     );
 };
-
-// Edit Request Modal Component
-interface EditRequestModalProps {
-    request: OrderDisplay;
-    onSave: (updatedData: {
-        car_id?: string;
-        start_date?: string;
-        start_time?: string;
-        end_date?: string;
-        end_time?: string;
-        customer_name?: string;
-        customer_email?: string;
-        customer_phone?: string;
-        customer_age?: string;
-        comment?: string;
-        options?: any;
-    }) => void;
-    onClose: () => void;
-    cars: CarType[];
-}
-
