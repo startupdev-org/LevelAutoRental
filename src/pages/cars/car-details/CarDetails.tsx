@@ -8,18 +8,15 @@ import 'slick-carousel/slick/slick-theme.css';
 import {
     Star,
     Calendar,
-    ChevronRight,
     Phone,
     Send,
     Clock,
     X as XIcon,
-    ChevronLeft,
     Maximize2,
     Users,
     Gauge,
     Fuel,
-    Zap,
-    Settings
+    Zap
 } from 'lucide-react';
 import { RiGasStationLine } from "react-icons/ri";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled } from "react-icons/tb";
@@ -39,7 +36,10 @@ import { useExchangeRates } from '../../../hooks/useExchangeRates';
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();
     const navigate = useNavigate();
-    const { eur: eurRate, usd: usdRate, loading: ratesLoading, selectedCurrency, setSelectedCurrency } = useExchangeRates();
+    const { eur: eurRate, usd: usdRate, selectedCurrency, setSelectedCurrency } = useExchangeRates();
+
+    // ───── CONSTANTS ─────
+    const SHOW_DATE_INPUTS = false; // Temporarily hide date inputs
 
     // ───── STATE ─────
     const [car, setCar] = useState<Car | null>(null);
@@ -917,7 +917,7 @@ export const CarDetails: React.FC = () => {
 
     // rental calculation, etc.
     const calculateRental = () => {
-        if (!pickupDate || !returnDate || !pickupTime || !returnTime) return null;
+        if (!car || !pickupDate || !returnDate || !pickupTime || !returnTime) return null;
         const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
         const returnDateTime = new Date(`${returnDate}T${returnTime}`);
         const diffMs = returnDateTime.getTime() - pickupDateTime.getTime();
@@ -967,6 +967,17 @@ export const CarDetails: React.FC = () => {
 
     // Remove duplicate gallery definition if it exists later
     // const gallery = (car?.photo_gallery ?? [car?.image_url]).filter(Boolean);
+
+    if (!car) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 border-4 border-theme-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-600">Se încarcă mașina...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div id='individual-car-page' className="min-h-screen bg-gray-50">
@@ -1141,9 +1152,6 @@ export const CarDetails: React.FC = () => {
                                     return `Liber de pe ${day} ${month}`;
                                 };
                                 
-                                // Check if there are any current/future bookings
-                                const hasBookings = approvedBorrowRequests.length > 0 || carRentalsForCalendar.length > 0;
-                                
                                 // Find the first available date using calendar logic (always starts from today)
                                 const firstAvailableDate = findFirstAvailableDate();
                                 
@@ -1278,6 +1286,8 @@ export const CarDetails: React.FC = () => {
                                 </p>
 
                                 {/* Date Inputs */}
+                                {SHOW_DATE_INPUTS && (
+                                <>
                                 <div className="grid grid-cols-[7fr_3fr] gap-3 mb-3">
                                     {/* Pickup Date */}
                                     <div className="relative" ref={pickupCalendarRef}>
@@ -1907,8 +1917,11 @@ export const CarDetails: React.FC = () => {
                                         </AnimatePresence>
                                     </div>
                                 </div>
+                                </>
+                                )}
 
                                 {/* Choose Dates Button */}
+                                {SHOW_DATE_INPUTS && (
                                 <div className="mb-4">
                                     {isBookingComplete ? (
                                         <button
@@ -1926,6 +1939,7 @@ export const CarDetails: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
+                                )}
 
                                 {/* Pricing Tiers */}
                                 <div className="border-t border-gray-200 pt-6">
@@ -2288,6 +2302,8 @@ export const CarDetails: React.FC = () => {
                                 </p>
 
                                 {/* Date Inputs */}
+                                {SHOW_DATE_INPUTS && (
+                                <>
                                 <div className="grid grid-cols-[7fr_3fr] gap-3 mb-3">
                                     {/* Pickup Date */}
                                     <div className="relative" ref={pickupCalendarRef}>
@@ -2903,6 +2919,8 @@ export const CarDetails: React.FC = () => {
                                         </AnimatePresence>
                                     </div>
                                 </div>
+                                </>
+                                )}
 
                                 {/* Rental Calculation Display */}
                                 {rentalCalculation && (
@@ -2924,6 +2942,7 @@ export const CarDetails: React.FC = () => {
                                 )}
 
                                 {/* Choose Dates Button + Heart */}
+                                {SHOW_DATE_INPUTS && (
                                 <div className="flex gap-3 mb-6">
                                     {isBookingComplete ? (
                                         <button
@@ -2952,6 +2971,7 @@ export const CarDetails: React.FC = () => {
                                         })}
                                     </button>
                                 </div>
+                                )}
 
                                 {/* Pricing Tiers */}
                                 <div className="border-t border-gray-200 pt-6">

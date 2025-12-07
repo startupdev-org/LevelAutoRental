@@ -287,10 +287,10 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                       {user.email?.split('@')[0] || user.email}
                     </p>
                   </div>
-                  <ChevronDown 
+                  <ChevronDown
                     className={`w-4 h-4 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''} ${
                       shouldShowWhiteText ? 'text-white' : 'text-gray-500'
-                    }`} 
+                    }`}
                   />
                 </button>
 
@@ -315,7 +315,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                         <p className="text-sm font-semibold text-gray-900">{user.email?.split('@')[0] || user.email}</p>
                         <p className="text-xs text-gray-500 mt-1 truncate">{user.email}</p>
                       </div>
-                      
+
                       <div className="py-2">
                         <button
                           onClick={() => {
@@ -327,7 +327,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                           <LayoutDashboard className="w-4 h-4" />
                           <span>{t('header.dashboard')}</span>
                         </button>
-                        
+
                         {!isAdmin && (
                           <button
                             onClick={() => {
@@ -340,7 +340,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <span>{t('header.settings')}</span>
                           </button>
                         )}
-                        
+
                         {isAdmin && (
                           <button
                             onClick={() => {
@@ -354,7 +354,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                           </button>
                         )}
                       </div>
-                      
+
                       <div className="border-t border-gray-100 py-2">
                         <button
                           onClick={(e) => {
@@ -391,7 +391,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                           <p className="text-sm font-semibold text-gray-900">{user.email?.split('@')[0] || user.email}</p>
                           <p className="text-xs text-gray-500 mt-1 truncate">{user.email}</p>
                         </div>
-                        
+
                         <div className="py-2">
                           <button
                             onClick={() => {
@@ -403,8 +403,8 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <LayoutDashboard className="w-4 h-4" />
                             <span>{t('header.dashboard')}</span>
                           </button>
-                          
-                          
+
+
                           {!isAdmin && (
                             <button
                               onClick={() => {
@@ -417,7 +417,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <span>{t('header.settings')}</span>
                             </button>
                           )}
-                          
+
                           {isAdmin && (
                             <button
                               onClick={() => {
@@ -431,7 +431,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             </button>
                           )}
                         </div>
-                        
+
                         <div className="border-t border-gray-100 py-2">
                           <button
                             onClick={(e) => {
@@ -453,14 +453,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                   </AnimatePresence>
                 )}
               </div>
-            ) : (
-              <Button
-                className="px-6 py-2 bg-theme-500 hover:bg-theme-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                onClick={() => navigate('/auth/login')}
-              >
-                {t('header.auth')}
-              </Button>
-            )}
+            ) : null}
 
             {/* Language Selector */}
             <div className="relative language-dropdown-container">
@@ -662,7 +655,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <p className="text-xs text-gray-500 truncate">{user.email}</p>
                             </div>
                           </div>
-                          
+
                           <button
                             onClick={() => {
                               setIsMenuOpen(false);
@@ -673,8 +666,8 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <LayoutDashboard className="w-4 h-4" />
                             <span>{t('header.dashboard')}</span>
                           </button>
-                          
-                          
+
+
                           {!isAdmin && (
                             <button
                               onClick={() => {
@@ -687,7 +680,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <span>{t('header.settings')}</span>
                             </button>
                           )}
-                          
+
                           {isAdmin && (
                             <button
                               onClick={() => {
@@ -700,7 +693,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <span>{t('header.admin')}</span>
                             </button>
                           )}
-                          
+
                           <button
                             onClick={(e) => {
                               e.preventDefault();
@@ -715,17 +708,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             <span>{t('header.signOut')}</span>
                           </button>
                         </div>
-                      ) : (
-                        <Button
-                          onClick={() => {
-                            setIsMenuOpen(false);
-                            navigate('/auth/login');
-                          }}
-                          className="w-full bg-theme-500 hover:bg-theme-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                        >
-                          {t('header.auth')}
-                        </Button>
-                      )}
+                      ) : null}
 
                       {/* Mobile Language Selector */}
                       <div className="space-y-2">
@@ -841,7 +824,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                 <p className="text-xs text-gray-500 truncate">{user.email}</p>
                               </div>
                             </div>
-                            
+
                             <button
                               onClick={() => {
                                 setIsMenuOpen(false);
@@ -852,7 +835,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <LayoutDashboard className="w-4 h-4" />
                               <span>{t('header.dashboard')}</span>
                             </button>
-                            
+
                             <button
                               onClick={() => {
                                 setIsMenuOpen(false);
@@ -863,7 +846,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <User className="w-4 h-4" />
                               <span>{t('header.profile')}</span>
                             </button>
-                            
+
                             {!isAdmin && (
                               <button
                                 onClick={() => {
@@ -876,7 +859,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                 <span>{t('header.settings')}</span>
                               </button>
                             )}
-                            
+
                             {isAdmin && (
                               <button
                                 onClick={() => {
@@ -889,7 +872,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                 <span>{t('header.admin')}</span>
                               </button>
                             )}
-                            
+
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
@@ -904,17 +887,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <span>{t('header.signOut')}</span>
                             </button>
                           </div>
-                        ) : (
-                          <Button
-                            onClick={() => {
-                              setIsMenuOpen(false);
-                              navigate('/auth/login');
-                            }}
-                            className="w-full bg-theme-500 hover:bg-theme-600 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                          >
-                            {t('header.auth')}
-                          </Button>
-                        )}
+                        ) : null}
 
                         {/* Mobile Language Selector */}
                         <div className="space-y-2">
