@@ -16,6 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
+  const [showContent, setShowContent] = useState(true);
 
   // Check if current route is an auth page, admin page, or dashboard page
   const isAuthPage = location.pathname.startsWith('/auth');
@@ -23,9 +24,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isDashboardPage = location.pathname.startsWith('/dashboard');
 
   useEffect(() => {
-    // Start page transition loader
+    // Hide content immediately and show loader
+    setShowContent(false);
     setShowLoader(true);
     setIsPageTransitioning(false); // Start with opacity 100
+
+    // Show content again when loader starts fading (to prevent flash)
+    const showContentTimer = setTimeout(() => {
+      setShowContent(true);
+    }, 200); // Show content after a brief delay to ensure loader is visible
 
     // Start fade out after holding for a smoother experience (matching initial loader)
     const fadeTimer = setTimeout(() => {
@@ -38,6 +45,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }, 1800); // 1500ms + 300ms fade duration
 
     return () => {
+      clearTimeout(showContentTimer);
       clearTimeout(fadeTimer);
       clearTimeout(hideTimer);
     };
@@ -72,9 +80,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         Skip to content
       </a>
       
-      {/* Content is always rendered */}
+      {/* Content is conditionally rendered based on showContent state */}
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
+        {showContent && (
         <AnimatePresence {...({ mode: "wait" } as any)} initial={false}>
           <motion.main
             id="main-content"
@@ -89,6 +98,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             {children}
           </motion.main>
         </AnimatePresence>
+        )}
         {!isAuthPage && !isDashboardPage && <Footer />}
       </div>
       

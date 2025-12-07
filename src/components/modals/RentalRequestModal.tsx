@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check, FileText, Cookie, MapPin, CreditCard, Bell, CheckCircle } from 'lucide-react';
+import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check, FileText, Cookie, Bell, CheckCircle } from 'lucide-react';
 import { Car as CarType } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { createUserBorrowRequest } from '../../lib/db/requests/requests';
+import { fetchCarById } from '../../lib/cars';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
@@ -77,11 +78,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     ];
 
     // ───── HELPER FUNCTIONS ─────
-    // For rental request modal, always convert prices back to MDL
+    // For rental request modal, prices should always be in MDL
     const convertPriceToMDL = (price: number): number => {
-        if (selectedCurrency === 'MDL') return price;
-        if (selectedCurrency === 'EUR') return Math.round(price * eurRate);
-        if (selectedCurrency === 'USD') return Math.round(price * usdRate);
+        // Always return the price as-is since modal should display MDL prices
         return price;
     };
 
@@ -104,6 +103,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    // Always fetch fresh car data to ensure MDL prices
+    const [freshCarData, setFreshCarData] = useState<CarType | null>(null);
     const [fieldErrors, setFieldErrors] = useState<{
         firstName?: string;
         lastName?: string;
@@ -132,21 +134,24 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const rentalDays = rentalCalculation?.days || 0;
     let additionalCosts = 0;
 
+    // Use fresh car data if available, otherwise fallback to provided car
+    const carData = freshCarData || car;
+
     // Get the base price per day in MDL (not converted)
     const rentalDaysForPrice = rentalCalculation?.days || 0;
     let basePricePerDayMDL = 0;
     if (rentalDaysForPrice >= 2 && rentalDaysForPrice <= 4) {
-        basePricePerDayMDL = car.price_2_4_days || 0;
+        basePricePerDayMDL = carData.price_2_4_days || 0;
     } else if (rentalDaysForPrice >= 5 && rentalDaysForPrice <= 15) {
-        basePricePerDayMDL = car.price_5_15_days || 0;
+        basePricePerDayMDL = carData.price_5_15_days || 0;
     } else if (rentalDaysForPrice >= 16 && rentalDaysForPrice <= 30) {
-        basePricePerDayMDL = car.price_16_30_days || 0;
+        basePricePerDayMDL = carData.price_16_30_days || 0;
     } else if (rentalDaysForPrice > 30) {
-        basePricePerDayMDL = car.price_over_30_days || 0;
+        basePricePerDayMDL = carData.price_over_30_days || 0;
     }
 
     // Apply car discount if exists
-    const carDiscount = (car as any).discount_percentage || 0;
+    const carDiscount = (carData as any).discount_percentage || 0;
     const discountedPricePerDay = carDiscount > 0 ? basePricePerDayMDL * (1 - carDiscount / 100) : basePricePerDayMDL;
 
     // Percentage-based options (calculated as percentage of base car price * days)
@@ -186,22 +191,24 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const calculateBasePrice = () => {
         if (!rentalCalculation) return 0;
 
+        // Use fresh car data if available, otherwise fallback to provided car
+        const carData = freshCarData || car;
         const rentalDays = rentalCalculation.days;
 
         // Determine price per day based on rental duration ranges
         let basePricePerDay = 0;
         if (rentalDays >= 2 && rentalDays <= 4) {
-            basePricePerDay = car.price_2_4_days || 0;
+            basePricePerDay = carData.price_2_4_days || 0;
         } else if (rentalDays >= 5 && rentalDays <= 15) {
-            basePricePerDay = car.price_5_15_days || 0;
+            basePricePerDay = carData.price_5_15_days || 0;
         } else if (rentalDays >= 16 && rentalDays <= 30) {
-            basePricePerDay = car.price_16_30_days || 0;
+            basePricePerDay = carData.price_16_30_days || 0;
         } else if (rentalDays > 30) {
-            basePricePerDay = car.price_over_30_days || 0;
+            basePricePerDay = carData.price_over_30_days || 0;
         }
 
         // Apply car discount if exists
-        const carDiscount = (car as any).discount_percentage || 0;
+        const carDiscount = (carData as any).discount_percentage || 0;
         const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
 
         // Calculate total price
@@ -668,6 +675,26 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         }
     }, [isOpen]);
 
+    // Fetch fresh car data to ensure MDL prices
+    useEffect(() => {
+        const fetchFreshCarData = async () => {
+            if (isOpen && car?.id) {
+                try {
+                    const freshCar = await fetchCarById(typeof car.id === 'string' ? parseInt(car.id) : car.id);
+                    if (freshCar) {
+                        setFreshCarData(freshCar);
+                    }
+                } catch (error) {
+                    console.error('Error fetching fresh car data:', error);
+                    // Fallback to provided car data
+                    setFreshCarData(car);
+                }
+            }
+        };
+
+        fetchFreshCarData();
+    }, [isOpen, car?.id]);
+
     if (!rentalCalculation) return null;
 
     return (
@@ -700,7 +727,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             <div className="sticky top-0 bg-white border-b border-gray-300 px-6 md:px-8 py-6 flex items-center justify-between rounded-t-2xl z-10">
                                 <div>
                                     <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">Cerere de închiriere</h2>
-                                    <p className="mt-1 text-sm text-gray-500">{car.make + ' ' + car.model}</p>
+                                    <p className="mt-1 text-sm text-gray-500">{(freshCarData || car).make + ' ' + (freshCarData || car).model}</p>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -1511,29 +1538,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* Payment Section */}
-                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                                                        <CreditCard className="w-5 h-5 text-white" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
-                                                            {t('pages.terms.sections.payment.title')}
-                                                        </h3>
-                                                        <ul className="space-y-2">
-                                                            {[1, 2, 3, 4].map((num) => (
-                                                                <li key={num} className="flex items-start gap-2">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
-                                                                        {t(`pages.terms.sections.payment.bullet${num}`)}
-                                                                    </span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
@@ -1561,29 +1565,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* Location Section */}
-                                            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                                                        <MapPin className="w-5 h-5 text-white" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
-                                                            {t('pages.terms.sections.location.title')}
-                                                        </h3>
-                                                        <ul className="space-y-2">
-                                                            {[1, 2, 3, 4].map((num) => (
-                                                                <li key={num} className="flex items-start gap-2">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                                                                    <span className="text-gray-600 leading-relaxed text-sm md:text-base">
-                                                                        {t(`pages.terms.sections.location.bullet${num}`)}
-                                                                    </span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
 
                                             {/* Notifications Section */}
                                             <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">

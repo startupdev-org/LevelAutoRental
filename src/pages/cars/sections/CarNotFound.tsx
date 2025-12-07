@@ -36,39 +36,54 @@ export const CarNotFound: React.FC = () => {
             role="status"
             aria-live="polite"
         >
-            <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 text-center">
-                {/* Icon */}
-                <div className="mx-auto w-24 h-24 rounded-full bg-red-600/10 flex items-center justify-center mb-6">
-                    <CarFront className="w-10 h-10 text-red-600" />
+            <div className="max-w-4xl w-full">
+                {/* Modern card design with glassmorphism effect */}
+                <div className="relative bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+                    {/* Background gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-theme-50/50 via-white/50 to-theme-100/50"></div>
+
+                    {/* Content */}
+                    <div className="relative z-10 p-8 md:p-12 text-center">
+                        {/* Icon with modern design */}
+                        <div className="mx-auto w-24 h-24 mb-8 relative">
+                            <div className="w-full h-full rounded-full bg-gradient-to-r from-theme-500 to-theme-600 flex items-center justify-center shadow-lg">
+                                <CarFront className="w-10 h-10 text-white" />
+                            </div>
+                            {/* Decorative elements */}
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-theme-400 rounded-full animate-pulse"></div>
+                            <div className="absolute -bottom-1 -left-1 w-4 h-4 bg-theme-300 rounded-full animate-pulse delay-150"></div>
                 </div>
 
                 {/* Heading */}
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
+                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                     Mașina nu a fost găsită
                 </h2>
 
                 {/* Description */}
-                <p className="text-gray-600 mb-8 text-lg">
-                    Ne pare rău — nu am găsit o mașină cu acel ID. Poți reveni la lista de mașini sau încerca una din sugestiile de mai jos.
+                        <p className="text-gray-600 text-lg mb-8 leading-relaxed max-w-lg mx-auto">
+                            Ne pare rău — nu am găsit o mașină cu acel ID. Poți reveni la lista completă de mașini sau încerca una din sugestiile de mai jos.
                 </p>
 
-                {/* Action Buttons */}
+                        {/* Action buttons with modern design */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
                     <Link
                         to="/cars"
-                        className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 transition"
+                                className="px-8 py-4 bg-gradient-to-r from-theme-500 to-theme-600 hover:from-theme-600 hover:to-theme-700 text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
                     >
+                                <CarFront className="w-5 h-5" />
                         Vezi toate mașinile
                     </Link>
+
                     <button
                         onClick={() => navigate(-1)}
-                        className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:shadow-sm transition"
+                                className="px-8 py-4 border-2 border-theme-500 text-theme-500 hover:bg-theme-500 hover:text-white font-semibold rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
                     >
                         Înapoi
                     </button>
+
                     <Link
                         to="/contact"
-                        className="px-6 py-3 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition"
+                                className="px-8 py-4 border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
                     >
                         Contactează-ne
                     </Link>
@@ -76,30 +91,45 @@ export const CarNotFound: React.FC = () => {
 
                 {/* Suggestions */}
                 {cars && cars.length > 0 && (
-                    <div className="mt-6">
-                        <h3 className="text-sm text-gray-500 mb-4 font-medium">Poate te interesează</h3>
+                            <div className="mt-8">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                                    Poate te interesează
+                                </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {cars.map((car) => (
+                                        <motion.div
+                                            key={car.id}
+                                            whileHover={{ scale: 1.02 }}
+                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                        >
                                 <Link
-                                    key={car.id}
                                     to={`/cars/${car.id}`}
-                                    className="flex flex-col sm:flex-row items-center sm:items-start gap-3 p-4 rounded-xl border hover:shadow-lg transition bg-white"
+                                                className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl border border-gray-200 hover:shadow-xl hover:border-theme-300 transition-all duration-300 bg-white/60 backdrop-blur-sm"
                                 >
+                                                <div className="relative">
                                     <img
                                         src={car.image_url || ''}
                                         alt={car.make + ' ' + car.model}
-                                        className="w-24 h-16 object-cover rounded-md flex-shrink-0"
+                                                        className="w-20 h-16 object-cover rounded-xl flex-shrink-0 shadow-sm"
                                     />
+                                                </div>
                                     <div className="text-left sm:flex-1">
-                                        <div className="text-sm font-semibold text-gray-800 truncate">{car.make + ' ' + car.model}</div>
-                                        <div className="text-xs text-gray-500">{car.year}</div>
-                                        <div className="text-sm text-red-600 font-semibold mt-1">{car.price_per_day ? `${car.price_per_day} € / zi` : 'Contact'}</div>
+                                                    <div className="text-sm font-semibold text-gray-900 truncate mb-1">
+                                                        {car.make + ' ' + car.model}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mb-2">{car.year}</div>
+                                                    <div className="text-sm text-theme-600 font-bold">
+                                                        {car.price_per_day ? `${car.price_per_day} € / zi` : 'Contactează-ne'}
+                                                    </div>
                                     </div>
                                 </Link>
+                                        </motion.div>
                             ))}
                         </div>
                     </div>
                 )}
+                    </div>
+                </div>
             </div>
         </motion.div>
     );

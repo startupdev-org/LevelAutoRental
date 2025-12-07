@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
 
   const contactInfo = [
     { icon: Phone, text: '+373 62 000 112', href: 'tel:+37362000112' },
-    { icon: Mail, text: 'info@levelautorental.com', href: 'mailto:info@levelautorental.com' },
+    { icon: Mail, text: 'levelauto@yahoo.com', href: 'mailto:levelauto@yahoo.com' },
     { icon: MapPin, text: 'Chisinau, Moldova', href: '#' }
   ];
 

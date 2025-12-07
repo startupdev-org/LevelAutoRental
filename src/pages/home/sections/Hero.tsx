@@ -44,9 +44,15 @@ export const Hero: React.FC = () => {
   const uniqueMakes = useMemo(() => {
     const makes = cars.map(car => {
       const make = car.make || '';
-      return make.includes('-') ? make.split('-')[0] : make;
+      const normalizedMake = make.includes('-') ? make.split('-')[0] : make;
+      return normalizedMake.trim().toLowerCase();
     });
-    return Array.from(new Set(makes)).filter(Boolean);
+    const uniqueNormalizedMakes = Array.from(new Set(makes)).filter(Boolean);
+
+    // Convert back to title case for display
+    return uniqueNormalizedMakes.map(make =>
+      make.charAt(0).toUpperCase() + make.slice(1).toLowerCase()
+    );
   }, [cars]);
 
   // Map makes to their available models
@@ -56,14 +62,16 @@ export const Hero: React.FC = () => {
       const make = car.make || '';
       const model = car.model || '';
       const cleanMake = make.includes('-') ? make.split('-')[0] : make;
+      const normalizedMake = cleanMake.trim().toLowerCase();
 
-      if (!cleanMake) return;
+      if (!normalizedMake) return;
 
-      if (!mapping[cleanMake]) {
-        mapping[cleanMake] = [];
+      // Use normalized make as key
+      if (!mapping[normalizedMake]) {
+        mapping[normalizedMake] = [];
       }
-      if (model && !mapping[cleanMake].includes(model)) {
-        mapping[cleanMake].push(model);
+      if (model && !mapping[normalizedMake].includes(model)) {
+        mapping[normalizedMake].push(model);
       }
     });
     return mapping;
@@ -72,7 +80,8 @@ export const Hero: React.FC = () => {
   // Get available models for selected make
   const availableModels = useMemo(() => {
     if (!bookingForm.make) return [];
-    return makeToModels[bookingForm.make] || [];
+    const normalizedMake = bookingForm.make.trim().toLowerCase();
+    return makeToModels[normalizedMake] || [];
   }, [bookingForm.make, makeToModels]);
 
   // Get car make logo path
@@ -85,6 +94,8 @@ export const Hero: React.FC = () => {
       'audi': '/logos/audi.png',
       'hyundai': '/logos/hyundai.png',
       'maserati': '/logos/maserati.png',
+      'volkswagen': '/logos/volkswagen-1-logo-black-and-white.png',
+      'vw': '/logos/volkswagen-1-logo-black-and-white.png',
     };
     return logoMap[makeLower] || null;
   };
@@ -155,7 +166,9 @@ export const Hero: React.FC = () => {
       if (key === 'make') {
         const newMake = value as string;
         if (newMake && prev.model) {
-          const validModels = makeToModels[newMake] || [];
+          // Use normalized make for lookup
+          const normalizedNewMake = newMake.trim().toLowerCase();
+          const validModels = makeToModels[normalizedNewMake] || [];
           const currentModelValid = validModels.some(model =>
             model.toLowerCase() === prev.model.toLowerCase()
           );
@@ -232,20 +245,46 @@ export const Hero: React.FC = () => {
 
   return (
     <section className="relative h-[725px] pt-36 font-sans bg-white">
-      {/* Background Image - Desktop version with background-attachment: fixed */}
-      <div
-        className="hidden lg:block absolute inset-0 bg-cover bg-center bg-no-repeat"
+      {/* Background Image - Desktop version */}
+      <div className="hidden lg:block absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+        <img
+          src="/lvl_bg.png"
+          alt="Background"
+          className="w-full h-full object-cover"
         style={{
-          backgroundImage: "url('/lvl_bg.png')",
-          backgroundAttachment: 'fixed',
-          backgroundPosition: 'center -300px',
-          backgroundSize: '100%',
+            position: 'absolute',
+            top: '-300px',
+            left: 0,
+            width: '100%',
+            height: 'calc(100% + 300px)',
+            objectFit: 'cover',
+            objectPosition: 'center center',
           zIndex: 0
         }}
-      ></div>
+        />
+      </div>
+
+      {/* Background Image - Tablet version */}
+      <div className="hidden md:block lg:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+        <img
+          src="/lvl_bg.png"
+          alt="Background"
+          className="w-full h-full object-cover"
+        style={{
+            position: 'absolute',
+            top: '25px',
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center center',
+          zIndex: 0
+        }}
+        />
+      </div>
 
       {/* Background Image - Mobile version with img element for better mobile support */}
-      <div className="lg:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+      <div className="md:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
         <img
           src="/backgrounds/bg10-mobile.jpeg"
           alt="Background"
@@ -300,12 +339,25 @@ export const Hero: React.FC = () => {
                     }}
                   />
 
-                  <motion.button
-                    className="relative px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => window.open('tel:+37362000112', '_self')}
-                  >
+                  <div className="relative">
+                    <motion.button
+                      className="relative px-8 py-4 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 overflow-hidden"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => window.open('tel:+37362000112', '_self')}
+                      animate={{
+                        boxShadow: [
+                          "0 4px 15px rgba(239, 68, 68, 0.3)",
+                          "0 8px 25px rgba(239, 68, 68, 0.6)",
+                          "0 4px 15px rgba(239, 68, 68, 0.3)"
+                        ]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
                     <motion.div
                       animate={{
                         rotate: [0, 5, -5, 0]
@@ -319,7 +371,8 @@ export const Hero: React.FC = () => {
                       {BiSolidPhoneCall({ className: "w-6 h-6" })}
                     </motion.div>
                     {t('hero.start')}
-                  </motion.button>
+                    </motion.button>
+                  </div>
                 </div>
                 <button
                   className="px-10 py-4 border-2 border-white hover:border-theme-500 text-white hover:text-theme-500 font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 bg-white/10 backdrop-blur-sm"
@@ -343,7 +396,7 @@ export const Hero: React.FC = () => {
               {/* Make */}
               <div className="w-full dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Marca
+                  {t('hero.make')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
@@ -363,7 +416,7 @@ export const Hero: React.FC = () => {
                         />
                       ) : null;
                     })()}
-                    <span className="flex-1">{bookingForm.make || 'Selectează marca'}</span>
+                    <span className="flex-1">{bookingForm.make || t('hero.selectMake')}</span>
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -420,14 +473,14 @@ export const Hero: React.FC = () => {
               {/* Model */}
               <div className="w-full dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Model
+                  {t('hero.model')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
                     className={`w-full text-sm font-medium text-gray-900 bg-transparent border border-gray-200 rounded-xl py-3 px-4 cursor-pointer flex items-center gap-2 ${!bookingForm.make ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => bookingForm.make && openDropdown('model')}
                   >
-                    <span className="flex-1">{!bookingForm.make ? 'Selectează marca' : (bookingForm.model || 'Selectează modelul')}</span>
+                    <span className="flex-1">{!bookingForm.make ? t('hero.selectMake') : (bookingForm.model || t('hero.selectModel'))}</span>
                     <svg className={`w-4 h-4 text-gray-400 ${!bookingForm.make ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -655,7 +708,7 @@ export const Hero: React.FC = () => {
               {/* Make */}
               <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Marca
+                  {t('hero.make')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
@@ -675,7 +728,7 @@ export const Hero: React.FC = () => {
                         />
                       ) : null;
                     })()}
-                    <span className="flex-1">{bookingForm.make || 'Selectează marca'}</span>
+                    <span className="flex-1">{bookingForm.make || t('hero.selectMake')}</span>
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -737,14 +790,14 @@ export const Hero: React.FC = () => {
               {/* Model */}
               <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Model
+                  {t('hero.model')}
                 </label>
                 <div className="relative overflow-visible">
                   <div
                     className={`w-full text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer hover:text-gray-700 transition-colors pr-8 flex items-center gap-2 ${!bookingForm.make ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => bookingForm.make && openDropdown('model')}
                   >
-                    <span className="flex-1">{!bookingForm.make ? 'Selectează marca' : (bookingForm.model || 'Selectează modelul')}</span>
+                    <span className="flex-1">{!bookingForm.make ? t('hero.selectMake') : (bookingForm.model || t('hero.selectModel'))}</span>
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
                     <svg className={`w-4 h-4 ${!bookingForm.make ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
