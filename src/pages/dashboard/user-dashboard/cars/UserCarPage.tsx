@@ -507,7 +507,7 @@ export const CarsView: React.FC = () => {
             const formatDateForDisplay = (date: Date): string => {
                 const day = date.getDate();
                 const monthNames = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
-                                   'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+                    'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
                 const month = monthNames[date.getMonth()];
 
                 // Format date in Romanian: "Liber de pe 30 noiembrie"
@@ -782,11 +782,10 @@ export const CarsView: React.FC = () => {
                                 handleRentCar(carWithImages);
                             }}
                             disabled={carWithImages.status !== 'available'}
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-sm font-semibold ${
-                                carWithImages.status === 'available'
-                                    ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                                    : 'bg-gray-600/20 text-gray-400 cursor-not-allowed border border-gray-500/30'
-                            }`}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-sm font-semibold ${carWithImages.status === 'available'
+                                ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                                : 'bg-gray-600/20 text-gray-400 cursor-not-allowed border border-gray-500/30'
+                                }`}
                         >
                             <ArrowRight size={16} />
                             Închiriază
@@ -818,114 +817,111 @@ export const CarsView: React.FC = () => {
 
 
 
-                {loading ? (
-                    <LoadingState message='Loading cars...' />
-                ) : (
-                    <>
-                        {/* Cars Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {cars.length > 0 ? (
-                                cars.map((car) => (
-                                    <CarCard
-                                                    key={car.id}
-                                        car={car}
-                                        availabilityData={carsAvailability.get(car.id.toString())}
-                                        imageData={carsImages.get(car.id.toString())}
-                                    />
-                                ))
-                            ) : (
-                                <div className="col-span-full">
-                                                <EmptyState
-                                            icon={<CarIcon className="w-12 h-12 text-gray-400" />}
-                                                    title="No cars found"
-                                            subtitle="No cars are available at the moment"
-                                                />
-                                </div>
-                                    )}
-                        </div>
+            {loading ? (
+                <LoadingState message='Loading cars...' />
+            ) : (
+                <>
+                    {/* Cars Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {cars.length > 0 ? (
+                            cars.map((car) => (
+                                <CarCard
+                                    key={car.id}
+                                    car={car}
+                                    availabilityData={carsAvailability.get(car.id.toString())}
+                                    imageData={carsImages.get(car.id.toString())}
+                                />
+                            ))
+                        ) : (
+                            <div className="col-span-full">
+                                <EmptyState
+                                    icon={<CarIcon className="w-12 h-12 text-gray-400" />}
+                                    title="No cars found"
+                                    subtitle="No cars are available at the moment"
+                                />
+                            </div>
+                        )}
+                    </div>
 
-                        {/* Modern Pagination */}
-                            {totalCars > pageSize && (
-                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-6 py-6 border-t border-white/10 mt-8">
-                                <div className="text-gray-400 text-sm">
-                                    Showing <span className="font-medium text-white">{Math.min((page - 1) * pageSize + 1, totalCars)}</span> to{' '}
-                                    <span className="font-medium text-white">{Math.min(page * pageSize, totalCars)}</span> of{' '}
-                                    <span className="font-medium text-white">{totalCars}</span> cars
-                                </div>
+                    {/* Modern Pagination */}
+                    {totalCars > pageSize && (
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-6 py-6 border-t border-white/10 mt-8">
+                            <div className="text-gray-400 text-sm">
+                                Showing <span className="font-medium text-white">{Math.min((page - 1) * pageSize + 1, totalCars)}</span> to{' '}
+                                <span className="font-medium text-white">{Math.min(page * pageSize, totalCars)}</span> of{' '}
+                                <span className="font-medium text-white">{totalCars}</span> cars
+                            </div>
 
-                                <div className="flex items-center gap-1">
-                                    {/* Previous Button */}
-                                        <button
-                                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                                            disabled={page === 1}
-                                        className={`p-2 rounded-lg transition-all duration-200 ${
-                                            page === 1
-                                                ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50"
-                                                : "bg-white/10 text-white hover:bg-white/20 hover:scale-105 active:scale-95"
+                            <div className="flex items-center gap-1">
+                                {/* Previous Button */}
+                                <button
+                                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                                    disabled={page === 1}
+                                    className={`p-2 rounded-lg transition-all duration-200 ${page === 1
+                                        ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50"
+                                        : "bg-white/10 text-white hover:bg-white/20 hover:scale-105 active:scale-95"
                                         }`}
-                                        aria-label="Previous page"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                    </button>
+                                    aria-label="Previous page"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
 
-                                    {/* Page Numbers */}
-                                    <div className="flex items-center gap-1 px-3">
-                                        {(() => {
-                                            const totalPages = Math.ceil(totalCars / pageSize);
-                                            const pages = [];
-                                            const maxVisiblePages = 5;
+                                {/* Page Numbers */}
+                                <div className="flex items-center gap-1 px-3">
+                                    {(() => {
+                                        const totalPages = Math.ceil(totalCars / pageSize);
+                                        const pages = [];
+                                        const maxVisiblePages = 5;
 
-                                            let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
-                                            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                                        let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
+                                        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-                                            // Adjust start page if we're near the end
-                                            if (endPage - startPage + 1 < maxVisiblePages) {
-                                                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                                            }
+                                        // Adjust start page if we're near the end
+                                        if (endPage - startPage + 1 < maxVisiblePages) {
+                                            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                                        }
 
-                                            // Add pages
-                                            for (let i = startPage; i <= endPage; i++) {
-                                                pages.push(
-                                                    <button
-                                                        key={i}
-                                                        onClick={() => setPage(i)}
-                                                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                                                            page === i
-                                                                ? "bg-red-600 text-white shadow-lg"
-                                                                : "bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white"
+                                        // Add pages
+                                        for (let i = startPage; i <= endPage; i++) {
+                                            pages.push(
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setPage(i)}
+                                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${page === i
+                                                        ? "bg-red-600 text-white shadow-lg"
+                                                        : "bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white"
                                                         }`}
-                                                    >
-                                                        {i}
-                                        </button>
-                                                );
-                                            }
+                                                >
+                                                    {i}
+                                                </button>
+                                            );
+                                        }
 
-                                            return pages;
-                                        })()}
-                                    </div>
-
-                                    {/* Next Button */}
-                                        <button
-                                            onClick={() => setPage((prev) => (prev * pageSize < totalCars ? prev + 1 : prev))}
-                                            disabled={page * pageSize >= totalCars}
-                                        className={`p-2 rounded-lg transition-all duration-200 ${
-                                            page * pageSize >= totalCars
-                                                ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50"
-                                                : "bg-white/10 text-white hover:bg-white/20 hover:scale-105 active:scale-95"
-                                        }`}
-                                        aria-label="Next page"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                        </button>
-                                    </div>
+                                        return pages;
+                                    })()}
                                 </div>
-                            )}
-                    </>
-                )}
+
+                                {/* Next Button */}
+                                <button
+                                    onClick={() => setPage((prev) => (prev * pageSize < totalCars ? prev + 1 : prev))}
+                                    disabled={page * pageSize >= totalCars}
+                                    className={`p-2 rounded-lg transition-all duration-200 ${page * pageSize >= totalCars
+                                        ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50"
+                                        : "bg-white/10 text-white hover:bg-white/20 hover:scale-105 active:scale-95"
+                                        }`}
+                                    aria-label="Next page"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
 
             {/* Rental Request Modal */}
             {isRentalModalOpen && selectedCarForRental && (

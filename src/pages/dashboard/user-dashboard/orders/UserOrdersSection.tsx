@@ -2,9 +2,10 @@ import { useTranslation } from "react-i18next"
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowRight, Car, Check, Truck } from 'lucide-react';
-import { Rental } from "../../../../lib/orders";
 import { OrderDetailsModal } from "../../../../components/modals/OrderDetailsModal";
 import { getUserRentals as fetchUsersRentals } from "../../../../lib/db/rentals/rentals";
+import { Rental } from "../../../../types";
+import { formatDateLocal } from "../../../../utils/date";
 
 export const UserOrdersSection: React.FC = () => {
 
@@ -22,15 +23,6 @@ export const UserOrdersSection: React.FC = () => {
         }
         loadRentals();
     }, []);
-
-    // Format date helper
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
 
     return (
         <div className="space-y-6">
@@ -73,7 +65,7 @@ export const UserOrdersSection: React.FC = () => {
                                                 {activeRental.car?.make} {activeRental.car?.model}
                                             </h3>
                                             <p className="text-white/80 text-xs">
-                                                {formatDate(activeRental.start_date)} - {formatDate(activeRental.end_date)}
+                                                {formatDateLocal(activeRental.start_date)} - {formatDateLocal(activeRental.end_date)}
                                             </p>
                                         </div>
 
@@ -191,7 +183,7 @@ export const UserOrdersSection: React.FC = () => {
                                             {rental.car?.make} {rental.car?.model}
                                         </h3>
                                         <p className="text-white/80 text-xs">
-                                            {formatDate(rental.start_date)} - {formatDate(rental.end_date)}
+                                            {formatDateLocal(rental.start_date)} - {formatDateLocal(rental.end_date)}
                                         </p>
                                     </div>
 

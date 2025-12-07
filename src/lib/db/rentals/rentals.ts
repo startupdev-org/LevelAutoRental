@@ -1,11 +1,10 @@
-import { FavoriteCar } from '../../../types';
-import { Rental, BorrowRequest } from '../../orders';
+import { FavoriteCar, Rental, RentalDTO } from '../../../types';
 import { supabase } from '../../supabase';
 import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
 
 
-export async function getUserRentals(): Promise<Rental[]> {
+export async function getUserRentals(): Promise<RentalDTO[]> {
 
     const user = await getLoggedUser();
 
@@ -340,7 +339,7 @@ export async function fetchActiveRentals(): Promise<Rental[]> {
     console.log('sql!!! -> active rentals: ', data)
 
     // Convert rentals using DTO mapping
-    const rentals: Rental[] = await Promise.all(
+    const rentals: RentalDTO[] = await Promise.all(
         data.map(async (rentalRow: Rental) => {
             return toRentalDTO(rentalRow, rentalRow.car_id);
         })
@@ -462,13 +461,14 @@ export async function fetchUserRentalsForCalendarPage(
     );
 }
 
-async function toRentalDTO(rental: Rental, carId: string): Promise<Rental> {
+async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
 
     const carWithImage = await fetchCarWithImagesById(carId);
 
-    rental.car = carWithImage;
-
-    return rental;
+    return {
+        ...rental,
+        car: carWithImage
+    }
 }
 
 
