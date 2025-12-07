@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
     Search,
     ArrowUpDown,
@@ -8,86 +8,65 @@ import {
     ArrowDown,
     Loader2,
     Plus,
+    ArrowLeft,
+    ArrowRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { fetchCars } from '../../../../lib/cars';
-import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
-import { Car as CarType } from '../../../../types';
-import { OrderDisplay } from '../../../../lib/orders';
-import { supabaseAdmin } from '../../../../lib/supabase';
-import {
-    fetchBorrowRequestsForDisplay,
-    acceptBorrowRequest,
-    rejectBorrowRequest,
-    undoRejectBorrowRequest,
-    updateBorrowRequest,
-    createRentalManually,
-    createBorrowRequest,
-    processStatusTransitions,
-} from '../../../../lib/orders';
+import { BorrowRequest, BorrowRequestDTO, Car as CarType, OrderDisplay } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
-import { RequestDetailsView } from './RequestDetailsView';
-import { RequestDetailsModal } from '../modals/RequestDetailsModal';
 import { CreateRentalModal } from '../modals/CreateRentalModal';
 import { EditRequestModal } from '../modals/EditRequestModal';
 import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
+import { getInitials } from '../../../../utils/customer';
+import { getCarName } from '../../../../utils/car';
+import { acceptBorrowRequest, BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
+import { formatDateLocal } from '../../../../utils/date';
+import { formatAmount } from '../../../../utils/currency';
+import { RequestDetailsModal } from '../modals/RequestDetailsModal';
+import { supabase } from '../../../../lib/supabase';
 
 export const RequestsView: React.FC = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const requestId = searchParams.get('requestId');
     const carId = searchParams.get('carId');
     const { showSuccess, showError } = useNotification();
-    const [requests, setRequests] = useState<OrderDisplay[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [requests, setRequests] = useState<BorrowRequestDTO[]>([]);
+    const [loading, setLoading] = useState(false);
     const [cars, setCars] = useState<CarType[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<'pickup' | 'return' | 'amount' | 'status' | null>('status');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [showRejected, setShowRejected] = useState(false);
-    const [showExecuted, setShowExecuted] = useState(false);
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
     const [selectedCarIdForRental, setSelectedCarIdForRental] = useState<string | undefined>(undefined);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
-    const [selectedRequest, setSelectedRequest] = useState<OrderDisplay | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestDTO | null>(null);
     const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editingRequest, setEditingRequest] = useState<OrderDisplay | null>(null);
+    const [editingRequest, setEditingRequest] = useState<BorrowRequestDTO | null>(null);
     const [showContractModal, setShowContractModal] = useState(false);
     const [selectedRentalForContract, setSelectedRentalForContract] = useState<OrderDisplay | null>(null);
     const [showRequestContractModal, setShowRequestContractModal] = useState(false);
-    const [selectedRequestForContract, setSelectedRequestForContract] = useState<OrderDisplay | null>(null);
+    const [selectedRequestForContract, setSelectedRequestForContract] = useState<BorrowRequest | null>(null);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalRequests, setTotalRequests] = useState(0);
+    const [requestsPerPage] = useState(5);
+    const [totalPages, setTotalPages] = useState(0);
+
+    const [sortBy, setSortBy] = useState<'start_date' | 'amount' | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [status, setStatus] = useState<'PENDING' | 'REJECTED' | 'APPROVED' | null>(null);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearch] = useState(searchQuery);
 
     useEffect(() => {
-        const loadCars = async () => {
-            try {
-                const fetchedCars = await fetchCars();
-                
-                // Fetch images from storage for each car
-                const carsWithImages = await Promise.all(
-                    fetchedCars.map(async (car) => {
-                        // Try name field first, then fall back to make + model
-                        let carName = (car as any).name;
-                        if (!carName || carName.trim() === '') {
-                            carName = `${car.make} ${car.model}`;
-                        }
-                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-                        return {
-                            ...car,
-                            image_url: mainImage || car.image_url,
-                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
-                        };
-                    })
-                );
-                
-                setCars(carsWithImages);
-            } catch (error) {
-                console.error('Error loading cars:', error);
-            }
-        };
-        loadCars();
-    }, []);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setCurrentPage(1);
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+
 
     // Open modal if carId is in URL params
     useEffect(() => {
@@ -101,42 +80,27 @@ export const RequestsView: React.FC = () => {
         }
     }, [carId, cars.length, searchParams, setSearchParams]);
 
+    // Trigger when filters change
     useEffect(() => {
-        if (cars.length > 0) {
-            // Process status transitions first, then load requests once
-            processStatusTransitions(cars).then(() => {
-                loadRequests();
-            });
-        }
-    }, [cars]);
+        setCurrentPage(1);
+    }, [debouncedSearchQuery, status, sortBy, sortOrder]);
 
-    // Periodically check and process status transitions (every 60 seconds)
+    // Trigger loadRequests when page or filters change
     useEffect(() => {
-        if (cars.length === 0) return;
+        loadRequests();
+    }, [currentPage, debouncedSearchQuery, status, sortBy, sortOrder]);
 
-        const interval = setInterval(async () => {
-            const result = await processStatusTransitions(cars);
-            if (result.success && (result.executed > 0 || result.completed > 0)) {
-                // Reload requests if any were processed
-                loadRequests();
-            }
-        }, 60000); // Check every 60 seconds
 
-        return () => clearInterval(interval);
-    }, [cars]);
-
-    useEffect(() => {
-        // Reload requests when requestId changes to ensure we have the latest data
-        if (requestId) {
-            loadRequests();
-        }
-    }, [requestId]);
 
     const loadRequests = async () => {
         setLoading(true);
         try {
-            const data = await fetchBorrowRequestsForDisplay(cars);
+            const filters = getCurrentFilters();
+            const { data, total } = await fetchBorrowRequestsForDisplay(currentPage, requestsPerPage, filters);
+            const totalPages = Math.ceil(total / requestsPerPage);
             setRequests(data);
+            setTotalRequests(total);
+            setTotalPages(totalPages);
         } catch (error) {
             console.error('Failed to load requests:', error);
         } finally {
@@ -144,18 +108,31 @@ export const RequestsView: React.FC = () => {
         }
     };
 
-    const handleAccept = async (request: OrderDisplay) => {
-        // Instead of directly accepting, open contract modal
-        setSelectedRequestForContract(request);
-        setProcessingRequest(request.id.toString());
-        setShowRequestContractModal(true);
-        // Close the request details modal
-        setShowRequestDetailsModal(false);
-        setSelectedRequest(null);
+    const getCurrentFilters = (): BorrowRequestFilters | undefined => {
+        if (!debouncedSearchQuery && !sortBy && !status) return undefined
+
+        return {
+            searchQuery: debouncedSearchQuery || undefined,
+            sortBy: sortBy || undefined,
+            sortOrder: sortOrder === 'asc', // converts to boolean
+            status: status || undefined,
+        }
+    }
+
+
+
+    const handleAccept = async (request: BorrowRequestDTO) => {
+        console.log('should accept the request: ', request)
+        const success = await acceptBorrowRequest(request.id)
+        console.log('result: ', success)
+
+        // setProcessingRequest(request.id.toString());
+        // setShowRequestDetailsModal(false);
+        // setSelectedRequest(null);
     };
 
-    const handleReject = async (request: OrderDisplay) => {
-        const reason = window.prompt(`${t('admin.requests.confirmRejectRequest')} ${request.customerName}? ${t('admin.requests.rejectReasonPrompt')}`);
+    const handleReject = async (request: BorrowRequestDTO) => {
+        const reason = window.prompt(`${t('admin.requests.confirmRejectRequest')} ${request.customer_name}? ${t('admin.requests.rejectReasonPrompt')}`);
         if (reason === null) return; // User cancelled
 
         setProcessingRequest(request.id.toString());
@@ -186,8 +163,8 @@ export const RequestsView: React.FC = () => {
         }
     };
 
-    const handleUndoReject = async (request: OrderDisplay) => {
-        if (!window.confirm(`${t('admin.requests.confirmRestoreRequest')} ${request.customerName} ${t('admin.requests.forCar')} ${request.carName} ${t('admin.requests.toPending')}`)) {
+    const handleUndoReject = async (request: BorrowRequestDTO) => {
+        if (!window.confirm(`${t('admin.requests.confirmRestoreRequest')} ${request.customer_name} ${t('admin.requests.forCar')} ${getCarName(request.car)} ${t('admin.requests.toPending')}`)) {
             return;
         }
 
@@ -208,8 +185,8 @@ export const RequestsView: React.FC = () => {
         }
     };
 
-    const handleSetToPending = async (request: OrderDisplay) => {
-        if (!window.confirm(`${t('admin.requests.confirmSetToPending')} ${request.customerName} ${t('admin.requests.forCar')} ${request.carName} ${t('admin.requests.backToPending')}`)) {
+    const handleSetToPending = async (request: BorrowRequestDTO) => {
+        if (!window.confirm(`${t('admin.requests.confirmSetToPending')} ${request.customer_name} ${t('admin.requests.forCar')} ${request.car} ${t('admin.requests.backToPending')}`)) {
             return;
         }
 
@@ -230,22 +207,22 @@ export const RequestsView: React.FC = () => {
         }
     };
 
-    const handleEdit = (request: OrderDisplay) => {
+    const handleEdit = (request: BorrowRequestDTO) => {
         setEditingRequest(request);
         setShowEditModal(true);
     };
 
-    const handleCancelRental = async (request: OrderDisplay) => {
-        if (!window.confirm(`Sunteți sigur că doriți să anulați închirierea pentru ${request.customerName}? Această acțiune va seta cererea la In Asteptare și va șterge comanda de închiriere.`)) {
+    const handleCancelRental = async (request: BorrowRequestDTO) => {
+        if (!window.confirm(`Sunteți sigur că doriți să anulați închirierea pentru ${request.customer_name}? Această acțiune va seta cererea la In Asteptare și va șterge comanda de închiriere.`)) {
             return;
         }
 
         setProcessingRequest(request.id.toString());
         try {
             const requestId = typeof request.id === 'string' ? parseInt(request.id) : request.id;
-            
+
             // First, delete the rental with matching request_id
-            const { error: deleteError } = await supabaseAdmin
+            const { error: deleteError } = await supabase
                 .from('Rentals')
                 .delete()
                 .eq('request_id', requestId);
@@ -274,7 +251,7 @@ export const RequestsView: React.FC = () => {
     };
 
 
-    const handleSort = (field: 'pickup' | 'return' | 'amount' | 'status') => {
+    const handleSort = (field: 'start_date' | 'amount') => {
         if (sortBy === field) {
             // Toggle sort order if clicking the same field
             setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -285,205 +262,21 @@ export const RequestsView: React.FC = () => {
         }
     };
 
-    // Calculate total price for a request (same logic as modal)
-    const calculateRequestTotalPrice = useCallback((request: OrderDisplay): number => {
-        const car = cars.find(c => c.id.toString() === request.carId);
-        if (!car) return request.amount || 0;
-
-        const formatTime = (timeString: string): string => {
-            if (!timeString) return '00:00';
-            if (timeString.includes('AM') || timeString.includes('PM')) {
-                const [time, period] = timeString.split(' ');
-                const [hours, minutes] = time.split(':');
-                let hour24 = parseInt(hours);
-                if (period === 'PM' && hour24 !== 12) hour24 += 12;
-                if (period === 'AM' && hour24 === 12) hour24 = 0;
-                return `${String(hour24).padStart(2, '0')}:${minutes || '00'}`;
-            }
-            if (timeString.includes(':')) {
-                const [hours, minutes] = timeString.split(':');
-                return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
-            }
-            return '00:00';
-        };
-
-        // Parse dates safely to avoid timezone issues
-        const [startYear, startMonth, startDay] = request.pickupDate.split('-').map(Number);
-        const [endYear, endMonth, endDay] = request.returnDate.split('-').map(Number);
-        const startDate = new Date(startYear, startMonth - 1, startDay);
-        const endDate = new Date(endYear, endMonth - 1, endDay);
-
-        const pickupTime = formatTime(request.pickupTime);
-        const returnTime = formatTime(request.returnTime);
-        const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
-        const [returnHour, returnMin] = returnTime.split(':').map(Number);
-
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(pickupHour, pickupMin, 0, 0);
-
-        const endDateTime = new Date(endDate);
-        // If return time is 00:00, treat it as end of previous day (23:59:59)
-        if (returnHour === 0 && returnMin === 0) {
-            endDateTime.setHours(23, 59, 59, 999);
-        } else {
-            endDateTime.setHours(returnHour, returnMin, 0, 0);
-        }
-
-        const diffTime = endDateTime.getTime() - startDateTime.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-        const days = diffDays;
-        const hours = diffHours >= 0 ? diffHours : 0;
-
-        // Calculate pricing using updated price ranges system (no period discounts)
-        const rentalDays = days;
-        const totalDays = days + (hours / 24);
-
-        // Get price per day based on rental duration ranges
-        let basePricePerDay = 0;
-        if (rentalDays >= 2 && rentalDays <= 4) {
-            basePricePerDay = car.price_2_4_days || 0;
-        } else if (rentalDays >= 5 && rentalDays <= 15) {
-            basePricePerDay = car.price_5_15_days || 0;
-        } else if (rentalDays >= 16 && rentalDays <= 30) {
-            basePricePerDay = car.price_16_30_days || 0;
-        } else if (rentalDays > 30) {
-            basePricePerDay = car.price_over_30_days || 0;
-        }
-
-        // Apply car discount if exists
-        const carDiscount = (car as any).discount_percentage || 0;
-        const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
-
-        // Calculate base price
-        let basePrice = pricePerDay * rentalDays;
-
-        // Add hours portion (hours are charged at the same rate)
-        if (hours > 0) {
-            const hoursPrice = (hours / 24) * pricePerDay;
-            basePrice += hoursPrice;
-        }
-
-        // Calculate additional costs from options (same as Calculator.tsx)
-        const options = (request as any).options;
-        let parsedOptions: any = {};
-
-        if (options) {
-            if (typeof options === 'string') {
-                try {
-                    parsedOptions = JSON.parse(options);
-                } catch (e) {
-                    parsedOptions = {};
-                }
-            } else {
-                parsedOptions = options;
-            }
-        }
-
-        let additionalCosts = 0;
-
-        // Percentage-based options (calculated on discounted price)
-        if (parsedOptions.unlimitedKm) {
-            additionalCosts += pricePerDay * rentalDays * 0.5;
-        }
-        if (parsedOptions.tireInsurance) {
-            additionalCosts += pricePerDay * rentalDays * 0.2;
-        }
-
-        // Fixed daily costs
-        if (parsedOptions.personalDriver) {
-            additionalCosts += 800 * rentalDays;
-        }
-        if (parsedOptions.priorityService) {
-            additionalCosts += 1000 * rentalDays;
-        }
-        if (parsedOptions.childSeat) {
-            additionalCosts += 100 * rentalDays;
-        }
-        if (parsedOptions.simCard) {
-            additionalCosts += 100 * rentalDays;
-        }
-        if (parsedOptions.roadsideAssistance) {
-            additionalCosts += 500 * rentalDays;
-        }
-
-        // Total price = base price + additional costs
-        const totalPrice = basePrice + additionalCosts;
-        return Math.round(totalPrice);
-    }, [cars]);
-
-    const filteredRequests = useMemo(() => {
-        let filtered = requests.filter(request => {
-            const matchesSearch =
-                request.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                request.carName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                request.customerPhone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                request.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase());
-
-            // When showRejected is true, only show rejected requests
-            // When showRejected is false, hide rejected requests
-            const matchesRejectedFilter = showRejected
-                ? request.status === 'REJECTED'
-                : request.status !== 'REJECTED';
-
-            // When showExecuted is true, only show executed requests
-            // When showExecuted is false, hide executed requests
-            const matchesExecutedFilter = showExecuted
-                ? request.status === 'EXECUTED'
-                : request.status !== 'EXECUTED';
-
-            return matchesSearch && matchesRejectedFilter && matchesExecutedFilter;
-        });
-
-        // Sort based on selected field
-        if (sortBy) {
-            filtered.sort((a, b) => {
-                let diff = 0;
-                if (sortBy === 'pickup') {
-                    const [yearA, monthA, dayA] = a.pickupDate.split('-').map(Number);
-                    const [yearB, monthB, dayB] = b.pickupDate.split('-').map(Number);
-                    const dateA = new Date(yearA, monthA - 1, dayA).getTime();
-                    const dateB = new Date(yearB, monthB - 1, dayB).getTime();
-                    diff = dateA - dateB;
-                } else if (sortBy === 'return') {
-                    const [yearA, monthA, dayA] = a.returnDate.split('-').map(Number);
-                    const [yearB, monthB, dayB] = b.returnDate.split('-').map(Number);
-                    const dateA = new Date(yearA, monthA - 1, dayA).getTime();
-                    const dateB = new Date(yearB, monthB - 1, dayB).getTime();
-                    diff = dateA - dateB;
-                } else if (sortBy === 'amount') {
-                    const amountA = calculateRequestTotalPrice(a);
-                    const amountB = calculateRequestTotalPrice(b);
-                    diff = amountA - amountB;
-                } else if (sortBy === 'status') {
-                    const statusOrder = { 'PENDING': 0, 'APPROVED': 1, 'REJECTED': 2 };
-                    const statusA = statusOrder[a.status as keyof typeof statusOrder] ?? 3;
-                    const statusB = statusOrder[b.status as keyof typeof statusOrder] ?? 3;
-                    diff = statusA - statusB;
-                }
-                return sortOrder === 'asc' ? diff : -diff;
-            });
-        } else {
-            // Default: sort by status (ascending)
-            const statusOrder = { 'PENDING': 0, 'APPROVED': 1, 'REJECTED': 2, 'EXECUTED': 3 };
-            filtered.sort((a, b) => {
-                const statusA = statusOrder[a.status as keyof typeof statusOrder] ?? 4;
-                const statusB = statusOrder[b.status as keyof typeof statusOrder] ?? 4;
-                return statusA - statusB;
-            });
-        }
-
-        return filtered;
-    }, [requests, searchQuery, sortBy, sortOrder, showRejected, showExecuted, calculateRequestTotalPrice]);
-
-    // If requestId is in URL, show request details view
-    if (requestId) {
-        const request = requests.find(r => r.id.toString() === requestId);
-        if (request) {
-            return <RequestDetailsView request={request} onBack={() => setSearchParams({ section: 'requests' })} onAccept={handleAccept} onReject={handleReject} onUndoReject={handleUndoReject} onSetToPending={handleSetToPending} cars={cars} />;
-        }
+    function handleSelectRequest(request: BorrowRequestDTO) {
+        console.log('should select this request: ', request)
+        setSelectedRequest(request);
+        setShowRequestDetailsModal(true);
     }
+
+    function clearSort() {
+        setSortBy(null);
+        setSortOrder('asc');
+    }
+
+    const goToPage = (page: number) => {
+        if (page < 1 || page > totalPages) return;
+        setCurrentPage(page);
+    };
 
     return (
         <motion.div
@@ -504,35 +297,43 @@ export const RequestsView: React.FC = () => {
                             </div>
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                                 <button
-                                    onClick={() => {
-                                        if (showExecuted) {
-                                            setShowExecuted(false);
-                                        }
-                                        setShowRejected(!showRejected);
-                                    }}
-                                    disabled={showExecuted}
-                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showRejected
+                                    onClick={() => setStatus(prev => prev === 'PENDING' ? null : 'PENDING')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'PENDING'
+                                        ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50 hover:bg-yellow-500/30 hover:border-yellow-500/60'
+                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                >
+                                    {status === 'PENDING'
+                                        ? t('admin.requests.hideInPending')
+                                        : t('admin.requests.showInPending')}
+                                </button>
+
+
+                                <button
+                                    onClick={() => setStatus(prev => prev === 'REJECTED' ? null : 'REJECTED')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'REJECTED'
                                         ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        } ${showExecuted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        }`}
                                 >
-                                    {showRejected ? t('admin.requests.hideRejected') : t('admin.requests.showRejected')}
+                                    {status === 'REJECTED'
+                                        ? t('admin.requests.hideRejected')
+                                        : t('admin.requests.showRejected')}
                                 </button>
+
+
                                 <button
-                                    onClick={() => {
-                                        if (showRejected) {
-                                            setShowRejected(false);
-                                        }
-                                        setShowExecuted(!showExecuted);
-                                    }}
-                                    disabled={showRejected}
-                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showExecuted
-                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 hover:bg-blue-500/30 hover:border-blue-500/60'
+                                    onClick={() => setStatus(prev => prev === 'APPROVED' ? null : 'APPROVED')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'APPROVED'
+                                        ? 'bg-green-500/20 text-green-300 border-green-500/50 hover:bg-green-500/30 hover:border-green-500/60'
                                         : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                        } ${showRejected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        }`}
                                 >
-                                    {showExecuted ? 'Ascunde Începute' : 'Arată Începute'}
+                                    {status === 'APPROVED'
+                                        ? t('admin.requests.hideApproved')
+                                        : t('admin.requests.showApproved')}
                                 </button>
+
                                 <button
                                     onClick={() => setShowAddRentalModal(true)}
                                     className="px-3 md:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-xs md:text-sm whitespace-nowrap flex items-center justify-center gap-2"
@@ -563,22 +364,26 @@ export const RequestsView: React.FC = () => {
                                 <span className="md:hidden text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{t('admin.requests.sortBy')}</span>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <button
-                                        onClick={() => handleSort('pickup')}
-                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'pickup'
-                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                        onClick={() => handleSort('start_date')}
+                                        className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'start_date'
+                                            ? sortOrder === 'asc'
+                                                ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
                                             : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                             }`}
                                     >
                                         <span className="truncate">{t('admin.requests.pickupDate')}</span>
-                                        {sortBy === 'pickup' && (
+                                        {sortBy === 'start_date' && (
                                             sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
                                         )}
-                                        {sortBy !== 'pickup' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
+                                        {sortBy !== 'start_date' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
                                     </button>
                                     <button
                                         onClick={() => handleSort('amount')}
                                         className={`flex items-center gap-1 px-2.5 md:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'amount'
-                                            ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                            ? sortOrder === 'asc'
+                                                ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
                                             : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
                                             }`}
                                     >
@@ -588,17 +393,12 @@ export const RequestsView: React.FC = () => {
                                         )}
                                         {sortBy !== 'amount' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
                                     </button>
-                                    {sortBy && sortBy !== 'status' && (
-                                        <button
-                                            onClick={() => {
-                                                setSortBy('status');
-                                                setSortOrder('asc');
-                                            }}
-                                            className="px-2.5 md:px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
-                                        >
-                                            {t('admin.requests.clearSort')}
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={clearSort}
+                                        className="px-2.5 md:px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+                                    >
+                                        {t('admin.requests.clearSort')}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -610,38 +410,29 @@ export const RequestsView: React.FC = () => {
                     <div className="flex items-center justify-center py-20">
                         <Loader2 className="w-8 h-8 animate-spin text-white/50" />
                     </div>
-                ) : filteredRequests.length > 0 ? (
+                ) : requests.length > 0 ? (
                     <>
                         {/* Mobile Card View */}
                         <div className="block md:hidden p-4 space-y-4">
-                            {filteredRequests.map((request) => {
-                                const getInitials = (name: string) => {
-                                    const parts = name.trim().split(' ');
-                                    if (parts.length >= 2) {
-                                        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-                                    }
-                                    return name.substring(0, 2).toUpperCase();
-                                };
-
+                            {requests.map((request) => {
                                 return (
                                     <div
                                         key={request.id}
                                         className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition cursor-pointer"
                                         onClick={() => {
-                                            setSelectedRequest(request);
-                                            setShowRequestDetailsModal(true);
+                                            handleSelectRequest(request)
                                         }}
                                     >
                                         {/* Header: Customer and Status */}
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
-                                                    {getInitials(request.customerName || 'U')}
+                                                    {getInitials(request.customer_first_name || 'U')}
                                                 </div>
                                                 <div className="flex flex-col min-w-0 flex-1">
-                                                    <span className="font-semibold text-white text-sm truncate">{request.customerName}</span>
-                                                    {request.customerPhone && (
-                                                        <span className="text-gray-400 text-xs truncate">{request.customerPhone}</span>
+                                                    <span className="font-semibold text-white text-sm truncate">{request.customer_first_name + ' ' + request.customer_last_name}</span>
+                                                    {request.customer_phone && (
+                                                        <span className="text-gray-400 text-xs truncate">{request.customer_phone}</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -650,48 +441,37 @@ export const RequestsView: React.FC = () => {
                                                     ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                     : request.status === 'APPROVED'
                                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                        : request.status === 'EXECUTED'
-                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
-                                                            : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                        : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                     }`}
                                             >
-                                                {request.status === 'PENDING' ? t('admin.status.pending') : 
-                                                 request.status === 'APPROVED' ? t('admin.status.approved') : 
-                                                 request.status === 'REJECTED' ? t('admin.status.rejected') : 
-                                                 request.status === 'EXECUTED' ? 'Început' : 
-                                                 request.status.charAt(0) + request.status.slice(1).toLowerCase()}
+                                                {request.status === 'PENDING' ? t('admin.status.pending') :
+                                                    request.status === 'APPROVED' ? t('admin.status.approved') :
+                                                        request.status === 'REJECTED' ? t('admin.status.rejected') : ''
+                                                }
                                             </span>
                                         </div>
 
                                         {/* Car Info */}
                                         <div className="flex items-center gap-3 mb-4 pb-4 border-b border-white/10">
                                             <img
-                                                src={request.avatar}
-                                                alt={request.carName}
+                                                src={request.car.image_url || ''}
+                                                alt={getCarName(request.car)}
                                                 className="w-12 h-12 object-cover rounded-md border border-white/10 flex-shrink-0"
                                             />
-                                            <span className="text-white font-medium text-sm flex-1">{request.carName}</span>
+                                            <span className="text-white font-medium text-sm flex-1">{getCarName(request.car)}</span>
                                         </div>
 
                                         {/* Dates and Amount */}
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.pickup')}</p>
-                                                <p className="text-white text-sm font-medium">{(() => {
-                                                    const [year, month, day] = request.pickupDate.split('-').map(Number);
-                                                    const date = new Date(year, month - 1, day);
-                                                    return date.toLocaleDateString();
-                                                })()}</p>
-                                                <p className="text-gray-400 text-xs">{request.pickupTime}</p>
+                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</p>
+                                                <p className="text-gray-400 text-xs">{request.start_time}</p>
                                             </div>
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.return')}</p>
-                                                <p className="text-white text-sm font-medium">{(() => {
-                                                    const [year, month, day] = request.returnDate.split('-').map(Number);
-                                                    const date = new Date(year, month - 1, day);
-                                                    return date.toLocaleDateString();
-                                                })()}</p>
-                                                <p className="text-gray-400 text-xs">{request.returnTime}</p>
+                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</p>
+                                                <p className="text-gray-400 text-xs">{request.end_time}</p>
                                             </div>
                                         </div>
 
@@ -699,7 +479,7 @@ export const RequestsView: React.FC = () => {
                                         <div className="mt-4 pt-4 border-t border-white/10">
                                             <p className="text-gray-400 text-xs mb-1">{t('admin.requests.amount')}</p>
                                             <p className="text-white font-semibold text-base">
-                                                {calculateRequestTotalPrice(request).toLocaleString()} MDL
+                                                {formatAmount(request.total_amount)} MDL
                                             </p>
                                         </div>
                                     </div>
@@ -733,70 +513,56 @@ export const RequestsView: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/10">
-                                    {filteredRequests.map((request) => {
-                                        const getInitials = (name: string) => {
-                                            const parts = name.trim().split(' ');
-                                            if (parts.length >= 2) {
-                                                return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-                                            }
-                                            return name.substring(0, 2).toUpperCase();
-                                        };
-
+                                    {requests.map((request) => {
                                         return (
                                             <tr
                                                 key={request.id}
                                                 className="border-b border-white/10 hover:bg-white/5 transition cursor-pointer"
                                                 onClick={() => {
-                                                    setSelectedRequest(request);
-                                                    setShowRequestDetailsModal(true);
+                                                    handleSelectRequest(request)
                                                 }}
                                             >
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
-                                                            {getInitials(request.customerName || 'U')}
+                                                            {getInitials(request.customer_name || 'U')}
                                                         </div>
                                                         <div className="flex flex-col min-w-0">
-                                                            <span className="font-semibold text-white text-sm truncate">{request.customerName}</span>
-                                                            {request.customerPhone && (
-                                                                <span className="text-gray-400 text-xs truncate">{request.customerPhone}</span>
+                                                            <span className="font-semibold text-white text-sm truncate">{request.customer_name}</span>
+                                                            {request.customer_phone && (
+                                                                <span className="text-gray-400 text-xs truncate">{request.customer_phone}</span>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <img
-                                                            src={request.avatar}
-                                                            alt={request.carName}
-                                                            className="w-10 h-10 object-cover rounded-md border border-white/10 flex-shrink-0"
-                                                        />
-                                                        <span className="text-white font-medium text-sm">{request.carName}</span>
+                                                    {request.car && request.car.image_url && (
+                                                        <div className="flex items-center gap-3">
+
+                                                            <img
+                                                                src={request.car.image_url}
+                                                                alt={request.car?.make}
+                                                                className="w-10 h-10 object-cover rounded-md border border-white/10 flex-shrink-0"
+                                                            />
+                                                            <span className="text-white font-medium text-sm">{getCarName(request.car)}</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
+                                                        <span className="text-gray-400 text-xs">{request.start_time}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{(() => {
-                                                            const [year, month, day] = request.pickupDate.split('-').map(Number);
-                                                            const date = new Date(year, month - 1, day);
-                                                            return date.toLocaleDateString();
-                                                        })()}</span>
-                                                        <span className="text-gray-400 text-xs">{request.pickupTime}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{(() => {
-                                                            const [year, month, day] = request.returnDate.split('-').map(Number);
-                                                            const date = new Date(year, month - 1, day);
-                                                            return date.toLocaleDateString();
-                                                        })()}</span>
-                                                        <span className="text-gray-400 text-xs">{request.returnTime}</span>
+                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
+                                                        <span className="text-gray-400 text-xs">{request.end_time}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-white font-semibold text-sm">
-                                                        {calculateRequestTotalPrice(request).toLocaleString()} MDL
+                                                        {formatAmount(request.total_amount)} MDL
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -805,16 +571,12 @@ export const RequestsView: React.FC = () => {
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : request.status === 'APPROVED'
                                                                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                                : request.status === 'EXECUTED'
-                                                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
-                                                                    : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                             }`}
                                                     >
-                                                        {request.status === 'PENDING' ? t('admin.status.pending') : 
-                                                         request.status === 'APPROVED' ? t('admin.status.approved') : 
-                                                         request.status === 'REJECTED' ? t('admin.status.rejected') : 
-                                                         request.status === 'EXECUTED' ? 'Început' : 
-                                                         request.status.charAt(0) + request.status.slice(1).toLowerCase()}
+                                                        {request.status === 'PENDING' ? t('admin.status.pending') :
+                                                            request.status === 'APPROVED' ? t('admin.status.approved') :
+                                                                request.status === 'REJECTED' ? t('admin.status.rejected') : ''}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -829,6 +591,35 @@ export const RequestsView: React.FC = () => {
                         {searchQuery ? t('admin.requests.noRequests') : t('admin.requests.noRequests')}
                     </div>
                 )}
+            </div>
+
+            {/* Pagination */}
+            <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+                <div className="text-m text-gray-300">
+                    Showing {requests.length > 0 ? (currentPage - 1) * requestsPerPage + 1 : 0} to {Math.min(currentPage * requestsPerPage, totalRequests)} of {totalRequests} requests
+
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Previous
+                    </button>
+                    <div className="text-sm text-gray-300 px-2">
+                        Page {currentPage} of {totalPages || 1}
+                    </div>
+                    <button
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
+                    >
+                        Next
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
             {/* Add Rental Modal */}
@@ -877,24 +668,23 @@ export const RequestsView: React.FC = () => {
             {/* Request Details Modal */}
             {showRequestDetailsModal && selectedRequest && (
                 <RequestDetailsModal
-                    cars={cars}
                     request={selectedRequest}
-                    onClose={() => {
+                    handleClose={() => {
                         setShowRequestDetailsModal(false);
                         setSelectedRequest(null);
                     }}
-                    onAccept={handleAccept}
-                    onReject={handleReject}
-                    onUndoReject={handleUndoReject}
-                    onSetToPending={handleSetToPending}
-                    onEdit={handleEdit}
-                    onCancelRental={handleCancelRental}
+                    handleAccept={handleAccept}
+                    handleReject={handleReject}
+                    handleUndoReject={handleUndoReject}
+                    handleSetToPending={handleSetToPending}
+                    handleEdit={handleEdit}
+                    handleCancel={handleCancelRental}
                     isProcessing={processingRequest === selectedRequest.id.toString()}
                 />
             )}
 
             {/* Contract Creation Modal */}
-            {showContractModal && selectedRentalForContract && (() => {
+            {/* {showContractModal && selectedRentalForContract && (() => {
                 const car = cars.find(c => c.id.toString() === selectedRentalForContract.carId);
                 return car ? (
                     <ContractCreationModal
@@ -912,10 +702,10 @@ export const RequestsView: React.FC = () => {
                         }}
                     />
                 ) : null;
-            })()}
+            })()} */}
 
             {/* Contract Creation Modal for Requests */}
-            {showRequestContractModal && selectedRequestForContract && (() => {
+            {/* {showRequestContractModal && selectedRequestForContract && (() => {
                 const car = cars.find(c => c.id.toString() === selectedRequestForContract.carId);
                 return car ? (
                     <ContractCreationModal
@@ -939,7 +729,7 @@ export const RequestsView: React.FC = () => {
                         }}
                     />
                 ) : null;
-            })()}
+            })()} */}
 
             {/* Edit Request Modal */}
             {showEditModal && editingRequest && (

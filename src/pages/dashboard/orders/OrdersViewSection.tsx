@@ -3,7 +3,7 @@ import { cars as staticCars } from '../../../data/cars';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
 import { OrderDetailsModal } from '../../../components/modals/OrderDetailsModal';
 import { ContractCreationModal } from '../../../components/modals/ContractCreationModal';
-import { OrderDisplay, cancelRentalOrder, redoRentalOrder, fetchRentalsOnly, updateBorrowRequest } from '../../../lib/orders';
+import { cancelRentalOrder, redoRentalOrder, fetchRentalsOnly } from '../../../lib/orders';
 import { SalesChartCard } from '../../../components/dashboard/Chart';
 import { motion } from 'framer-motion';
 import { Save, X, Loader2 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { fetchCars } from '../../../lib/cars';
 import { fetchImagesByCarName } from '../../../lib/db/cars/cars';
-import { Car } from '../../../types';
+import { Car, OrderDisplay } from '../../../types';
 import { useNotification } from '../../../components/ui/NotificationToaster';
 import { useTranslation } from 'react-i18next';
 
@@ -70,8 +70,8 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
 
     useEffect(() => {
         if (cars.length > 0) {
-        const amount = calculateAmount();
-        setFormData(prev => ({ ...prev, amount }));
+            const amount = calculateAmount();
+            setFormData(prev => ({ ...prev, amount }));
         }
     }, [formData.startDate, formData.endDate, formData.carId, cars]);
 
@@ -172,14 +172,14 @@ const OrderFormModal: React.FC<OrderFormModalProps> = ({ onSave, onClose }) => {
                                 {cars.map((car) => {
                                     const basePrice = (car as any).pricePerDay || car.price_per_day || 0;
                                     const discount = (car as any).discount_percentage || car.discount_percentage || 0;
-                                    const finalPrice = discount > 0 
+                                    const finalPrice = discount > 0
                                         ? basePrice * (1 - discount / 100)
                                         : basePrice;
                                     const carName = (car as any).name || `${car.make || ''} ${car.model || ''}`.trim();
                                     return (
-                                    <option key={car.id} value={car.id.toString()}>
+                                        <option key={car.id} value={car.id.toString()}>
                                             {carName} - {finalPrice.toFixed(0)} MDL/day{discount > 0 ? ` (-${discount}%)` : ''}
-                                    </option>
+                                        </option>
                                     );
                                 })}
                             </select>
@@ -312,7 +312,7 @@ export const OrdersViewSection: React.FC = () => {
             try {
                 const fetchedCars = await fetchCars();
                 const carsToUse = fetchedCars.length > 0 ? fetchedCars : staticCars;
-                
+
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
                     carsToUse.map(async (car) => {
@@ -329,7 +329,7 @@ export const OrdersViewSection: React.FC = () => {
                         };
                     })
                 );
-                
+
                 setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
@@ -358,7 +358,7 @@ export const OrdersViewSection: React.FC = () => {
 
     useEffect(() => {
         if (cars.length > 0) {
-        loadOrders();
+            loadOrders();
         }
     }, [cars]);
 
@@ -527,12 +527,12 @@ export const OrdersViewSection: React.FC = () => {
         const generateChartDataForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
             const now = new Date();
             const data: { day: number; sales: number; baseline: number }[] = [];
-            
+
             // Calculate date ranges
             let startDate: Date;
             let intervals: number;
             let intervalMs: number;
-            
+
             switch (period) {
                 case '24H':
                     startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -565,30 +565,30 @@ export const OrdersViewSection: React.FC = () => {
             for (let i = 0; i < intervals; i++) {
                 const intervalStart = new Date(startDate.getTime() + i * intervalMs);
                 const intervalEnd = new Date(startDate.getTime() + (i + 1) * intervalMs);
-                
+
                 const intervalOrders = rentalOrders.filter(order => {
                     if (!order.createdAt) return false;
                     const orderDate = new Date(order.createdAt);
                     return orderDate >= intervalStart && orderDate < intervalEnd;
                 });
-                
+
                 const sales = intervalOrders.reduce((sum, order) => {
                     const amount = order.amount || parseFloat(order.total_amount || '0') || 0;
                     return sum + amount;
                 }, 0);
-                
+
                 // Baseline is 70% of average sales for visual reference
-                const avgSales = rentalOrders.length > 0 
+                const avgSales = rentalOrders.length > 0
                     ? (rentalOrders.reduce((sum, o) => sum + (o.amount || parseFloat(o.total_amount || '0') || 0), 0) / rentalOrders.length) * 0.7
                     : 0;
-                
+
                 data.push({
                     day: i + 1,
                     sales: Math.round(sales),
                     baseline: Math.round(avgSales)
                 });
             }
-            
+
             return data;
         };
 
@@ -613,7 +613,7 @@ export const OrdersViewSection: React.FC = () => {
             let periodStart: Date;
             let previousPeriodStart: Date;
             let previousPeriodEnd: Date;
-            
+
             switch (period) {
                 case '24H':
                     periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);

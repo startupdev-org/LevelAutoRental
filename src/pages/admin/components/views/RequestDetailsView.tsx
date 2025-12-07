@@ -1,34 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, ArrowLeft } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { getDateDiffInDays } from '../../../../utils/date';
-import { Car as CarType } from '../../../../types';
-import { OrderDisplay } from '../../../../lib/orders';
+import { Calendar, Clock, CheckCircle, X, RefreshCw, Edit } from 'lucide-react';
+import { formatDateLocal, getDateDiffInDays } from '../../../../utils/date';
+import { BorrowRequestDTO, Car } from '../../../../types';
+import { formatAmount } from '../../../../utils/currency';
 
 export interface RequestDetailsViewProps {
-    request: OrderDisplay;
+    request: BorrowRequestDTO;
     onBack: () => void;
-    onAccept: (request: OrderDisplay) => void;
-    onReject: (request: OrderDisplay) => void;
-    onUndoReject?: (request: OrderDisplay) => void;
-    onSetToPending?: (request: OrderDisplay) => void;
-    onEdit?: (request: OrderDisplay) => void;
-    cars: CarType[];
+    onAccept: (request: BorrowRequestDTO) => void;
+    onReject: (request: BorrowRequestDTO) => void;
+    onUndoReject?: (request: BorrowRequestDTO) => void;
+    onSetToPending?: (request: BorrowRequestDTO) => void;
+    onEdit?: (request: BorrowRequestDTO) => void;
 }
 
-export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, cars }) => {
-    const car = cars.find(c => c.id.toString() === request.carId);
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(car?.image_url ?? undefined);
+export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit }) => {
 
-    useEffect(() => {
-        if (car) {
-            setSelectedImage(car.image_url ?? undefined);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }, [car]);
-
-    if (!car) return null;
+    const car = request.car;
 
     return (
         <motion.div
@@ -48,7 +37,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                 >
                     <div className="flex items-center gap-4">
                         <img
-                            src={selectedImage}
+                            src={car.image_url || ''}
                             alt={(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}
                             className="w-32 h-20 object-cover rounded-lg border border-white/20"
                         />
@@ -72,28 +61,28 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Pickup</p>
-                                <span className="text-white text-sm font-medium">{new Date(request.pickupDate).toLocaleDateString()}</span>
+                                <span className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{request.pickupTime || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{request.start_time || '--:--'}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Return</p>
-                                <span className="text-white text-sm font-medium">{new Date(request.returnDate).toLocaleDateString()}</span>
+                                <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Time</p>
-                                <span className="text-white text-sm font-medium">{request.returnTime || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{request.end_time || '--:--'}</span>
                             </div>
                         </div>
                     </div>
@@ -101,11 +90,11 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                         <div>
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Rental Days</p>
-                            <span className="text-white text-lg font-bold">{getDateDiffInDays(request.pickupDate, request.returnDate)}</span>
+                            <span className="text-white text-lg font-bold">{getDateDiffInDays(request.start_date, request.end_date)}</span>
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Estimated Price</p>
-                            <span className="text-white text-lg font-bold">{request.amount ? `${request.amount} MDL` : '—'}</span>
+                            <span className="text-white text-lg font-bold">{formatAmount(request.total_amount)}</span>
                         </div>
                     </div>
                 </motion.div>
@@ -120,13 +109,13 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     <h2 className="text-xl font-bold text-white mb-4">Customer</h2>
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
-                            {request.customerName?.[0]?.toUpperCase() || 'C'}
+                            {request.customer_name?.[0]?.toUpperCase() || 'C'}
                         </div>
                         <div>
-                            <div className="text-white font-semibold">{request.customerName}</div>
-                            <div className="text-gray-300 text-sm">{request.customerEmail}</div>
-                            {request.customerPhone && (
-                                <div className="text-gray-300 text-sm mt-1">{request.customerPhone}</div>
+                            <div className="text-white font-semibold">{request.customer_name}</div>
+                            <div className="text-gray-300 text-sm">{request.customer_email}</div>
+                            {request.customer_phone && (
+                                <div className="text-gray-300 text-sm mt-1">{request.customer_phone}</div>
                             )}
                         </div>
                     </div>
@@ -151,9 +140,9 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                         >
                             {request.status.charAt(0) + request.status.slice(1).toLowerCase()}
                         </span>
-                        {request.createdAt && (
+                        {request.created_at && (
                             <span className="text-gray-400 text-sm">
-                                Requested on {new Date(request.createdAt).toLocaleDateString()}
+                                Requested on {new Date(request.created_at).toLocaleDateString()}
                             </span>
                         )}
                     </div>
