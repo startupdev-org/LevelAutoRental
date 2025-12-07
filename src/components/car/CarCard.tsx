@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { supabase } from '../../lib/supabase';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
+import { formatDateLocal } from '../../utils/date';
 
 
 interface CarCardProps {
@@ -29,7 +30,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
 
     // Load favorite state from localStorage
-    const getFavorites = (): number[] => {
+    const getFavorites = (): string[] => {
         try {
             const favorites = localStorage.getItem('carFavorites');
             return favorites ? JSON.parse(favorites) : [];
@@ -44,7 +45,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     });
 
     // Save favorites to localStorage
-    const saveFavorite = (carId: number, favorite: boolean) => {
+    const saveFavorite = (carId: string, favorite: boolean) => {
         const favorites = getFavorites();
         if (favorite) {
             if (!favorites.includes(carId)) {
@@ -105,10 +106,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     useEffect(() => {
         const fetchCarAvailability = async () => {
             if (!car) return;
-            
+
             try {
                 const carIdNum = typeof car.id === 'number' ? car.id : parseInt(String(car.id), 10);
-                
+
                 // Query Rentals table for all current/future rentals (not just CONTRACT/ACTIVE)
                 // Get all rentals for this car, we'll filter for current/future ones
                 const rentalsResult = await supabase
@@ -116,18 +117,18 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                     .select('*')
                     .eq('car_id', carIdNum)
                     .order('created_at', { ascending: false });
-                
+
                 // Filter for rentals that are current or future (haven't ended yet)
                 const now = new Date();
                 const rentalsData = (rentalsResult.data || []).filter((rental: any) => {
                     if (!rental.end_date) return false;
-                    
+
                     // Parse end date
                     const endDateStr = rental.end_date.includes('T')
                         ? rental.end_date.split('T')[0]
                         : rental.end_date.split(' ')[0];
                     const endDate = new Date(endDateStr);
-                    
+
                     // Add end time if available
                     if (rental.end_time) {
                         const [hours, minutes] = rental.end_time.split(':').map(Number);
@@ -135,14 +136,14 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                     } else {
                         endDate.setHours(23, 59, 59, 999);
                     }
-                    
+
                     // Include if rental hasn't ended yet
                     return endDate >= now;
                 });
-                
+
                 // Query BorrowRequest table for APPROVED requests
                 let approvedData: any[] = [];
-                
+
                 try {
                     const approvedResult = await supabase
                         .from('BorrowRequest')
@@ -150,14 +151,14 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                         .eq('car_id', carIdNum)
                         .in('status', ['APPROVED', 'EXECUTED'])
                         .order('requested_at', { ascending: false });
-                    
+
                     if (approvedResult.data && approvedResult.data.length > 0) {
                         approvedData = approvedResult.data;
                     }
                 } catch (error) {
                     // Silently fail if query doesn't work (RLS might still be blocking)
                 }
-                
+
                 // Convert rentals to borrow request format
                 const rentalRequests = rentalsData.map((rental: any) => ({
                     id: rental.id.toString(),
@@ -171,7 +172,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                     created_at: rental.created_at,
                     updated_at: rental.updated_at,
                 }));
-                
+
                 // Convert approved borrow requests to same format
                 const approvedRequests = approvedData.map((req: any) => ({
                     id: req.id.toString(),
@@ -185,24 +186,24 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                     created_at: req.requested_at || req.created_at,
                     updated_at: req.updated_at,
                 }));
-                
+
                 // Store for blocking logic
                 setCarRentalsForCalendar(rentalRequests);
                 setApprovedBorrowRequests(approvedRequests);
-                
+
                 // Combine both types
                 const allRequests = [...rentalRequests, ...approvedRequests];
-                
+
                 // Filter requests - only filter out ones with missing dates
                 const filteredRequests = allRequests.filter((request: any) => {
                     return request.start_date && request.end_date;
                 });
-                
+
                 // Calculate nextAvailableDate from combined Rentals + APPROVED requests
                 // This ensures consecutive rentals (including APPROVED) show the correct "Liber" date
                 const currentTime = new Date();
                 let latestReturnDate: Date | null = null;
-                
+
                 if (filteredRequests.length > 0) {
                     // Sort all requests (rentals + approved) by start date
                     const sortedRequests = [...filteredRequests].sort((a, b) => {
@@ -210,20 +211,20 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                         const startB = new Date(b.start_date || 0);
                         return startA.getTime() - startB.getTime();
                     });
-                    
+
                     // Find consecutive requests (no gap between them)
                     let consecutiveEndDate: Date | null = null;
-                    
+
                     for (let i = 0; i < sortedRequests.length; i++) {
                         const request = sortedRequests[i];
                         if (!request.end_date) continue;
-                        
+
                         // Parse end date
                         const endDateStr = request.end_date.includes('T')
                             ? request.end_date.split('T')[0]
                             : request.end_date.split(' ')[0];
                         const requestEndDate = new Date(endDateStr);
-                        
+
                         // Add end time
                         if (request.end_time) {
                             const [hours, minutes] = request.end_time.split(':').map(Number);
@@ -231,10 +232,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                         } else {
                             requestEndDate.setHours(17, 0, 0, 0);
                         }
-                        
+
                         // Add 12 hours maintenance period after rental ends
                         requestEndDate.setHours(requestEndDate.getHours() + 12);
-                        
+
                         // Check if this request is consecutive with the previous one
                         if (i === 0) {
                             // First request - start the chain
@@ -242,40 +243,40 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                         } else {
                             const prevRequest = sortedRequests[i - 1];
                             if (!prevRequest.end_date) continue;
-                            
+
                             // Parse previous end date
                             const prevEndDateStr = prevRequest.end_date.includes('T')
                                 ? prevRequest.end_date.split('T')[0]
                                 : prevRequest.end_date.split(' ')[0];
                             const prevEndDate = new Date(prevEndDateStr);
-                            
+
                             if (prevRequest.end_time) {
                                 const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
                                 prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
                             } else {
                                 prevEndDate.setHours(17, 0, 0, 0);
                             }
-                            
+
                             // Add 12 hours maintenance period after previous rental ends
                             prevEndDate.setHours(prevEndDate.getHours() + 12);
-                            
+
                             // Parse current start date
                             const startDateStr = request.start_date.includes('T')
                                 ? request.start_date.split('T')[0]
                                 : request.start_date.split(' ')[0];
                             const requestStartDate = new Date(startDateStr);
-                            
+
                             if (request.start_time) {
                                 const [startHours, startMinutes] = request.start_time.split(':').map(Number);
                                 requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
                             } else {
                                 requestStartDate.setHours(9, 0, 0, 0);
                             }
-                            
+
                             // Check if requests are consecutive (same day or next day with no gap)
                             const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
                             const oneDayInMs = 24 * 60 * 60 * 1000;
-                            
+
                             // If start of next request is same day or next day (within 25 hours to account for time differences)
                             if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
                                 // Consecutive - update the end date
@@ -290,19 +291,19 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             }
                         }
                     }
-                    
+
                     // Use the last consecutive end date if it's later than any individual request
                     if (consecutiveEndDate && consecutiveEndDate > currentTime) {
                         latestReturnDate = consecutiveEndDate;
                     }
                 }
-                
+
                 setNextAvailableDate(latestReturnDate);
             } catch (error) {
                 console.error('Error fetching car availability:', error);
             }
         };
-        
+
         fetchCarAvailability();
     }, [car]);
 
@@ -492,33 +493,26 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                     {/* Availability Badge */}
                     {(() => {
                         // Helper function to format date as YYYY-MM-DD (local timezone)
-                        const formatDateLocal = (date: Date): string => {
-                            const year = date.getFullYear();
-                            const month = String(date.getMonth() + 1).padStart(2, '0');
-                            const day = String(date.getDate()).padStart(2, '0');
-                            return `${year}-${month}-${day}`;
-                        };
-                        
                         // Check if a date/time is in a maintenance period (12 hours after rental ends)
                         const isInMaintenancePeriod = (checkDate: Date): boolean => {
                             if (carRentalsForCalendar.length === 0) return false;
-                            
+
                             return carRentalsForCalendar.some(rental => {
                                 if (!rental.end_date || !rental.end_time) return false;
-                                
+
                                 // Parse rental end date and time
                                 const endDateStr = rental.end_date.includes('T')
                                     ? rental.end_date.split('T')[0]
                                     : rental.end_date.split(' ')[0];
                                 const endDate = new Date(endDateStr + 'T00:00:00');
-                                
+
                                 const [endHours, endMinutes] = rental.end_time.split(':').map(Number);
                                 endDate.setHours(endHours || 17, endMinutes || 0, 0, 0);
-                                
+
                                 // Add 12 hours for maintenance period
                                 const maintenanceEnd = new Date(endDate);
                                 maintenanceEnd.setHours(maintenanceEnd.getHours() + 12);
-                                
+
                                 // Check if checkDate is within maintenance period
                                 const checkDateOnly = new Date(checkDate);
                                 checkDateOnly.setHours(0, 0, 0, 0);
@@ -526,7 +520,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                 endDateOnly.setHours(0, 0, 0, 0);
                                 const maintenanceEndOnly = new Date(maintenanceEnd);
                                 maintenanceEndOnly.setHours(0, 0, 0, 0);
-                                
+
                                 // If maintenance spans multiple days, check if checkDate is within range
                                 if (endDateOnly.getTime() === maintenanceEndOnly.getTime()) {
                                     // Same day - check if checkDate is that day
@@ -537,96 +531,96 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                 }
                             });
                         };
-                        
+
                         // Check if date is in an actual approved/executed request (for blocking)
                         // Only checks current/future bookings, not past ones
                         const isDateInActualApprovedRequest = (dateString: string): boolean => {
                             const checkDateStr = dateString.split('T')[0];
                             const checkDate = new Date(checkDateStr + 'T00:00:00');
                             checkDate.setHours(0, 0, 0, 0);
-                            
+
                             // Don't check past dates - only current/future bookings
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
                             if (checkDate < today) {
                                 return false;
                             }
-                            
+
                             // Check maintenance periods (12 hours after each rental)
                             if (isInMaintenancePeriod(checkDate)) {
                                 return true;
                             }
-                            
+
                             // Check approved/executed borrow requests
                             if (approvedBorrowRequests.length > 0) {
                                 const result = approvedBorrowRequests.some(request => {
                                     if (!request.start_date || !request.end_date) return false;
-                                    
+
                                     const startDateStr = request.start_date.includes('T')
                                         ? request.start_date.split('T')[0]
                                         : request.start_date.split(' ')[0];
                                     const startDate = new Date(startDateStr + 'T00:00:00');
                                     startDate.setHours(0, 0, 0, 0);
-                                    
+
                                     const endDateStr = request.end_date.includes('T')
                                         ? request.end_date.split('T')[0]
                                         : request.end_date.split(' ')[0];
                                     const endDate = new Date(endDateStr + 'T23:59:59');
                                     endDate.setHours(23, 59, 59, 999);
-                                    
+
                                     // Only show if the booking is current or future (end date is today or later)
                                     const isCurrentOrFuture = endDate >= today;
                                     return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
                                 });
-                                
+
                                 if (result) return true;
                             }
-                            
+
                             // Check active rentals (which come from EXECUTED requests)
                             if (carRentalsForCalendar.length > 0) {
                                 const result = carRentalsForCalendar.some(rental => {
                                     if (!rental.start_date || !rental.end_date) return false;
-                                    
+
                                     const startDateStr = rental.start_date.includes('T')
                                         ? rental.start_date.split('T')[0]
                                         : rental.start_date.split(' ')[0];
                                     const startDate = new Date(startDateStr + 'T00:00:00');
                                     startDate.setHours(0, 0, 0, 0);
-                                    
+
                                     const endDateStr = rental.end_date.includes('T')
                                         ? rental.end_date.split('T')[0]
                                         : rental.end_date.split(' ')[0];
                                     const endDate = new Date(endDateStr + 'T23:59:59');
                                     endDate.setHours(23, 59, 59, 999);
-                                    
+
                                     // Only show if the rental is current or future (end date is today or later)
                                     const isCurrentOrFuture = endDate >= today;
                                     return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
                                 });
-                                
+
                                 return result;
                             }
-                            
+
                             return false;
                         };
-                        
+
                         // Find the first available date using the same logic as the calendar
                         const findFirstAvailableDate = (): Date | null => {
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
                             const todayString = formatDateLocal(today);
-                            
+
                             // Always start checking from TODAY first
                             let checkDate = new Date(today);
-                            
+
                             // Check up to 60 days ahead
                             for (let i = 0; i < 60; i++) {
                                 const checkDateStr = formatDateLocal(checkDate);
-                                
+
                                 // Use the same blocking logic as the calendar
                                 const isPast = checkDateStr < todayString;
-                                
-                                const isBeforeAvailable = nextAvailableDate 
+
+                                const isBeforeAvailable = nextAvailableDate
                                     ? (() => {
                                         const nextAvailDate = new Date(nextAvailableDate);
                                         nextAvailDate.setHours(0, 0, 0, 0);
@@ -636,50 +630,50 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                         return nextAvailDate <= today && dayDate < nextAvailDate;
                                     })()
                                     : false;
-                                
+
                                 const isInActualRequest = isDateInActualApprovedRequest(checkDateStr);
-                                
+
                                 // If date is not blocked, this is the first available date
                                 if (!isPast && !isBeforeAvailable && !isInActualRequest) {
                                     return checkDate;
                                 }
-                                
+
                                 // Move to next day
                                 checkDate.setDate(checkDate.getDate() + 1);
                             }
-                            
+
                             return null;
                         };
-                        
+
                         const formatDateForDisplay = (date: Date): string => {
                             const day = date.getDate();
-                            const monthNames = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 
-                                               'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+                            const monthNames = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
+                                'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
                             const month = monthNames[date.getMonth()];
-                            
+
                             // Format date in Romanian: "Liber de pe 30 noiembrie"
                             return `Liber de pe ${day} ${month}`;
                         };
-                        
+
                         // Find the first available date using calendar logic (always starts from today)
                         const firstAvailableDate = findFirstAvailableDate();
-                        
+
                         // If first available date is today, show "Disponibil"
                         // Otherwise show the date
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
-                        const isAvailableToday = firstAvailableDate && 
+                        const isAvailableToday = firstAvailableDate &&
                             formatDateLocal(firstAvailableDate) === formatDateLocal(today);
-                        
-                        const availabilityText = firstAvailableDate 
-                            ? (isAvailableToday 
-                                ? 'Disponibil' 
+
+                        const availabilityText = firstAvailableDate
+                            ? (isAvailableToday
+                                ? 'Disponibil'
                                 : formatDateForDisplay(firstAvailableDate))
                             : (carWithImages.status === 'available' || carWithImages.status === 'Available' ? 'Disponibil' : carWithImages.status || '');
-                        
+
                         // Don't show badge if it says "Disponibil" (only show when there's a specific date)
                         if (!availabilityText || availabilityText === 'Disponibil') return null;
-                        
+
                         return (
                             <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
                                 <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
