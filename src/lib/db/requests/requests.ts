@@ -529,6 +529,66 @@ export async function createRentalManually(
     }
 }
 
+export async function isDateInActualApprovedRequest(
+    date: string,
+    carId: string
+): Promise<boolean> {
+    console.log(`checking if the car with id: ${carId} is available on: ${date}`)
+
+    const { data, error } = await supabase
+        .from('Rentals')
+        .select('id')
+        .eq('car_id', carId)
+        .eq('rental_status', 'APPROVED')
+        .lte('start_date', date)
+        .gte('end_date', date);
+
+    if (error) {
+        console.error('Error checking date in rental:', error.message);
+        return false;
+    }
+
+    return (data?.length ?? 0) > 0;
+}
+
+
+/**
+ * Get the start date of the earliest future approved rental for a car after a given date
+ * @param dateString The reference date (YYYY-MM-DD)
+ * @param carId The ID of the car
+ * @returns The start date string of the next rental, or null if none found
+ */
+export async function getEarliestFutureRentalStart(
+    dateString: string,
+    carId: string
+): Promise<string | null> {
+    try {
+        const { data, error } = await supabase
+            .from('Rentals')
+            .select('start_date')
+            .eq('car_id', carId)
+            .eq('rental_status', 'APPROVED')
+            .gt('start_date', dateString) // only future rentals
+            .order('start_date', { ascending: true })
+            .limit(1);
+
+        if (error) {
+            console.error('Error fetching earliest future rental start:', error.message);
+            return null;
+        }
+
+        if (!data || data.length === 0) {
+            return null; // no future rentals
+        }
+
+        return data[0].start_date;
+    } catch (err) {
+        console.error('Unexpected error in getEarliestFutureRentalStart:', err);
+        return null;
+    }
+}
+
+
 
 export function toBorrowRequestDTO(
     borrowRequest: BorrowRequest,

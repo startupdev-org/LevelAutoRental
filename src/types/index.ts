@@ -129,28 +129,36 @@ export interface BorrowRequest {
 }
 
 export interface BorrowRequestDTO {
-  id: string;
+  id?: string;
   car_id: string;
-  user_id: string;
-  start_date: Date;
+  user_id?: string | null;
+
+  start_date: Date | string;
   start_time: string;
-  end_date: Date;
+  end_date: Date | string;
   end_time: string;
+
   price_per_day: string;
   customer_name: string;
   customer_first_name: string;
   customer_last_name: string;
   customer_email: string;
   customer_phone?: string;
+
   total_amount: number;
-  comment: string;
-  options: string;
+
+  // must match original
+  comment?: string;
+
+  options: OptionsState | null;
+
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requested_at: string;
-  created_at: string;
   updated_at: string;
+
   car: Car;
 }
+
 
 export interface Rental {
   id?: string;
