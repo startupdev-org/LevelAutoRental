@@ -529,6 +529,27 @@ export async function createRentalManually(
     }
 }
 
+export async function isDateUnavailable(date: string, carId: string): Promise<boolean> {
+    const startOfDay = `${date} 00:00:00`;
+    const endOfDay = `${date} 23:59:59`;
+
+    const { data, error } = await supabase
+        .from('Rentals')
+        .select('id')
+        .eq('car_id', carId)
+        .eq('rental_status', 'APPROVED')
+        .lte('start_date', endOfDay)
+        .gte('end_date', startOfDay);
+
+    if (error) {
+        console.error("Error checking date:", error);
+        return false;
+    }
+
+    return data.length > 0;
+}
+
+
 export async function isDateInActualApprovedRequest(
     date: string,
     carId: string
@@ -559,7 +580,7 @@ export async function isDateInActualApprovedRequest(
  * @returns The start date string of the next rental, or null if none found
  */
 export async function getEarliestFutureRentalStart(
-    dateString: string,
+    dateString: Date | string,
     carId: string
 ): Promise<string | null> {
     try {

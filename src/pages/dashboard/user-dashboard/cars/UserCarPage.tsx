@@ -12,9 +12,10 @@ import { Car, CarFilterOptions, Car as CarType } from '../../../../types';
 import { fetchCarsWithMainImageFilteredPaginated } from '../../../../lib/db/cars/cars-page/cars';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { EmptyState } from '../../../../components/ui/EmptyState';
-import { UserCreateRentalModal } from '../../../../components/modals/UserCreateRentalRequestModal';
 import { supabase } from '../../../../lib/supabase';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
+import { AnimatePresence } from 'framer-motion';
+import { UserCreateRentalRequestModal } from '../../../../components/modals/UserCreateRentalRequestModal/UserCreateRentalRequestModal';
 
 
 // Cars Management View Component
@@ -82,10 +83,18 @@ export const CarsView: React.FC = () => {
         navigate(`/cars/${car.id}`);
     };
 
-    const handleRentCar = (car: CarType) => {
+    function handleOpenModal(car: CarType) {
+        console.log('[UserCarPage] opening the modal for renting the car', car?.id, car);
         setSelectedCarForRental(car);
         setIsRentalModalOpen(true);
     };
+
+    function handleCloseRentalModal() {
+        console.log('the modal is closing');
+        setIsRentalModalOpen(false);
+        setSelectedCarForRental(null);
+    }
+
 
     // Batch fetch availability data for all cars
     const fetchCarsAvailability = async (cars: CarType[]) => {
@@ -779,7 +788,8 @@ export const CarsView: React.FC = () => {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleRentCar(carWithImages);
+                                e.preventDefault();
+                                handleOpenModal(carWithImages);
                             }}
                             disabled={carWithImages.status !== 'available'}
                             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-sm font-semibold ${carWithImages.status === 'available'
@@ -924,17 +934,15 @@ export const CarsView: React.FC = () => {
             )}
 
             {/* Rental Request Modal */}
-            {isRentalModalOpen && selectedCarForRental && (
-                <UserCreateRentalModal
-                    onClose={() => {
-                        setIsRentalModalOpen(false);
-                        setSelectedCarForRental(null);
-                    }}
+            {isRentalModalOpen && (
+                <UserCreateRentalRequestModal
+                    onClose={handleCloseRentalModal}
                     car={selectedCarForRental}
-                    propApprovedBorrowRequests={carsAvailability.get(selectedCarForRental.id.toString())?.borrowRequests || []}
-                    effectiveCarRentalsForCalendar={carsAvailability.get(selectedCarForRental.id.toString())?.rentals || []}
+                    initialCarId={selectedCarForRental?.id}
                 />
+
             )}
+
         </div>
     );
 };
