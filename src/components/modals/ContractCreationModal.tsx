@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Plus, Trash2, Download, FileText } from 'lucide-react';
-import { OrderDisplay, Rental } from '../../lib/orders';
-import { Car } from '../../types';
+import { X, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Car, Rental } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
 import { useNotification } from '../ui/NotificationToaster';
 import { useTranslation } from 'react-i18next';
