@@ -1,7 +1,6 @@
 import { BorrowRequest, BorrowRequestDTO, Car, Rental } from '../../../types';
 import { getCarPrice } from '../../../utils/car/pricing';
 import { getDateDiffInDays } from '../../../utils/date';
-import { formatTimestamp } from '../../../utils/time/time';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
@@ -59,6 +58,64 @@ export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
     } catch (error) {
         console.error('Error in fetchBorrowRequests:', error);
         return [];
+    }
+}
+
+/**
+ * Fetch a single borrow request by ID
+ */
+export async function fetchBorrowRequestById(requestId: string): Promise<BorrowRequestDTO | null> {
+    try {
+        const { data, error } = await supabase
+            .from('BorrowRequest')
+            .select('*')
+            .eq('id', parseInt(requestId))
+            .single();
+
+        if (error) {
+            console.error('Error fetching borrow request by ID:', error);
+            return null;
+        }
+
+        if (!data) {
+            return null;
+        }
+
+        // Fetch the car data
+        const car = await fetchCarWithImagesById(data.car_id);
+        if (!car) {
+            console.error('Car not found for request:', data.car_id);
+            return null;
+        }
+
+        // Use the stored total_amount from database, don't recalculate
+        const requestDTO: BorrowRequestDTO = {
+            id: data.id.toString(),
+            car_id: data.car_id.toString(),
+            start_date: data.start_date,
+            start_time: data.start_time,
+            end_date: data.end_date,
+            end_time: data.end_time,
+            customer_name: data.customer_name,
+            customer_first_name: data.customer_first_name,
+            customer_last_name: data.customer_last_name,
+            customer_email: data.customer_email,
+            customer_phone: data.customer_phone,
+            comment: data.comment,
+            options: data.options,
+            status: data.status,
+            requested_at: data.requested_at,
+            updated_at: data.updated_at,
+            price_per_day: data.price_per_day?.toString() || '0',
+            total_amount: data.total_amount || 0,
+            car: car
+        };
+
+        return requestDTO;
+
+    } catch (error) {
+        console.error('Error in fetchBorrowRequestById:', error);
+        return null;
     }
 }
 
@@ -275,7 +332,7 @@ export async function updateBorrowRequest(
         customer_age?: string;
         comment?: string;
         options?: any;
-        status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'CANCELLED';
+        status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
     }
 ): Promise<{ success: boolean; error?: string }> {
     try {
@@ -491,7 +548,8 @@ export async function createUserBorrowRequest(
 
         if (car === null) throw Error('Car not found!')
 
-        const price_per_day = getCarPrice(rentalDays, car)
+        const price_per_day_str = getCarPrice(rentalDays, car)
+        const price_per_day = parseFloat(price_per_day_str);
 
         const insertData: BorrowRequest = {
             user_id: finalUserId,
@@ -707,6 +765,8 @@ export function toBorrowRequestDTO(
 ): BorrowRequestDTO {
     return {
         ...borrowRequest,
+        car_id: borrowRequest.car_id.toString(),
+        price_per_day: borrowRequest.price_per_day.toString(),
         car,
     };
 }

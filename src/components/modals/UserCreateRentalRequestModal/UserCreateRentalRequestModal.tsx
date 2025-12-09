@@ -54,18 +54,18 @@ interface PriceSummaryResult {
 }
 
 export interface CreateRentalModalProps {
+    isOpen: boolean;
     onClose: () => void;
     car?: Car | null;
     initialCarId?: string;
 }
 
 export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
+    isOpen,
     onClose,
     car,
     initialCarId,
 }) => {
-
-    console.log('the modal should be open')
 
     const { t } = useTranslation();
     const today = new Date();
@@ -505,22 +505,31 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
     }
 
     return createPortal(
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-            onClick={onClose}
-            style={{ zIndex: 10000 }}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            >
+        <AnimatePresence>
+            {isOpen && (
+                <React.Fragment key="modal-container">
+                    {/* Backdrop */}
+                    <motion.div
+                        key="backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998]"
+                        onClick={onClose}
+                    />
+
+                    {/* Modal */}
+                    <motion.div
+                        key="modal"
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                     <h2 className="text-lg sm:text-xl font-bold text-white">{t('admin.requests.createNew')}</h2>
                     <button
@@ -531,7 +540,10 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                     </button>
                 </div>
 
-                {submitSuccess ? (
+                {/* Content */}
+                <div className="overflow-y-auto max-h-[calc(95vh-200px)] md:max-h-[calc(92vh-200px)]">
+                    <React.Fragment>
+                        {submitSuccess ? (
                     /* Success View */
                     <div className="px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
                         {/* Success Message Card */}
@@ -1159,8 +1171,8 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                             {minDaysMessage}
                                                         </p>
                                                     </div>
-                                                )}
-                                            </motion.div>
+                )}
+            </motion.div>
                                         )}
                                     </AnimatePresence>
                                 </div>
@@ -1384,9 +1396,14 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                             </button>
                         </div>
                     </form>
-                )}
-            </motion.div>
-        </motion.div>,
+                        )}
+                    </React.Fragment>
+                </div>
+                </div>
+                </motion.div>
+                </React.Fragment>
+            )}
+        </AnimatePresence>,
         document.body
     );
 };

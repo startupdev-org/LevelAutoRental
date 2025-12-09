@@ -6,5 +6,5 @@ export { UsersView } from './UsersView';
 export { CarsView } from './CarsView';
 export { CarDetailsEditView } from './CarDetailsEditView';
 export { RequestsView } from './RequestsView';
-export { RequestDetailsView } from './RequestDetailsView';
+export { RequestDetailsView, RequestDetailsViewWrapper } from './RequestDetailsView';
 

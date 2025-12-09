@@ -264,8 +264,8 @@ export const RequestsView: React.FC = () => {
 
     function handleSelectRequest(request: BorrowRequestDTO) {
         console.log('should select this request: ', request)
-        setSelectedRequest(request);
-        setShowRequestDetailsModal(true);
+        // Navigate to request details view
+        setSearchParams({ section: 'requests', requestId: request.id.toString() });
     }
 
     function clearSort() {
@@ -479,7 +479,7 @@ export const RequestsView: React.FC = () => {
                                         <div className="mt-4 pt-4 border-t border-white/10">
                                             <p className="text-gray-400 text-xs mb-1">{t('admin.requests.amount')}</p>
                                             <p className="text-white font-semibold text-base">
-                                                {formatAmount(request.total_amount)} MDL
+                                                {formatAmount(request.total_amount)}
                                             </p>
                                         </div>
                                     </div>
@@ -562,7 +562,7 @@ export const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-white font-semibold text-sm">
-                                                        {formatAmount(request.total_amount)} MDL
+                                                        {formatAmount(request.total_amount)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">

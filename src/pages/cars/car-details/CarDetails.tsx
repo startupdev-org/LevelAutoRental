@@ -28,7 +28,7 @@ import { ContractSection } from '../sections/ContractSection';
 import { Car } from '../../../types';
 import { fetchCarById } from '../../../lib/cars';
 import { fetchImagesByCarName } from '../../../lib/db/cars/cars';
-import { fetchRentals, BorrowRequest } from '../../../lib/orders';
+import { fetchRentals } from '../../../lib/orders';
 import { supabase } from '../../../lib/supabase';
 import { RentalOptionsSection } from '../sections/RentalOptionsSection';
 import { useExchangeRates } from '../../../hooks/useExchangeRates';
@@ -68,7 +68,18 @@ export const CarDetails: React.FC = () => {
     const [showImageViewer, setShowImageViewer] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
-    const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<BorrowRequest[]>([]);
+    const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<Array<{
+        id: string;
+        user_id: string | null;
+        car_id: string;
+        start_date: string;
+        start_time?: string;
+        end_date: string;
+        end_time?: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+    }>>([]);
     const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
     const [minDaysMessage, setMinDaysMessage] = useState<string>('');
     const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
@@ -309,7 +320,7 @@ export const CarDetails: React.FC = () => {
             if (result) return true;
         }
         
-        // Check active rentals (which come from EXECUTED requests)
+        // Check active rentals (which come from APPROVED requests)
         if (carRentalsForCalendar.length > 0) {
             const result = carRentalsForCalendar.some(rental => {
                 if (!rental.start_date || !rental.end_date) return false;
@@ -494,7 +505,7 @@ export const CarDetails: React.FC = () => {
                 });
                 
                 // Query BorrowRequest table for APPROVED requests
-                // Note: Requires RLS policy allowing SELECT on APPROVED/EXECUTED status
+                // Note: Requires RLS policy allowing SELECT on APPROVED status
                 let approvedData: any[] = [];
                 
                 try {
@@ -502,7 +513,7 @@ export const CarDetails: React.FC = () => {
                         .from('BorrowRequest')
                         .select('*')
                         .eq('car_id', carIdNum)
-                        .in('status', ['APPROVED', 'EXECUTED'])
+                        .in('status', ['APPROVED'])
                         .order('requested_at', { ascending: false });
                     
                     if (approvedResult.data && approvedResult.data.length > 0) {
@@ -521,7 +532,7 @@ export const CarDetails: React.FC = () => {
                     start_time: rental.start_time || '09:00:00',
                     end_date: rental.end_date,
                     end_time: rental.end_time || '17:00:00',
-                    status: 'EXECUTED' as const,
+                    status: 'APPROVED' as const,
                     created_at: rental.created_at,
                     updated_at: rental.updated_at,
                 }));
@@ -545,7 +556,7 @@ export const CarDetails: React.FC = () => {
                 const allRequests = [...rentalRequests, ...approvedRequests];
                 
                 // Filter requests - only filter out ones with missing dates
-                // Don't filter by date for APPROVED/EXECUTED requests - they should all show X marks
+                // Don't filter by date for APPROVED requests - they should all show X marks
                 const filteredRequests = allRequests.filter((request: any) => {
                     // Only exclude if dates are missing
                     return request.start_date && request.end_date;
@@ -1723,13 +1734,16 @@ export const CarDetails: React.FC = () => {
                                                                 })()
                                                                 : false;
                                                             const isBeforePickup = pickupDate && dayString <= pickupDate;
-                                                            // Minimum rental is 2 days - block dates that are less than 2 days after pickup
-                                                            const isLessThanMinDays = pickupDate && (() => {
-                                                                const pickup = new Date(pickupDate);
-                                                                const returnDay = new Date(dayString);
-                                                                const diffTime = returnDay.getTime() - pickup.getTime();
-                                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                                                return diffDays < 2;
+                                                            // Minimum rental is 2 days (48 hours) - block dates that result in less than 48 hours rental time
+                                                            const isLessThanMinDays = pickupDate && pickupTime && (() => {
+                                                                const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+                                                                // For the selected day, we assume return time will be the same as pickup time or later
+                                                                // To be safe, we'll assume minimum return time (pickup time) for blocking calculation
+                                                                const returnDateTime = new Date(`${dayString}T${pickupTime}`);
+                                                                const diffMs = returnDateTime.getTime() - pickupDateTime.getTime();
+                                                                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                                                const days = Math.floor(diffHours / 24);
+                                                                return days < 2; // Less than 2 full days
                                                             })();
                                                             const isInActualRequest = isDateInActualApprovedRequest(dayString);
                                                             // Only block by future rental if pickup date is before the future rental start
@@ -1800,7 +1814,7 @@ export const CarDetails: React.FC = () => {
                                                                     }`}
                                                                     onClick={() => {
                                                                         if (isLessThanMinDays) {
-                                                                            setMinDaysMessage('Perioada minimă de închiriere este de 2 zile');
+                                                                            setMinDaysMessage('Perioada minimă de închiriere este de 2 zile (48 ore)');
                                                                             setTimeout(() => setMinDaysMessage(''), 3000);
                                                                             return;
                                                                         }
@@ -2725,13 +2739,16 @@ export const CarDetails: React.FC = () => {
                                                                 })()
                                                                 : false;
                                                             const isBeforePickup = pickupDate && dayString <= pickupDate;
-                                                            // Minimum rental is 2 days - block dates that are less than 2 days after pickup
-                                                            const isLessThanMinDays = pickupDate && (() => {
-                                                                const pickup = new Date(pickupDate);
-                                                                const returnDay = new Date(dayString);
-                                                                const diffTime = returnDay.getTime() - pickup.getTime();
-                                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                                                return diffDays < 2;
+                                                            // Minimum rental is 2 days (48 hours) - block dates that result in less than 48 hours rental time
+                                                            const isLessThanMinDays = pickupDate && pickupTime && (() => {
+                                                                const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+                                                                // For the selected day, we assume return time will be the same as pickup time or later
+                                                                // To be safe, we'll assume minimum return time (pickup time) for blocking calculation
+                                                                const returnDateTime = new Date(`${dayString}T${pickupTime}`);
+                                                                const diffMs = returnDateTime.getTime() - pickupDateTime.getTime();
+                                                                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                                                const days = Math.floor(diffHours / 24);
+                                                                return days < 2; // Less than 2 full days
                                                             })();
                                                             const isInActualRequest = isDateInActualApprovedRequest(dayString);
                                                             // Only block by future rental if pickup date is before the future rental start
@@ -2802,7 +2819,7 @@ export const CarDetails: React.FC = () => {
                                                                     }`}
                                                                     onClick={() => {
                                                                         if (isLessThanMinDays) {
-                                                                            setMinDaysMessage('Perioada minimă de închiriere este de 2 zile');
+                                                                            setMinDaysMessage('Perioada minimă de închiriere este de 2 zile (48 ore)');
                                                                             setTimeout(() => setMinDaysMessage(''), 3000);
                                                                             return;
                                                                         }
@@ -3106,7 +3123,7 @@ export const CarDetails: React.FC = () => {
             </div>
 
             {/* Rental Request Modal */}
-            {car && rentalCalculation && (
+            {car && (
                 <RentalRequestModal
                     isOpen={showRentalModal}
                     onClose={() => setShowRentalModal(false)}
