@@ -39,7 +39,7 @@ export const CarDetails: React.FC = () => {
     const { eur: eurRate, usd: usdRate, selectedCurrency, setSelectedCurrency } = useExchangeRates();
 
     // ───── CONSTANTS ─────
-    const SHOW_DATE_INPUTS = false; // Temporarily hide date inputs
+    const SHOW_DATE_INPUTS = true; // Temporarily hide date inputs
 
     // ───── STATE ─────
     const [car, setCar] = useState<Car | null>(null);
@@ -895,7 +895,7 @@ export const CarDetails: React.FC = () => {
             <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6 py-20">
                 <motion.div
                     className="text-center py-16 px-4"
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 1, y: 0 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >

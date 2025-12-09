@@ -108,18 +108,19 @@ export interface FavoriteCar {
 
 export interface BorrowRequest {
   id?: string;
-  car_id: string;
-  user_id?: string | null;
+  car_id: number;
+  user_id: string | null;
   start_date: Date | string;
   start_time: string;
   end_date: Date | string;
   end_time: string;
-  price_per_day: string;
+  price_per_day: number;
   customer_name: string;
   customer_first_name: string;
   customer_last_name: string;
   customer_email: string;
   customer_phone?: string;
+  customer_age?: number;
   total_amount: number;
   options: OptionsState | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
