@@ -319,7 +319,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
             if (result) return true;
         }
         
-        // Check active rentals (which come from EXECUTED requests)
+        // Check active rentals (which come from APPROVED requests)
         if (carRentalsForCalendar.length > 0) {
             const result = carRentalsForCalendar.some(rental => {
                 if (!rental.start_date || !rental.end_date) return false;
@@ -511,7 +511,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
                         .from('BorrowRequest')
                         .select('*')
                         .eq('car_id', carIdNum)
-                        .in('status', ['APPROVED', 'EXECUTED'])
+                        .in('status', ['APPROVED'])
                         .order('requested_at', { ascending: false });
                     
                     if (approvedResult.data && approvedResult.data.length > 0) {
@@ -530,7 +530,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
                     start_time: rental.start_time || '09:00:00',
                     end_date: rental.end_date,
                     end_time: rental.end_time || '17:00:00',
-                    status: 'EXECUTED' as const,
+                    status: 'APPROVED' as const,
                     created_at: rental.created_at,
                     updated_at: rental.updated_at,
                 }));

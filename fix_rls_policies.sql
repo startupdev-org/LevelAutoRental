@@ -1,3 +1,30 @@
+-- Fix BorrowRequest table: Remove EXECUTED status and update existing records
+
+-- First, update any existing EXECUTED records to APPROVED
+UPDATE "BorrowRequest"
+SET status = 'APPROVED'
+WHERE status = 'EXECUTED';
+
+-- Drop the trigger that was setting status to EXECUTED
+DROP TRIGGER IF EXISTS auto_execute_rental_trigger ON "BorrowRequest";
+DROP FUNCTION IF EXISTS auto_execute_rental_trigger();
+
+-- Then drop and recreate the constraint without EXECUTED
+ALTER TABLE "BorrowRequest"
+DROP CONSTRAINT IF EXISTS borrowrequest_status_check;
+
+ALTER TABLE "BorrowRequest"
+ADD CONSTRAINT borrowrequest_status_check CHECK (
+  (status)::text = ANY (
+    ARRAY[
+      'PENDING'::character varying,
+      'APPROVED'::character varying,
+      'REJECTED'::character varying,
+      'CANCELLED'::character varying
+    ]::text[]
+  )
+);
+
 -- FINAL FIX: Restore foreign key and fix RLS policies properly
 
 -- DROP the foreign key constraint entirely for guest user support
@@ -51,10 +78,10 @@ CREATE POLICY "allow_all_inserts_universal" ON "BorrowRequest"
     TO PUBLIC
     WITH CHECK (true);
 
--- Policy 2: Allow anyone to view approved/executed bookings (for availability checking)
+-- Policy 2: Allow anyone to view approved bookings (for availability checking)
 CREATE POLICY "allow_public_view_approved_bookings" ON "BorrowRequest"
     FOR SELECT
-    USING (status IN ('APPROVED', 'EXECUTED'));
+    USING (status = 'APPROVED');
 
 -- Policy 3: Allow authenticated users to view their own requests
 CREATE POLICY "allow_users_view_own_requests" ON "BorrowRequest"

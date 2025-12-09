@@ -27,7 +27,7 @@ import { NotificationToaster } from '../../components/ui/NotificationToaster';
 
 // Import extracted view components
 import { DashboardView } from './components/DashboardView';
-import { OrdersView, OrderDetailsView, CalendarView, UsersView, CarsView, CarDetailsEditView, RequestsView, RequestDetailsView } from './components/views';
+import { OrdersView, OrderDetailsView, CalendarView, UsersView, CarsView, CarDetailsEditView, RequestsView, RequestDetailsViewWrapper } from './components/views';
 
 // Import extracted modal components
 import { CarFormModal } from './components/modals/CarFormModal';
@@ -143,9 +143,9 @@ export const Admin: React.FC = () => {
         if (cars.length === 0) return;
         const loadRequestsCount = async () => {
             try {
-                const data = await fetchBorrowRequestsForDisplay(cars);
+                const response = await fetchBorrowRequestsForDisplay(1, 1000); // Get all requests for counting
                 // Only count requests with PENDING status
-                const pendingRequests = data.filter(request => request.status === 'PENDING');
+                const pendingRequests = response.data.filter(request => request.status === 'PENDING');
                 setTotalRequests(pendingRequests.length);
             } catch (error) {
                 console.error('Failed to load requests count:', error);
@@ -242,6 +242,11 @@ export const Admin: React.FC = () => {
     const renderContent = () => {
         if (orderId) {
             return <OrderDetailsView orderId={orderId} />;
+        }
+
+        const requestId = searchParams.get('requestId');
+        if (requestId && section === 'requests') {
+            return <RequestDetailsViewWrapper requestId={requestId} />;
         }
 
         switch (section) {

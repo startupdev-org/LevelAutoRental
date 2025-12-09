@@ -1,4 +1,4 @@
-import { FavoriteCar, Rental, RentalDTO } from '../../../types';
+import { FavoriteCar, Rental, RentalDTO, BorrowRequest } from '../../../types';
 import { supabase } from '../../supabase';
 import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
@@ -112,11 +112,21 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
 export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
     const user = await getLoggedUser();
 
-    const { data } = await supabase
+    // Build query to get requests for this user
+    let query = supabase
         .from('BorrowRequest')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('requested_at', { ascending: false });
+        .select('*');
+
+    // Include requests where user is the owner OR where customer_email matches
+    if (user?.id && user?.email) {
+        query = query.or(`user_id.eq.${user.id},customer_email.eq.${user.email}`);
+    } else if (user?.id) {
+        query = query.eq('user_id', user.id);
+    } else if (user?.email) {
+        query = query.eq('customer_email', user.email);
+    }
+
+    const { data } = await query.order('requested_at', { ascending: false });
 
     console.log('user borrow requests: ', data);
 

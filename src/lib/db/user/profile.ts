@@ -94,3 +94,27 @@ export async function updateProfile(user: Partial<User>) {
     }
 }
 
+/**
+ * Fetch multiple user profiles by their IDs
+ */
+export async function fetchUserProfiles(userIds: string[]): Promise<User[]> {
+    try {
+        if (userIds.length === 0) return [];
+
+        const { data, error } = await supabase
+            .from('Profiles')
+            .select('*')
+            .in('id', userIds);
+
+        if (error) {
+            console.error('Error fetching user profiles:', error);
+            return [];
+        }
+
+        return data || [];
+    } catch (err) {
+        console.error('Unexpected error fetching user profiles:', err);
+        return [];
+    }
+}
+

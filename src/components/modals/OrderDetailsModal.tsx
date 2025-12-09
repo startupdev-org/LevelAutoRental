@@ -31,6 +31,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     onOpenContractModal,
     showOrderNumber = true, // Default to showing order number for backward compatibility
 }) => {
+    console.log('OrderDetailsModal render - isOpen:', isOpen, 'order:', order?.id);
     const { t } = useTranslation();
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
     const [showContractModal, setShowContractModal] = useState(false);
@@ -328,7 +329,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         findCar();
     }, [order, cars, order?.car_id]);
 
-    if (!order) return null;
+    console.log('OrderDetailsModal checking conditions - order:', !!order, 'isOpen:', isOpen);
+    if (!order) {
+        console.log('OrderDetailsModal: No order, returning null');
+        return null;
+    }
 
     // Handle both Rental and OrderDisplay formats
     const startDate = (order as Rental).start_date || (order as OrderDisplay).pickupDate;
@@ -479,13 +484,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     };
 
 
-    if (!isOpen) return null;
+    if (!isOpen) {
+        console.log('OrderDetailsModal: Not open, returning null');
+        return null;
+    }
+    console.log('OrderDetailsModal: Rendering modal for order:', order?.id);
+
+    console.log('OrderDetailsModal: About to render portal');
 
     return (
         <>
             {createPortal(
                 <AnimatePresence>
                     {isOpen && (
+                        <>
+                            {console.log('OrderDetailsModal: Rendering modal content')}
+
                         <motion.div
                             initial={{ opacity: 1 }}
                             animate={{ opacity: 1 }}
@@ -911,6 +925,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                 </div>
                             </motion.div>
                         </motion.div>
+                        </>
                     )}
                 </AnimatePresence>,
                 document.body

@@ -5,7 +5,13 @@ import { fetchFavoriteCarsFromStorage, getUserBorrowRequests as fetchUserBorrowR
 import { supabase } from '../../../../lib/supabase';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { TabType } from '../../UserDashboard';
-import { BorrowRequest } from '../../../../lib/orders';
+import { BorrowRequest } from '../../../../types';
+
+// Extended type for borrow requests with car information
+interface BorrowRequestWithCar extends BorrowRequest {
+    car: any; // Car information is attached by getUserBorrowRequests
+    created_at?: string;
+}
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
 import { OrderDetailsModal } from '../../../../components/modals/OrderDetailsModal';
@@ -28,18 +34,18 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => {
 
-    const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[] | null>(null);
+    const [borrowRequests, setBorrowRequests] = useState<BorrowRequestWithCar[] | null>(null);
 
     const [favoriteCars, setFavoriteCars] = useState<FavoriteCar[]>([]);
 
     const [loading, setLoading] = useState(true);
 
     // Modal state for order details
-    const [selectedRequest, setSelectedRequest] = useState<BorrowRequest | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestWithCar | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Convert BorrowRequest to OrderDisplay format for modal compatibility
-    const convertBorrowRequestToOrderDisplay = (request: BorrowRequest): any => {
+    const convertBorrowRequestToOrderDisplay = (request: BorrowRequestWithCar): any => {
         const startDate = new Date(request.start_date || new Date());
         const endDate = new Date(request.end_date || new Date());
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
@@ -120,7 +126,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
 
     async function handleFetchUserBorrowRequests() {
         const requests = await fetchUserBorrowRequests();
-        setBorrowRequests(requests);
+        setBorrowRequests(requests as BorrowRequestWithCar[]);
     }
 
     async function handleFetchUserFavoriteCars() {
@@ -157,15 +163,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             <div className="mt-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ pointerEvents: 'auto' }}>
                     {/* Current Active Borrow Requests or No Current Requests State */}
-                    {borrowRequests && borrowRequests.filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED').length > 0 ? (
+                    {borrowRequests && borrowRequests.filter(r => r.status === 'APPROVED').length > 0 ? (
                         // Show all active borrow requests
                         borrowRequests
-                            .filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED')
+                            .filter(r => r.status === 'APPROVED')
                             .map((activeRequest) => {
                                 const getStatusInfo = (status: string) => {
                                     switch (status) {
-                                        case 'EXECUTED':
-                                            return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
                                         case 'APPROVED':
                                         default:
                                             return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
@@ -197,7 +201,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                                     {activeRequest.car?.make} {activeRequest.car?.model}
                                                 </h3>
                                                 <p className="text-white/80 text-xs">
-                                                    {formatDate(activeRequest.start_date)} - {formatDate(activeRequest.end_date)}
+                                                    {formatDate(activeRequest.start_date as string)} - {formatDate(activeRequest.end_date as string)}
                                                 </p>
                                             </div>
 
@@ -287,7 +291,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {borrowRequests && borrowRequests.length > 0 ? (
                     borrowRequests
-                        .filter(request => request.status === 'EXECUTED')
+                        .filter(request => {
+                            if (request.status === 'APPROVED') {
+                                // Only show APPROVED requests in history if rental period has ended
+                                const endDate = new Date(request.end_date);
+                                const now = new Date();
+                                return endDate < now;
+                            }
+                            return false; // Don't show other statuses in history
+                        })
                         .slice(0, 6)
                         .map((request) => (
                             <div
@@ -318,7 +330,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                             {request.car?.make} {request.car?.model}
                                         </h3>
                                         <p className="text-white/80 text-xs">
-                                            {formatDate(request.start_date)} - {formatDate(request.end_date)}
+                                            {formatDate(request.start_date as string)} - {formatDate(request.end_date as string)}
                                         </p>
                                     </div>
 
