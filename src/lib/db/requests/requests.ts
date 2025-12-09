@@ -385,6 +385,96 @@ export async function createUserBorrowRequest(
 
         console.log('the total amount: ', request.total_amount)
 
+        // Application-level security for guest users (since RLS is disabled)
+        if (!request.customer_email || !request.customer_first_name || !request.customer_last_name) {
+            throw new Error('Missing required customer information for booking')
+        }
+
+        // Input sanitization and validation
+        const sanitizeInput = (input: string) => input.trim().substring(0, 100) // Max 100 chars, trim whitespace
+
+        request.customer_email = request.customer_email.toLowerCase().trim()
+        request.customer_first_name = sanitizeInput(request.customer_first_name)
+        request.customer_last_name = sanitizeInput(request.customer_last_name)
+        if (request.customer_phone) {
+            request.customer_phone = request.customer_phone.trim().substring(0, 20)
+        }
+        if (request.comment) {
+            request.comment = sanitizeInput(request.comment)
+        }
+
+        // Email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(request.customer_email)) {
+            throw new Error('Invalid email format')
+        }
+
+        // Name validation (basic)
+        if (!/^[a-zA-Z\s\-']{2,50}$/.test(request.customer_first_name) ||
+            !/^[a-zA-Z\s\-']{2,50}$/.test(request.customer_last_name)) {
+            throw new Error('Invalid name format')
+        }
+
+        // Validate dates are reasonable (not too far in future/past)
+        const startDate = new Date(request.start_date)
+        const endDate = new Date(request.end_date)
+        const now = new Date()
+        const maxFutureDate = new Date()
+        maxFutureDate.setMonth(maxFutureDate.getMonth() + 6) // Max 6 months ahead
+
+        if (startDate < new Date(now.getFullYear(), now.getMonth(), now.getDate()) || startDate > maxFutureDate) {
+            throw new Error('Invalid booking dates - must be today or within 6 months')
+        }
+
+        if (endDate <= startDate) {
+            throw new Error('End date must be after start date')
+        }
+
+        // Enhanced rate limiting and abuse prevention
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+        const recentRequests = await supabase
+            .from('BorrowRequest')
+            .select('id, customer_email, created_at')
+            .eq('customer_email', request.customer_email)
+            .gte('created_at', oneHourAgo.toISOString())
+
+        // Stricter rate limiting: max 3 requests per hour per email
+        if (recentRequests.data && recentRequests.data.length >= 3) {
+            console.warn('Rate limit exceeded:', {
+                email: request.customer_email,
+                recentRequests: recentRequests.data.length,
+                timeWindow: '1 hour'
+            })
+            throw new Error('Too many booking requests. Please wait before submitting another request.')
+        }
+
+        // Additional abuse prevention: check for suspicious patterns
+        const suspiciousPatterns = [
+            /<script/i, /javascript:/i, /on\w+\s*=/i, // XSS attempts
+            /(\.\.|\/etc|passwd|shadow)/i, // Path traversal
+            /([';]+|union.*select|drop.*table)/i // SQL injection attempts
+        ]
+
+        const suspiciousData = [
+            request.customer_email,
+            request.customer_first_name,
+            request.customer_last_name,
+            request.comment
+        ].filter(field => field && suspiciousPatterns.some(pattern => pattern.test(field)))
+
+        if (suspiciousData.length > 0) {
+            console.warn('Suspicious booking request detected:', {
+                email: request.customer_email,
+                timestamp: new Date().toISOString(),
+                suspiciousFields: suspiciousData.length
+            })
+            throw new Error('Invalid request data. Please check your input.')
+        }
+
+        // Validate phone number format (basic)
+        if (request.customer_phone && !/^[\d\s\-\+\(\)]{7,20}$/.test(request.customer_phone.replace(/\s/g, ''))) {
+            throw new Error('Invalid phone number format')
+        }
+
         let finalUserId: string | null = null;
         try {
             const user = await getLoggedUser()

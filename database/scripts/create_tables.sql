@@ -84,14 +84,25 @@ CREATE TABLE IF NOT EXISTS "Reviews" (
 CREATE TABLE IF NOT EXISTS "BorrowRequest" (
     "id" SERIAL PRIMARY KEY,
     "car_id" INTEGER NOT NULL,
-    "user_id" INTEGER NOT NULL,
+    "user_id" TEXT, -- Nullable for guest users
     "start_date" TIMESTAMP NOT NULL,
+    "start_time" VARCHAR(10),
     "end_date" TIMESTAMP NOT NULL,
+    "end_time" VARCHAR(10),
+    "price_per_day" DECIMAL(10,2),
+    "total_amount" DECIMAL(10,2),
     "status" VARCHAR(50) DEFAULT 'PENDING',
+    "customer_name" VARCHAR(255),
+    "customer_first_name" VARCHAR(100),
+    "customer_last_name" VARCHAR(100),
+    "customer_email" VARCHAR(255),
+    "customer_phone" VARCHAR(50),
+    "comment" TEXT,
+    "options" JSONB,
     "requested_at" TIMESTAMP DEFAULT NOW(),
     "updated_at" TIMESTAMP DEFAULT NOW(),
-    FOREIGN KEY ("car_id") REFERENCES "Cars"("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "Users"("id") ON DELETE CASCADE
+    FOREIGN KEY ("car_id") REFERENCES "Cars"("id") ON DELETE CASCADE
+    -- Removed user_id foreign key constraint to allow guest users
 );
 
 -- Optional Features table (if you want to keep features normalized)
