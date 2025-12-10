@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, CheckCircle, X, RefreshCw, Edit, ArrowLeft, Loader2 } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, X, RefreshCw, Edit, ArrowLeft, Loader2, Pen } from 'lucide-react';
 import { formatDateLocal, getDateDiffInDays, calculateRentalDuration } from '../../../../utils/date';
 import { BorrowRequestDTO, Car } from '../../../../types';
 import { formatAmount } from '../../../../utils/currency';
@@ -10,6 +10,7 @@ import { rentalOptions } from '../../../../constants/rentalOptions';
 import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { fetchBorrowRequestById } from '../../../../lib/db/requests/requests';
 import { useTranslation } from 'react-i18next';
+import { EditRequestModal } from '../modals/EditRequestModal';
 
 export interface RequestDetailsViewProps {
     request: BorrowRequestDTO;
@@ -140,11 +141,10 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                         <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-white text-sm font-medium">{option.label}</span>
-                                                <span className={`text-xs px-2 py-1 rounded ${
-                                                    option.price.includes('+') ? 'bg-red-500/20 text-red-300' :
+                                                <span className={`text-xs px-2 py-1 rounded ${option.price.includes('+') ? 'bg-red-500/20 text-red-300' :
                                                     option.price === 'Gratuit' ? 'bg-green-500/20 text-green-300' :
-                                                    'bg-gray-500/20 text-gray-300'
-                                                }`}>
+                                                        'bg-gray-500/20 text-gray-300'
+                                                    }`}>
                                                     {option.price}
                                                 </span>
                                             </div>
@@ -200,12 +200,17 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                         >
                             {request.status === 'PENDING' ? 'În Așteptare' :
                                 request.status === 'APPROVED' ? 'Aprobat' :
-                                request.status === 'REJECTED' ? 'Respins' :
-                                request.status.charAt(0) + request.status.slice(1).toLowerCase()}
+                                    request.status === 'REJECTED' ? 'Respins' : ''}
                         </span>
-                        {request.created_at && (
+                        {request.updated_at && (
+
                             <span className="text-gray-400 text-sm">
-                                Cerut la {new Date(request.created_at).toLocaleDateString('ro-RO')}
+                                Actualizata ultima data pe {formatDateLocal(request.updated_at)}
+                            </span>
+                        )}
+                        {request.requested_at && (
+                            <span className="text-gray-400 text-sm">
+                                Solicitata la {formatDateLocal(request.requested_at)}
                             </span>
                         )}
                     </div>
@@ -258,14 +263,14 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     {request.status === 'APPROVED' && (typeof onSetToPending !== 'undefined' || typeof onReject !== 'undefined') && (
                         <>
                             {onSetToPending && (
-                                    <button
-                                        onClick={() => onSetToPending(request)}
-                                        disabled={isProcessing}
-                                        className="w-full bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 hover:border-yellow-500/60 text-yellow-300 hover:text-yellow-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
-                                        Setează ca În Așteptare
-                                    </button>
+                                <button
+                                    onClick={() => onSetToPending(request)}
+                                    disabled={isProcessing}
+                                    className="w-full bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 hover:border-yellow-500/60 text-yellow-300 hover:text-yellow-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
+                                    Setează ca În Așteptare
+                                </button>
                             )}
                             {onReject && (
                                 <button
@@ -276,34 +281,35 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                     Respinge Cererea
                                 </button>
                             )}
+                            {onEdit && (
+                                <button
+                                    onClick={() => onEdit(request)}
+                                    className="w-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 hover:border-green-500/60 text-green-300 hover:text-green-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2"
+                                >
+                                    <Pen className="w-4 h-4" />
+                                    Editeaza Cererea
+                                </button>
+                            )}
                         </>
                     )}
-                    {request.status === 'REJECTED' && (onUndoReject || onEdit) && (
+                    {request.status === 'REJECTED' && (onUndoReject) && (
                         <div className="flex flex-col sm:flex-row gap-2">
                             {onUndoReject && (
-                                    <button
-                                        onClick={() => onUndoReject(request)}
-                                        disabled={isProcessing}
-                                        className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
-                                        Anulează Respingerea
-                                    </button>
-                            )}
-                            {onEdit && (
-                                    <button
-                                        onClick={() => onEdit(request)}
-                                        disabled={isProcessing}
-                                        className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/60 text-blue-300 hover:text-blue-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                        Editează Cererea
-                                    </button>
+                                <button
+                                    onClick={() => onUndoReject(request)}
+                                    disabled={isProcessing}
+                                    className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 hover:border-emerald-500/60 text-emerald-300 hover:text-emerald-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
+                                    Anulează Respingerea
+                                </button>
                             )}
                         </div>
                     )}
                 </motion.div>
             </aside>
+
+
         </motion.div>
     );
 };
@@ -320,6 +326,9 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    const [isEditing, setIsEditing] = useState(false);
+
 
     useEffect(() => {
         const loadRequest = async () => {
@@ -429,15 +438,23 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     const handleSetToPending = async (request: BorrowRequestDTO) => {
         if (isProcessing) return;
 
+        if (!request.id) {
+            console.error('Request has no ID:', request);
+            alert('Request ID is missing.');
+            return;
+        }
+
         setIsProcessing(true);
         try {
             console.log('Setting request to pending:', request);
+
+            // Call the update function
             const result = await updateBorrowRequest(request.id, { status: 'PENDING' });
             console.log('Set to pending result:', result);
 
             if (result.success) {
-                // Update local state to reflect the change
-                setRequest(prev => prev ? { ...prev, status: 'PENDING' } : null);
+                // Update local state safely
+                setRequest(prev => (prev?.id === request.id ? { ...prev, status: 'PENDING' } : prev));
             } else {
                 alert(`Eroare la setarea statusului: ${result.error || 'Eroare necunoscută'}`);
             }
@@ -449,10 +466,39 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
         }
     };
 
-    const handleEdit = (request: BorrowRequestDTO) => {
+    function handleOpenEditModal() {
+        setIsEditing(true)
+    }
+    function handleCloseEditModal() {
+        setIsEditing(false)
+    }
+
+
+    const handleEdit = async (request: BorrowRequestDTO) => {
         // TODO: Implement edit functionality
-        console.log('Edit request:', request);
-        alert('Funcționalitatea de editare va fi implementată în curând');
+        // alert('Funcționalitatea de editare va fi implementată în curând');
+
+        if (isProcessing) return;
+
+        try {
+            console.log('Editing request:', request);
+            const updates = request;
+            const result = await updateBorrowRequest(request.id, updates)
+            console.log('Editing request result:', result);
+
+            if (result.success) {
+                // Update local state to reflect the change
+                console.log('succes la editarea cererii')
+            } else {
+                alert(`Eroare la editarea cererii: ${result.error || 'Eroare necunoscută'}`);
+            }
+        } catch (error) {
+            console.error('Error editing request:', error);
+            alert('Eroare la setarea statusului');
+        } finally {
+            setIsProcessing(false);
+        }
+
     };
 
     if (loading) {
@@ -485,16 +531,30 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     }
 
     return (
-        <RequestDetailsView
-            request={request}
-            onBack={handleBack}
-            onAccept={handleAccept}
-            onReject={handleReject}
-            onUndoReject={handleUndoReject}
-            onSetToPending={handleSetToPending}
-            onEdit={handleEdit}
-            isProcessing={isProcessing}
-        />
+        <>
+            <RequestDetailsView
+                request={request}
+                onBack={handleBack}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                onUndoReject={handleUndoReject}
+                onSetToPending={handleSetToPending}
+                onEdit={handleOpenEditModal}
+                isProcessing={isProcessing}
+            />
+
+            {
+                isEditing && (
+                    <>
+                        <EditRequestModal
+                            request={request}
+                            onSave={handleEdit}
+                            onClose={handleCloseEditModal}
+                            cars={[]} />
+                    </>
+                )
+            }
+        </>
     );
 };
 

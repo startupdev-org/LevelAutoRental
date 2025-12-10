@@ -135,6 +135,7 @@ export async function fetchBorrowRequestsForDisplay(
     filters?: BorrowRequestFilters
 ): Promise<{ data: BorrowRequestDTO[]; total: number }> {
     try {
+        // console.log('fetching requests with filters: ', filters)
         const from = (page - 1) * limit
         const to = from + limit - 1
 
@@ -179,6 +180,8 @@ export async function fetchBorrowRequestsForDisplay(
             console.error('Error fetching requests:', error)
             return { data: [], total: 0 }
         }
+
+        // console.log('the requests are: ', allRequests)
 
         const borrowRequestDTOs = await Promise.all(
             allRequests.map(async (request) => {
@@ -269,15 +272,24 @@ export async function acceptBorrowRequest(
 /**
  * Reject a borrow request
  */
-export async function rejectBorrowRequest(requestId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+export async function rejectBorrowRequest(
+    requestId: string,
+    reason?: string
+): Promise<{ success: boolean; error?: string }> {
     try {
+        // Build the update object dynamically
+        const updateData: Record<string, any> = {
+            status: 'REJECTED',
+            updated_at: new Date().toISOString(),
+        };
+
+        if (reason != null && reason.trim() !== '') {
+            updateData.reason = reason.trim();
+        }
+
         const { error } = await supabase
             .from('BorrowRequest')
-            .update({
-                status: 'REJECTED',
-                updated_at: new Date().toISOString(),
-                // Store rejection reason if there's a notes/comment field
-            })
+            .update(updateData)
             .eq('id', requestId);
 
         if (error) {
@@ -287,9 +299,13 @@ export async function rejectBorrowRequest(requestId: string, reason?: string): P
         return { success: true };
     } catch (error) {
         console.error('Error rejecting borrow request:', error);
-        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }
+
 
 /**
  * Undo reject a borrow request (restore to PENDING)
@@ -320,20 +336,7 @@ export async function undoRejectBorrowRequest(requestId: string): Promise<{ succ
  */
 export async function updateBorrowRequest(
     requestId: string,
-    updates: {
-        car_id?: string;
-        start_date?: string;
-        start_time?: string;
-        end_date?: string;
-        end_time?: string;
-        customer_name?: string;
-        customer_email?: string;
-        customer_phone?: string;
-        customer_age?: string;
-        comment?: string;
-        options?: any;
-        status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-    }
+    updates: Partial<BorrowRequestDTO>
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const updateData: any = {
@@ -348,7 +351,7 @@ export async function updateBorrowRequest(
         if (updates.customer_name !== undefined) updateData.customer_name = updates.customer_name;
         if (updates.customer_email !== undefined) updateData.customer_email = updates.customer_email;
         if (updates.customer_phone !== undefined) updateData.customer_phone = updates.customer_phone;
-        if (updates.customer_age !== undefined) updateData.customer_age = updates.customer_age;
+        // if (updates.customer_age !== undefined) updateData.customer_age = updates.customer_age;
         if (updates.comment !== undefined) updateData.comment = updates.comment;
         if (updates.options !== undefined) updateData.options = typeof updates.options === 'string' ? updates.options : JSON.stringify(updates.options);
         if (updates.status !== undefined) updateData.status = updates.status;
@@ -763,8 +766,13 @@ export function toBorrowRequestDTO(
     borrowRequest: BorrowRequest,
     car: Car
 ): BorrowRequestDTO {
+    if (!borrowRequest.id) {
+        throw new Error("BorrowRequest must have an id to convert to DTO");
+    }
+
     return {
         ...borrowRequest,
+        id: borrowRequest.id, // guaranteed string now
         car_id: borrowRequest.car_id.toString(),
         price_per_day: borrowRequest.price_per_day.toString(),
         car,

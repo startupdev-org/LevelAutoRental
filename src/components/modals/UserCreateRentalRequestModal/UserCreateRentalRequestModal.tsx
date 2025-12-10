@@ -13,7 +13,7 @@ import { BorrowRequest, Car, User } from '../../../types';
 import { OptionsState, RentalOption, rentalOptions } from '../../../constants/rentalOptions';
 import { getLoggedUser } from '../../../lib/db/user/profile';
 import { formatDateLocal, getDateDiffInDays } from '../../../utils/date';
-import { getCarPrice } from '../../../utils/car/pricing';
+import { calculateAmount, calculatePriceSummary, getCarPrice, PriceSummaryResult } from '../../../utils/car/pricing';
 import { fetchCarById } from '../../../lib/db/cars/cars';
 import { createUserBorrowRequest, isDateUnavailable } from '../../../lib/db/requests/requests';
 import { CarsFilterList } from '../../dashboard/user-dashboard/orders/CarsSection';
@@ -44,14 +44,7 @@ const COUNTRY_CODES = [
     { code: '+90', flag: '🇹🇷', country: 'Turkey' },
 ];
 
-interface PriceSummaryResult {
-    pricePerDay: number;
-    rentalDays: number;
-    basePrice: number;
-    additionalCosts: number;
-    totalPrice: number;
-    baseCarPrice: number;
-}
+
 
 export interface CreateRentalModalProps {
     isOpen: boolean;
@@ -96,7 +89,19 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
         price_per_day: 0,
         user_id: '',
         comment: '',
-        options: null,
+        options: {
+            pickupAtAddress: false,
+            returnAtAddress: false,
+            unlimitedKm: false,
+            speedLimitIncrease: false,
+            personalDriver: false,
+            priorityService: false,
+            tireInsurance: false,
+            childSeat: false,
+            simCard: false,
+            airportDelivery: false,
+            roadsideAssistance: false,
+        },
         requested_at: '',
         updated_at: ''
     };
@@ -230,96 +235,6 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
         airportDelivery: false
     });
 
-    const calculateAmount = (totalDays: number, pricePerDay: number) => {
-        if (!formData.start_date || !formData.end_date || !formData.car_id || !car) return 0;
-
-        let basePrice = pricePerDay * totalDays;
-
-        // Calculate additional costs from options
-        let additionalCosts = 0;
-        const baseCarPrice = pricePerDay;
-
-        // Percentage-based options (calculated on totalDays)
-        if (options.unlimitedKm) {
-            additionalCosts += baseCarPrice * totalDays * 0.5; // 50%
-        }
-        if (options.speedLimitIncrease) {
-            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
-        }
-        if (options.tireInsurance) {
-            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
-        }
-
-        // Fixed daily costs
-        if (options.personalDriver) {
-            additionalCosts += 800 * totalDays;
-        }
-        if (options.priorityService) {
-            additionalCosts += 1000 * totalDays;
-        }
-        if (options.childSeat) {
-            additionalCosts += 100 * totalDays;
-        }
-        if (options.simCard) {
-            additionalCosts += 100 * totalDays;
-        }
-        if (options.roadsideAssistance) {
-            additionalCosts += 500 * totalDays;
-        }
-
-        const total = basePrice + additionalCosts;
-
-        console.log('the total is: ', total)
-
-        // optional: round to 2 decimals for storage
-        return Math.round(total * 100) / 100;
-    };
-
-    function calculatePriceSummary(
-        selectedCar: Car,
-        formData: BorrowRequest,
-        options: OptionsState
-    ): PriceSummaryResult | null {
-        console.log('calculating the summary price')
-
-        if (!selectedCar || !formData.start_date || !formData.end_date) return null;
-
-        const rentalDays = getDateDiffInDays(formData.start_date, formData.end_date);
-        if (isNaN(rentalDays) || rentalDays <= 0) return null;
-
-        const pricePerDayStr = getCarPrice(rentalDays, selectedCar);
-        const pricePerDay = parseFloat(pricePerDayStr);
-        if (isNaN(pricePerDay)) return null;
-
-        let basePrice = pricePerDay * rentalDays;
-
-
-        let additionalCosts = 0;
-        const baseCarPrice = pricePerDay;
-
-        if (options.unlimitedKm) additionalCosts += baseCarPrice * rentalDays * 0.5;
-        if (options.speedLimitIncrease) additionalCosts += baseCarPrice * rentalDays * 0.2;
-        if (options.tireInsurance) additionalCosts += baseCarPrice * rentalDays * 0.2;
-        if (options.personalDriver) additionalCosts += 800 * rentalDays;
-        if (options.priorityService) additionalCosts += 1000 * rentalDays;
-        if (options.childSeat) additionalCosts += 100 * rentalDays;
-        if (options.simCard) additionalCosts += 100 * rentalDays;
-        if (options.roadsideAssistance) additionalCosts += 500 * rentalDays;
-
-        const totalPrice = basePrice + additionalCosts;
-
-        console.log('total price from price summary is: ', totalPrice)
-
-        return {
-            pricePerDay,
-            rentalDays,
-            basePrice,
-            additionalCosts,
-            totalPrice,
-            baseCarPrice,
-        };
-    }
-
     // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -437,7 +352,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
 
 
         // Calculate total amount
-        const totalAmount = calculateAmount(rentalDays, pricePerDay);
+        const totalAmount = calculateAmount(rentalDays, pricePerDay, formData.start_date, formData.end_date, formData.car_id, formData.options);
 
         // Prepare data with all fields including options - map to correct database column names
         const rentalData: BorrowRequest = {

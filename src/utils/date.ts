@@ -52,9 +52,9 @@ export const getDateDiffInDays = (date1: string | Date, date2: string | Date): n
  * @returns { days: number, hours: number, totalHours: number }
  */
 export function calculateRentalDuration(
-    startDateStr: string,
+    startDateStr: Date | string,
     startTimeStr: string,
-    endDateStr: string,
+    endDateStr: Date | string,
     endTimeStr: string
 ) {
     const parseTime = (timeString: string) => {

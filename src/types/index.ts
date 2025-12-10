@@ -122,7 +122,7 @@ export interface BorrowRequest {
   customer_phone?: string;
   customer_age?: number;
   total_amount: number;
-  options: OptionsState | null;
+  options: OptionsState;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
@@ -130,7 +130,7 @@ export interface BorrowRequest {
 }
 
 export interface BorrowRequestDTO {
-  id?: string;
+  id: string;
   car_id: string;
   user_id?: string | null;
 
@@ -151,7 +151,7 @@ export interface BorrowRequestDTO {
   // must match original
   comment?: string;
 
-  options: OptionsState | null;
+  options: OptionsState;
 
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requested_at: string;
