@@ -4,7 +4,7 @@ import { Car } from '../../../types';
 /**
  * Fetch car by id
  */
-export async function fetchCarById(carId: number): Promise<Car | null> {
+export async function fetchCarById(carId: string): Promise<Car | null> {
     console.log('fetching car by id from database');
     try {
         const { data, error } = await supabase

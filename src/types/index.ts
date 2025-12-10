@@ -108,7 +108,7 @@ export interface FavoriteCar {
 
 export interface BorrowRequest {
   id?: string;
-  car_id: number;
+  car_id: string;
   user_id: string | null;
   start_date: Date | string;
   start_time: string;
