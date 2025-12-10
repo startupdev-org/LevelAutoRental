@@ -123,23 +123,23 @@ export const RequestsView: React.FC = () => {
 
     const handleAccept = async (request: BorrowRequestDTO) => {
         console.log('should accept the request: ', request)
-        const success = await acceptBorrowRequest(request.id)
+        const success = await acceptBorrowRequest(request.id || '')
         console.log('result: ', success)
 
-        // setProcessingRequest(request.id.toString());
+        // setProcessingRequest(request.id || ''.toString());
         // setShowRequestDetailsModal(false);
         // setSelectedRequest(null);
     };
 
     const handleReject = async (request: BorrowRequestDTO) => {
         const reason = window.prompt(`${t('admin.requests.confirmRejectRequest')} ${request.customer_name}? ${t('admin.requests.rejectReasonPrompt')}`);
-        if (reason === null) return; // User cancelled
+        // if (reason === null) return;
 
-        setProcessingRequest(request.id.toString());
+        setProcessingRequest(request.id || ''.toString());
         try {
             // If request is already APPROVED, use updateBorrowRequest instead
             if (request.status === 'APPROVED') {
-                const result = await updateBorrowRequest(request.id.toString(), { status: 'REJECTED' } as any);
+                const result = await updateBorrowRequest(request.id || ''.toString(), { status: 'REJECTED' } as any);
                 if (result.success) {
                     showSuccess(t('admin.requests.requestRejected'));
                     await loadRequests();
@@ -147,7 +147,7 @@ export const RequestsView: React.FC = () => {
                     showError(`${t('admin.requests.requestRejectFailed')} ${result.error || t('admin.common.unknownError')}`);
                 }
             } else {
-                const result = await rejectBorrowRequest(request.id.toString(), reason || undefined);
+                const result = await rejectBorrowRequest(request.id || ''.toString(), reason || undefined);
                 if (result.success) {
                     showSuccess(t('admin.requests.requestRejected'));
                     await loadRequests();
@@ -168,9 +168,9 @@ export const RequestsView: React.FC = () => {
             return;
         }
 
-        setProcessingRequest(request.id.toString());
+        setProcessingRequest(request.id || ''.toString());
         try {
-            const result = await undoRejectBorrowRequest(request.id.toString());
+            const result = await undoRejectBorrowRequest(request.id || ''.toString());
             if (result.success) {
                 showSuccess(t('admin.requests.requestRestored'));
                 await loadRequests();
@@ -190,9 +190,9 @@ export const RequestsView: React.FC = () => {
             return;
         }
 
-        setProcessingRequest(request.id.toString());
+        setProcessingRequest(request.id || ''.toString());
         try {
-            const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
+            const result = await updateBorrowRequest(request.id || ''.toString(), { status: 'PENDING' } as any);
             if (result.success) {
                 showSuccess(t('admin.requests.requestSetToPending'));
                 await loadRequests();
@@ -217,7 +217,7 @@ export const RequestsView: React.FC = () => {
             return;
         }
 
-        setProcessingRequest(request.id.toString());
+        setProcessingRequest(request.id || ''.toString());
         try {
             const requestId = typeof request.id === 'string' ? parseInt(request.id) : request.id;
 
@@ -235,7 +235,7 @@ export const RequestsView: React.FC = () => {
             }
 
             // Then, set the request status to PENDING
-            const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
+            const result = await updateBorrowRequest(request.id || ''.toString(), { status: 'PENDING' } as any);
             if (result.success) {
                 showSuccess('Închirierea a fost anulată și cererea a fost setată la În Asteptare');
                 await loadRequests();
@@ -265,7 +265,8 @@ export const RequestsView: React.FC = () => {
     function handleSelectRequest(request: BorrowRequestDTO) {
         console.log('should select this request: ', request)
         // Navigate to request details view
-        setSearchParams({ section: 'requests', requestId: request.id.toString() });
+        const requestId = request.id || '';
+        setSearchParams({ section: 'requests', requestId: requestId.toString() });
     }
 
     function clearSort() {
@@ -679,7 +680,7 @@ export const RequestsView: React.FC = () => {
                     handleSetToPending={handleSetToPending}
                     handleEdit={handleEdit}
                     handleCancel={handleCancelRental}
-                    isProcessing={processingRequest === selectedRequest.id.toString()}
+                    isProcessing={processingRequest === selectedRequest?.id?.toString()}
                 />
             )}
 
@@ -738,6 +739,10 @@ export const RequestsView: React.FC = () => {
                     request={editingRequest}
                     onSave={async (updatedData) => {
                         try {
+                            if (!editingRequest?.id) {
+                                console.error("Editing request has no ID");
+                                return;
+                            }
                             const result = await updateBorrowRequest(editingRequest.id.toString(), updatedData);
                             if (result.success) {
                                 alert(t('admin.requests.requestUpdated'));
