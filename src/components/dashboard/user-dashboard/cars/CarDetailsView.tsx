@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Car } from "../../../../types";
-import { Loader2 } from "lucide-react";
 import { LoadingState } from "../../../ui/LoadingState";
 
 // Car Details/Edit View Component
@@ -49,10 +48,10 @@ export const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: o
                             {/* Availability status badge */}
                             <span
                                 className={`px-3 py-1 rounded-full text-sm font-semibold border backdrop-blur-xl ${fullCar.status === 'borrowed'
-                                        ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                        : fullCar.status === 'MAINTENANCE'
-                                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                                    ? 'bg-red-500/20 text-red-300 border-red-500/50'
+                                    : fullCar.status === 'MAINTENANCE'
+                                        ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                                     }`}
                             >
                                 {fullCar.status === 'borrowed'
@@ -110,7 +109,7 @@ export const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: o
                             <label className="block text-sm font-medium text-gray-300 mb-2">Price Per Day (MDL)</label>
                             <input
                                 type="number"
-                                value={fullCar.price_per_day || ''}
+                                value={fullCar.price_over_30_days || ''}
                                 readOnly
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
                                 required
