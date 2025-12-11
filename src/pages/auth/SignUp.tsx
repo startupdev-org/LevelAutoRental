@@ -190,7 +190,10 @@ export const SignUp: React.FC = () => {
                                         <input
                                             type="text"
                                             value={firstName}
-                                            onChange={(e) => setFirstName(e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/[0-9]/g, "");
+                                                setFirstName(value);
+                                            }}
                                             required
                                             className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
                                             placeholder={t("auth.register.right-part.first-name-placeholder")}
@@ -207,7 +210,10 @@ export const SignUp: React.FC = () => {
                                         <input
                                             type="text"
                                             value={lastName}
-                                            onChange={(e) => setLastName(e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/[0-9]/g, "");
+                                                setLastName(value);
+                                            }}
                                             required
                                             className="pl-10 pr-3 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition"
                                             placeholder={t("auth.register.right-part.last-name-placeholder")}
