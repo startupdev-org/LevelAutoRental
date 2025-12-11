@@ -34,6 +34,7 @@ export const UsersPage: React.FC = () => {
     const [sortBy, setSortBy] = useState<'name' | 'email' | 'role' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [userOrders, setUserOrders] = useState<OrderDisplay[]>([]);
+    const [isModalOpening, setIsModalOpening] = useState(false);
     const pageSize = 10;
 
     // Load users from Profiles table and orders
@@ -192,6 +193,11 @@ export const UsersPage: React.FC = () => {
         }
     };
 
+    // Debug selectedUser changes
+    useEffect(() => {
+        console.log('selectedUser changed:', selectedUser);
+    }, [selectedUser]);
+
     // Get user orders for selected user
     const selectedUserOrders = selectedUser
         ? userOrders.filter(order => {
@@ -295,7 +301,14 @@ export const UsersPage: React.FC = () => {
                             <div
                                 key={user.id}
                                 className={`bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition cursor-pointer ${selectedUser?.id === user.id ? "bg-white/10" : ""}`}
-                                onClick={() => setSelectedUser(user)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isModalOpening) {
+                                        setIsModalOpening(true);
+                                        setSelectedUser(user);
+                                        setTimeout(() => setIsModalOpening(false), 300);
+                                    }
+                                }}
                             >
                                 {/* Header: User Info and Role */}
                                 <div className="flex items-start justify-between mb-4">
@@ -382,7 +395,14 @@ export const UsersPage: React.FC = () => {
                                     <tr
                                         key={user.id}
                                         className={`border-b border-white/10 hover:bg-white/5 transition cursor-pointer ${selectedUser?.id === user.id ? "bg-white/5" : ""}`}
-                                        onClick={() => setSelectedUser(user)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!isModalOpening) {
+                                                setIsModalOpening(true);
+                                                setSelectedUser(user);
+                                                setTimeout(() => setIsModalOpening(false), 300);
+                                            }
+                                        }}
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -468,7 +488,10 @@ export const UsersPage: React.FC = () => {
             {/* User Details Modal */}
             <UserDetailsModal
                 isOpen={selectedUser !== null}
-                onClose={() => setSelectedUser(null)}
+                onClose={() => {
+                    setSelectedUser(null);
+                    setIsModalOpening(false);
+                }}
                 user={selectedUser}
                 userOrders={selectedUserOrders}
             />
@@ -488,7 +511,13 @@ interface UserDetailsModalProps {
 const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, user, userOrders }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    if (!isOpen || !user) return null;
+
+    console.log('UserDetailsModal render:', { isOpen, user: !!user, userOrdersLength: userOrders.length });
+
+    if (!isOpen || !user) {
+        console.log('UserDetailsModal returning null:', { isOpen, user: !!user });
+        return null;
+    }
 
     const formatDate = (dateString: string | undefined) => {
         if (!dateString) return 'N/A';
@@ -508,6 +537,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
     };
 
 
+    console.log('UserDetailsModal about to render portal');
+
+    console.log('UserDetailsModal rendering modal with isOpen:', isOpen, 'user:', !!user);
+
     return createPortal(
         <AnimatePresence>
             {isOpen && (
@@ -516,7 +549,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-                    onClick={onClose}
+                    onClick={(e) => {
+                        console.log('Backdrop clicked, closing modal');
+                        onClose();
+                    }}
                     style={{ zIndex: 10000 }}
                 >
                     <motion.div
