@@ -44,7 +44,6 @@ export interface Testimonial {
   id: string;
   name: string;
   userName: string;
-  avatar: string;
   rating: number;
   comment: string;
   location: string;

@@ -21,7 +21,7 @@ export const Testimonials: React.FC = () => {
           </p>
         </div>
 
-        <TestimonialSlider 
+        <TestimonialSlider
           testimonials={testimonials}
           showArrows={true}
           autoplay={true}

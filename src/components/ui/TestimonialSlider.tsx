@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import Slider from 'react-slick';
 import { useTranslation } from 'react-i18next';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
+import { Testimonial } from '../../types';
 
 // Add inline styles for the slider
 const SliderStyles = () => (
-  <style dangerouslySetInnerHTML={{ __html: `
+  <style dangerouslySetInnerHTML={{
+    __html: `
     .slick-slider {
       position: relative;
       display: block;
@@ -85,7 +87,7 @@ const SliderStyles = () => (
 );
 
 interface TestimonialCardProps {
-  review: any;
+  review: Testimonial;
 }
 
 const TestimonialCard = ({ review }: TestimonialCardProps) => {
@@ -118,13 +120,13 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
+
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      
+
       const rotateX = (y - centerY) / 15;
       const rotateY = (centerX - x) / 15;
-      
+
       card.style.transform = `
         perspective(1000px) 
         rotateX(${rotateX}deg) 
@@ -147,7 +149,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
   }, []);
 
   return (
-    <div 
+    <div
       ref={cardRef}
       className="relative w-full h-[450px] cursor-pointer rounded-[20px] shadow-md transition-all duration-500 overflow-hidden border border-red-500/10 hover:border-red-500/20 my-14"
       style={{
@@ -166,7 +168,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
       {/* Quote icon */}
       <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-15 transition-opacity duration-300">
         <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
+          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z" />
         </svg>
       </div>
 
@@ -211,7 +213,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
 
         {/* Review Content */}
         <div className="flex-grow mb-6">
-          <p className="text-base leading-relaxed font-medium text-white">"{review.comment}"</p>
+          <p className="text-base leading-relaxed font-medium text-white">{t(review.comment)}</p>
         </div>
 
         {/* Customer Info */}
@@ -224,7 +226,7 @@ const TestimonialCard = ({ review }: TestimonialCardProps) => {
             </div>
             <div className="absolute -bottom-[-1px] -right-[-1px] w-3 h-3 bg-red-500 rounded-full border border-white"></div>
           </div>
-          
+
           <div className="flex-grow">
             <h4 className="font-bold text-base mb-1 text-white">{review.userName}</h4>
             <p className="text-sm font-medium text-white">{t('testimonials.verifiedClient')}</p>
@@ -242,11 +244,11 @@ interface TestimonialSliderProps {
   autoplaySpeed?: number;
 }
 
-export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({ 
-  testimonials, 
-  showArrows = true, 
-  autoplay = false, 
-  autoplaySpeed = 4000 
+export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
+  testimonials,
+  showArrows = true,
+  autoplay = false,
+  autoplaySpeed = 4000
 }) => {
   const sliderRef = useRef<Slider>(null);
   const [isMobile, setIsMobile] = React.useState(false);
@@ -255,10 +257,10 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -298,7 +300,7 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
           </div>
         ))}
       </Slider>
-      
+
       {/* Desktop Navigation Arrows - Side positioning */}
       {showArrows && (
         <>
@@ -307,16 +309,16 @@ export const TestimonialSlider: React.FC<TestimonialSliderProps> = ({
             className="hidden md:block absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-32 z-10 w-14 h-14 rounded-full shadow-sm transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mx-auto transition-transform duration-300 group-hover:-translate-x-0.5">
-              <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+              <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
             </svg>
           </button>
-          
+
           <button
             onClick={() => sliderRef.current?.slickNext()}
             className="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-32 z-10 w-14 h-14 rounded-full shadow-sm transition-all duration-300 bg-white border-2 border-gray-200 hover:border-red-500 hover:bg-red-500 text-gray-600 hover:text-white group"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mx-auto transition-transform duration-300 group-hover:translate-x-0.5">
-              <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+              <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
             </svg>
           </button>
         </>

@@ -352,6 +352,14 @@
                 "Vânzare": "Sale",
                 "Detailing auto": "Auto Detailing"
             },
+            "home-page": {
+                "1": "Amazing service! The car was clean, reliable, and the booking process was incredibly simple. I will definitely use it again!",
+                "2": "The best car rental experience I've ever had. Great prices, excellent customer service, and the car exceeded my expectations.",
+                "3": "Very professional service. Pickup was fast and the car was exactly as described. Highly recommended!",
+                "4": "Fantastic experience from start to finish. The website is easy to use and the car was perfect for our family trip.",
+                "5": "Excellent service! The car was in perfect condition, and the booking process was very simple. Reasonable prices, highly recommended!",
+                "6": "Very satisfied with the service! The car matched the description, and the staff was professional. Will definitely use again."
+            },
             "comments": {
                 "1": "I've had experience with several rental services, and this is probably one of the fastest and most reliable. Well-maintained cars, transparent and well-detailed contract, no special conditions or extra payment for cross-border trips, loyal. If I had to recommend a rental fleet, this would definitely be it.",
                 "2": "Everything great 🔥 service at the level, nice cars, staff rated 10. 🙌😍",
@@ -372,7 +380,6 @@
                 "19": "Fast service, good cars, fair prices. What more can you ask for? Highly recommend for anyone needing a rental car in Chisinau.",
                 "20": "I was very satisfied with the service offered. Competitive prices, good cars and friendly staff. I will definitely return for the next rental!"
             }
-
         }
     },
     "auth": {
