@@ -5,7 +5,6 @@ import {
     ArrowRight,
     Mail,
     Car,
-    User as UserIcon,
     Search,
     ArrowUpDown,
     ArrowUp,
@@ -15,9 +14,8 @@ import {
     DollarSign,
     Loader2
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { OrderDisplay } from "../../../lib/orders";
+import { OrderDisplay } from "../../../types";
 import { cars } from "../../../data/cars";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
@@ -25,7 +23,6 @@ import { useTranslation } from "react-i18next";
 
 export const UsersPage: React.FC = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -111,8 +108,8 @@ export const UsersPage: React.FC = () => {
 
         return userOrders.filter(order => {
             // Match by email (most reliable) or customer name
-            return order.customerEmail?.toLowerCase() === user.email.toLowerCase() ||
-                order.customerName?.toLowerCase() === `${user.first_name} ${user.last_name}`.toLowerCase();
+            return order.customerEmail?.toLowerCase() === (user.email || '').toLowerCase() ||
+                order.customerName?.toLowerCase() === `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase().trim();
         }).length;
     };
 
@@ -124,8 +121,8 @@ export const UsersPage: React.FC = () => {
         return userOrders
             .filter(order => {
                 // Match by email (most reliable) or customer name
-                return order.customerEmail?.toLowerCase() === user.email.toLowerCase() ||
-                    order.customerName?.toLowerCase() === `${user.first_name} ${user.last_name}`.toLowerCase();
+                return order.customerEmail?.toLowerCase() === (user.email || '').toLowerCase() ||
+                    order.customerName?.toLowerCase() === `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase().trim();
             })
             .reduce((sum, order) => sum + (order.amount || 0), 0);
     };
@@ -135,10 +132,10 @@ export const UsersPage: React.FC = () => {
         let filtered = users.filter(
             (u) => {
                 const matchesSearch =
-                    u.first_name.toLowerCase().includes(search.toLowerCase()) ||
-                    u.last_name.toLowerCase().includes(search.toLowerCase()) ||
+                    (u.first_name || '').toLowerCase().includes(search.toLowerCase()) ||
+                    (u.last_name || '').toLowerCase().includes(search.toLowerCase()) ||
                     (u.phone_number && u.phone_number.toLowerCase().includes(search.toLowerCase())) ||
-                    u.email.toLowerCase().includes(search.toLowerCase());
+                    (u.email || '').toLowerCase().includes(search.toLowerCase());
                 return matchesSearch;
             }
         );
@@ -150,16 +147,16 @@ export const UsersPage: React.FC = () => {
 
                 switch (sortBy) {
                     case 'name':
-                        aValue = `${a.first_name} ${a.last_name}`.toLowerCase();
-                        bValue = `${b.first_name} ${b.last_name}`.toLowerCase();
+                        aValue = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase().trim();
+                        bValue = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase().trim();
                         break;
                     case 'email':
-                        aValue = a.email.toLowerCase();
-                        bValue = b.email.toLowerCase();
+                        aValue = (a.email || '').toLowerCase();
+                        bValue = (b.email || '').toLowerCase();
                         break;
                     case 'role':
-                        aValue = a.role.toLowerCase();
-                        bValue = b.role.toLowerCase();
+                        aValue = (a.role || '').toLowerCase();
+                        bValue = (b.role || '').toLowerCase();
                         break;
                 }
 
@@ -202,8 +199,8 @@ export const UsersPage: React.FC = () => {
     const selectedUserOrders = selectedUser
         ? userOrders.filter(order => {
             // Match by email (most reliable) or customer name
-            return order.customerEmail?.toLowerCase() === selectedUser.email.toLowerCase() ||
-                order.customerName?.toLowerCase() === `${selectedUser.first_name} ${selectedUser.last_name}`.toLowerCase();
+            return order.customerEmail?.toLowerCase() === (selectedUser.email || '').toLowerCase() ||
+                order.customerName?.toLowerCase() === `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.toLowerCase().trim();
         })
         : [];
 
@@ -305,8 +302,11 @@ export const UsersPage: React.FC = () => {
                                     e.stopPropagation();
                                     if (!isModalOpening) {
                                         setIsModalOpening(true);
-                                        setSelectedUser(user);
-                                        setTimeout(() => setIsModalOpening(false), 300);
+                                        // Add a small delay to ensure no race conditions
+                                        setTimeout(() => {
+                                            setSelectedUser(user);
+                                            setTimeout(() => setIsModalOpening(false), 300);
+                                        }, 10);
                                     }
                                 }}
                             >
@@ -314,17 +314,17 @@ export const UsersPage: React.FC = () => {
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3 flex-1 min-w-0">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
-                                            {user.first_name.charAt(0)}
+                                            {(user.first_name || 'U').charAt(0)}
                                         </div>
                                         <div className="flex flex-col min-w-0 flex-1">
                                             <span className="font-semibold text-white text-sm truncate">{user.first_name} {user.last_name}</span>
                                         </div>
                                     </div>
-                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm flex-shrink-0 ${user.role.trim().toLowerCase() === 'admin'
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm flex-shrink-0 ${(user.role || 'user').trim().toLowerCase() === 'admin'
                                         ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
                                         : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
                                         }`}>
-                                        {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+                                        {(user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1).toLowerCase()}
                                     </span>
                                 </div>
 
@@ -407,7 +407,7 @@ export const UsersPage: React.FC = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
-                                                    {user.first_name.charAt(0)}
+                                                    {(user.first_name || 'U').charAt(0)}
                                                 </div>
                                                 <div className="flex flex-col min-w-0">
                                                     <span className="font-semibold text-white text-sm truncate">{user.first_name} {user.last_name}</span>
@@ -419,9 +419,10 @@ export const UsersPage: React.FC = () => {
                                             {user.phone_number ? (
                                                 <a
                                                     href={`tel:${user.phone_number.replace(/\s/g, '')}`}
-                                                    className="hover:text-white transition-colors"
+                                                    className="text-blue-400 hover:text-blue-300 transition-colors underline decoration-blue-400/50 hover:decoration-blue-300 flex items-center gap-1"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
+                                                    <Phone className="h-3 w-3 flex-shrink-0" />
                                                     {user.phone_number}
                                                 </a>
                                             ) : (
@@ -429,11 +430,11 @@ export const UsersPage: React.FC = () => {
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-xl ${user.role.trim().toLowerCase() === 'admin'
+                                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-xl ${(user.role || 'user').trim().toLowerCase() === 'admin'
                                                 ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
                                                 : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
                                                 }`}>
-                                                {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+                                                {(user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1).toLowerCase()}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-300 text-sm">
@@ -542,26 +543,22 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
     console.log('UserDetailsModal rendering modal with isOpen:', isOpen, 'user:', !!user);
 
     return createPortal(
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-                    onClick={(e) => {
-                        console.log('Backdrop clicked, closing modal');
+        isOpen ? (
+            <div
+                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                onClick={(e) => {
+                    console.log('Backdrop clicked, closing modal', e.target, e.currentTarget);
+                    // Only close if clicking directly on backdrop, not on modal content
+                    if (e.target === e.currentTarget) {
                         onClose();
-                    }}
-                    style={{ zIndex: 10000 }}
+                    }
+                }}
+                style={{ zIndex: 10000 }}
+            >
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
                 >
-                    <motion.div
-                        initial={{ scale: 0.95, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.95, opacity: 0 }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
-                    >
                         {/* Header */}
                         <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                             <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.users.userDetails')}</h2>
@@ -583,17 +580,17 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                         <div className="flex items-center justify-between gap-3 sm:gap-4">
                                             <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                                                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-base sm:text-xl font-bold flex-shrink-0 shadow-lg">
-                                                    {user.first_name.charAt(0)}
+                                                    {(user.first_name || 'U').charAt(0)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h3 className="text-base sm:text-lg font-bold text-white truncate">{user.first_name} {user.last_name}</h3>
                                                 </div>
                                             </div>
-                                            <span className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold border backdrop-blur-sm flex-shrink-0 ${user.role.trim().toLowerCase() === 'admin'
+                                            <span className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold border backdrop-blur-sm flex-shrink-0 ${(user.role || 'user').trim().toLowerCase() === 'admin'
                                                 ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
                                                 : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
                                                 }`}>
-                                                {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+                                                {(user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1).toLowerCase()}
                                             </span>
                                         </div>
                                     </div>
@@ -616,7 +613,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                                 </div>
                                                 <a
                                                     href={`tel:${user.phone_number.replace(/\s/g, '')}`}
-                                                    className="text-white font-medium hover:text-gray-300 transition-colors text-sm sm:text-base"
+                                                    className="text-blue-400 font-medium hover:text-blue-300 transition-colors text-sm sm:text-base underline decoration-blue-400/50 hover:decoration-blue-300"
                                                 >
                                                     {user.phone_number}
                                                 </a>
@@ -661,13 +658,13 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                                             return (
                                                                 <tr key={order.id} className="border-t border-white/10 hover:bg-white/5 transition">
                                                                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-white font-medium text-xs sm:text-sm whitespace-nowrap">
-                                                                        {car?.name || order.carName || 'N/A'}
+                                                                        {car ? `${car.make} ${car.model}` : order.carName || 'N/A'}
                                                                     </td>
                                                                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-gray-300 text-xs sm:text-sm">
                                                                         <div className="flex flex-col sm:flex-row sm:gap-2 gap-0.5">
-                                                                            <span className="whitespace-nowrap">{formatDate(order.pickupDate || order.startDate)}</span>
+                                                                            <span className="whitespace-nowrap">{formatDate(order.pickupDate)}</span>
                                                                             <span className="hidden sm:inline whitespace-nowrap">→</span>
-                                                                            <span className="whitespace-nowrap">{formatDate(order.returnDate || order.endDate)}</span>
+                                                                            <span className="whitespace-nowrap">{formatDate(order.returnDate)}</span>
                                                                         </div>
                                                                     </td>
                                                                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-white font-semibold text-xs sm:text-sm whitespace-nowrap">
@@ -703,10 +700,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>,
+                </div>
+            </div>
+        ) : null,
         document.body
     );
 };

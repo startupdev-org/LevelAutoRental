@@ -22,6 +22,7 @@ import { getCarName } from '../../../../utils/car';
 import { acceptBorrowRequest, BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';
+import { formatTime } from '../../../../utils/time';
 import { RequestDetailsModal } from '../modals/RequestDetailsModal';
 import { supabase } from '../../../../lib/supabase';
 
@@ -467,12 +468,12 @@ export const RequestsView: React.FC = () => {
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.pickup')}</p>
                                                 <p className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</p>
-                                                <p className="text-gray-400 text-xs">{request.start_time}</p>
+                                                <p className="text-gray-400 text-xs">{formatTime(request.start_time)}</p>
                                             </div>
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.return')}</p>
                                                 <p className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</p>
-                                                <p className="text-gray-400 text-xs">{request.end_time}</p>
+                                                <p className="text-gray-400 text-xs">{formatTime(request.end_time)}</p>
                                             </div>
                                         </div>
 
@@ -551,14 +552,14 @@ export const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
-                                                        <span className="text-gray-400 text-xs">{request.start_time}</span>
+                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</span>
+                                                        <span className="text-gray-400 text-xs">{formatTime(request.start_time)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
                                                         <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
-                                                        <span className="text-gray-400 text-xs">{request.end_time}</span>
+                                                        <span className="text-gray-400 text-xs">{formatTime(request.end_time)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
