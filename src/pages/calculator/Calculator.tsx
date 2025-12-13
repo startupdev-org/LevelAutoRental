@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Calendar, Car, Info, Check, ChevronDown, X } from 'lucide-react';
+import { Calendar, Car, Info, Check, ChevronDown, X, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { fetchCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
+import { FaGasPump } from "react-icons/fa6";
+import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
+import { CarSelectionSection } from '../../components/modals/components/CarSelectionSection';
 
 export const Calculator: React.FC = () => {
     const { t, i18n } = useTranslation();
@@ -12,6 +15,7 @@ export const Calculator: React.FC = () => {
     const [cars, setCars] = useState<any[]>([]);
     const [carsLoading, setCarsLoading] = useState(true);
     const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
+    const [selectedCar, setSelectedCar] = useState<any>(null);
     const [pickupDate, setPickupDate] = useState<string>('');
     const [returnDate, setReturnDate] = useState<string>('');
 
@@ -42,8 +46,9 @@ export const Calculator: React.FC = () => {
                 setCarsLoading(true);
                 const fetchedCars = await fetchCarsWithPhotos();
                 setCars(fetchedCars);
-                if (fetchedCars.length > 0) {
+                if (fetchedCars.length > 0 && !selectedCarId) {
                     setSelectedCarId(fetchedCars[0].id);
+                    setSelectedCar(fetchedCars[0]);
                 }
             } catch (error) {
                 console.error('Error fetching cars for calculator:', error);
@@ -80,7 +85,7 @@ export const Calculator: React.FC = () => {
     const [sim, setSim] = useState(false);
     const [assistance, setAssistance] = useState(false);
 
-    const selectedCar = selectedCarId ? cars.find(c => c.id === selectedCarId) : null;
+    // selectedCar is now managed directly by the CarSelectionSection component
 
     // Get price per day based on rental duration
     const getPricePerDay = (days: number): number => {
@@ -251,28 +256,14 @@ export const Calculator: React.FC = () => {
                                 </div>
                                 {t('calculator.selectVehicle')}
                             </h2>
-                            <div className="relative">
-                            <select
-                                value={selectedCarId || ''}
-                                onChange={(e) => setSelectedCarId(Number(e.target.value))}
-                                    className="w-full px-4 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl focus:ring-2 focus:ring-theme-500 focus:border-theme-500 outline-none text-white font-medium transition-all hover:bg-white/15 shadow-sm appearance-none pr-10"
-                            >
-                                {carsLoading ? (
-                                    <option disabled>Loading cars...</option>
-                                ) : cars.length === 0 ? (
-                                    <option disabled>No cars available</option>
-                                ) : (
-                                    cars.map(car => (
-                                        <option key={car.id} value={car.id} className="bg-gray-800 text-white">
-                                            {car.make} {car.model} ({car.year}) - {car.price_2_4_days || car.price_over_30_days || 0} MDL{t('calculator.perDay')}
-                                    </option>
-                                    ))
-                                )}
-                            </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    <ChevronDown className="w-5 h-5 text-white/70" />
-                                </div>
-                            </div>
+
+                            <CarSelectionSection
+                                selectedCar={selectedCar}
+                                handleSetSelectedCar={(car) => {
+                                    setSelectedCar(car);
+                                    setSelectedCarId(car ? car.id : null);
+                                }}
+                            />
                         </motion.div>
 
                         {/* Rental Period */}
@@ -328,14 +319,23 @@ export const Calculator: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                        </motion.div>
-                        {rentalDays > 0 && (
-                                <div className="mt-4 p-3 bg-theme-500/20 border border-theme-500/30 rounded-xl">
-                                    <div className="text-sm text-white text-center">
-                                        <span className="font-semibold">{t('calculator.totalDays', 'Total Days:')}</span> {rentalDays} {rentalDays === 1 ? t('calculator.day') : t('calculator.days')}
+
+                                {pickupDate && returnDate && (
+                                    <div className="mt-4 p-3 bg-theme-500/20 border border-theme-500/30 rounded-xl">
+                                        <div className="text-sm text-white text-center">
+                                            <span className="font-semibold">Total zile:</span> {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+
+                                {(!pickupDate || !returnDate) && (
+                                    <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-xl">
+                                        <div className="text-sm text-white/70 text-center">
+                                            Selectați perioada de închiriere
+                                        </div>
+                                    </div>
+                                )}
+                        </motion.div>
 
                         {/* Pricing Tiers */}
                         {selectedCar && !carsLoading && (
@@ -675,14 +675,6 @@ export const Calculator: React.FC = () => {
                                                         </span>
                                                     </div>
                                                 )}
-                                                {insurance && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-gray-200">{t('calculator.insurance')}</span>
-                                                        <span className="font-medium text-white">
-                                                            {(((selectedCar?.price_2_4_days || selectedCar?.price_over_30_days || 0)) * rentalDays * 0.2).toFixed(0)} MDL
-                                                        </span>
-                                                    </div>
-                                                )}
                                                 {driver && (
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-200">{t('calculator.personalDriver')}</span>
@@ -860,7 +852,7 @@ export const Calculator: React.FC = () => {
                                                 ? t('calculator.selectPickupInstruction', 'Select pickup date')
                                                 : t('calculator.changePickupInstruction', 'Click to change pickup date'))
                                             : (!returnDate
-                                                ? t('calculator.selectReturnInstruction', 'Select return date')
+                                                ? 'Selectați data returnării (minim 2 zile)'
                                                 : t('calculator.changeReturnInstruction', 'Click to change return date'))
                                         }
                                     </p>
@@ -883,6 +875,16 @@ export const Calculator: React.FC = () => {
                                         const todayString = formatDateLocal(today);
                                         const isPast = dayString < todayString;
                                         const isBeforePickup = activeCalendarType === 'return' && pickupDate && dayString <= pickupDate;
+
+                                        // Check if return date is less than 2 days after pickup date
+                                        const isLessThanMinDays = activeCalendarType === 'return' && pickupDate && (() => {
+                                            const pickup = new Date(pickupDate);
+                                            const returnD = new Date(dayString);
+                                            const diffTime = returnD.getTime() - pickup.getTime();
+                                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                            return diffDays < 2;
+                                        })();
+
                                         const isSelected = dayString === (activeCalendarType === 'pickup' ? pickupDate : returnDate);
                                         const isPickupDate = activeCalendarType === 'return' && pickupDate && dayString === pickupDate;
                                         const isReturnDate = activeCalendarType === 'pickup' && returnDate && dayString === returnDate;
@@ -894,7 +896,7 @@ export const Calculator: React.FC = () => {
                                             <button
                                                 key={index}
                                                 className={`h-10 w-10 flex items-center justify-center text-sm rounded-lg transition-colors relative ${
-                                                    isPast || isBeforePickup
+                                                    isPast || isBeforePickup || isLessThanMinDays
                                                         ? 'text-gray-300 cursor-not-allowed hover:bg-gray-50'
                                                         : 'text-gray-700 cursor-pointer hover:bg-gray-100'
                                                 } ${isSelected
@@ -903,12 +905,12 @@ export const Calculator: React.FC = () => {
                                                         ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
                                                         : isInRange
                                                             ? 'bg-red-100 text-gray-900 hover:bg-red-200'
-                                                            : !(isPast || isBeforePickup)
+                                                            : !(isPast || isBeforePickup || isLessThanMinDays)
                                                                 ? 'hover:bg-gray-100'
                                                                 : ''
                                                 }`}
                                                 onClick={() => {
-                                                    if (!(isPast || isBeforePickup)) {
+                                                    if (!(isPast || isBeforePickup || isLessThanMinDays)) {
                                                         if (activeCalendarType === 'pickup') {
                                                             const isChangingPickupDate = pickupDate && pickupDate !== day;
                                                             if (isChangingPickupDate) {
@@ -921,9 +923,10 @@ export const Calculator: React.FC = () => {
                                                         setShowCalendarModal(false);
                                                     }
                                                 }}
-                                                disabled={isPast || isBeforePickup}
+                                                disabled={isPast || isBeforePickup || isLessThanMinDays}
                                                 title={isPast ? t('calculator.dateUnavailable', 'Date unavailable') :
-                                                       isBeforePickup ? t('calculator.beforePickup', 'Cannot be before pickup date') : ''}
+                                                       isBeforePickup ? t('calculator.beforePickup', 'Cannot be before pickup date') :
+                                                       isLessThanMinDays ? 'Perioada minimă de închiriere este de 2 zile' : ''}
                                             >
                                                 {dayDate.getDate()}
                                             </button>

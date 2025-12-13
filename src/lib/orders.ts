@@ -1,6 +1,8 @@
 import { supabase, supabaseAdmin } from './supabase';
 import { BorrowRequest, Car, OrderDisplay, Rental } from '../types';
 import { fetchImagesByCarName } from './db/cars/cars';
+import { fetchUserProfiles } from './db/user/profile';
+import { fetchBorrowRequests } from './db/requests/requests';
 
 /**
  * Update car status based on rental status
@@ -87,12 +89,20 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       return [];
     }
 
-    // Collect all unique user IDs
+    // Collect all unique user IDs (filter out null/undefined for guest bookings)
     const userIds = new Set<string>();
-    rentals.forEach(r => userIds.add(r.user_id));
+    rentals.forEach(r => {
+        if (r.user_id) userIds.add(r.user_id);
+    });
 
     // Fetch user profiles if available
-    const profiles = await fetchUserProfiles(Array.from(userIds));
+    const profilesArray = await fetchUserProfiles(Array.from(userIds));
+    const profiles = new Map<string, any>();
+    profilesArray.forEach(profile => {
+        if (profile.id) {
+            profiles.set(profile.id, profile);
+        }
+    });
 
     const orders: OrderDisplay[] = [];
 
@@ -210,7 +220,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
           (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || email.split('@')[0] || 'Unknown');
       } else {
         // Fallback to profile lookup
-        const profile = profiles.get(rental.user_id);
+        const profile = rental.user_id ? profiles.get(rental.user_id) : null;
         email = profile?.email || rental.user?.email || '';
         phone = profile?.phone || '';
         firstName = profile?.firstName || '';
@@ -220,7 +230,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
           : firstName || lastName
             ? `${firstName}${lastName}`
             : (email ? email.split('@')[0] : '')
-            || `User ${rental.user_id.slice(0, 8)}`;
+            || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
       }
 
       // Calculate amount based on days and car price
@@ -344,13 +354,23 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       fetchRentals(),
     ]);
 
-    // Collect all unique user IDs
+    // Collect all unique user IDs (filter out null/undefined for guest bookings)
     const userIds = new Set<string>();
-    requests.forEach(r => userIds.add(r.user_id));
-    rentals.forEach(r => userIds.add(r.user_id));
+    requests.forEach(r => {
+        if (r.user_id) userIds.add(r.user_id);
+    });
+    rentals.forEach(r => {
+        if (r.user_id) userIds.add(r.user_id);
+    });
 
     // Fetch user profiles if available
-    const profiles = await fetchUserProfiles(Array.from(userIds));
+    const profilesArray = await fetchUserProfiles(Array.from(userIds));
+    const profiles = new Map<string, any>();
+    profilesArray.forEach(profile => {
+        if (profile.id) {
+            profiles.set(profile.id, profile);
+        }
+    });
 
     const orders: OrderDisplay[] = [];
 
@@ -493,7 +513,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
           console.error(`Error fetching car ${carIdMatch} from database:`, err);
         }
       }
-      const profile = profiles.get(rental.user_id);
+      const profile = rental.user_id ? profiles.get(rental.user_id) : null;
       const email = profile?.email || rental.user?.email || '';
       const firstName = profile?.firstName || '';
       const lastName = profile?.lastName || '';
@@ -502,7 +522,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         : firstName || lastName
           ? `${firstName}${lastName}`
           : (email ? email.split('@')[0] : '')
-          || `User ${rental.user_id.slice(0, 8)}`;
+          || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
 
       // Calculate amount based on days and car price
       const startDate = new Date(rental.start_date || new Date());
@@ -610,22 +630,22 @@ export async function processActiveRentals(cars: Car[]): Promise<{ success: bool
             continue;
           }
 
-          // Also update the BorrowRequest status to EXECUTED when start date has passed
+          // Also update the BorrowRequest status to APPROVED when start date has passed
           const { error: updateRequestError } = await supabase
             .from('BorrowRequest')
             .update({
-              status: 'EXECUTED',
+              status: 'APPROVED',
               updated_at: new Date().toISOString()
             })
             .eq('id', request.id);
 
           if (updateRequestError) {
-            console.error(`Error updating request status to EXECUTED for request ${request.id}:`, updateRequestError);
+            console.error(`Error updating request status to APPROVED for request ${request.id}:`, updateRequestError);
             continue;
           }
 
           processed++;
-          console.log(`Updated rental to ACTIVE and request to EXECUTED for request ${request.id}`);
+          console.log(`Updated rental to ACTIVE and request to APPROVED for request ${request.id}`);
         }
 
         // Update car status to "booked" when rental becomes ACTIVE

@@ -1,7 +1,6 @@
 import { BorrowRequest, BorrowRequestDTO, Car, Rental } from '../../../types';
 import { getCarPrice } from '../../../utils/car/pricing';
 import { getDateDiffInDays } from '../../../utils/date';
-import { formatTimestamp } from '../../../utils/time/time';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
@@ -62,6 +61,65 @@ export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
     }
 }
 
+/**
+ * Fetch a single borrow request by ID
+ */
+export async function fetchBorrowRequestById(requestId: string): Promise<BorrowRequestDTO | null> {
+    try {
+        const { data, error } = await supabase
+            .from('BorrowRequest')
+            .select('*')
+            .eq('id', parseInt(requestId))
+            .single();
+
+        if (error) {
+            console.error('Error fetching borrow request by ID:', error);
+            return null;
+        }
+
+        if (!data) {
+            return null;
+        }
+
+        // Fetch the car data
+        const car = await fetchCarWithImagesById(data.car_id);
+        if (!car) {
+            console.error('Car not found for request:', data.car_id);
+            return null;
+        }
+
+        // Use the stored total_amount from database, don't recalculate
+        const requestDTO: BorrowRequestDTO = {
+            id: data.id.toString(),
+            car_id: data.car_id.toString(),
+            start_date: data.start_date,
+            start_time: data.start_time,
+            end_date: data.end_date,
+            end_time: data.end_time,
+            customer_name: data.customer_name,
+            customer_first_name: data.customer_first_name,
+            customer_last_name: data.customer_last_name,
+            customer_email: data.customer_email,
+            customer_phone: data.customer_phone,
+            comment: data.comment,
+            options: data.options,
+            status: data.status,
+            requested_at: data.requested_at,
+            updated_at: data.updated_at,
+            price_per_day: data.price_per_day?.toString() || '0',
+            total_amount: data.total_amount || 0,
+            contract_url: data.contract_url,
+            car: car
+        };
+
+        return requestDTO;
+
+    } catch (error) {
+        console.error('Error in fetchBorrowRequestById:', error);
+        return null;
+    }
+}
+
 export interface BorrowRequestFilters {
     searchQuery?: string;
     sortBy?: 'amount' | 'start_date' | string,
@@ -78,6 +136,7 @@ export async function fetchBorrowRequestsForDisplay(
     filters?: BorrowRequestFilters
 ): Promise<{ data: BorrowRequestDTO[]; total: number }> {
     try {
+        // console.log('fetching requests with filters: ', filters)
         const from = (page - 1) * limit
         const to = from + limit - 1
 
@@ -122,6 +181,8 @@ export async function fetchBorrowRequestsForDisplay(
             console.error('Error fetching requests:', error)
             return { data: [], total: 0 }
         }
+
+        // console.log('the requests are: ', allRequests)
 
         const borrowRequestDTOs = await Promise.all(
             allRequests.map(async (request) => {
@@ -212,15 +273,24 @@ export async function acceptBorrowRequest(
 /**
  * Reject a borrow request
  */
-export async function rejectBorrowRequest(requestId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+export async function rejectBorrowRequest(
+    requestId: string,
+    reason?: string
+): Promise<{ success: boolean; error?: string }> {
     try {
+        // Build the update object dynamically
+        const updateData: Record<string, any> = {
+            status: 'REJECTED',
+            updated_at: new Date().toISOString(),
+        };
+
+        if (reason != null && reason.trim() !== '') {
+            updateData.reason = reason.trim();
+        }
+
         const { error } = await supabase
             .from('BorrowRequest')
-            .update({
-                status: 'REJECTED',
-                updated_at: new Date().toISOString(),
-                // Store rejection reason if there's a notes/comment field
-            })
+            .update(updateData)
             .eq('id', requestId);
 
         if (error) {
@@ -230,9 +300,13 @@ export async function rejectBorrowRequest(requestId: string, reason?: string): P
         return { success: true };
     } catch (error) {
         console.error('Error rejecting borrow request:', error);
-        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }
+
 
 /**
  * Undo reject a borrow request (restore to PENDING)
@@ -263,20 +337,7 @@ export async function undoRejectBorrowRequest(requestId: string): Promise<{ succ
  */
 export async function updateBorrowRequest(
     requestId: string,
-    updates: {
-        car_id?: string;
-        start_date?: string;
-        start_time?: string;
-        end_date?: string;
-        end_time?: string;
-        customer_name?: string;
-        customer_email?: string;
-        customer_phone?: string;
-        customer_age?: string;
-        comment?: string;
-        options?: any;
-        status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'CANCELLED';
-    }
+    updates: Partial<BorrowRequestDTO>
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const updateData: any = {
@@ -291,10 +352,11 @@ export async function updateBorrowRequest(
         if (updates.customer_name !== undefined) updateData.customer_name = updates.customer_name;
         if (updates.customer_email !== undefined) updateData.customer_email = updates.customer_email;
         if (updates.customer_phone !== undefined) updateData.customer_phone = updates.customer_phone;
-        if (updates.customer_age !== undefined) updateData.customer_age = updates.customer_age;
+        // if (updates.customer_age !== undefined) updateData.customer_age = updates.customer_age;
         if (updates.comment !== undefined) updateData.comment = updates.comment;
         if (updates.options !== undefined) updateData.options = typeof updates.options === 'string' ? updates.options : JSON.stringify(updates.options);
         if (updates.status !== undefined) updateData.status = updates.status;
+        if ((updates as any).contract_url !== undefined) updateData.contract_url = (updates as any).contract_url;
 
         const { error } = await supabase
             .from('BorrowRequest')
@@ -385,6 +447,96 @@ export async function createUserBorrowRequest(
 
         console.log('the total amount: ', request.total_amount)
 
+        // Application-level security for guest users (since RLS is disabled)
+        if (!request.customer_email || !request.customer_first_name || !request.customer_last_name) {
+            throw new Error('Missing required customer information for booking')
+        }
+
+        // Input sanitization and validation
+        const sanitizeInput = (input: string) => input.trim().substring(0, 100) // Max 100 chars, trim whitespace
+
+        request.customer_email = request.customer_email.toLowerCase().trim()
+        request.customer_first_name = sanitizeInput(request.customer_first_name)
+        request.customer_last_name = sanitizeInput(request.customer_last_name)
+        if (request.customer_phone) {
+            request.customer_phone = request.customer_phone.trim().substring(0, 20)
+        }
+        if (request.comment) {
+            request.comment = sanitizeInput(request.comment)
+        }
+
+        // Email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(request.customer_email)) {
+            throw new Error('Invalid email format')
+        }
+
+        // Name validation (basic)
+        if (!/^[a-zA-Z\s\-']{2,50}$/.test(request.customer_first_name) ||
+            !/^[a-zA-Z\s\-']{2,50}$/.test(request.customer_last_name)) {
+            throw new Error('Invalid name format')
+        }
+
+        // Validate dates are reasonable (not too far in future/past)
+        const startDate = new Date(request.start_date)
+        const endDate = new Date(request.end_date)
+        const now = new Date()
+        const maxFutureDate = new Date()
+        maxFutureDate.setMonth(maxFutureDate.getMonth() + 6) // Max 6 months ahead
+
+        if (startDate < new Date(now.getFullYear(), now.getMonth(), now.getDate()) || startDate > maxFutureDate) {
+            throw new Error('Invalid booking dates - must be today or within 6 months')
+        }
+
+        if (endDate <= startDate) {
+            throw new Error('End date must be after start date')
+        }
+
+        // Enhanced rate limiting and abuse prevention
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+        const recentRequests = await supabase
+            .from('BorrowRequest')
+            .select('id, customer_email, created_at')
+            .eq('customer_email', request.customer_email)
+            .gte('created_at', oneHourAgo.toISOString())
+
+        // Stricter rate limiting: max 3 requests per hour per email
+        if (recentRequests.data && recentRequests.data.length >= 3) {
+            console.warn('Rate limit exceeded:', {
+                email: request.customer_email,
+                recentRequests: recentRequests.data.length,
+                timeWindow: '1 hour'
+            })
+            throw new Error('Too many booking requests. Please wait before submitting another request.')
+        }
+
+        // Additional abuse prevention: check for suspicious patterns
+        const suspiciousPatterns = [
+            /<script/i, /javascript:/i, /on\w+\s*=/i, // XSS attempts
+            /(\.\.|\/etc|passwd|shadow)/i, // Path traversal
+            /([';]+|union.*select|drop.*table)/i // SQL injection attempts
+        ]
+
+        const suspiciousData = [
+            request.customer_email,
+            request.customer_first_name,
+            request.customer_last_name,
+            request.comment
+        ].filter(field => field && suspiciousPatterns.some(pattern => pattern.test(field)))
+
+        if (suspiciousData.length > 0) {
+            console.warn('Suspicious booking request detected:', {
+                email: request.customer_email,
+                timestamp: new Date().toISOString(),
+                suspiciousFields: suspiciousData.length
+            })
+            throw new Error('Invalid request data. Please check your input.')
+        }
+
+        // Validate phone number format (basic)
+        if (request.customer_phone && !/^[\d\s\-\+\(\)]{7,20}$/.test(request.customer_phone.replace(/\s/g, ''))) {
+            throw new Error('Invalid phone number format')
+        }
+
         let finalUserId: string | null = null;
         try {
             const user = await getLoggedUser()
@@ -401,7 +553,8 @@ export async function createUserBorrowRequest(
 
         if (car === null) throw Error('Car not found!')
 
-        const price_per_day = getCarPrice(rentalDays, car)
+        const price_per_day_str = getCarPrice(rentalDays, car)
+        const price_per_day = parseFloat(price_per_day_str);
 
         const insertData: BorrowRequest = {
             user_id: finalUserId,
@@ -529,6 +682,27 @@ export async function createRentalManually(
     }
 }
 
+export async function isDateUnavailable(date: string, carId: string): Promise<boolean> {
+    const startOfDay = `${date} 00:00:00`;
+    const endOfDay = `${date} 23:59:59`;
+
+    const { data, error } = await supabase
+        .from('Rentals')
+        .select('id')
+        .eq('car_id', carId)
+        .eq('rental_status', 'APPROVED')
+        .lte('start_date', endOfDay)
+        .gte('end_date', startOfDay);
+
+    if (error) {
+        console.error("Error checking date:", error);
+        return false;
+    }
+
+    return data.length > 0;
+}
+
+
 export async function isDateInActualApprovedRequest(
     date: string,
     carId: string
@@ -559,7 +733,7 @@ export async function isDateInActualApprovedRequest(
  * @returns The start date string of the next rental, or null if none found
  */
 export async function getEarliestFutureRentalStart(
-    dateString: string,
+    dateString: Date | string,
     carId: string
 ): Promise<string | null> {
     try {
@@ -594,8 +768,15 @@ export function toBorrowRequestDTO(
     borrowRequest: BorrowRequest,
     car: Car
 ): BorrowRequestDTO {
+    if (!borrowRequest.id) {
+        throw new Error("BorrowRequest must have an id to convert to DTO");
+    }
+
     return {
         ...borrowRequest,
+        id: borrowRequest.id, // guaranteed string now
+        car_id: borrowRequest.car_id.toString(),
+        price_per_day: borrowRequest.price_per_day.toString(),
         car,
     };
 }

@@ -298,6 +298,7 @@ export const OrdersViewSection: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpening, setIsModalOpening] = useState(false);
     const [showAddOrderModal, setShowAddOrderModal] = useState(false);
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [processingOrder, setProcessingOrder] = useState<string | null>(null);
@@ -360,7 +361,7 @@ export const OrdersViewSection: React.FC = () => {
         if (cars.length > 0) {
             loadOrders();
         }
-    }, [cars]);
+    }, [cars, searchParams]); // Reload when cars load or when navigation occurs
 
     const handleCancelOrder = async (order: OrderDisplay) => {
         setProcessingOrder(order.id.toString());
@@ -392,6 +393,7 @@ export const OrdersViewSection: React.FC = () => {
                 setIsModalOpen(false);
                 setSelectedOrder(null);
                 setOrderNumber(undefined);
+                setIsModalOpening(false);
                 await loadOrders();
             } else {
                 showError(`Eșuare la anularea comenzii: ${result.error || 'Eroare necunoscută'}`);
@@ -414,6 +416,7 @@ export const OrdersViewSection: React.FC = () => {
                 setIsModalOpen(false);
                 setSelectedOrder(null);
                 setOrderNumber(undefined);
+                setIsModalOpening(false);
                 await loadOrders();
             } else {
                 showError(`Failed to restore order: ${result.error || 'Unknown error'}`);
@@ -687,10 +690,19 @@ export const OrdersViewSection: React.FC = () => {
     const [showContractModal, setShowContractModal] = useState(false);
 
     const handleOrderClick = (order: OrderDisplay, orderNum: number) => {
-        console.log('handling order click for order: ', order)
-        setSelectedOrder(order);
-        setOrderNumber(orderNum);
-        setIsModalOpen(true);
+        console.log('handling order click for order:', order, 'isModalOpening:', isModalOpening)
+        if (!isModalOpening) {
+            setIsModalOpening(true);
+            setSelectedOrder(order);
+            setOrderNumber(orderNum);
+            setIsModalOpen(true);
+            console.log('Set modal states: selectedOrder, orderNumber, isModalOpen = true')
+            // Reset modal opening state after animation
+            setTimeout(() => {
+                setIsModalOpening(false);
+                console.log('Reset isModalOpening to false')
+            }, 300);
+        }
     };
 
     if (loading) {
@@ -841,9 +853,11 @@ export const OrdersViewSection: React.FC = () => {
             <OrderDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
+                    console.log('Modal onClose called, closing modal')
                     setIsModalOpen(false);
                     setSelectedOrder(null);
                     setOrderNumber(undefined);
+                    setIsModalOpening(false);
                 }}
                 order={selectedOrder}
                 orderNumber={orderNumber}
@@ -852,8 +866,10 @@ export const OrdersViewSection: React.FC = () => {
                 isProcessing={processingOrder === selectedOrder?.id.toString()}
                 cars={cars}
                 onOpenContractModal={() => {
+                    console.log('Opening contract modal, closing order modal')
                     setIsModalOpen(false); // Close order details modal
                     setShowContractModal(true); // Open contract modal
+                    setIsModalOpening(false);
                 }}
             />
             {/* Contract Creation Modal */}
@@ -873,6 +889,7 @@ export const OrdersViewSection: React.FC = () => {
                             // Also close the order details modal and clear selection
                             setIsModalOpen(false);
                             setSelectedOrder(null);
+                            setIsModalOpening(false);
                         }}
                     />
                 ) : null;

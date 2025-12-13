@@ -29,10 +29,22 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
     // Use provided cars or fallback to static cars
     const carsList = propCars || cars;
 
-    // Calculate total price for an order (exact same logic as requests)
-    const calculateOrderTotalPrice = useCallback((order: OrderDisplay): number => {
+    // Get total price for an order (use stored amount when available)
+    const getOrderTotalPrice = useCallback((order: OrderDisplay): number => {
+        // Use stored amount when available (from rental or request)
+        if (order.amount && order.amount > 0) {
+            return order.amount;
+        }
+        if (order.total_amount && typeof order.total_amount === 'string') {
+            return parseFloat(order.total_amount) || 0;
+        }
+        if (order.total_amount && typeof order.total_amount === 'number') {
+            return order.total_amount;
+        }
+
+        // Fallback to calculation if no stored amount
         const car = carsList.find(c => c.id.toString() === order.carId);
-        if (!car) return order.amount || 0;
+        if (!car) return 0;
 
         const formatTime = (timeString: string): string => {
             if (!timeString) return '00:00';
@@ -230,7 +242,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                 } else if (sortBy === 'customer') {
                     diff = a.customerName.localeCompare(b.customerName);
                 } else if (sortBy === 'amount') {
-                    diff = calculateOrderTotalPrice(a) - calculateOrderTotalPrice(b);
+                    diff = getOrderTotalPrice(a) - getOrderTotalPrice(b);
                 } else if (sortBy === 'status') {
                     const statusOrder: Record<string, number> = {
                         'CONTRACT': 0,
@@ -258,7 +270,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
         }
 
         return filtered;
-    }, [orders, searchQuery, sortBy, sortOrder, showCancelled, calculateOrderTotalPrice]);
+    }, [orders, searchQuery, sortBy, sortOrder, showCancelled, getOrderTotalPrice]);
 
     const totalPages = Math.ceil(filteredAndSortedOrders.length / pageSize);
 
@@ -521,8 +533,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                 <div className="pt-4 border-t border-white/10">
                                     <p className="text-gray-400 text-xs mb-1">{t('admin.orders.amount')}</p>
                                     <p className="text-white font-semibold text-base">
-                                        {calculateOrderTotalPrice(order) > 0 ? (
-                                            `${calculateOrderTotalPrice(order).toLocaleString()} MDL`
+                                        {getOrderTotalPrice(order) > 0 ? (
+                                            `${getOrderTotalPrice(order).toLocaleString()} MDL`
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -618,8 +630,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                         {getStatusBadge(order.status)}
                                     </td>
                                     <td className="px-6 py-3 text-white font-semibold text-sm">
-                                        {calculateOrderTotalPrice(order) > 0 ? (
-                                            `${calculateOrderTotalPrice(order).toLocaleString()} MDL`
+                                        {getOrderTotalPrice(order) > 0 ? (
+                                            `${getOrderTotalPrice(order).toLocaleString()} MDL`
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}

@@ -1,11 +1,10 @@
 import { jsPDF } from 'jspdf';
-import { Rental, BorrowRequest, OrderDisplay } from './orders';
-import { Car } from '../types';
+import { Car, OrderDisplay } from '../types';
 
 interface ContractData {
   contractNumber: string;
   contractDate: string;
-  rental: Rental | BorrowRequest;
+  order: OrderDisplay;
   car: Car;
   customer: {
     fullName: string;
@@ -2005,19 +2004,7 @@ export const createContractDataFromOrder = (
   const result = {
     contractNumber,
     contractDate,
-    rental: {
-      id: order.id.toString(),
-      user_id: order.userId,
-      car_id: order.carId,
-      start_date: order.pickupDate,
-      start_time: order.pickupTime,
-      end_date: order.returnDate,
-      end_time: order.returnTime,
-      rental_status: order.status as any,
-      total_amount: total,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    } as Rental,
+    order: order,
     car: carWithDefaults as Car,
     customer: {
       fullName: customerName,
@@ -2111,190 +2098,8 @@ export const generateContractFromOrder = async (
     additionalData
   );
 
-  // Create or update rental in database with ACTIVE status
-  let rentalId: number | string = order.id; // Default to order.id
-  try {
-    const { supabase } = await import('./supabase');
-    const { createRentalManually, acceptBorrowRequest } = await import('./orders');
-
-    // Check if this is a request that needs approval first
-    const requestId = (order as any).request_id || order.id;
-    const numericRequestId = typeof requestId === 'string' ? parseInt(requestId) : requestId;
-
-    // Check if this request needs approval (try to approve if it's pending)
-    console.log('Checking if request needs approval:', numericRequestId);
-
-    // Try to approve the request (this will only work if it's pending)
-    let expectedRentalId: string | undefined;
-    try {
-      const approvalResult = await acceptBorrowRequest(numericRequestId.toString(), [car]);
-      if (approvalResult.success) {
-        console.log('Request approved successfully, rental created with ID:', approvalResult.rentalId);
-        expectedRentalId = approvalResult.rentalId;
-      } else {
-        console.log('Request approval failed or already approved:', approvalResult.error);
-      }
-    } catch (approvalError) {
-      console.log('Request approval error (might already be approved):', approvalError);
-    }
-
-    // Now check if rental exists (should exist after approval)
-    console.log('Looking for rental with request_id:', numericRequestId);
-
-    let existingRental = null;
-    const { data: rentalData, error: rentalLookupError } = await supabase
-      .from('Rentals')
-      .select('id, request_id')
-      .eq('request_id', numericRequestId);
-
-    if (rentalLookupError) {
-      console.error('Error looking up rental:', rentalLookupError);
-    } else if (rentalData && rentalData.length > 0) {
-      existingRental = rentalData[0];
-      console.log('Rental found:', existingRental);
-    } else {
-      console.log('No rental found with request_id:', numericRequestId);
-      // If we expected a rental but can't find it, there might be a timing issue
-      if (expectedRentalId) {
-        console.log('Expected rental ID but not found, trying direct lookup by ID');
-        const { data: directRental } = await supabase
-          .from('Rentals')
-          .select('id, request_id')
-          .eq('id', parseInt(expectedRentalId))
-          .single();
-        if (directRental) {
-          existingRental = directRental;
-          console.log('Found rental by direct ID lookup:', existingRental);
-        }
-      }
-    }
-
-    const start = new Date(order.pickupDate);
-    const end = new Date(order.returnDate);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-    const pricePerDay = (car as any).pricePerDay || car.price_per_day || 0;
-    const subtotal = pricePerDay * days;
-    const taxesFees = subtotal * 0.1;
-    const total = order.amount || (subtotal + taxesFees);
-
-    // Get customer information from order
-    const customerName = (order as any).customerName || '';
-    const customerEmail = (order as any).customerEmail || '';
-    const customerPhone = (order as any).customerPhone || '';
-    const customerFirstName = customerName.split(' ')[0] || '';
-    const customerLastName = customerName.split(' ').slice(1).join(' ') || '';
-
-    // Get car make and model for historical record
-    const carMake = car.make || '';
-    const carModel = car.model || '';
-
-    if (existingRental) {
-      // Update existing rental
-      rentalId = existingRental.id;
-      const updateData: any = {
-        rental_status: 'ACTIVE',
-        subtotal: subtotal,
-        taxes_fees: taxesFees,
-        total_amount: total,
-        payment_method: additionalData?.paymentMethod || null,
-        notes: additionalData?.notes || null,
-        special_requests: additionalData?.specialRequests || null,
-        customer_name: customerName || null,
-        customer_email: customerEmail || null,
-        customer_phone: customerPhone || null,
-        customer_first_name: customerFirstName || null,
-        customer_last_name: customerLastName || null,
-        car_make: carMake || null,
-        car_model: carModel || null,
-        updated_at: new Date().toISOString(),
-      };
-
-      // Update request_id if it exists in the order and is not already set
-      if ((order as any).request_id && !(existingRental as any).request_id) {
-        updateData.request_id = typeof (order as any).request_id === 'string'
-          ? parseInt((order as any).request_id)
-          : (order as any).request_id;
-      }
-
-      await supabase
-        .from('Rentals')
-        .update(updateData)
-        .eq('id', rentalId);
-    } else {
-      // Create new rental with ACTIVE status
-      // Get the correct user_id for the rental (should be UUID from Profiles)
-      let userId = order.userId;
-    console.log('Processing userId for rental creation:', order.userId);
-
-    if (typeof order.userId === 'string' && order.userId.includes('@')) {
-      // If it's an email, find the corresponding UUID from Profiles
-      console.log('Looking up UUID by email:', order.userId);
-      const { data: profileData, error: profileError } = await supabase
-        .from('Profiles')
-        .select('id, email')
-        .eq('email', order.userId)
-        .single();
-      if (profileError) {
-        console.error('Error looking up profile by email:', profileError);
-        return { success: false, error: 'User profile not found for rental creation' };
-      }
-      if (profileData) {
-        userId = profileData.id;
-        console.log('Found UUID from email lookup:', userId);
-      } else {
-        console.error('Profile not found for email:', order.userId);
-        return { success: false, error: 'User not found for rental creation' };
-      }
-    } else if (typeof order.userId === 'string' && order.userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-      // Already a UUID, use it directly
-      userId = order.userId;
-      console.log('Using UUID directly:', userId);
-    } else if (typeof order.userId === 'number') {
-      // If it's a number, convert to string (might be legacy data)
-      userId = order.userId.toString();
-      console.log('Converted number to string:', userId);
-    } else {
-      console.error('Unknown userId format:', order.userId, typeof order.userId);
-      return { success: false, error: 'Invalid user ID format for rental creation' };
-    }
-
-    console.log('Final userId for rental:', userId);
-
-      const result = await createRentalManually(
-        userId,
-        order.carId,
-        order.pickupDate,
-        order.pickupTime || '09:00',
-        order.returnDate,
-        order.returnTime || '17:00',
-        total,
-        [car],
-        {
-          subtotal,
-          taxesFees,
-          rentalStatus: 'ACTIVE',
-          paymentStatus: 'PENDING',
-          paymentMethod: additionalData?.paymentMethod,
-          notes: additionalData?.notes,
-          specialRequests: additionalData?.specialRequests,
-          customerName: customerName,
-          customerEmail: customerEmail,
-          customerPhone: customerPhone,
-          customerFirstName: customerFirstName,
-          customerLastName: customerLastName,
-          requestId: (order as any).request_id, // Pass request_id if it exists
-        }
-      );
-
-      // Use the returned rentalId if available
-      if (result.success && result.rentalId) {
-        rentalId = result.rentalId;
-      }
-    }
-  } catch (error) {
-    console.error('Error creating/updating rental for contract:', error);
-    // Continue with PDF generation even if rental creation fails
-  }
+  // Use order.id as a simple identifier for the contract filename
+  const rentalId = order.id;
 
   // Generate PDF
   const { pdfBlob, filename } = await generateContractPDF(contractData);
@@ -2302,46 +2107,6 @@ export const generateContractFromOrder = async (
   // Upload PDF to Supabase storage
   const contractUrl = await uploadContractToStorage(pdfBlob, filename, rentalId);
 
-  // Update rental with contract URL (status is already set to ACTIVE)
-  if (contractUrl) {
-    try {
-      const { supabase } = await import('./supabase');
-      // Ensure rentalId is a number for the database
-      const dbRentalId = typeof rentalId === 'number' ? rentalId : parseInt(rentalId.toString(), 10);
-
-      const { data: updateData, error: updateError } = await supabase
-        .from('Rentals')
-        .update({
-          contract_url: contractUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', dbRentalId)
-        .select();
-
-      if (updateError) {
-        console.error('Error updating rental with contract URL:', updateError);
-        throw updateError;
-      }
-
-      if (!updateData || updateData.length === 0) {
-        console.error('No rental was updated. Rental ID might not exist:', dbRentalId);
-      } else {
-        // Update car status to "booked" when rental becomes ACTIVE
-        const rental = updateData[0];
-        if (rental.car_id) {
-          try {
-            const { updateCarStatusBasedOnRentals } = await import('./orders');
-            await updateCarStatusBasedOnRentals(rental.car_id);
-          } catch (error) {
-            console.error('Error updating car status:', error);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error updating rental with contract URL:', error);
-      // Continue even if URL update fails
-    }
-  }
 
   // Also trigger download for user
   const url = URL.createObjectURL(pdfBlob);
@@ -2352,5 +2117,7 @@ export const generateContractFromOrder = async (
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+
+  return contractUrl;
 };
 

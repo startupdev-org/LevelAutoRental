@@ -5,7 +5,6 @@ import { Car as CarType } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { createUserBorrowRequest } from '../../lib/db/requests/requests';
 import { fetchCarById } from '../../lib/cars';
 
@@ -51,7 +50,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     approvedBorrowRequests = [],
     carRentalsForCalendar = []
 }) => {
-    const { selectedCurrency, eur: eurRate, usd: usdRate } = useExchangeRates();
 
     // Country codes for phone selector
     const COUNTRY_CODES = [
@@ -588,22 +586,29 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
             // For user_id, always use email (for logged-in users, use their email; for guests, use their provided email)
             const userIdForRequest = emailToUse;
 
-            const result = await createUserBorrowRequest(
-                car.id.toString(),
-                formatDateForDB(pickupDate),
-                formatTimeForDB(pickupTime),
-                formatDateForDB(returnDate),
-                formatTimeForDB(returnTime),
-                formData.firstName,
-                formData.lastName,
-                emailToUse,
-                fullPhoneNumber,
-                formData.age || undefined,
-                formData.comment || undefined,
-                Object.keys(optionsData).length > 0 ? optionsData : undefined,
-                totalCost,
-                userIdForRequest // Use email as user_id (for both logged-in users and guests)
-            );
+            const borrowRequest = {
+                car_id: parseInt(car.id, 10),
+                start_date: formatDateForDB(pickupDate),
+                start_time: formatTimeForDB(pickupTime),
+                end_date: formatDateForDB(returnDate),
+                end_time: formatTimeForDB(returnTime),
+                customer_first_name: formData.firstName,
+                customer_last_name: formData.lastName,
+                customer_name: `${formData.firstName} ${formData.lastName}`,
+                customer_email: emailToUse,
+                customer_phone: fullPhoneNumber,
+                customer_age: formData.age ? parseInt(formData.age, 10) : undefined,
+                total_amount: totalCost,
+                price_per_day: 0, // This will be calculated in the function
+                options: Object.keys(optionsData).length > 0 ? optionsData : null,
+                status: 'PENDING' as const,
+                requested_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                comment: formData.comment || undefined,
+                user_id: userIdForRequest // Use email as user_id (for both logged-in users and guests)
+            };
+
+            const result = await createUserBorrowRequest(borrowRequest);
 
             if (result.success) {
                 setSubmitSuccess(true);
@@ -630,6 +635,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
         if (showCountryCodeDropdown) {
             document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
