@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Car as DollarSign, FileText, Download, Loader2, AlertTriangle } from 'lucide-react';
-import { Rental, OrderDisplay } from '../../lib/orders';
+import { Rental, OrderDisplay } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +30,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     onOpenContractModal,
     showOrderNumber = true, // Default to showing order number for backward compatibility
 }) => {
-    console.log('OrderDetailsModal render - isOpen:', isOpen, 'order:', order?.id);
     const { t } = useTranslation();
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
     const [showContractModal, setShowContractModal] = useState(false);
@@ -492,29 +490,18 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     console.log('OrderDetailsModal: About to render portal');
 
-    return (
-        <>
-            {createPortal(
-                <AnimatePresence>
-                    {isOpen && (
-                        <>
-                            {console.log('OrderDetailsModal: Rendering modal content')}
+    if (!isOpen) return null;
 
-                        <motion.div
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 1 }}
-                            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-                            style={{ zIndex: 10000 }}
-                            onClick={onClose}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
-                            >
+    return createPortal(
+        <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            style={{ zIndex: 10000 }}
+            onClick={onClose}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
+            >
                                 {/* Header */}
                                 <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                                     <div>
@@ -715,8 +702,26 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             additionalCosts += 500 * rentalDays;
                                         }
 
-                                        // Total price = base price + additional costs (same as RequestDetailsModal)
-                                        const totalPrice = basePrice + additionalCosts;
+                                        // Use the rental's stored total_amount instead of recalculating
+                                        // This ensures consistency with the request's pricing
+                                        const usingStoredTotal = !!(order as any).total_amount || !!(order as any).amount;
+                                        const storedAmount = (order as any).total_amount || (order as any).amount;
+                                        const calculatedAmount = basePrice + additionalCosts;
+
+                                        console.log('OrderDetailsModal pricing:', {
+                                            orderId: order?.id,
+                                            total_amount: (order as any).total_amount,
+                                            amount: (order as any).amount,
+                                            storedAmount,
+                                            calculatedAmount,
+                                            basePrice,
+                                            additionalCosts,
+                                            usingStoredTotal
+                                        });
+
+                                        const totalPrice = usingStoredTotal && storedAmount > 0 ?
+                                            storedAmount :
+                                            calculatedAmount;
 
                                         // Service names mapping
                                         const serviceNames: Record<string, string> = {
@@ -737,6 +742,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <span className="text-sm sm:text-base">{t('admin.requestDetails.priceDetails')}</span>
                                                 </h3>
                                                 <div className="space-y-3">
+                                                    {/* Always show detailed pricing breakdown */}
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.pricePerDay')}</span>
                                                         <span className="text-white font-semibold text-sm sm:text-base">{pricePerDay > 0 ? `${Math.round(pricePerDay)} MDL` : 'N/A'}</span>
@@ -754,11 +760,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                         </div>
                                                     </div>
 
-                                                    {/* Show services section if we have additional costs */}
-                                                    {additionalCosts > 0 && (
-                                                        <div className="pt-3 border-t border-white/10">
-                                                            <h4 className="text-sm font-bold text-white mb-3">{t('admin.requestDetails.additionalServices')}</h4>
-                                                            <div className="space-y-2 text-sm">
+                                                    {/* Show services section if we have additional costs or stored total */}
+                                                    {(additionalCosts > 0 || usingStoredTotal) && (
+                                                                <div className="pt-3 border-t border-white/10">
+                                                                    <h4 className="text-sm font-bold text-white mb-3">{t('admin.requestDetails.additionalServices')}</h4>
+                                                                    <div className="space-y-2 text-sm">
                                                                 {/* Show individual services if we have parsed options with service keys */}
                                                                 {Object.keys(parsedOptions).length > 0 && (
                                                                     parsedOptions.unlimitedKm ||
@@ -923,14 +929,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                     </div>
                                     )}
                                 </div>
-                            </motion.div>
-                        </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
-        </>
+            </div>
+        </div>,
+        document.body
     );
 };
 

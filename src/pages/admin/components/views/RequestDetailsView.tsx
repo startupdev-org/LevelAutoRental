@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, CheckCircle, X, RefreshCw, ArrowLeft, Loader2, Pen, FileText, Download, Edit as EditIcon } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, X, RefreshCw, ArrowLeft, Loader2, Pen, FileText, Download, Edit as EditIcon, Play } from 'lucide-react';
 import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { formatDateLocal, calculateRentalDuration } from '../../../../utils/date';
 import { BorrowRequestDTO } from '../../../../types';
 import { formatAmount } from '../../../../utils/currency';
 import { parseRequestOptions } from '../../../../utils/car/options';
-import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
+import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest, createRentalManually } from '../../../../lib/db/requests/requests';
+import { getLoggedUser } from '../../../../lib/db/user/profile';
+import { supabase } from '../../../../lib/supabase';
 import { fetchBorrowRequestById } from '../../../../lib/db/requests/requests';
 import { useTranslation } from 'react-i18next';
 import { EditRequestModal } from '../modals/EditRequestModal';
@@ -21,13 +23,15 @@ export interface RequestDetailsViewProps {
     onUndoReject?: (request: BorrowRequestDTO) => void;
     onSetToPending?: (request: BorrowRequestDTO) => void;
     onEdit?: (request: BorrowRequestDTO) => void;
+    onStartRental?: (request: BorrowRequestDTO) => void;
     onCreateContract?: () => void;
     onEditContract?: () => void;
     onDownloadContract?: () => void;
     isProcessing?: boolean;
+    rentalExists?: boolean;
 }
 
-export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onCreateContract, onEditContract, onDownloadContract, isProcessing = false }) => {
+export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onStartRental, onCreateContract, onEditContract, onDownloadContract, isProcessing = false, rentalExists = false }) => {
 
     const car = request.car;
 
@@ -40,6 +44,23 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
         >
             {/* LEFT COLUMN: Request Info */}
             <div className="space-y-6">
+                {/* Back Button */}
+                <motion.div
+                    initial={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="flex justify-start"
+                >
+                    <button
+                        onClick={onBack}
+                        disabled={isProcessing}
+                        className="bg-white/10 backdrop-blur-xl hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Înapoi la Cereri
+                    </button>
+                </motion.div>
+
                 {/* Car Summary */}
                 <motion.div
                     initial={{ opacity: 1, y: 0 }}
@@ -301,13 +322,6 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     transition={{ duration: 0.4 }}
                     className="sticky top-24 space-y-3"
                 >
-                    <button
-                        onClick={onBack}
-                        disabled={isProcessing}
-                        className="w-full bg-white/10 backdrop-blur-xl hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Înapoi la Cereri
-                    </button>
                     {request.status === 'PENDING' && (
                         <>
                             <button
@@ -347,6 +361,28 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                 >
                                     <FileText className="w-4 h-4" />
                                     Creează Contract
+                                </button>
+                            )}
+                            {/* Start Rental Button */}
+                            {(() => {
+                                console.log('Button conditions:', {
+                                    onStartRental: !!onStartRental,
+                                    contract_url: request.contract_url,
+                                    rentalExists: rentalExists
+                                });
+                                return onStartRental && request.contract_url && !rentalExists;
+                            })() && (
+                                <button
+                                    onClick={() => onStartRental?.(request)}
+                                    disabled={isProcessing}
+                                    className="w-full bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/60 text-blue-300 hover:text-blue-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isProcessing ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Play className="w-4 h-4" />
+                                    )}
+                                    Începe Închiriere
                                 </button>
                             )}
                             {onSetToPending && (
@@ -417,6 +453,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     const [isEditing, setIsEditing] = useState(false);
     const [showContractModal, setShowContractModal] = useState(false);
     const [isModalOpening, setIsModalOpening] = useState(false);
+    const [rentalExists, setRentalExists] = useState(false);
     const { showSuccess, showError } = useNotification();
 
     const handleCreateContract = (): void => {
@@ -447,6 +484,94 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
         }
     };
 
+    const handleStartRental = async (request: BorrowRequestDTO): Promise<void> => {
+        if (isProcessing) return;
+
+        try {
+            setIsProcessing(true);
+            console.log('Starting rental for request:', request);
+
+            // Get current logged-in user for the rental
+            const currentUser = await getLoggedUser();
+            if (!currentUser?.id) {
+                throw new Error('User not logged in');
+            }
+
+            // Create a rental record from the approved request
+            const rentalResult = await createRentalManually(
+                currentUser.id,
+                request.car_id,
+                typeof request.start_date === 'string' ? request.start_date : request.start_date.toISOString().split('T')[0],
+                request.start_time,
+                typeof request.end_date === 'string' ? request.end_date : request.end_date.toISOString().split('T')[0],
+                request.end_time,
+                request.total_amount,
+                [request.car],
+                {
+                    rentalStatus: 'ACTIVE',
+                    customerName: request.customer_name,
+                    customerEmail: request.customer_email,
+                    customerPhone: request.customer_phone,
+                    customerFirstName: request.customer_first_name,
+                    customerLastName: request.customer_last_name,
+                    requestId: request.id,
+                    features: request.options ? Object.keys(request.options) : undefined
+                }
+            );
+
+            if (rentalResult.success) {
+                showSuccess('Închiriere începută cu succes!');
+                // Update request status to indicate rental has started
+                const updateResult = await updateBorrowRequest(request.id?.toString() || '', {
+                    status: 'APPROVED' // Keep as APPROVED, but rental is now ACTIVE
+                });
+
+                if (updateResult.success) {
+                    // Update local state
+                    setRequest(prev => prev ? { ...prev } : null);
+                    // Mark that rental now exists
+                    setRentalExists(true);
+                }
+
+                // Navigate to rentals/orders view to show the new active rental
+                setTimeout(() => {
+                    navigate('/admin?section=orders');
+                }, 1500);
+            } else {
+                showError(`Nu s-a putut începe închirierea: ${rentalResult.error}`);
+            }
+        } catch (error) {
+            console.error('Error starting rental:', error);
+            showError('Eroare la începerea închirierii');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+
+    // Check if rental already exists for this request
+    const checkRentalExists = async (requestId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('Rentals')
+                .select('id')
+                .eq('request_id', requestId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+                console.error('Error checking rental existence:', error);
+                return false;
+            }
+
+            const exists = !!data;
+            console.log('checkRentalExists result:', { requestId, data, exists });
+            setRentalExists(exists);
+            return exists;
+        } catch (error) {
+            console.error('Error in checkRentalExists:', error);
+            return false;
+        }
+    };
 
     useEffect(() => {
         const loadRequest = async () => {
@@ -455,6 +580,8 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 const fetchedRequest = await fetchBorrowRequestById(requestId);
                 if (fetchedRequest) {
                     setRequest(fetchedRequest);
+                    // Check if rental already exists for this request
+                    await checkRentalExists(requestId);
                 } else {
                     setError('Cerere negăsită');
                 }
@@ -658,10 +785,12 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 onUndoReject={handleUndoReject}
                 onSetToPending={handleSetToPending}
                 onEdit={handleOpenEditModal}
+                onStartRental={handleStartRental}
                 onCreateContract={handleCreateContract}
                 onEditContract={handleEditContract}
                 onDownloadContract={handleDownloadContract}
                 isProcessing={isProcessing}
+                rentalExists={rentalExists}
             />
 
             {
@@ -703,6 +832,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     } as any}
                     car={request?.car}
                     onContractCreated={async (contractUrl?: string | null) => {
+                        console.log('Contract created, URL:', contractUrl);
                         // Update the request's contract_url field
                         if (contractUrl && request) {
                             const updateResult = await updateBorrowRequest(request.id?.toString() || '', {
@@ -712,7 +842,11 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                             if (updateResult.success) {
                                 showSuccess('Contract creat și salvat cu succes!');
                                 // Update local state
-                                setRequest(prev => prev ? { ...prev, contract_url: contractUrl } : null);
+                                setRequest(prev => {
+                                    const updated = prev ? { ...prev, contract_url: contractUrl } : null;
+                                    console.log('Updated request state:', updated);
+                                    return updated;
+                                });
                             } else {
                                 showError(`Contract creat dar nu s-a putut salva URL-ul: ${updateResult.error}`);
                             }
