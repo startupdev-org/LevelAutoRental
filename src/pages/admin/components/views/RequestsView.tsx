@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -12,19 +12,16 @@ import {
     ArrowRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { BorrowRequest, BorrowRequestDTO, Car as CarType, OrderDisplay } from '../../../../types';
+import { BorrowRequestDTO, Car as CarType } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { CreateRentalModal } from '../modals/CreateRentalModal';
 import { EditRequestModal } from '../modals/EditRequestModal';
-import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { getInitials } from '../../../../utils/customer';
 import { getCarName } from '../../../../utils/car';
-import { acceptBorrowRequest, BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
+import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';
 import { formatTime } from '../../../../utils/time';
-import { RequestDetailsModal } from '../modals/RequestDetailsModal';
-import { supabase } from '../../../../lib/supabase';
 
 export const RequestsView: React.FC = () => {
     const { t } = useTranslation();
@@ -33,18 +30,11 @@ export const RequestsView: React.FC = () => {
     const { showSuccess, showError } = useNotification();
     const [requests, setRequests] = useState<BorrowRequestDTO[]>([]);
     const [loading, setLoading] = useState(false);
-    const [cars, setCars] = useState<CarType[]>([]);
+    const [cars] = useState<CarType[]>([]);
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
     const [selectedCarIdForRental, setSelectedCarIdForRental] = useState<string | undefined>(undefined);
-    const [processingRequest, setProcessingRequest] = useState<string | null>(null);
-    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestDTO | null>(null);
-    const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingRequest, setEditingRequest] = useState<BorrowRequestDTO | null>(null);
-    const [showContractModal, setShowContractModal] = useState(false);
-    const [selectedRentalForContract, setSelectedRentalForContract] = useState<OrderDisplay | null>(null);
-    const [showRequestContractModal, setShowRequestContractModal] = useState(false);
-    const [selectedRequestForContract, setSelectedRequestForContract] = useState<BorrowRequest | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalRequests, setTotalRequests] = useState(0);
@@ -122,134 +112,7 @@ export const RequestsView: React.FC = () => {
 
 
 
-    const handleAccept = async (request: BorrowRequestDTO) => {
-        console.log('should accept the request: ', request)
-        const success = await acceptBorrowRequest(request.id || '')
-        console.log('result: ', success)
 
-        // setProcessingRequest(request.id || ''.toString());
-        // setShowRequestDetailsModal(false);
-        // setSelectedRequest(null);
-    };
-
-    const handleReject = async (request: BorrowRequestDTO) => {
-        const reason = window.prompt(`${t('admin.requests.confirmRejectRequest')} ${request.customer_name}? ${t('admin.requests.rejectReasonPrompt')}`);
-        // if (reason === null) return;
-
-        setProcessingRequest(request.id || ''.toString());
-        try {
-            // If request is already APPROVED, use updateBorrowRequest instead
-            if (request.status === 'APPROVED') {
-                const result = await updateBorrowRequest(request.id || ''.toString(), { status: 'REJECTED' } as any);
-                if (result.success) {
-                    showSuccess(t('admin.requests.requestRejected'));
-                    await loadRequests();
-                } else {
-                    showError(`${t('admin.requests.requestRejectFailed')} ${result.error || t('admin.common.unknownError')}`);
-                }
-            } else {
-                const result = await rejectBorrowRequest(request.id || ''.toString(), reason || undefined);
-                if (result.success) {
-                    showSuccess(t('admin.requests.requestRejected'));
-                    await loadRequests();
-                } else {
-                    showError(`${t('admin.requests.requestRejectFailed')} ${result.error || t('admin.common.unknownError')}`);
-                }
-            }
-        } catch (error) {
-            console.error('Error rejecting request:', error);
-            showError(t('admin.requests.requestRejectErrorOccurred'));
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
-
-    const handleUndoReject = async (request: BorrowRequestDTO) => {
-        if (!window.confirm(`${t('admin.requests.confirmRestoreRequest')} ${request.customer_name} ${t('admin.requests.forCar')} ${getCarName(request.car)} ${t('admin.requests.toPending')}`)) {
-            return;
-        }
-
-        setProcessingRequest(request.id || ''.toString());
-        try {
-            const result = await undoRejectBorrowRequest(request.id || ''.toString());
-            if (result.success) {
-                showSuccess(t('admin.requests.requestRestored'));
-                await loadRequests();
-            } else {
-                showError(`${t('admin.requests.requestRestoreFailed')} ${result.error || t('admin.common.unknownError')}`);
-            }
-        } catch (error) {
-            console.error('Error undoing reject request:', error);
-            showError(t('admin.requests.requestRestoreErrorOccurred'));
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
-
-    const handleSetToPending = async (request: BorrowRequestDTO) => {
-        if (!window.confirm(`${t('admin.requests.confirmSetToPending')} ${request.customer_name} ${t('admin.requests.forCar')} ${request.car} ${t('admin.requests.backToPending')}`)) {
-            return;
-        }
-
-        setProcessingRequest(request.id || ''.toString());
-        try {
-            const result = await updateBorrowRequest(request.id || ''.toString(), { status: 'PENDING' } as any);
-            if (result.success) {
-                showSuccess(t('admin.requests.requestSetToPending'));
-                await loadRequests();
-            } else {
-                showError(`${t('admin.requests.requestUpdateFailed')} ${result.error || t('admin.common.unknownError')}`);
-            }
-        } catch (error) {
-            console.error('Error setting request to pending:', error);
-            showError(t('admin.requests.requestUpdateErrorOccurred'));
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
-
-    const handleEdit = (request: BorrowRequestDTO) => {
-        setEditingRequest(request);
-        setShowEditModal(true);
-    };
-
-    const handleCancelRental = async (request: BorrowRequestDTO) => {
-        if (!window.confirm(`Sunteți sigur că doriți să anulați închirierea pentru ${request.customer_name}? Această acțiune va seta cererea la In Asteptare și va șterge comanda de închiriere.`)) {
-            return;
-        }
-
-        setProcessingRequest(request.id || ''.toString());
-        try {
-            const requestId = typeof request.id === 'string' ? parseInt(request.id) : request.id;
-
-            // First, delete the rental with matching request_id
-            const { error: deleteError } = await supabase
-                .from('Rentals')
-                .delete()
-                .eq('request_id', requestId);
-
-            if (deleteError) {
-                console.error('Error deleting rental:', deleteError);
-                showError(`Eroare la ștergerea închirierii: ${deleteError.message}`);
-                setProcessingRequest(null);
-                return;
-            }
-
-            // Then, set the request status to PENDING
-            const result = await updateBorrowRequest(request.id || ''.toString(), { status: 'PENDING' } as any);
-            if (result.success) {
-                showSuccess('Închirierea a fost anulată și cererea a fost setată la În Asteptare');
-                await loadRequests();
-            } else {
-                showError(`Eroare la actualizarea cererii: ${result.error || 'Eroare necunoscută'}`);
-            }
-        } catch (error) {
-            console.error('Error canceling rental:', error);
-            showError('Eroare la anularea închirierii');
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
 
 
     const handleSort = (field: 'start_date' | 'amount') => {
@@ -667,23 +530,6 @@ export const RequestsView: React.FC = () => {
                 />
             )}
 
-            {/* Request Details Modal */}
-            {showRequestDetailsModal && selectedRequest && (
-                <RequestDetailsModal
-                    request={selectedRequest}
-                    handleClose={() => {
-                        setShowRequestDetailsModal(false);
-                        setSelectedRequest(null);
-                    }}
-                    handleAccept={handleAccept}
-                    handleReject={handleReject}
-                    handleUndoReject={handleUndoReject}
-                    handleSetToPending={handleSetToPending}
-                    handleEdit={handleEdit}
-                    handleCancel={handleCancelRental}
-                    isProcessing={processingRequest === selectedRequest?.id?.toString()}
-                />
-            )}
 
             {/* Contract Creation Modal */}
             {/* {showContractModal && selectedRentalForContract && (() => {
@@ -706,32 +552,6 @@ export const RequestsView: React.FC = () => {
                 ) : null;
             })()} */}
 
-            {/* Contract Creation Modal for Requests */}
-            {/* {showRequestContractModal && selectedRequestForContract && (() => {
-                const car = cars.find(c => c.id.toString() === selectedRequestForContract.carId);
-                return car ? (
-                    <ContractCreationModal
-                        isOpen={showRequestContractModal}
-                        onClose={() => {
-                            setShowRequestContractModal(false);
-                            setSelectedRequestForContract(null);
-                        }}
-                        order={{
-                            ...selectedRequestForContract,
-                            request_id: selectedRequestForContract.id // Set request_id to the request's own ID
-                        } as any}
-                        car={car}
-                        onContractCreated={async () => {
-                            // Contract has been created and request approved, close modal and reload
-                            setProcessingRequest(null);
-                            setShowRequestContractModal(false);
-                            setSelectedRequestForContract(null);
-                            await loadRequests();
-                            showSuccess('Cerere aprobată și contract creat cu succes!');
-                        }}
-                    />
-                ) : null;
-            })()} */}
 
             {/* Edit Request Modal */}
             {showEditModal && editingRequest && (

@@ -31,7 +31,6 @@ import { OrdersView, OrderDetailsView, CalendarView, UsersView, CarsView, CarDet
 
 // Import extracted modal components
 import { CarFormModal } from './components/modals/CarFormModal';
-import { RequestDetailsModal } from './components/modals/RequestDetailsModal';
 import { CreateRentalModal } from './components/modals/CreateRentalModal';
 import { EditRequestModal } from './components/modals/EditRequestModal';
 import { fetchBorrowRequestsForDisplay } from '../../lib/db/requests/requests';

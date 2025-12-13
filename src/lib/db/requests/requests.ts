@@ -108,6 +108,7 @@ export async function fetchBorrowRequestById(requestId: string): Promise<BorrowR
             updated_at: data.updated_at,
             price_per_day: data.price_per_day?.toString() || '0',
             total_amount: data.total_amount || 0,
+            contract_url: data.contract_url,
             car: car
         };
 
@@ -355,6 +356,7 @@ export async function updateBorrowRequest(
         if (updates.comment !== undefined) updateData.comment = updates.comment;
         if (updates.options !== undefined) updateData.options = typeof updates.options === 'string' ? updates.options : JSON.stringify(updates.options);
         if (updates.status !== undefined) updateData.status = updates.status;
+        if ((updates as any).contract_url !== undefined) updateData.contract_url = (updates as any).contract_url;
 
         const { error } = await supabase
             .from('BorrowRequest')

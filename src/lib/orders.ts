@@ -220,7 +220,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
           (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || email.split('@')[0] || 'Unknown');
       } else {
         // Fallback to profile lookup
-        const profile = profiles.get(rental.user_id);
+        const profile = rental.user_id ? profiles.get(rental.user_id) : null;
         email = profile?.email || rental.user?.email || '';
         phone = profile?.phone || '';
         firstName = profile?.firstName || '';
@@ -230,7 +230,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
           : firstName || lastName
             ? `${firstName}${lastName}`
             : (email ? email.split('@')[0] : '')
-            || `User ${rental.user_id.slice(0, 8)}`;
+            || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
       }
 
       // Calculate amount based on days and car price
@@ -513,7 +513,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
           console.error(`Error fetching car ${carIdMatch} from database:`, err);
         }
       }
-      const profile = profiles.get(rental.user_id);
+      const profile = rental.user_id ? profiles.get(rental.user_id) : null;
       const email = profile?.email || rental.user?.email || '';
       const firstName = profile?.firstName || '';
       const lastName = profile?.lastName || '';
@@ -522,7 +522,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         : firstName || lastName
           ? `${firstName}${lastName}`
           : (email ? email.split('@')[0] : '')
-          || `User ${rental.user_id.slice(0, 8)}`;
+          || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
 
       // Calculate amount based on days and car price
       const startDate = new Date(rental.start_date || new Date());
