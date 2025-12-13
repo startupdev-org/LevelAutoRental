@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, CheckCircle, X, RefreshCw, Edit, ArrowLeft, Loader2, Pen } from 'lucide-react';
-import { formatDateLocal, getDateDiffInDays, calculateRentalDuration } from '../../../../utils/date';
-import { BorrowRequestDTO, Car } from '../../../../types';
+import { Calendar, Clock, CheckCircle, X, RefreshCw, ArrowLeft, Loader2, Pen, FileText, Download, Edit as EditIcon } from 'lucide-react';
+import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
+import { useNotification } from '../../../../components/ui/NotificationToaster';
+import { formatDateLocal, calculateRentalDuration } from '../../../../utils/date';
+import { BorrowRequestDTO } from '../../../../types';
 import { formatAmount } from '../../../../utils/currency';
 import { parseRequestOptions } from '../../../../utils/car/options';
-import { rentalOptions } from '../../../../constants/rentalOptions';
 import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { fetchBorrowRequestById } from '../../../../lib/db/requests/requests';
 import { useTranslation } from 'react-i18next';
@@ -20,10 +21,13 @@ export interface RequestDetailsViewProps {
     onUndoReject?: (request: BorrowRequestDTO) => void;
     onSetToPending?: (request: BorrowRequestDTO) => void;
     onEdit?: (request: BorrowRequestDTO) => void;
+    onCreateContract?: () => void;
+    onEditContract?: () => void;
+    onDownloadContract?: () => void;
     isProcessing?: boolean;
 }
 
-export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, isProcessing = false }) => {
+export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onCreateContract, onEditContract, onDownloadContract, isProcessing = false }) => {
 
     const car = request.car;
 
@@ -51,7 +55,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                         />
                         <div>
                             <h2 className="text-xl font-bold text-white">{(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}</h2>
-                            <div className="text-sm text-gray-300">{car.transmission} · {car.seats} seats</div>
+                            <div className="text-sm text-gray-300">{car.transmission === 'Automatic' ? 'Automat' : car.transmission} · {car.seats} locuri</div>
                         </div>
                     </div>
                 </motion.div>
@@ -76,7 +80,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Ora</p>
-                                <span className="text-white text-sm font-medium">{request.start_time || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{request.start_time ? request.start_time.slice(0, 5) : '--:--'}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
@@ -90,7 +94,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             <Clock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Ora</p>
-                                <span className="text-white text-sm font-medium">{request.end_time || '--:--'}</span>
+                                <span className="text-white text-sm font-medium">{request.end_time ? request.end_time.slice(0, 5) : '--:--'}</span>
                             </div>
                         </div>
                     </div>
@@ -135,7 +139,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
 
                         return (
                             <div className="pt-4 border-t border-white/10">
-                                <h3 className="text-sm font-semibold text-white mb-3">Requested Services</h3>
+                                <h3 className="text-sm font-semibold text-white mb-3">Servicii Solicitate</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {selectedOptions.map((option, index) => (
                                         <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
@@ -181,6 +185,77 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     </div>
                 </motion.div>
 
+                {/* Contract Info */}
+                {request.contract_url && (
+                    <motion.div
+                        initial={{ opacity: 1, y: 0 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.3 }}
+                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
+                    >
+                        <h2 className="text-xl font-bold text-white mb-4">Contract</h2>
+                        <div className="space-y-4">
+                            {/* Contract Preview */}
+                            <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-lg">
+                                {/* Mini A4 Document Preview */}
+                                <div className="bg-white rounded border border-gray-300 shadow-sm flex-shrink-0" style={{ aspectRatio: '1 / 1.414', width: '60px' }}>
+                                    <div className="p-1 h-full flex flex-col">
+                                        {/* Header */}
+                                        <div className="text-center mb-0.5">
+                                            <div className="w-3 h-0.5 bg-gray-400 rounded mx-auto mb-0.5"></div>
+                                            <div className="w-4 h-0.5 bg-gray-500 rounded mx-auto"></div>
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="flex-1 space-y-0.5">
+                                            <div className="w-full h-0.5 bg-gray-200 rounded"></div>
+                                            <div className="w-4/5 h-0.5 bg-gray-200 rounded"></div>
+                                            <div className="w-3/4 h-0.5 bg-gray-200 rounded"></div>
+                                            <div className="w-5/6 h-0.5 bg-gray-200 rounded"></div>
+                                        </div>
+
+                                        {/* Footer */}
+                                        <div className="mt-0.5 pt-0.5 border-t border-gray-300">
+                                            <div className="flex justify-between">
+                                                <div className="w-1.5 h-0.5 bg-gray-400 rounded"></div>
+                                                <div className="w-1.5 h-0.5 bg-gray-400 rounded"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Contract Info & Actions */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="mb-2">
+                                        <span className="text-white font-medium text-sm">Contract Închiriere Auto</span>
+                                    </div>
+                                    <div className="text-xs text-gray-400 mb-3">
+                                        PDF • {formatDateLocal(new Date())}
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => onDownloadContract?.()}
+                                            className="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 text-white hover:text-gray-200 font-medium py-2 px-3 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-1.5 text-xs"
+                                        >
+                                            <Download className="w-3 h-3" />
+                                            Descarcă
+                                        </button>
+                                        <button
+                                            onClick={() => onEditContract?.()}
+                                            className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/60 text-blue-300 hover:text-blue-200 font-medium py-2 px-3 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-1.5 text-xs"
+                                        >
+                                            <EditIcon className="w-3 h-3" />
+                                            Editează
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* Status */}
                 <motion.div
                     initial={{ opacity: 1, y: 0 }}
@@ -189,7 +264,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                 >
                     <h2 className="text-xl font-bold text-white mb-4">Status</h2>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <span
                             className={`px-4 py-2 rounded-lg text-sm font-semibold border backdrop-blur-xl ${request.status === 'PENDING'
                                 ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
@@ -202,17 +277,18 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                 request.status === 'APPROVED' ? 'Aprobat' :
                                     request.status === 'REJECTED' ? 'Respins' : ''}
                         </span>
-                        {request.updated_at && (
-
-                            <span className="text-gray-400 text-sm">
-                                Actualizata ultima data pe {formatDateLocal(request.updated_at)}
-                            </span>
-                        )}
-                        {request.requested_at && (
-                            <span className="text-gray-400 text-sm">
-                                Solicitata la {formatDateLocal(request.requested_at)}
-                            </span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                            {request.requested_at && (
+                                <span className="text-gray-400 text-sm">
+                                    Solicitată la {(() => {
+                                        const date = new Date(request.requested_at);
+                                        const formattedDate = formatDateLocal(date);
+                                        const formattedTime = date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+                                        return `${formattedDate} la ${formattedTime}`;
+                                    })()}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </motion.div>
             </div>
@@ -262,6 +338,17 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     )}
                     {request.status === 'APPROVED' && (typeof onSetToPending !== 'undefined' || typeof onReject !== 'undefined') && (
                         <>
+                            {/* No contract - show create button */}
+                            {!request.contract_url && onCreateContract && (
+                                <button
+                                    onClick={() => onCreateContract?.()}
+                                    disabled={isProcessing}
+                                    className="w-full bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/60 text-blue-300 hover:text-blue-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    Creează Contract
+                                </button>
+                            )}
                             {onSetToPending && (
                                 <button
                                     onClick={() => onSetToPending(request)}
@@ -328,6 +415,37 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     const [isProcessing, setIsProcessing] = useState(false);
 
     const [isEditing, setIsEditing] = useState(false);
+    const [showContractModal, setShowContractModal] = useState(false);
+    const [isModalOpening, setIsModalOpening] = useState(false);
+    const { showSuccess, showError } = useNotification();
+
+    const handleCreateContract = (): void => {
+        if (!isModalOpening) {
+            setIsModalOpening(true);
+            // Add a small delay to ensure no race conditions
+            setTimeout(() => {
+                setShowContractModal(true);
+                setTimeout(() => setIsModalOpening(false), 300);
+            }, 10);
+        }
+    };
+
+    const handleEditContract = (): void => {
+        if (!isModalOpening) {
+            setIsModalOpening(true);
+            // Add a small delay to ensure no race conditions
+            setTimeout(() => {
+                setShowContractModal(true);
+                setTimeout(() => setIsModalOpening(false), 300);
+            }, 10);
+        }
+    };
+
+    const handleDownloadContract = (): void => {
+        if (request?.contract_url) {
+            window.open(request.contract_url, '_blank');
+        }
+    };
 
 
     useEffect(() => {
@@ -540,6 +658,9 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 onUndoReject={handleUndoReject}
                 onSetToPending={handleSetToPending}
                 onEdit={handleOpenEditModal}
+                onCreateContract={handleCreateContract}
+                onEditContract={handleEditContract}
+                onDownloadContract={handleDownloadContract}
                 isProcessing={isProcessing}
             />
 
@@ -554,6 +675,55 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     </>
                 )
             }
+
+            {/* Contract Creation Modal */}
+            {showContractModal && (
+                <ContractCreationModal
+                    isOpen={true}
+                    onClose={() => {
+                        setShowContractModal(false);
+                        setIsModalOpening(false);
+                    }}
+                    order={{
+                        ...request,
+                        request_id: request?.id,
+                        id: request?.id?.toString() || '',
+                        customer_name: request?.customer_name,
+                        customer_first_name: request?.customer_first_name,
+                        customer_last_name: request?.customer_last_name,
+                        customer_email: request?.customer_email,
+                        customer_phone: request?.customer_phone,
+                        start_date: request?.start_date,
+                        start_time: request?.start_time,
+                        end_date: request?.end_date,
+                        end_time: request?.end_time,
+                        total_amount: request?.total_amount,
+                        options: request?.options,
+                        status: 'ACTIVE' // Treat as active for contract creation
+                    } as any}
+                    car={request?.car}
+                    onContractCreated={async (contractUrl?: string | null) => {
+                        // Update the request's contract_url field
+                        if (contractUrl && request) {
+                            const updateResult = await updateBorrowRequest(request.id?.toString() || '', {
+                                contract_url: contractUrl
+                            } as any);
+
+                            if (updateResult.success) {
+                                showSuccess('Contract creat și salvat cu succes!');
+                                // Update local state
+                                setRequest(prev => prev ? { ...prev, contract_url: contractUrl } : null);
+                            } else {
+                                showError(`Contract creat dar nu s-a putut salva URL-ul: ${updateResult.error}`);
+                            }
+                        }
+
+                        // Close modal
+                        setShowContractModal(false);
+                        setIsModalOpening(false);
+                    }}
+                />
+            )}
         </>
     );
 };

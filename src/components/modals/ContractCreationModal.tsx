@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Car, Rental } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
@@ -13,7 +12,7 @@ interface ContractCreationModalProps {
     order: Rental;
     car: Car;
     orderNumber?: number;
-    onContractCreated?: () => void;
+    onContractCreated?: (contractUrl?: string | null) => void;
 }
 
 interface AdditionalDriver {
@@ -41,7 +40,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
     const [customerIdnp, setCustomerIdnp] = useState('');
 
     // Vehicle details
-    const [carColor, setCarColor] = useState(car.color || '');
+    const [carColor, setCarColor] = useState((car as any).color || '');
     const [carRegistrationNumber, setCarRegistrationNumber] = useState((car as any).license || '');
     const [carMileage, setCarMileage] = useState((car as any).kilometers?.toString() || car.mileage?.toString() || '');
     const [carFuelType, setCarFuelType] = useState(car.fuel_type || '');
@@ -270,7 +269,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                 d => d.firstName.trim() && d.lastName.trim()
             );
 
-            await generateContractFromOrder(
+            const contractUrlResult = await generateContractFromOrder(
                 order,
                 car,
                 contractNumber,
@@ -297,7 +296,9 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
 
             showSuccess('Contractul a fost creat și salvat cu succes!');
             if (onContractCreated) {
-                onContractCreated();
+                // Pass the contract URL if it's a string, otherwise pass undefined
+                const contractUrl = typeof contractUrlResult === 'string' ? contractUrlResult : undefined;
+                onContractCreated(contractUrl);
             }
             onClose();
         } catch (error) {
@@ -312,23 +313,15 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
     if (!isOpen) return null;
 
     return createPortal(
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 1 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 1 }}
-                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-                    style={{ zIndex: 10002 }}
-                    onClick={onClose}
-                >
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
-                    >
+        <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            style={{ zIndex: 10000 }}
+            onClick={onClose}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
+            >
                         {/* Header */}
                         <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                             <div>
@@ -429,7 +422,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                                         <input
                                             type="text"
                                             value={carRegistrationNumber}
-                                            onChange={(e) => setCarRegistrationNumber(e.target.value)}
+                                            onChange={(e) => setCarRegistrationNumber(e.target.value.toUpperCase())}
                                             className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                                             placeholder="Introduceți numărul de înmatriculare"
                                         />
@@ -680,10 +673,8 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                                 )}
                             </button>
                         </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>,
+            </div>
+        </div>,
         document.body
     );
 };

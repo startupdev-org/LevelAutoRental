@@ -155,6 +155,7 @@ export interface BorrowRequestDTO {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
+  contract_url?: string;
 
   car: Car;
 }
