@@ -80,32 +80,9 @@ COMMENT ON COLUMN public."Cars".reviews IS 'Number of reviews';
 COMMENT ON COLUMN public."Cars".name IS 'Alternative name for the car';
 COMMENT ON COLUMN public."Cars".discount_percentage IS 'Discount percentage (0-100)';
 
--- Recreate the trigger to automatically execute approved requests when start date passes
-CREATE OR REPLACE FUNCTION auto_execute_rental_trigger()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Only process APPROVED requests
-    IF NEW.status = 'APPROVED' THEN
-        -- Check if start date has passed (BorrowRequest table uses TIMESTAMP, not separate date/time)
-        IF NEW.start_date IS NOT NULL AND NEW.start_date <= CURRENT_TIMESTAMP THEN
-            -- Update the request status to EXECUTED
-            NEW.status := 'EXECUTED';
-            NEW.updated_at := CURRENT_TIMESTAMP;
-
-            RAISE NOTICE 'Auto-executed rental request % - start date has passed', NEW.id;
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create the trigger
-DROP TRIGGER IF EXISTS auto_execute_rental_trigger ON "BorrowRequest";
-CREATE TRIGGER auto_execute_rental_trigger
-    BEFORE INSERT OR UPDATE ON "BorrowRequest"
-    FOR EACH ROW
-    EXECUTE FUNCTION auto_execute_rental_trigger();
+-- Removed the auto_execute_rental_trigger since EXECUTED status has been removed
+-- The trigger was automatically setting APPROVED requests to EXECUTED when start date passed
+-- Now all approved requests stay as APPROVED status
 
 -- Trigger to automatically update rental status based on dates
 CREATE OR REPLACE FUNCTION auto_update_rental_status()

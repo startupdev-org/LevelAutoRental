@@ -44,7 +44,6 @@ export interface Testimonial {
   id: string;
   name: string;
   userName: string;
-  avatar: string;
   rating: number;
   comment: string;
   location: string;
@@ -109,19 +108,20 @@ export interface FavoriteCar {
 export interface BorrowRequest {
   id?: string;
   car_id: string;
-  user_id?: string | null;
+  user_id: string | null;
   start_date: Date | string;
   start_time: string;
   end_date: Date | string;
   end_time: string;
-  price_per_day: string;
+  price_per_day: number;
   customer_name: string;
   customer_first_name: string;
   customer_last_name: string;
   customer_email: string;
   customer_phone?: string;
+  customer_age?: number;
   total_amount: number;
-  options: OptionsState | null;
+  options: OptionsState;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
@@ -129,7 +129,7 @@ export interface BorrowRequest {
 }
 
 export interface BorrowRequestDTO {
-  id?: string;
+  id: string;
   car_id: string;
   user_id?: string | null;
 
@@ -150,11 +150,12 @@ export interface BorrowRequestDTO {
   // must match original
   comment?: string;
 
-  options: OptionsState | null;
+  options: OptionsState;
 
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
+  contract_url?: string;
 
   car: Car;
 }

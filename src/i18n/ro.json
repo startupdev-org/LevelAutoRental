@@ -107,7 +107,7 @@
                 "description": "Cu totul pregătit, porniți spre destinația dorită, beneficiind de libertatea și confortul oferit de flota noastră premium."
             }
         },
-        "tagline": "Level Auto Rental – ușor, rapid, comod"
+        "tagline": "Level Auto Rental - ușor, rapid, comod"
     },
     "testimonials": {
         "sectionLabel": "Recenzii",
@@ -337,6 +337,14 @@
                 "Spălare": "Spălare",
                 "Vânzare": "Vânzare",
                 "Detailing auto": "Detailing auto"
+            },
+            "home-page": {
+                "1": "Serviciu uimitor! Mașina a fost curată, fiabilă, iar procesul de rezervare extrem de simplu. Cu siguranță voi mai folosi acest serviciu!",
+                "2": "Cea mai bună experiență de închiriere auto pe care am avut-o. Prețuri excelente, serviciu clienți extraordinar, iar mașina a depășit așteptările mele.",
+                "3": "Serviciu foarte profesional. Preluarea a fost rapidă, iar mașina era exact cum a fost descrisă. Recomand cu încredere!",
+                "4": "Experiență fantastică de la început până la sfârșit. Site-ul este ușor de folosit, iar mașina a fost perfectă pentru călătoria noastră în familie.",
+                "5": "Serviciu excelent! Mașina a fost în stare perfectă, iar procesul de rezervare foarte simplu. Prețuri rezonabile, recomand cu încredere!",
+                "6": "Foarte mulțumit de serviciu! Mașina corespundea descrierii, iar personalul a fost profesionist. Cu siguranță voi reveni."
             },
             "comments": {
                 "1": "Am avut experiență cu mai multe servicii de închiriere, iar acesta este, probabil, unul dintre cele mai rapide și de încredere. Mașinile îngrijite, contractul este transparent și bine detaliat, fără condiții speciale sau plată în plus pentru plecări peste hotare, loiali. Dacă ar trebui să recomand un parc de închirieri, cu siguranță ar fi acesta.",

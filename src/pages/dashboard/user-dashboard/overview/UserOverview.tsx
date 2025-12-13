@@ -5,7 +5,13 @@ import { fetchFavoriteCarsFromStorage, getUserBorrowRequests as fetchUserBorrowR
 import { supabase } from '../../../../lib/supabase';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { TabType } from '../../UserDashboard';
-import { BorrowRequest } from '../../../../lib/orders';
+import { BorrowRequest } from '../../../../types';
+
+// Extended type for borrow requests with car information
+interface BorrowRequestWithCar extends BorrowRequest {
+    car: any; // Car information is attached by getUserBorrowRequests
+    created_at?: string;
+}
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
 import { OrderDetailsModal } from '../../../../components/modals/OrderDetailsModal';
@@ -28,18 +34,18 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => {
 
-    const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[] | null>(null);
+    const [borrowRequests, setBorrowRequests] = useState<BorrowRequestWithCar[] | null>(null);
 
     const [favoriteCars, setFavoriteCars] = useState<FavoriteCar[]>([]);
 
     const [loading, setLoading] = useState(true);
 
     // Modal state for order details
-    const [selectedRequest, setSelectedRequest] = useState<BorrowRequest | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestWithCar | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Convert BorrowRequest to OrderDisplay format for modal compatibility
-    const convertBorrowRequestToOrderDisplay = (request: BorrowRequest): any => {
+    const convertBorrowRequestToOrderDisplay = (request: BorrowRequestWithCar): any => {
         const startDate = new Date(request.start_date || new Date());
         const endDate = new Date(request.end_date || new Date());
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
@@ -120,7 +126,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
 
     async function handleFetchUserBorrowRequests() {
         const requests = await fetchUserBorrowRequests();
-        setBorrowRequests(requests);
+        setBorrowRequests(requests as BorrowRequestWithCar[]);
     }
 
     async function handleFetchUserFavoriteCars() {
@@ -157,16 +163,69 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             <div className="mt-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ pointerEvents: 'auto' }}>
                     {/* Current Active Borrow Requests or No Current Requests State */}
-                    {borrowRequests && borrowRequests.filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED').length > 0 ? (
-                        // Show all active borrow requests
+                    {borrowRequests && borrowRequests.filter(r => {
+                        if (r.status !== 'APPROVED') return false;
+
+                        // Check if end date hasn't passed
+                        const now = new Date();
+                        const endDateTime = new Date(r.end_date);
+
+                        if (r.end_time) {
+                            const [hours, minutes] = r.end_time.split(':').map(Number);
+                            endDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                        } else {
+                            endDateTime.setHours(23, 59, 59, 999); // End of day
+                        }
+
+                        return now <= endDateTime;
+                    }).length > 0 ? (
+                        // Show active borrow requests that haven't ended yet
                         borrowRequests
-                            .filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED')
+                            .filter(r => {
+                                if (r.status !== 'APPROVED') return false;
+
+                                // Check if end date hasn't passed
+                                const now = new Date();
+                                const endDateTime = new Date(r.end_date);
+
+                                if (r.end_time) {
+                                    const [hours, minutes] = r.end_time.split(':').map(Number);
+                                    endDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                                } else {
+                                    endDateTime.setHours(23, 59, 59, 999); // End of day
+                                }
+
+                                return now <= endDateTime;
+                            })
                             .map((activeRequest) => {
-                                const getStatusInfo = (status: string) => {
+                                const getStatusInfo = (status: string, startDate: string | Date, endDate: string | Date, startTime?: string, endTime?: string) => {
+                                    // Check if current date/time is between start and end date/time
+                                    const now = new Date();
+
+                                    const rentalStartDateTime = new Date(startDate);
+                                    if (startTime) {
+                                        const [hours, minutes] = startTime.split(':').map(Number);
+                                        rentalStartDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+                                    } else {
+                                        rentalStartDateTime.setHours(0, 0, 0, 0); // Start of day if no time
+                                    }
+
+                                    const rentalEndDateTime = new Date(endDate);
+                                    if (endTime) {
+                                        const [hours, minutes] = endTime.split(':').map(Number);
+                                        rentalEndDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                                    } else {
+                                        rentalEndDateTime.setHours(23, 59, 59, 999); // End of day if no time
+                                    }
+
+                                    const isStarted = now >= rentalStartDateTime && now <= rentalEndDateTime;
+
                                     switch (status) {
-                                        case 'EXECUTED':
-                                            return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
                                         case 'APPROVED':
+                                            if (isStarted) {
+                                                return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
+                                            }
+                                            return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
                                         default:
                                             return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
                                     }
@@ -197,15 +256,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                                     {activeRequest.car?.make} {activeRequest.car?.model}
                                                 </h3>
                                                 <p className="text-white/80 text-xs">
-                                                    {formatDate(activeRequest.start_date)} - {formatDate(activeRequest.end_date)}
+                                                    {formatDate(activeRequest.start_date as string)} {activeRequest.start_time ? `la ${activeRequest.start_time.slice(0, 5)}` : ''} - {formatDate(activeRequest.end_date as string)} {activeRequest.end_time ? `la ${activeRequest.end_time.slice(0, 5)}` : ''}
                                                 </p>
                                             </div>
 
                                             {/* Status Badge */}
                                             <div className="absolute top-3 right-3">
-                                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${getStatusInfo(activeRequest.status).color}`}>
+                                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm ${getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).color}`}>
                                                 <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
-                                                <span>{getStatusInfo(activeRequest.status).text}</span>
+                                                <span>{getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).text}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -287,7 +346,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {borrowRequests && borrowRequests.length > 0 ? (
                     borrowRequests
-                        .filter(request => request.status === 'EXECUTED')
+                        .filter(request => {
+                            if (request.status === 'APPROVED') {
+                                // Only show APPROVED requests in history if rental period has ended
+                                const endDate = new Date(request.end_date);
+                                const now = new Date();
+                                return endDate < now;
+                            }
+                            return false; // Don't show other statuses in history
+                        })
                         .slice(0, 6)
                         .map((request) => (
                             <div
@@ -318,7 +385,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                             {request.car?.make} {request.car?.model}
                                         </h3>
                                         <p className="text-white/80 text-xs">
-                                            {formatDate(request.start_date)} - {formatDate(request.end_date)}
+                                            {formatDate(request.start_date as string)} - {formatDate(request.end_date as string)}
                                         </p>
                                     </div>
 
