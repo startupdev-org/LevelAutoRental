@@ -201,7 +201,7 @@ export const Admin: React.FC = () => {
         if (orderId) return t('admin.orderDetails.title', { id: orderId });
         const requestId = searchParams.get('requestId');
         if (requestId && section === 'requests') {
-            return t('admin.requestDetails.title', { id: requestId });
+            return t('admin.requestDetails.title');
         }
         if (carId && section === 'cars') {
             const car = cars.find(c => c.id.toString() === carId);

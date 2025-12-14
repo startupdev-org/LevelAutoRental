@@ -51,9 +51,7 @@ export const parseRequestOptions = (request: any): RequestOption[] => {
     }
 
     // Insurance
-    if (parsedOptions.tireInsurance) {
-        selectedOptions.push({ label: 'Asigurare anvelope & parbriz', price: '+20%', category: 'insurance' });
-    }
+    // Tire insurance option removed
 
     // Additional
     if (parsedOptions.childSeat) {

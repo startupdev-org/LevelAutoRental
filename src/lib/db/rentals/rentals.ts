@@ -328,7 +328,7 @@ export async function fetchRecentRentals(): Promise<Rental[]> {
     return rentals;
 }
 
-const ACTIVE_RENTAL_STATUS = 'ACTIVE'
+const ACTIVE_RENTAL_STATUS = 'ACTIVE';
 
 export async function fetchActiveRentals(): Promise<Rental[]> {
 

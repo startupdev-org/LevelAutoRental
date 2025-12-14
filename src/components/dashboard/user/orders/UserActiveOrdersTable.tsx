@@ -1,16 +1,30 @@
 import React from 'react';
-import { Calendar, Download, Plus } from 'lucide-react';
+import { Calendar, Download, Plus, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { Rental } from '../../../../lib/orders';
+import { RentalDTO } from '../../../../types';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
-    orders: Rental[] | null;
-    onOrderClick: (order: Rental) => void;
+    orders: RentalDTO[] | null;
+    onOrderClick: (order: RentalDTO) => void;
 }
 
 export const UserActiveOrdersTable: React.FC<Props> = ({ orders, onOrderClick }) => {
     const { t } = useTranslation();
+
+    const downloadContract = async (order: RentalDTO) => {
+        // If contract URL exists, download from bucket
+        if (order.contract_url) {
+            // Create a temporary link to download the file
+            const link = document.createElement('a');
+            link.href = order.contract_url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
 
     const formatDate = (dateString: string) => {
         try {
@@ -61,8 +75,8 @@ export const UserActiveOrdersTable: React.FC<Props> = ({ orders, onOrderClick })
                                     <div className="flex items-center gap-4 text-sm font-semibold text-gray-400 mb-2">
                                         <span className="flex items-center gap-1">
                                             <Calendar size={14} />
-                                            {formatDate(order.start_date)} {order.start_time} -{' '}
-                                            {formatDate(order.end_date)} {order.end_time}
+                                            {formatDate(order.start_date)} {order.start_time?.slice(0, 5)} -{' '}
+                                            {formatDate(order.end_date)} {order.end_time?.slice(0, 5)}
                                         </span>
                                     </div>
 
@@ -79,6 +93,14 @@ export const UserActiveOrdersTable: React.FC<Props> = ({ orders, onOrderClick })
                                     >
                                         <Plus className="w-4 h-4" />
                                         {t('dashboard.bookings.details')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => downloadContract(order)}
+                                        className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 font-semibold rounded-lg hover:border-blue-500/60 transition-all text-sm whitespace-nowrap flex items-center gap-2"
+                                    >
+                                        <FileText size={14} />
+                                        {t('dashboard.bookings.contract')}
                                     </button>
 
                                     <button

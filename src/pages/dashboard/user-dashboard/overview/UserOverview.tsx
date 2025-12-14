@@ -76,6 +76,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             createdAt: request.created_at,
             features: request.car?.features || [],
             options: (request as any).options || {},
+            contract_url: request.contract_url,
         };
     };
 
@@ -164,7 +165,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ pointerEvents: 'auto' }}>
                     {/* Current Active Borrow Requests or No Current Requests State */}
                     {borrowRequests && borrowRequests.filter(r => {
-                        if (r.status !== 'APPROVED') return false;
+                        if (r.status !== 'APPROVED' && r.status !== 'PROCESSED') return false;
 
                         // Check if end date hasn't passed
                         const now = new Date();
@@ -182,7 +183,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                         // Show active borrow requests that haven't ended yet
                         borrowRequests
                             .filter(r => {
-                                if (r.status !== 'APPROVED') return false;
+                                if (r.status !== 'APPROVED' && r.status !== 'PROCESSED') return false;
 
                                 // Check if end date hasn't passed
                                 const now = new Date();
@@ -226,6 +227,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                                 return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
                                             }
                                             return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
+                                        case 'PROCESSED':
+                                            return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
                                         default:
                                             return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
                                     }

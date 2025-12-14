@@ -511,7 +511,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                                     {order.pickupDate ? formatDate(order.pickupDate) : '—'}
                                                 </p>
                                                 {order.pickupTime && (
-                                                    <p className="text-gray-400 text-xs">{order.pickupTime}</p>
+                                                    <p className="text-gray-400 text-xs">{order.pickupTime.slice(0, 5)}</p>
                                                 )}
                                             </div>
                                         )}
@@ -522,7 +522,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                                     {order.returnDate ? formatDate(order.returnDate) : '—'}
                                                 </p>
                                                 {order.returnTime && (
-                                                    <p className="text-gray-400 text-xs">{order.returnTime}</p>
+                                                    <p className="text-gray-400 text-xs">{order.returnTime.slice(0, 5)}</p>
                                                 )}
                                             </div>
                                         )}

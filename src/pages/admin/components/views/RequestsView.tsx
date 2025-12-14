@@ -43,7 +43,7 @@ export const RequestsView: React.FC = () => {
 
     const [sortBy, setSortBy] = useState<'start_date' | 'amount' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [status, setStatus] = useState<'PENDING' | 'REJECTED' | 'APPROVED' | null>(null);
+    const [status, setStatus] = useState<'PENDING' | 'REJECTED' | 'APPROVED' | 'PROCESSED' | null>(null);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearch] = useState(searchQuery);
@@ -200,6 +200,18 @@ export const RequestsView: React.FC = () => {
                                 </button>
 
                                 <button
+                                    onClick={() => setStatus(prev => prev === 'PROCESSED' ? null : 'PROCESSED')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'PROCESSED'
+                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 hover:bg-blue-500/30 hover:border-blue-500/60'
+                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                >
+                                    {status === 'PROCESSED'
+                                        ? t('admin.requests.hideProcessed')
+                                        : t('admin.requests.showProcessed')}
+                                </button>
+
+                                <button
                                     onClick={() => setShowAddRentalModal(true)}
                                     className="px-3 md:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-xs md:text-sm whitespace-nowrap flex items-center justify-center gap-2"
                                 >
@@ -306,12 +318,15 @@ export const RequestsView: React.FC = () => {
                                                     ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                     : request.status === 'APPROVED'
                                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                        : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                        : request.status === 'PROCESSED'
+                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                            : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                     }`}
                                             >
-                                                {request.status === 'PENDING' ? t('admin.status.pending') :
-                                                    request.status === 'APPROVED' ? t('admin.status.approved') :
-                                                        request.status === 'REJECTED' ? t('admin.status.rejected') : ''
+                                                {request.status === 'PENDING' ? t('admin.requests.pending') :
+                                                    request.status === 'APPROVED' ? t('admin.requests.approved') :
+                                                        request.status === 'PROCESSED' ? t('admin.requests.processed') :
+                                                            request.status === 'REJECTED' ? t('admin.requests.rejected') : ''
                                                 }
                                             </span>
                                         </div>
@@ -436,12 +451,15 @@ export const RequestsView: React.FC = () => {
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : request.status === 'APPROVED'
                                                                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                                : request.status === 'PROCESSED'
+                                                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                                    : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                             }`}
                                                     >
-                                                        {request.status === 'PENDING' ? t('admin.status.pending') :
-                                                            request.status === 'APPROVED' ? t('admin.status.approved') :
-                                                                request.status === 'REJECTED' ? t('admin.status.rejected') : ''}
+                                                {request.status === 'PENDING' ? t('admin.requests.pending') :
+                                                    request.status === 'APPROVED' ? t('admin.requests.approved') :
+                                                        request.status === 'PROCESSED' ? t('admin.requests.processed') :
+                                                            request.status === 'REJECTED' ? t('admin.requests.rejected') : ''}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -456,34 +474,33 @@ export const RequestsView: React.FC = () => {
                         {searchQuery ? t('admin.requests.noRequests') : t('admin.requests.noRequests')}
                     </div>
                 )}
-            </div>
 
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-                <div className="text-m text-gray-300">
-                    Showing {requests.length > 0 ? (currentPage - 1) * requestsPerPage + 1 : 0} to {Math.min(currentPage * requestsPerPage, totalRequests)} of {totalRequests} requests
-
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Previous
-                    </button>
-                    <div className="text-sm text-gray-300 px-2">
-                        Page {currentPage} of {totalPages || 1}
+                {/* Pagination */}
+                <div className="px-3 md:px-6 py-3 md:py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="text-xs md:text-sm text-gray-300 text-center sm:text-left">
+                        {t('admin.requests.showing')} {requests.length > 0 ? (currentPage - 1) * requestsPerPage + 1 : 0} {t('admin.requests.to')} {Math.min(currentPage * requestsPerPage, totalRequests)} {t('admin.requests.of')} {totalRequests} {t('admin.requests.requests')}
                     </div>
-                    <button
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages || totalPages === 0}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
-                    >
-                        Next
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-xs md:text-sm"
+                        >
+                            <ArrowLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            <span className="hidden sm:inline">{t('admin.requests.previous')}</span>
+                        </button>
+                        <div className="text-xs md:text-sm text-gray-300 px-2">
+                            {t('admin.requests.page')} {currentPage} {t('admin.requests.ofPage')} {totalPages || 1}
+                        </div>
+                        <button
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-xs md:text-sm"
+                        >
+                            <span className="hidden sm:inline">{t('admin.requests.next')}</span>
+                            <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 

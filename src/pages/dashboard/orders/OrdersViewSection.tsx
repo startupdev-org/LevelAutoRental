@@ -370,22 +370,15 @@ export const OrdersViewSection: React.FC = () => {
             if (result.success) {
                 // If this order was created from a request, also mark the request as REJECTED
                 const requestId = (order as any).request_id;
-                console.log('Order being cancelled:', order.id, 'Request ID:', requestId, 'Order object:', order);
                 if (requestId) {
                     try {
-                        console.log('Attempting to update request', requestId, 'to REJECTED');
                         const updateResult = await updateBorrowRequest(requestId.toString(), { status: 'REJECTED' } as any);
-                        console.log('Update result:', updateResult);
                         if (!updateResult.success) {
                             console.warn('Failed to update corresponding request status:', updateResult.error);
-                        } else {
-                            console.log('Successfully updated request to REJECTED');
                         }
                     } catch (requestError) {
                         console.warn('Error updating corresponding request:', requestError);
                     }
-                } else {
-                    console.log('No request_id found for this order');
                 }
 
                 showSuccess('Comanda a fost anulată cu succes și cererea corespunzătoare a fost setată ca respinsă!');
@@ -690,17 +683,14 @@ export const OrdersViewSection: React.FC = () => {
     const [showContractModal, setShowContractModal] = useState(false);
 
     const handleOrderClick = (order: OrderDisplay, orderNum: number) => {
-        console.log('handling order click for order:', order, 'isModalOpening:', isModalOpening)
         if (!isModalOpening) {
             setIsModalOpening(true);
             setSelectedOrder(order);
             setOrderNumber(orderNum);
             setIsModalOpen(true);
-            console.log('Set modal states: selectedOrder, orderNumber, isModalOpen = true')
             // Reset modal opening state after animation
             setTimeout(() => {
                 setIsModalOpening(false);
-                console.log('Reset isModalOpening to false')
             }, 300);
         }
     };
@@ -866,7 +856,6 @@ export const OrdersViewSection: React.FC = () => {
                 isProcessing={processingOrder === selectedOrder?.id.toString()}
                 cars={cars}
                 onOpenContractModal={() => {
-                    console.log('Opening contract modal, closing order modal')
                     setIsModalOpen(false); // Close order details modal
                     setShowContractModal(true); // Open contract modal
                     setIsModalOpening(false);
@@ -900,7 +889,6 @@ export const OrdersViewSection: React.FC = () => {
                 <OrderFormModal
                     onSave={async (orderData: Partial<OrderDisplay>) => {
                         // TODO: Implement save to database
-                        console.log('Saving order:', orderData);
                         // For now, just close the modal
                         setShowAddOrderModal(false);
                         // Reload orders

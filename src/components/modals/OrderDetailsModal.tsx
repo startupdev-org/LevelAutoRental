@@ -41,7 +41,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     useEffect(() => {
         setCurrentOrder(order);
         // If order doesn't have contract_url but should (based on rental_status), try to refresh
-        if (displayOrder && !displayOrder.contract_url && (displayOrder as any).rental_status === 'ACTIVE') {
+        if (displayOrder && !displayOrder.contract_url && ((displayOrder as any).rental_status === 'ACTIVE' || (displayOrder as any).status === 'PROCESSED')) {
             refreshOrderData();
         }
     }, [order, isOpen, displayOrder]);
@@ -727,7 +727,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         const serviceNames: Record<string, string> = {
                                             unlimitedKm: 'Kilometraj nelimitat',
                                             speedLimitIncrease: 'Creșterea limitei de viteză',
-                                            tireInsurance: 'Asigurare anvelope & parbriz',
                                             personalDriver: 'Șofer personal',
                                             priorityService: 'Priority Service',
                                             childSeat: 'Scaun copil',

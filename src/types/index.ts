@@ -122,7 +122,7 @@ export interface BorrowRequest {
   customer_age?: number;
   total_amount: number;
   options: OptionsState;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'PROCESSED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
   comment?: string;
@@ -152,7 +152,7 @@ export interface BorrowRequestDTO {
 
   options: OptionsState;
 
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'PROCESSED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
   contract_url?: string;
@@ -182,6 +182,7 @@ export interface Rental {
   additional_taxes?: number;
   created_at?: string;
   updated_at?: string;
+  contract_url?: string;
 }
 
 export interface RentalDTO {
@@ -206,6 +207,7 @@ export interface RentalDTO {
   additional_taxes?: number;
   created_at?: string;
   updated_at?: string;
+  contract_url?: string;
 }
 
 export interface OrderDisplay {

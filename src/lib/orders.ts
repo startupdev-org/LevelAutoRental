@@ -118,11 +118,12 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
     // Fetch customer information and options from BorrowRequest table for rentals created from requests
     const requestCustomerMap = new Map<number, { name: string; email: string; phone: string; firstName?: string; lastName?: string }>();
     const requestOptionsMap = new Map<number, any>();
+    const requestContractUrlMap = new Map<number, string>();
     if (requestIds.size > 0) {
       try {
         const { data: requestsData, error: requestsError } = await supabase
           .from('BorrowRequest')
-          .select('id, customer_name, customer_email, customer_phone, customer_first_name, customer_last_name, options')
+          .select('id, customer_name, customer_email, customer_phone, customer_first_name, customer_last_name, options, contract_url')
           .in('id', Array.from(requestIds));
 
         if (!requestsError && requestsData) {
@@ -137,6 +138,10 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
             // Store options for later use
             if (request.options) {
               requestOptionsMap.set(request.id, request.options);
+            }
+            // Store contract URL for later use
+            if (request.contract_url) {
+              requestContractUrlMap.set(request.id, request.contract_url);
             }
           });
         }
@@ -322,7 +327,9 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: rental.created_at || new Date().toISOString(),
         carId: rental.car_id?.toString() || '',
         userId: rental.user_id || '',
-        contract_url: (rental as any).contract_url || undefined,
+        contract_url: rental.contract_url || (rentalRequestId && requestContractUrlMap.has(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId))
+          ? requestContractUrlMap.get(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId))
+          : undefined),
         features: features,
         options: options,
         request_id: (rental as any).request_id || undefined,
@@ -645,7 +652,6 @@ export async function processActiveRentals(cars: Car[]): Promise<{ success: bool
           }
 
           processed++;
-          console.log(`Updated rental to ACTIVE and request to APPROVED for request ${request.id}`);
         }
 
         // Update car status to "booked" when rental becomes ACTIVE
@@ -752,10 +758,10 @@ export async function processStatusTransitions(cars: Car[]): Promise<{ success: 
  */
 export async function cancelRentalOrder(rentalId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // First, get the rental to find the car_id
+    // First, get the rental to find the car_id and request_id
     const { data: rental, error: fetchError } = await supabase
       .from('Rentals')
-      .select('car_id')
+      .select('car_id, request_id')
       .eq('id', rentalId)
       .single();
 
@@ -777,6 +783,22 @@ export async function cancelRentalOrder(rentalId: string): Promise<{ success: bo
 
     // Update car status - check if there are other ACTIVE rentals
     await updateCarStatusBasedOnRentals(rental.car_id);
+
+    // If this rental was created from a request, update the request status back to PENDING
+    if (rental.request_id) {
+      const { error: requestError } = await supabase
+        .from('BorrowRequest')
+        .update({
+          status: 'PENDING',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', rental.request_id);
+
+      if (requestError) {
+        console.error('Error updating borrow request status:', requestError);
+        // Don't fail the entire operation if request update fails
+      }
+    }
 
     return { success: true };
   } catch (error) {
