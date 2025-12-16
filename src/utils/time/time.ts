@@ -50,3 +50,17 @@ export const formatTimestamp = (
 
     return result;
 };
+
+
+export const formatTimeHHMM = (date?: Date | string): string => {
+    if (!date) return ''; // fallback if undefined or empty
+
+    const d = typeof date === 'string' ? new Date(date) : date;
+
+    if (isNaN(d.getTime())) return '';
+
+    const hh = d.getHours().toString().padStart(2, '0');
+    const mm = d.getMinutes().toString().padStart(2, '0');
+
+    return `${hh}:${mm}`; // returns "HH:mm" only, no seconds
+};
