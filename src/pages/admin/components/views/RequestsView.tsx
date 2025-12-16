@@ -22,6 +22,7 @@ import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDispla
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';
 import { formatTime } from '../../../../utils/time';
+import { supabase } from '../../../../lib/supabase';
 
 export const RequestsView: React.FC = () => {
     const { t } = useTranslation();
@@ -583,6 +584,37 @@ export const RequestsView: React.FC = () => {
                             }
                             const result = await updateBorrowRequest(editingRequest.id.toString(), updatedData);
                             if (result.success) {
+                                // If this request has been processed into a rental, update the rental's total_amount too
+                                if (updatedData.total_amount) {
+                                    try {
+                                        // Find the associated rental
+                                        const { data: rental, error: rentalError } = await supabase
+                                            .from('Rentals')
+                                            .select('id')
+                                            .eq('request_id', editingRequest.id)
+                                            .in('rental_status', ['ACTIVE', 'COMPLETED'])
+                                            .order('created_at', { ascending: false })
+                                            .limit(1)
+                                            .single();
+
+                                        if (rental && !rentalError) {
+                                            // Update the rental's total_amount
+                                            const { error: updateRentalError } = await supabase
+                                                .from('Rentals')
+                                                .update({ total_amount: updatedData.total_amount })
+                                                .eq('id', rental.id);
+
+                                            if (updateRentalError) {
+                                                console.warn('Failed to update associated rental total_amount:', updateRentalError);
+                                            } else {
+                                                console.log('Updated associated rental total_amount successfully');
+                                            }
+                                        }
+                                    } catch (rentalUpdateError) {
+                                        console.warn('Error updating associated rental:', rentalUpdateError);
+                                    }
+                                }
+
                                 alert(t('admin.requests.requestUpdated'));
                                 setShowEditModal(false);
                                 setEditingRequest(null);

@@ -235,4 +235,5 @@ export interface OrderDisplay {
   features?: string[] | any,
   options?: any,
   request_id?: string | number,
+  price_per_day?: number,
 }

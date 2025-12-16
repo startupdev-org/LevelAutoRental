@@ -129,6 +129,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     // Calculate additional costs in MDL for rental request modal
     const rentalDays = rentalCalculation?.days || 0;
+    const rentalHours = rentalCalculation?.hours || 0;
+    const totalDays = rentalDays + rentalHours / 24; // Include hours in percentage calculations
     let additionalCosts = 0;
 
     // Use fresh car data if available, otherwise fallback to provided car
@@ -151,26 +153,27 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const carDiscount = (carData as any).discount_percentage || 0;
     const discountedPricePerDay = carDiscount > 0 ? basePricePerDayMDL * (1 - carDiscount / 100) : basePricePerDayMDL;
 
-    // Percentage-based options (calculated as percentage of base car price * days)
+    // Percentage-based options (calculated as percentage of base car price * totalDays)
+    // These should be calculated on the total rental period (days + hours)
     if (options.unlimitedKm) {
-        additionalCosts += discountedPricePerDay * rentalDays * 0.5; // 50%
+        additionalCosts += discountedPricePerDay * totalDays * 0.5; // 50%
     }
 
-    // Fixed daily costs (in MDL)
+    // Fixed daily costs (in MDL) - calculated per total rental period including hours
     if (options.personalDriver) {
-        additionalCosts += 800 * rentalDays;
+        additionalCosts += 800 * totalDays;
     }
     if (options.priorityService) {
-        additionalCosts += 1000 * rentalDays;
+        additionalCosts += 1000 * totalDays;
     }
     if (options.childSeat) {
-        additionalCosts += 100 * rentalDays;
+        additionalCosts += 100 * totalDays;
     }
     if (options.simCard) {
-        additionalCosts += 100 * rentalDays;
+        additionalCosts += 100 * totalDays;
     }
     if (options.roadsideAssistance) {
-        additionalCosts += 500 * rentalDays;
+        additionalCosts += 500 * totalDays;
     }
 
     const formatDate = (dateString: string): string => {
@@ -1310,38 +1313,38 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Kilometraj nelimitat</span>
                                                                         <span className="text-gray-900 font-medium">
-                                                                            {convertPriceToMDL(Math.round(rentalCalculation.pricePerDay * rentalCalculation.days * 0.5)).toLocaleString('ro-RO')} {getCurrencySymbol()}
+                                                                            {convertPriceToMDL(Math.round(discountedPricePerDay * totalDays * 0.5)).toLocaleString('ro-RO')} {getCurrencySymbol()}
                                                                         </span>
                                                                     </div>
                                                                 )}
                                                                 {options.personalDriver && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Șofer personal</span>
-                                                                        <span className="text-gray-900 font-medium">{800 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(800 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.priorityService && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Priority Service</span>
-                                                                        <span className="text-gray-900 font-medium">{1000 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(1000 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.childSeat && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Scaun auto pentru copii</span>
-                                                                        <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(100 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.simCard && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Cartelă SIM cu internet</span>
-                                                                        <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(100 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.roadsideAssistance && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Asistență rutieră</span>
-                                                                        <span className="text-gray-900 font-medium">{500 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(500 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 <div className="pt-2 border-t border-gray-300">

@@ -1,6 +1,6 @@
 import { BorrowRequest, BorrowRequestDTO, Car } from '../../../types';
 import { getCarPrice } from '../../../utils/car/pricing';
-import { getDateDiffInDays } from '../../../utils/date';
+import { calculateRentalDuration, getDateDiffInDays } from '../../../utils/date';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
@@ -326,6 +326,7 @@ export async function updateBorrowRequest(
         if (updates.options !== undefined) updateData.options = typeof updates.options === 'string' ? updates.options : JSON.stringify(updates.options);
         if (updates.status !== undefined) updateData.status = updates.status;
         if ((updates as any).contract_url !== undefined) updateData.contract_url = (updates as any).contract_url;
+        if ((updates as any).total_amount !== undefined) updateData.total_amount = (updates as any).total_amount;
 
         const { error } = await supabase
             .from('BorrowRequest')
@@ -602,13 +603,18 @@ export async function createRentalManually(
             return { success: false, error: 'Car not found' };
         }
 
-        const pricePerDay = (car as any)?.pricePerDay || car.price_per_day || 0;
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+        // Calculate rental duration to determine correct price tier
+        const duration = calculateRentalDuration(startDate, startTime, endDate, endTime);
+        const rentalDays = duration.days;
+
+        // Get the correct price per day based on rental duration
+        const pricePerDayStr = getCarPrice(rentalDays, car);
+        const pricePerDay = parseFloat(pricePerDayStr) || 0;
+
+        console.log('createRentalManually: Calculated price per day:', pricePerDay, 'for', rentalDays, 'days using car:', car);
 
         // Calculate subtotal if not provided
-        const subtotal = options?.subtotal || (pricePerDay * days);
+        const subtotal = options?.subtotal || (pricePerDay * rentalDays);
         // Calculate taxes (10% of subtotal) if not provided
         const taxesFees = options?.taxesFees || (subtotal * 0.1);
         const additionalTaxes = options?.additionalTaxes || 0;
@@ -695,6 +701,7 @@ export async function isDateInActualApprovedRequest(
 
     return (data?.length ?? 0) > 0;
 }
+
 
 
 /**

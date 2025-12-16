@@ -5,7 +5,9 @@ import { Rental, OrderDisplay } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { calculatePriceSummary, PriceSummaryResult } from '../../utils/car/pricing';
 import { calculateRentalDuration } from '../../utils/date';
+import { formatAmount } from '../../utils/currency';
 import { fetchCars } from '../../lib/cars';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 
@@ -669,44 +671,75 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                                         console.log('OrderDetailsModal: Final parsedOptions:', parsedOptions);
 
-                                        // Calculate additional costs (same logic as RequestDetailsModal)
-                                        let additionalCosts = 0;
-                                        const baseCarPrice = car?.price_per_day || (order as any).price_per_day || (order as any).car?.price_per_day || 0;
+                                        // For rentals, use the rental's stored price_per_day as the primary source
+                                        // For requests, use the car's price_per_day
+                                        const storedPricePerDay = (order as any).price_per_day || car?.price_per_day || (order as any).car?.price_per_day || 0;
 
-                                        // Percentage-based options (calculated as percentage of base car price * totalDays)
-                                        // These should be calculated on the total rental period (days + hours)
-                                        if (parsedOptions.unlimitedKm) {
-                                            additionalCosts += baseCarPrice * totalDays * 0.5; // 50%
-                                        }
-                                        if (parsedOptions.speedLimitIncrease) {
-                                            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
-                                        }
-                                        if (parsedOptions.tireInsurance) {
-                                            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
-                                        }
-
-                                        // Fixed daily costs
-                                        if (parsedOptions.personalDriver) {
-                                            additionalCosts += 800 * rentalDays;
-                                        }
-                                        if (parsedOptions.priorityService) {
-                                            additionalCosts += 1000 * rentalDays;
-                                        }
-                                        if (parsedOptions.childSeat) {
-                                            additionalCosts += 100 * rentalDays;
-                                        }
-                                        if (parsedOptions.simCard) {
-                                            additionalCosts += 100 * rentalDays;
-                                        }
-                                        if (parsedOptions.roadsideAssistance) {
-                                            additionalCosts += 500 * rentalDays;
+                                        // Try to use the centralized calculatePriceSummary function first
+                                        let priceSummary = null;
+                                        if (car && storedPricePerDay > 0) {
+                                            // Create a car object with the correct price for calculatePriceSummary
+                                            const carWithPrice = { ...car, price_per_day: storedPricePerDay };
+                                            priceSummary = calculatePriceSummary(
+                                                carWithPrice,
+                                                {
+                                                    ...order,
+                                                    start_date: (order as any).start_date,
+                                                    end_date: (order as any).end_date,
+                                                    start_time: (order as any).start_time,
+                                                    end_time: (order as any).end_time,
+                                                },
+                                                parsedOptions
+                                            );
                                         }
 
-                                        // Use the rental's stored total_amount instead of recalculating
-                                        // This ensures consistency with the request's pricing
+                                        // Manual calculation as fallback
+                                        let manualBasePrice = 0;
+                                        let manualAdditionalCosts = 0;
+                                        let manualPricePerDay = storedPricePerDay;
+
+                                        if (!priceSummary) {
+                                            // Use the stored price per day (from rental or car)
+                                            const baseCarPrice = storedPricePerDay;
+                                            manualPricePerDay = baseCarPrice;
+
+                                            // Calculate base price
+                                            manualBasePrice = baseCarPrice * days;
+                                            if (hours > 0) {
+                                                manualBasePrice += (hours / 24) * baseCarPrice;
+                                            }
+
+                                            // Calculate additional costs
+                                            if (parsedOptions.unlimitedKm) {
+                                                manualAdditionalCosts += baseCarPrice * totalDays * 0.5; // 50%
+                                            }
+                                            if (parsedOptions.speedLimitIncrease) {
+                                                manualAdditionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+                                            }
+                                            if (parsedOptions.tireInsurance) {
+                                                manualAdditionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+                                            }
+                                            if (parsedOptions.personalDriver) {
+                                                manualAdditionalCosts += 800 * totalDays;
+                                            }
+                                            if (parsedOptions.priorityService) {
+                                                manualAdditionalCosts += 1000 * totalDays;
+                                            }
+                                            if (parsedOptions.childSeat) {
+                                                manualAdditionalCosts += 100 * totalDays;
+                                            }
+                                            if (parsedOptions.simCard) {
+                                                manualAdditionalCosts += 100 * totalDays;
+                                            }
+                                            if (parsedOptions.roadsideAssistance) {
+                                                manualAdditionalCosts += 500 * totalDays;
+                                            }
+                                        }
+
+                                        // Use the rental's stored total_amount for consistency, or calculated amount as fallback
                                         const usingStoredTotal = !!(order as any).total_amount || !!(order as any).amount;
                                         const storedAmount = (order as any).total_amount || (order as any).amount;
-                                        const calculatedAmount = basePrice + additionalCosts;
+                                        const calculatedAmount = priceSummary ? priceSummary.totalPrice : (manualBasePrice + manualAdditionalCosts);
 
                                         console.log('OrderDetailsModal pricing:', {
                                             orderId: order?.id,
@@ -714,14 +747,27 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             amount: (order as any).amount,
                                             storedAmount,
                                             calculatedAmount,
-                                            basePrice,
-                                            additionalCosts,
+                                            priceSummary,
+                                            manualBasePrice,
+                                            manualAdditionalCosts,
                                             usingStoredTotal
                                         });
 
                                         const totalPrice = usingStoredTotal && storedAmount > 0 ?
                                             storedAmount :
                                             calculatedAmount;
+
+                                        // Use priceSummary for breakdown details, or manual calculation
+                                        const breakdown = priceSummary || {
+                                            pricePerDay: manualPricePerDay,
+                                            rentalDays: days,
+                                            rentalHours: hours,
+                                            totalHours: totalHours,
+                                            basePrice: manualBasePrice,
+                                            additionalCosts: manualAdditionalCosts,
+                                            totalPrice: totalPrice,
+                                            baseCarPrice: storedPricePerDay
+                                        };
 
                                         // Service names mapping
                                         const serviceNames: Record<string, string> = {
@@ -744,23 +790,23 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     {/* Always show detailed pricing breakdown */}
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.pricePerDay')}</span>
-                                                        <span className="text-white font-semibold text-sm sm:text-base">{pricePerDay > 0 ? `${Math.round(pricePerDay)} MDL` : 'N/A'}</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{breakdown.pricePerDay > 0 ? `${Math.round(breakdown.pricePerDay)} MDL` : 'N/A'}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.numberOfDays')}</span>
                                                         <span className="text-white font-semibold text-sm sm:text-base">
-                                                            {rentalDays} {t('admin.requestDetails.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours')}` : ''}
+                                                            {breakdown.rentalDays} {t('admin.requestDetails.days')}{breakdown.rentalHours > 0 ? `, ${breakdown.rentalHours} ${t('admin.requestDetails.hours')}` : ''}
                                                         </span>
                                                     </div>
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">{t('admin.requestDetails.basePrice')}</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round(basePrice).toLocaleString()} MDL</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{formatAmount(breakdown.basePrice)}</span>
                                                         </div>
                                                     </div>
 
                                                     {/* Show services section if we have additional costs or stored total */}
-                                                    {(additionalCosts > 0 || usingStoredTotal) && (
+                                                    {(breakdown.additionalCosts > 0 || usingStoredTotal) && (
                                                                 <div className="pt-3 border-t border-white/10">
                                                                     <h4 className="text-sm font-bold text-white mb-3">{t('admin.requestDetails.additionalServices')}</h4>
                                                                     <div className="space-y-2 text-sm">
@@ -780,7 +826,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.unlimitedKm}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {Math.round(baseCarPrice * totalDays * 0.5).toLocaleString()} MDL
+                                                                                    {formatAmount(breakdown.baseCarPrice * (breakdown.totalHours / 24) * 0.5)}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -788,7 +834,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.speedLimitIncrease}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
+                                                                                    {formatAmount(breakdown.baseCarPrice * (breakdown.totalHours / 24) * 0.2)}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -796,7 +842,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.tireInsurance}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
+                                                                                    {formatAmount(breakdown.baseCarPrice * (breakdown.totalHours / 24) * 0.2)}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -804,7 +850,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.personalDriver}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(800 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(800 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -812,7 +858,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.priorityService}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(1000 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(1000 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -820,7 +866,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.childSeat}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(100 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(100 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -828,7 +874,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.simCard}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(100 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(100 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -836,7 +882,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.roadsideAssistance}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(500 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(500 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -846,7 +892,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                             <div className="pt-2 border-t border-white/10 mt-2">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="text-gray-300 text-sm">{t('admin.requestDetails.totalServices')}</span>
-                                                                    <span className="text-white font-semibold text-sm">{Math.round(additionalCosts).toLocaleString()} MDL</span>
+                                                                    <span className="text-white font-semibold text-sm">{formatAmount(breakdown.additionalCosts)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -855,7 +901,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-semibold text-base sm:text-lg">{t('admin.requestDetails.total')}</span>
-                                                            <span className="text-emerald-400 font-bold text-lg sm:text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
+                                                            <span className="text-emerald-400 font-bold text-lg sm:text-xl">{formatAmount(totalPrice)}</span>
                                                         </div>
                                                     </div>
                                                 </div>

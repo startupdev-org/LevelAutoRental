@@ -1,10 +1,12 @@
 import { OptionsState } from '../../constants/rentalOptions';
 import { BorrowRequest, BorrowRequestDTO, Car } from '../../types/index'
-import { getDateDiffInDays } from '../date';
+import { getDateDiffInDays, calculateRentalDuration } from '../date';
 
 export interface PriceSummaryResult {
     pricePerDay: number;
     rentalDays: number;
+    rentalHours: number;
+    totalHours: number;
     basePrice: number;
     additionalCosts: number;
     totalPrice: number;
@@ -64,8 +66,6 @@ export const calculateAmount = (totalDays: number, pricePerDay: number, startDat
 
     const total = basePrice + additionalCosts;
 
-    console.log('the total is: ', total)
-
     // optional: round to 2 decimals for storage
     return Math.round(total * 100) / 100;
 };
@@ -75,39 +75,65 @@ export function calculatePriceSummary(
     formData: BorrowRequest | BorrowRequestDTO,
     options: OptionsState
 ): PriceSummaryResult | null {
-    console.log('calculating the summary price')
 
     if (!selectedCar || !formData.start_date || !formData.end_date) return null;
 
-    const rentalDays = getDateDiffInDays(formData.start_date, formData.end_date);
-    if (isNaN(rentalDays) || rentalDays <= 0) return null;
+    // Calculate both days and hours
+    const duration = calculateRentalDuration(
+        formData.start_date,
+        formData.start_time || '09:00',
+        formData.end_date,
+        formData.end_time || '09:00'
+    );
+
+    const { days: rentalDays, hours: rentalHours, totalHours } = duration;
+    if (isNaN(rentalDays) || rentalDays < 0 || isNaN(rentalHours) || rentalHours < 0) return null;
 
     const pricePerDayStr = getCarPrice(rentalDays, selectedCar);
-    const pricePerDay = parseFloat(pricePerDayStr);
+    let pricePerDay = parseFloat(pricePerDayStr);
     if (isNaN(pricePerDay)) return null;
 
+    // Apply car discount if exists (same as OrderDetailsModal)
+    const carDiscount = selectedCar.discount_percentage || 0;
+    if (carDiscount > 0) {
+        pricePerDay = pricePerDay * (1 - carDiscount / 100);
+    }
+
+    // Calculate total days including hours (for percentage-based calculations)
+    const totalDays = totalHours / 24;
+
+    // Calculate base price for days
     let basePrice = pricePerDay * rentalDays;
 
+    // Add hours portion (hours are charged at full price, no discount)
+    if (rentalHours > 0) {
+        const hoursPrice = (rentalHours / 24) * pricePerDay;
+        basePrice += hoursPrice;
+    }
 
     let additionalCosts = 0;
     const baseCarPrice = pricePerDay;
 
-    if (options.unlimitedKm) additionalCosts += baseCarPrice * rentalDays * 0.5;
-    if (options.speedLimitIncrease) additionalCosts += baseCarPrice * rentalDays * 0.2;
-    if (options.tireInsurance) additionalCosts += baseCarPrice * rentalDays * 0.2;
-    if (options.personalDriver) additionalCosts += 800 * rentalDays;
-    if (options.priorityService) additionalCosts += 1000 * rentalDays;
-    if (options.childSeat) additionalCosts += 100 * rentalDays;
-    if (options.simCard) additionalCosts += 100 * rentalDays;
-    if (options.roadsideAssistance) additionalCosts += 500 * rentalDays;
+    // Percentage-based options (calculated as percentage of base car price * totalDays)
+    // These should be calculated on the total rental period (days + hours)
+    if (options.unlimitedKm) additionalCosts += baseCarPrice * totalDays * 0.5;
+    if (options.speedLimitIncrease) additionalCosts += baseCarPrice * totalDays * 0.2;
+    if (options.tireInsurance) additionalCosts += baseCarPrice * totalDays * 0.2;
+
+    // Fixed daily costs (calculated per total rental period including hours)
+    if (options.personalDriver) additionalCosts += 800 * totalDays;
+    if (options.priorityService) additionalCosts += 1000 * totalDays;
+    if (options.childSeat) additionalCosts += 100 * totalDays;
+    if (options.simCard) additionalCosts += 100 * totalDays;
+    if (options.roadsideAssistance) additionalCosts += 500 * totalDays;
 
     const totalPrice = basePrice + additionalCosts;
-
-    console.log('total price from price summary is: ', totalPrice)
 
     return {
         pricePerDay,
         rentalDays,
+        rentalHours,
+        totalHours,
         basePrice,
         additionalCosts,
         totalPrice,

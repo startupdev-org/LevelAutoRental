@@ -5,6 +5,7 @@ import { fetchRentalsOnly, OrderDisplay } from '../../lib/orders';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Car } from '../../types';
+import { formatAmount } from '../../utils/currency';
 
 type OrdersTableProps = {
     title: string;
@@ -534,7 +535,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     <p className="text-gray-400 text-xs mb-1">{t('admin.orders.amount')}</p>
                                     <p className="text-white font-semibold text-base">
                                         {getOrderTotalPrice(order) > 0 ? (
-                                            `${getOrderTotalPrice(order).toLocaleString()} MDL`
+                                            formatAmount(getOrderTotalPrice(order))
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -631,7 +632,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     </td>
                                     <td className="px-6 py-3 text-white font-semibold text-sm">
                                         {getOrderTotalPrice(order) > 0 ? (
-                                            `${getOrderTotalPrice(order).toLocaleString()} MDL`
+                                            formatAmount(getOrderTotalPrice(order))
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}

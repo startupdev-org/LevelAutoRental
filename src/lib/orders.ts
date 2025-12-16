@@ -333,6 +333,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         features: features,
         options: options,
         request_id: (rental as any).request_id || undefined,
+        price_per_day: rental.price_per_day || undefined,
       } as OrderDisplay;
     }));
 

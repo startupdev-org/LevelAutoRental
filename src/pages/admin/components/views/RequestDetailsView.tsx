@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, CheckCircle, X, RefreshCw, ArrowLeft, Loader2, Pen, FileText, Download, Edit as EditIcon, Play } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, X, RefreshCw, ArrowLeft, Loader2, Pen, FileText, Download, Edit as EditIcon, Play, DollarSign } from 'lucide-react';
 import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { formatDateLocal, calculateRentalDuration } from '../../../../utils/date';
 import { BorrowRequestDTO } from '../../../../types';
 import { formatAmount } from '../../../../utils/currency';
 import { parseRequestOptions } from '../../../../utils/car/options';
+import { calculatePriceSummary } from '../../../../utils/car/pricing';
 import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest, createRentalManually } from '../../../../lib/db/requests/requests';
 import { getLoggedUser } from '../../../../lib/db/user/profile';
 import { supabase } from '../../../../lib/supabase';
@@ -138,17 +139,143 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                     })()}
                                 </div>
                             </div>
-                            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                <h3 className="text-sm font-semibold text-white mb-2">Informații Preț</h3>
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-300 text-sm">Preț pe zi:</span>
-                                        <span className="text-white font-medium">{formatAmount(request.price_per_day)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                                        <span className="text-gray-300 text-sm font-medium">Sumă Totală:</span>
-                                        <span className="text-white font-bold">{formatAmount(request.total_amount)}</span>
-                                    </div>
+                            <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                                <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-sm sm:text-base">Detalii Preț</span>
+                                </h3>
+                                <div className="space-y-3">
+                                    {(() => {
+                                        // Calculate detailed price breakdown
+                                        const duration = calculateRentalDuration(
+                                            request.start_date,
+                                            request.start_time || '09:00',
+                                            request.end_date,
+                                            request.end_time || '17:00'
+                                        );
+
+                                        // Parse options if needed
+                                        let parsedOptions: any = {};
+                                        if (request.options) {
+                                            if (typeof request.options === 'string') {
+                                                try {
+                                                    parsedOptions = JSON.parse(request.options);
+                                                } catch (e) {
+                                                    parsedOptions = {};
+                                                }
+                                            } else {
+                                                parsedOptions = request.options;
+                                            }
+                                        }
+
+                                        const priceSummary = calculatePriceSummary(
+                                            request.car,
+                                            {
+                                                ...request,
+                                                start_date: request.start_date,
+                                                end_date: request.end_date,
+                                                start_time: request.start_time,
+                                                end_time: request.end_time,
+                                            },
+                                            parsedOptions
+                                        );
+
+
+                                        if (!priceSummary) return null;
+
+                                        return (
+                                            <>
+                                                {/* Price per day and duration */}
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-300 text-xs sm:text-sm">Preț pe zi</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.pricePerDay)} MDL</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-300 text-xs sm:text-sm">Durată închiriere</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">
+                                                        {priceSummary.rentalDays} zile{priceSummary.rentalHours > 0 ? `, ${priceSummary.rentalHours} ore` : ''}
+                                                    </span>
+                                                </div>
+
+                                                {/* Base price */}
+                                                <div className="pt-2 border-t border-white/10">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-white font-medium text-sm sm:text-base">Preț de bază</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.basePrice).toLocaleString()} MDL</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Additional services */}
+                                                {priceSummary.additionalCosts > 0 && (
+                                                    <div className="pt-3 border-t border-white/10">
+                                                        <h4 className="text-sm font-bold text-white mb-3">Servicii Adiționale</h4>
+                                                        <div className="space-y-2 text-sm">
+                                                            {parsedOptions.unlimitedKm && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Kilometraj nelimitat</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.personalDriver && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Șofer personal</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(800 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.priorityService && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Priority Service</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(1000 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.childSeat && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Scaun auto pentru copii</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.simCard && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Cartelă SIM cu internet</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.roadsideAssistance && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Asistență rutieră 24/7</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(500 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between pt-2 border-t border-white/10">
+                                                                <span className="text-white font-medium">Costuri suplimentare</span>
+                                                                <span className="text-white font-semibold">{Math.round(priceSummary.additionalCosts).toLocaleString()} MDL</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Total */}
+                                                <div className="pt-3 border-t border-white/20">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-white font-bold text-base">Total</span>
+                                                        <span className="text-emerald-400 font-bold text-lg">{Math.round(priceSummary.totalPrice).toLocaleString()} MDL</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -536,6 +663,19 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 throw new Error('User not logged in');
             }
 
+            // Fetch fresh car data to ensure we have correct price information
+            const { fetchCarById } = await import('../../../../lib/db/cars/cars');
+            console.log('handleStartRental: Fetching car data for car_id:', request.car_id, 'type:', typeof request.car_id);
+            const freshCarData = await fetchCarById(request.car_id.toString());
+
+            console.log('handleStartRental: Fresh car data:', freshCarData);
+
+            if (!freshCarData) {
+                throw new Error('Car data not found');
+            }
+
+            console.log('handleStartRental: Car price_per_day:', freshCarData.price_per_day, 'price_over_30_days:', freshCarData.price_over_30_days);
+
             // Create a rental record from the approved request
             const rentalResult = await createRentalManually(
                 currentUser.id,
@@ -545,7 +685,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 typeof request.end_date === 'string' ? request.end_date : request.end_date.toISOString().split('T')[0],
                 request.end_time,
                 request.total_amount,
-                [request.car],
+                [freshCarData],
                 {
                     rentalStatus: 'ACTIVE',
                     customerName: request.customer_name,
@@ -751,28 +891,65 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     }
 
 
-    const handleEdit = async (request: BorrowRequestDTO) => {
-        // TODO: Implement edit functionality
-        // alert('Funcționalitatea de editare va fi implementată în curând');
-
+    const handleEdit = async (updatedRequest: BorrowRequestDTO) => {
         if (isProcessing) return;
 
         try {
-            const updates = request;
-            const result = await updateBorrowRequest(request.id, updates)
+            setIsProcessing(true);
+            const result = await updateBorrowRequest(updatedRequest.id, updatedRequest);
 
             if (result.success) {
-                // Update local state to reflect the change
+                // If this request has been processed into a rental, update the rental's total_amount too
+                if (rentalExists && updatedRequest.total_amount) {
+                    try {
+                        // Find the associated rental
+                        const { data: rental, error: rentalError } = await supabase
+                            .from('Rentals')
+                            .select('id')
+                            .eq('request_id', updatedRequest.id)
+                            .eq('rental_status', 'ACTIVE')
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (rental && !rentalError) {
+                            // Update the rental's total_amount
+                            const { error: updateRentalError } = await supabase
+                                .from('Rentals')
+                                .update({ total_amount: updatedRequest.total_amount })
+                                .eq('id', rental.id);
+
+                            if (updateRentalError) {
+                                console.warn('Failed to update associated rental total_amount:', updateRentalError);
+                            } else {
+                                console.log('Updated associated rental total_amount successfully');
+                            }
+                        }
+                    } catch (rentalUpdateError) {
+                        console.warn('Error updating associated rental:', rentalUpdateError);
+                    }
+                }
+
+                // Refresh the request data from the database
+                const refreshedRequest = await fetchBorrowRequestById(updatedRequest.id);
+                if (refreshedRequest) {
+                    // Update local state with refreshed data (deep copy to force re-render)
+                    setRequest(JSON.parse(JSON.stringify(refreshedRequest)));
+                    // Close the modal
+                    handleCloseEditModal();
+                    alert('Cererea a fost actualizată cu succes!');
+                } else {
+                    alert('Eroare la reîmprospătarea datelor');
+                }
             } else {
                 alert(`Eroare la editarea cererii: ${result.error || 'Eroare necunoscută'}`);
             }
         } catch (error) {
             console.error('Error editing request:', error);
-            alert('Eroare la setarea statusului');
+            alert('Eroare la editarea cererii');
         } finally {
             setIsProcessing(false);
         }
-
     };
 
     const handleOpenOrder = async (request: BorrowRequestDTO) => {
@@ -853,6 +1030,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 isEditing && (
                     <>
                         <EditRequestModal
+                            isOpen={true}
                             request={request}
                             onSave={handleEdit}
                             onClose={handleCloseEditModal}
