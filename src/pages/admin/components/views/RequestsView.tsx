@@ -346,12 +346,12 @@ export const RequestsView: React.FC = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.pickup')}</p>
-                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</p>
+                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.start_date, t('config.date'))}</p>
                                                 <p className="text-gray-400 text-xs">{formatTime(request.start_time)}</p>
                                             </div>
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.return')}</p>
-                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</p>
+                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.end_date, t('config.date'))}</p>
                                                 <p className="text-gray-400 text-xs">{formatTime(request.end_time)}</p>
                                             </div>
                                         </div>
@@ -431,13 +431,13 @@ export const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</span>
+                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.start_date, t('config.date'))}</span>
                                                         <span className="text-gray-400 text-xs">{formatTime(request.start_time)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
+                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date, t('config.date'))}</span>
                                                         <span className="text-gray-400 text-xs">{formatTime(request.end_time)}</span>
                                                     </div>
                                                 </td>
@@ -457,10 +457,10 @@ export const RequestsView: React.FC = () => {
                                                                     : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                             }`}
                                                     >
-                                                {request.status === 'PENDING' ? t('admin.requests.pending') :
-                                                    request.status === 'APPROVED' ? t('admin.requests.approved') :
-                                                        request.status === 'PROCESSED' ? t('admin.requests.processed') :
-                                                            request.status === 'REJECTED' ? t('admin.requests.rejected') : ''}
+                                                        {request.status === 'PENDING' ? t('admin.requests.pending') :
+                                                            request.status === 'APPROVED' ? t('admin.requests.approved') :
+                                                                request.status === 'PROCESSED' ? t('admin.requests.processed') :
+                                                                    request.status === 'REJECTED' ? t('admin.requests.rejected') : ''}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -574,7 +574,6 @@ export const RequestsView: React.FC = () => {
             {/* Edit Request Modal */}
             {showEditModal && editingRequest && (
                 <EditRequestModal
-                    cars={cars}
                     request={editingRequest}
                     onSave={async (updatedData) => {
                         try {
@@ -631,6 +630,7 @@ export const RequestsView: React.FC = () => {
                         setShowEditModal(false);
                         setEditingRequest(null);
                     }}
+                // isOpen={isModa}
                 />
             )}
         </motion.div>

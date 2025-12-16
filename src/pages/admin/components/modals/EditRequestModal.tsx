@@ -14,6 +14,7 @@ import { calculatePriceSummary, PriceSummaryResult } from '../../../../utils/car
 import { calculateRentalDuration } from '../../../../utils/date';
 import { OptionsState } from '../../../../constants/rentalOptions';
 import { DollarSign } from 'lucide-react';
+import { formatTimeHHMM } from '../../../../utils/time/time';
 
 export interface EditRequestModalProps {
     isOpen: boolean;
@@ -23,21 +24,15 @@ export interface EditRequestModalProps {
 }
 
 export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, request, onSave, onClose }) => {
-    // Fixed time options for business hours
-    const timeOptions = [
-        '08:00', '09:00', '10:00', '11:00', '12:00',
-        '13:00', '14:00', '15:00', '16:00', '17:00',
-        '18:00', '19:00', '20:00', '21:00', '22:00'
-    ];
 
     // Helper function to format date to YYYY-MM-DD for HTML date input
     const formatDateForInput = (date: Date | string | undefined): string => {
         if (!date) return '';
-        
+
         try {
             const dateObj = typeof date === 'string' ? new Date(date) : date;
             if (isNaN(dateObj.getTime())) return '';
-            
+
             const year = dateObj.getFullYear();
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const day = String(dateObj.getDate()).padStart(2, '0');
@@ -50,12 +45,22 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
     // Initialize form data with current request values (admin can only edit these fields)
     const [formData, setFormData] = useState({
         start_date: formatDateForInput(request.start_date),
-        start_time: request.start_time || '09:00',
+        start_time: formatTimeHHMM(request.start_time), // "HH:mm"
         end_date: formatDateForInput(request.end_date),
-        end_time: request.end_time || '17:00',
+        end_time: formatTimeHHMM(request.end_time),     // "HH:mm"
         total_amount: request.total_amount || 0,
         comment: request.comment || '',
     });
+
+
+    console.log('form data is: ', formData)
+
+    // Fixed time options for business hours
+    const timeOptions = [
+        '08:00', '09:00', '10:00', '11:00', '12:00',
+        '13:00', '14:00', '15:00', '16:00', '17:00',
+        '18:00', '19:00', '20:00', '21:00', '22:00'
+    ];
 
     // Parse options from request
     const parseOptions = (options: any) => {
@@ -108,7 +113,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
         });
 
         setOptions(parseOptions(request.options));
-        
+
         // Update calendar months when request changes
         const startDate = request.start_date ? new Date(request.start_date) : new Date();
         const endDate = request.end_date ? new Date(request.end_date) : new Date();
@@ -233,7 +238,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
     const handleSave = async () => {
         // No validation needed for customer info (read-only)
         // Admin can only modify dates, amounts, options, and comments
-        
+
         setIsSaving(true);
         try {
             const updatedRequest = {
@@ -375,15 +380,14 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors cursor-pointer relative ${
-                                                            isSelected
-                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
-                                                                : isEndDate
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors cursor-pointer relative ${isSelected
+                                                            ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
+                                                            : isEndDate
                                                                 ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
                                                                 : isInRange
-                                                                ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                                                : 'text-gray-700 hover:bg-gray-100'
-                                                        }`}
+                                                                    ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                            }`}
                                                         onClick={() => handleDateSelect(day, true)}
                                                     >
                                                         <span className="relative z-0">{dayDate.getDate()}</span>
@@ -398,17 +402,12 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                 <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
                                     Ora Început
                                 </label>
-                                <select
-                                    value={formData.start_time}
+                                <input
+                                    type="time"
+                                    value={formData.start_time} // must be "HH:mm"
                                     onChange={(e) => handleInputChange('start_time', e.target.value)}
                                     className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                >
-                                    {timeOptions.map(time => (
-                                        <option key={time} value={time} className="bg-gray-800 text-white">
-                                            {time}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                             <div className="relative" ref={endCalendarRef}>
                                 <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
@@ -486,17 +485,16 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
-                                                            isBeforeStart
-                                                                ? 'text-gray-300 cursor-not-allowed'
-                                                                : isSelected
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${isBeforeStart
+                                                            ? 'text-gray-300 cursor-not-allowed'
+                                                            : isSelected
                                                                 ? 'bg-red-500 text-white hover:bg-red-600 font-medium cursor-pointer'
                                                                 : isStartDate
-                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium cursor-pointer'
-                                                                : isInRange
-                                                                ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 cursor-pointer'
-                                                                : 'text-gray-700 hover:bg-gray-100 cursor-pointer'
-                                                        }`}
+                                                                    ? 'bg-red-500 text-white hover:bg-red-600 font-medium cursor-pointer'
+                                                                    : isInRange
+                                                                        ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 cursor-pointer'
+                                                                        : 'text-gray-700 hover:bg-gray-100 cursor-pointer'
+                                                            }`}
                                                         onClick={() => !isBeforeStart && handleDateSelect(day, false)}
                                                     >
                                                         <span className="relative z-0">{dayDate.getDate()}</span>
@@ -511,17 +509,12 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                 <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
                                     Ora Sfârșit
                                 </label>
-                                <select
+                                <input
+                                    type='time'
                                     value={formData.end_time}
                                     onChange={(e) => handleInputChange('end_time', e.target.value)}
                                     className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                                >
-                                    {timeOptions.map(time => (
-                                        <option key={time} value={time} className="bg-gray-800 text-white">
-                                            {time}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                         </div>
                     </div>
@@ -534,199 +527,199 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                         <div className="space-y-2">
                             {/* Unlimited Km */}
                             <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={options.unlimitedKm}
-                                                onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-white/5 hover:border-red-400'
-                                                }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
-                                                        }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.unlimitedKm}
+                                            onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
                                         </div>
-                                        <span className="text-white text-xs sm:text-sm">Kilometraj nelimitat</span>
                                     </div>
+                                    <span className="text-white text-xs sm:text-sm">Kilometraj nelimitat</span>
+                                </div>
                                 <span className="text-xs sm:text-sm font-semibold text-emerald-400">+50%</span>
                             </label>
 
                             {/* Personal Driver */}
                             <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={options.personalDriver}
-                                                onChange={(e) => handleOptionChange('personalDriver', e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.personalDriver
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-white/5 hover:border-red-400'
-                                                }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.personalDriver ? 'opacity-100' : 'opacity-0'
-                                                        }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.personalDriver}
+                                            onChange={(e) => handleOptionChange('personalDriver', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.personalDriver
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.personalDriver ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
                                         </div>
-                                        <span className="text-white text-xs sm:text-sm">Șofer personal</span>
                                     </div>
+                                    <span className="text-white text-xs sm:text-sm">Șofer personal</span>
+                                </div>
                                 <span className="text-xs sm:text-sm font-semibold text-gray-300">800 MDL/zi</span>
                             </label>
 
                             {/* Priority Service */}
                             <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={options.priorityService}
-                                                onChange={(e) => handleOptionChange('priorityService', e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.priorityService
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-white/5 hover:border-red-400'
-                                                }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.priorityService ? 'opacity-100' : 'opacity-0'
-                                                        }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.priorityService}
+                                            onChange={(e) => handleOptionChange('priorityService', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.priorityService
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.priorityService ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
                                         </div>
-                                        <span className="text-white text-xs sm:text-sm">Priority Service</span>
                                     </div>
+                                    <span className="text-white text-xs sm:text-sm">Priority Service</span>
+                                </div>
                                 <span className="text-xs sm:text-sm font-semibold text-gray-300">1000 MDL/zi</span>
                             </label>
 
                             {/* Child Seat */}
                             <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={options.childSeat}
-                                                onChange={(e) => handleOptionChange('childSeat', e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.childSeat
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-white/5 hover:border-red-400'
-                                                }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.childSeat ? 'opacity-100' : 'opacity-0'
-                                                        }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.childSeat}
+                                            onChange={(e) => handleOptionChange('childSeat', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.childSeat
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.childSeat ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
                                         </div>
-                                        <span className="text-white text-xs sm:text-sm">Scaun auto pentru copii</span>
                                     </div>
+                                    <span className="text-white text-xs sm:text-sm">Scaun auto pentru copii</span>
+                                </div>
                                 <span className="text-xs sm:text-sm font-semibold text-gray-300">100 MDL/zi</span>
                             </label>
 
                             {/* SIM Card */}
                             <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={options.simCard}
-                                                onChange={(e) => handleOptionChange('simCard', e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.simCard
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-white/5 hover:border-red-400'
-                                                }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.simCard ? 'opacity-100' : 'opacity-0'
-                                                        }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.simCard}
+                                            onChange={(e) => handleOptionChange('simCard', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.simCard
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.simCard ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
                                         </div>
-                                        <span className="text-white text-xs sm:text-sm">Cartelă SIM cu internet</span>
                                     </div>
+                                    <span className="text-white text-xs sm:text-sm">Cartelă SIM cu internet</span>
+                                </div>
                                 <span className="text-xs sm:text-sm font-semibold text-gray-300">100 MDL/zi</span>
                             </label>
 
                             {/* Roadside Assistance */}
                             <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={options.roadsideAssistance}
-                                                onChange={(e) => handleOptionChange('roadsideAssistance', e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.roadsideAssistance
-                                                ? 'bg-red-500 border-red-500'
-                                                : 'border-white/30 bg-white/5 hover:border-red-400'
-                                                }`}>
-                                                <svg
-                                                    className={`w-3 h-3 text-white transition-opacity duration-200 ${options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
-                                                        }`}
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.roadsideAssistance}
+                                            onChange={(e) => handleOptionChange('roadsideAssistance', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.roadsideAssistance
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
                                         </div>
-                                        <span className="text-white text-xs sm:text-sm">Asistență rutieră 24/7</span>
                                     </div>
+                                    <span className="text-white text-xs sm:text-sm">Asistență rutieră 24/7</span>
+                                </div>
                                 <span className="text-xs sm:text-sm font-semibold text-gray-300">500 MDL/zi</span>
                             </label>
                         </div>

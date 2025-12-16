@@ -6,7 +6,6 @@ import { ContractCreationModal } from '../../../../components/modals/ContractCre
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { formatDateLocal, calculateRentalDuration } from '../../../../utils/date';
 import { BorrowRequestDTO } from '../../../../types';
-import { formatAmount } from '../../../../utils/currency';
 import { parseRequestOptions } from '../../../../utils/car/options';
 import { calculatePriceSummary } from '../../../../utils/car/pricing';
 import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest, createRentalManually } from '../../../../lib/db/requests/requests';
@@ -36,6 +35,8 @@ export interface RequestDetailsViewProps {
 export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onStartRental, onCreateContract, onEditContract, onDownloadContract, onOpenOrder, isProcessing = false, rentalExists = false }) => {
 
     const car = request.car;
+
+    const { t } = useTranslation();
 
     return (
         <motion.div
@@ -96,7 +97,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Preluare</p>
-                                <span className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</span>
+                                <span className="text-white text-sm font-medium">{formatDateLocal(request.start_date, t('config.date'))}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
@@ -110,7 +111,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             <Calendar className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-gray-400 uppercase tracking-wide">Returnare</p>
-                                <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
+                                <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date, t('config.date'))}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10">
@@ -379,7 +380,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                         <span className="text-white font-medium text-sm">Contract Închiriere Auto</span>
                                     </div>
                                     <div className="text-xs text-gray-400 mb-3">
-                                        PDF • {formatDateLocal(new Date())}
+                                        PDF • {formatDateLocal(new Date(), t('config.date'))}
                                     </div>
 
                                     {/* Action Buttons */}
@@ -442,7 +443,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                             date = new Date(request.requested_at + 'Z'); // Add Z to indicate UTC
                                         }
 
-                                        const formattedDate = formatDateLocal(date);
+                                        const formattedDate = formatDateLocal(date, t('config.date'));
                                         const formattedTime = date.toLocaleTimeString('ro-RO', {
                                             hour: '2-digit',
                                             minute: '2-digit',
@@ -1034,7 +1035,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                             request={request}
                             onSave={handleEdit}
                             onClose={handleCloseEditModal}
-                            cars={[]} />
+                        />
                     </>
                 )
             }
