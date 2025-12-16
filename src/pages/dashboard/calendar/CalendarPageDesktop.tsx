@@ -66,7 +66,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                             </svg>
                         </button>
                         <div className="text-sm font-medium text-white">
-                            {currentMonth.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
+                            {currentMonth.toLocaleDateString(t('config.date'), { month: 'long', year: 'numeric' })}
                         </div>
                         <button
                             onClick={nextMonth}
@@ -169,7 +169,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                 >
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-white">
-                            {displayDateObj.toLocaleDateString('ro-RO', {
+                            {displayDateObj.toLocaleDateString(t('config.date'), {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',

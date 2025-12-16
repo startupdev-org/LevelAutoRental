@@ -1351,5 +1351,8 @@
         "model": "Model",
         "selectModel": "Selectează modelul",
         "search": "Caută"
+    },
+    "config": {
+        "date": "ro-RO"
     }
 }

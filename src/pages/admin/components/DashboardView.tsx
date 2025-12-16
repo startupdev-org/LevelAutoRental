@@ -494,7 +494,7 @@ export const DashboardView: React.FC = () => {
                                                             returnTime = returnTime || '17:00';
 
                                                             // Format date in Romanian format (e.g., "19 nov. 2025")
-                                                            const formattedDate = returnDate.toLocaleDateString('ro-RO', {
+                                                            const formattedDate = returnDate.toLocaleDateString(t('config.date'), {
                                                                 day: 'numeric',
                                                                 month: 'short',
                                                                 year: 'numeric'

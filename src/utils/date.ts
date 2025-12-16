@@ -12,12 +12,12 @@ export const getMonthFromDate = (date: Date): string => {
     return month.charAt(0).toUpperCase() + month.slice(1);
 };
 
-export const formatDateLocal = (date: string | Date): string => {
+export const formatDateLocal = (date: string | Date, dateType: string): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
 
     if (isNaN(d.getTime())) return '';
 
-    return new Intl.DateTimeFormat('ro-RO').format(d);
+    return new Intl.DateTimeFormat(dateType).format(d);
 };
 
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {
