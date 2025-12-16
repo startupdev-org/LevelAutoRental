@@ -177,11 +177,22 @@ export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders
                             const isRelated = relatedDates.has(day);
 
                             let dayClass = '';
-                            if (isToday && isSelected) dayClass = 'bg-red-500 text-white ring-1 ring-white/60 font-semibold';
-                            else if (isToday) dayClass = 'bg-red-500 text-white';
-                            else if (isSelected || isRelated) dayClass = hasEvents ? 'bg-blue-500/20 text-white ring-1 font-semibold' : 'bg-white/5 ring-1 text-white font-semibold';
-                            else if (hasEvents) dayClass = isPast ? 'bg-gray-500/40 text-white' : 'bg-yellow-500/20 text-white';
-                            else dayClass = 'hover:bg-white/10';
+
+                            if (isToday && isSelected)
+                                dayClass = 'bg-red-500 text-white ring-2 ring-white/70 font-semibold';
+                            else if (isToday)
+                                dayClass = 'bg-red-500 text-white';
+                            else if (isSelected)
+                                dayClass = 'bg-white/20 text-white ring-2 ring-white font-semibold';
+                            else if (isRelated)
+                                dayClass = 'bg-blue-500/20 text-white ring-1 ring-white/40 font-semibold';
+                            else if (hasEvents)
+                                dayClass = isPast
+                                    ? 'bg-gray-500/40 text-white'
+                                    : 'bg-yellow-500/20 text-white';
+                            else
+                                dayClass = 'hover:bg-white/10';
+
 
                             return (
                                 <div
