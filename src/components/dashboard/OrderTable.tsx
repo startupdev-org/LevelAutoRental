@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { cars } from '../../data/cars';
 import { format } from 'date-fns';
-import { fetchRentalsOnly, OrderDisplay } from '../../lib/orders';
+import { fetchRentalsForCalendarPageByMonth, OrderDisplay } from '../../lib/orders';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Car } from '../../types';
@@ -222,14 +222,14 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                 order.carName.toLowerCase().includes(searchLower) ||
                 orderIdString.toLowerCase().includes(searchLower)
             );
-            
+
             // Filter by cancelled status
             // When showCancelled is true, only show cancelled orders
             // When showCancelled is false, hide cancelled orders
-            const matchesCancelledFilter = showCancelled 
+            const matchesCancelledFilter = showCancelled
                 ? order.status === 'CANCELLED'
                 : order.status !== 'CANCELLED';
-            
+
             return matchesSearch && matchesCancelledFilter;
         });
 
@@ -372,11 +372,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                             {onToggleShowCancelled && (
                                 <button
                                     onClick={onToggleShowCancelled}
-                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${
-                                        showCancelled
-                                            ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
-                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                    }`}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${showCancelled
+                                        ? 'bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30 hover:border-red-500/60'
+                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                        }`}
                                 >
                                     {showCancelled ? t('admin.orders.hideCancelled') : t('admin.orders.showCancelled')}
                                 </button>

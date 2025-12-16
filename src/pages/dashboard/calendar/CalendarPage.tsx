@@ -8,13 +8,15 @@ import {
 } from "date-fns";
 import { fetchCars } from "../../../lib/cars";
 import { fetchImagesByCarName } from "../../../lib/db/cars/cars";
-import { Car } from "../../../types";
+import { BorrowRequestDTO, Car } from "../../../types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, User, Clock, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
-import { OrderDetailsModal } from "../../../components/modals/OrderDetailsModal";
-import { OrderDisplay, fetchRentalsOnly } from "../../../lib/orders";
+import { Filter, User, Clock, X } from "lucide-react";
 import { CalendarPageDesktop } from "./CalendarPageDesktop";
 import { useTranslation } from 'react-i18next';
+import { fetchCarsModels } from "../../../lib/db/cars/cars-page/cars";
+import { getMakeLogo, getBorrowRequestsStatusDisplay, getCarName } from "../../../utils/car/car";
+import { formatTime } from "../../../utils/time";
+import { fetchBorrowRequestForCalendarPage } from "../../../lib/db/requests/requests";
 
 interface Props {
     viewMode: string | null;
@@ -24,11 +26,11 @@ export const CalendarPage: React.FC<Props> = () => {
     const { t } = useTranslation();
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     const [showFilters, setShowFilters] = useState(false);
-    const [selectedCar, setSelectedCar] = useState<any | null>(null);
+    const [selectedCar, setSelectedCar] = useState<Car | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<BorrowRequestDTO | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [orders, setOrders] = useState<OrderDisplay[]>([]);
+    const [orders, setOrders] = useState<BorrowRequestDTO[]>([]);
     const [cars, setCars] = useState<Car[]>([]);
     const [isDesktop, setIsDesktop] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
@@ -44,14 +46,13 @@ export const CalendarPage: React.FC<Props> = () => {
         return () => window.removeEventListener('resize', checkDesktop);
     }, []);
 
-    const [filters, setFilters] = useState({
+    const defaultFilters = {
         make: "",
         model: "",
-    });
+    }
+    const [filters, setFilters] = useState(defaultFilters);
     const [showMakeDropdown, setShowMakeDropdown] = useState(false);
     const [showModelDropdown, setShowModelDropdown] = useState(false);
-    const [sortBy, setSortBy] = useState<'time' | 'customer' | 'car' | 'status' | null>('time');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     // Fetch cars from Supabase and load images from storage
     useEffect(() => {
@@ -67,11 +68,10 @@ export const CalendarPage: React.FC<Props> = () => {
                         if (!carName || carName.trim() === '') {
                             carName = `${car.make} ${car.model}`;
                         }
-                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        const { mainImage } = await fetchImagesByCarName(carName);
                         return {
                             ...car,
                             image_url: mainImage || car.image_url,
-                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
                         };
                     })
                 );
@@ -82,23 +82,24 @@ export const CalendarPage: React.FC<Props> = () => {
             }
         };
         loadCars();
-    }, []);
+    }, [showFilters]);
 
-    // Fetch orders with customer data (after cars are loaded)
     useEffect(() => {
+        console.log('fetching borrow requests');
+        if (selectedCar) {
+            console.log('fetching borrow requests for car:', selectedCar);
+        }
         const loadOrders = async () => {
-            if (cars.length === 0) return;
             try {
-                const data = await fetchRentalsOnly(cars);
-                // Filter to only rentals (not requests)
-                const rentalsOnly = data.filter(order => order.type === 'rental');
-                setOrders(rentalsOnly);
+                const carId = selectedCar ? selectedCar.id : undefined;
+                const data = await fetchBorrowRequestForCalendarPage(carId, currentMonth);
+                setOrders(data);
             } catch (error) {
                 console.error('Failed to load orders:', error);
             }
         };
         loadOrders();
-    }, [cars]);
+    }, [filters, selectedCar, currentMonth]);
 
     // Auto-select today when clicking outside the calendar
     useEffect(() => {
@@ -255,117 +256,12 @@ export const CalendarPage: React.FC<Props> = () => {
         }
     };
 
-    const getStatusDisplay = (status: string): { text: string; className: string } => {
-        const statusUpper = status.toUpperCase();
-
-        if (statusUpper === 'CONTRACT') {
-            return {
-                text: 'Contract',
-                className: 'bg-orange-500/20 text-orange-300 border border-orange-500/50'
-            };
-        } else if (statusUpper === 'ACTIVE') {
-            return {
-                text: 'Active',
-                className: 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
-            };
-        } else if (statusUpper === 'COMPLETED') {
-            return {
-                text: 'Completed',
-                className: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
-            };
-        } else if (statusUpper === 'CANCELLED') {
-            return {
-                text: 'Cancelled',
-                className: 'bg-gray-500/20 text-gray-300 border border-gray-500/50'
-            };
-        }
-
-        // Fallback for payment statuses (legacy support)
-        const statusLower = status.toLowerCase();
-        if (statusLower === 'paid') {
-            return {
-                text: 'To Deliver',
-                className: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
-            };
-        } else if (statusLower === 'pending') {
-            return {
-                text: 'Not Paid',
-                className: 'bg-orange-500/20 text-orange-300 border border-orange-500/50'
-            };
-        } else {
-            return {
-                text: 'To Call',
-                className: 'bg-gray-500/20 text-gray-300 border border-gray-500/50'
-            };
-        }
-    };
-
-
-    const formatTime = (timeString: string) => {
-        try {
-            // Remove any AM/PM and convert to 24-hour format
-            let cleanTime = timeString.trim();
-
-            // Check if time has AM/PM
-            const hasAMPM = /AM|PM/i.test(cleanTime);
-            if (hasAMPM) {
-                const isPM = /PM/i.test(cleanTime);
-                cleanTime = cleanTime.replace(/AM|PM/gi, '').trim();
-                const [hours, minutes] = cleanTime.split(':');
-                let hour = parseInt(hours, 10);
-
-                // Convert to 24-hour format
-                if (isPM && hour !== 12) {
-                    hour += 12;
-                } else if (!isPM && hour === 12) {
-                    hour = 0;
-                }
-
-                return `${hour.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
-            }
-
-            // Handle both "HH:mm" and "HH:mm:ss" formats
-            const time = cleanTime.split(':');
-            if (time.length >= 2) {
-                const hours = time[0].padStart(2, '0');
-                const minutes = time[1].padStart(2, '0');
-                return `${hours}:${minutes}`;
-            }
-            return timeString;
-        } catch {
-            return timeString;
-        }
-    };
-
-    // Get order number function - use actual database ID from Supabase
-    const getOrderNumber = useMemo(() => {
-        return (order: OrderDisplay) => {
-            // Convert ID to number if it's a string, then format with leading zeros
-            const id = typeof order.id === 'number' ? order.id : parseInt(order.id.toString(), 10);
-            return id || 0;
-        };
-    }, []);
-
     // Get car make from car name
     const getCarMake = (carName: string): string => {
         const parts = carName.split(' ');
         const firstPart = parts[0];
         // Handle hyphenated makes like "Mercedes-AMG" -> extract "Mercedes"
         return firstPart.includes('-') ? firstPart.split('-')[0] : firstPart;
-    };
-
-    // Get car make logo path
-    const getMakeLogo = (make: string): string | null => {
-        const makeLower = make.toLowerCase();
-        const logoMap: { [key: string]: string } = {
-            'mercedes': '/logos/merc.svg',
-            'mercedes-benz': '/logos/merc.svg',
-            'bmw': '/logos/bmw.webp',
-            'audi': '/logos/audi.png',
-            'hyundai': '/logos/hyundai.png',
-            'maserati': '/logos/maserati.png',
-        };
-        return logoMap[makeLower] || null;
     };
 
     // Get logo size class based on make
@@ -394,7 +290,7 @@ export const CalendarPage: React.FC<Props> = () => {
 
         if (filters.make) {
             filteredOrders = filteredOrders.filter((o) => {
-                const car = cars.find(c => c.id.toString() === o.carId.toString());
+                const car = fetchCarsModels(filters.make);
                 if (!car) return false;
 
                 // Try to get make and model from car object
@@ -423,66 +319,18 @@ export const CalendarPage: React.FC<Props> = () => {
 
         filteredOrders.forEach((o) => {
             // Add order to its pickup date
-            const pickupDate = format(new Date(o.pickupDate), "yyyy-MM-dd");
+            const pickupDate = format(new Date(o.start_date), "yyyy-MM-dd");
             if (!pickupsMap.has(pickupDate)) pickupsMap.set(pickupDate, []);
             pickupsMap.get(pickupDate)!.push(o);
 
             // Add order to its return date
-            const returnDate = format(new Date(o.returnDate), "yyyy-MM-dd");
+            const returnDate = format(new Date(o.end_date), "yyyy-MM-dd");
             if (!returnsMap.has(returnDate)) returnsMap.set(returnDate, []);
             returnsMap.get(returnDate)!.push(o);
         });
 
         return { pickups: pickupsMap, returns: returnsMap };
     }, [filters, orders, cars]);
-
-    const handleSort = (field: 'time' | 'customer' | 'car' | 'status') => {
-        if (sortBy === field) {
-            // Toggle sort order if clicking the same field
-            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-        } else {
-            // Set new sort field with ascending order
-            setSortBy(field);
-            setSortOrder('asc');
-        }
-    };
-
-    const sortOrders = (orders: OrderDisplay[], isPickup: boolean): OrderDisplay[] => {
-        if (!sortBy) return orders;
-
-        const sorted = [...orders].sort((a, b) => {
-            let diff = 0;
-
-            switch (sortBy) {
-                case 'time':
-                    const timeA = isPickup ? formatTime(a.pickupTime) : formatTime(a.returnTime);
-                    const timeB = isPickup ? formatTime(b.pickupTime) : formatTime(b.returnTime);
-                    diff = timeA.localeCompare(timeB);
-                    break;
-                case 'customer':
-                    diff = (a.customerName || '').localeCompare(b.customerName || '');
-                    break;
-                case 'car':
-                    const carA = cars.find(c => c.id.toString() === a.carId.toString());
-                    const carB = cars.find(c => c.id.toString() === b.carId.toString());
-                    const carNameA = carA ? ((carA as any).name || '') : '';
-                    const carNameB = carB ? ((carB as any).name || '') : '';
-                    diff = carNameA.localeCompare(carNameB);
-                    break;
-                case 'status':
-                    const statusA = a.status || '';
-                    const statusB = b.status || '';
-                    diff = statusA.localeCompare(statusB);
-                    break;
-                default:
-                    return 0;
-            }
-
-            return sortOrder === 'asc' ? diff : -diff;
-        });
-
-        return sorted;
-    };
 
     const prevMonth = () => setCurrentMonth((m) => subMonths(m, 1));
     const nextMonth = () => setCurrentMonth((m) => addMonths(m, 1));
@@ -512,68 +360,21 @@ export const CalendarPage: React.FC<Props> = () => {
         return days;
     };
 
+    const handleClearSort = () => {
+        setFilters(defaultFilters);
+        setSelectedCar(null)
+        console.log("Sort cleared");
+    };
+
+
     return (
         <div ref={calendarRef} className="max-w-[1600px] mx-auto px-0 sm:px6 lg:px-8">
             {/* Sort and Filter Row */}
             <div className="mb-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
                 {/* Sort Controls */}
                 <div className="flex flex-col lg:flex-row lg:flex-wrap items-start lg:items-center gap-2 lg:gap-2">
-                    {/* Mobile: Sortează după and Șterge Sortarea in same row */}
-                    <div className="lg:hidden flex items-center justify-between gap-2 w-full">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.calendar.sortBy')}</span>
-                        {sortBy && sortBy !== 'time' && (
-                            <button
-                                onClick={() => {
-                                    setSortBy('time');
-                                    setSortOrder('asc');
-                                }}
-                                className="px-2.5 py-0 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
-                            >
-                                {t('admin.calendar.clearSort')}
-                            </button>
-                        )}
-                    </div>
                     {/* Desktop: Sortează după label */}
-                    <span className="hidden lg:inline text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.calendar.sortBy')}</span>
                     <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                        <button
-                            onClick={() => handleSort('car')}
-                            className={`flex items-center gap-1 px-2.5 lg:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'car'
-                                ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                }`}
-                        >
-                            <span className="truncate">{t('admin.calendar.car')}</span>
-                            {sortBy === 'car' && (
-                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
-                            )}
-                            {sortBy !== 'car' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
-                        </button>
-                        <button
-                            onClick={() => handleSort('status')}
-                            className={`flex items-center gap-1 px-2.5 lg:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex-1 sm:flex-initial min-w-0 ${sortBy === 'status'
-                                ? 'bg-red-500/20 text-red-300 border-red-500/50'
-                                : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                }`}
-                        >
-                            <span className="truncate">{t('admin.calendar.status')}</span>
-                            {sortBy === 'status' && (
-                                sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : <ArrowDown className="w-3 h-3 flex-shrink-0" />
-                            )}
-                            {sortBy !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-50 flex-shrink-0" />}
-                        </button>
-                        {/* Desktop: Șterge Sortarea */}
-                        {sortBy && sortBy !== 'time' && (
-                            <button
-                                onClick={() => {
-                                    setSortBy('time');
-                                    setSortOrder('asc');
-                                }}
-                                className="hidden lg:block px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors whitespace-nowrap"
-                            >
-                                {t('admin.calendar.clearSort')}
-                            </button>
-                        )}
                         {/* Filter button on mobile - in same row */}
                         {!isDesktop && !selectedCar && (
                             <button
@@ -609,6 +410,15 @@ export const CalendarPage: React.FC<Props> = () => {
                                     />
                                 )}
                                 <span className="truncate">{displayName}</span>
+                                {/* Clear sort button */}
+                                <button
+                                    onClick={handleClearSort}
+                                    className="ml-1 flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-white/20 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-all flex-shrink-0"
+                                    title={t('admin.calendar.clearSort')}
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+
                             </div>
                         );
                     })()}
@@ -643,11 +453,7 @@ export const CalendarPage: React.FC<Props> = () => {
                             )}
                             <span className="truncate">{displayName}</span>
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setFilters({ make: "", model: "" });
-                                    setSelectedCar(null);
-                                }}
+                                onClick={handleClearSort}
                                 className="ml-1 p-0.5 hover:bg-white/20 rounded transition-colors flex-shrink-0"
                                 aria-label="Clear filter"
                             >
@@ -999,8 +805,8 @@ export const CalendarPage: React.FC<Props> = () => {
                         const displayDate = selectedDate || todayStr;
                         const displayDateObj = new Date(displayDate);
 
-                        const selectedDayPickups = sortOrders(eventsByDay.pickups.get(displayDate) || [], true);
-                        const selectedDayReturns = sortOrders(eventsByDay.returns.get(displayDate) || [], false);
+                        const selectedDayPickups = eventsByDay.pickups.get(displayDate) || [];
+                        const selectedDayReturns = eventsByDay.returns.get(displayDate) || [];
 
                         return (
                             <motion.div
@@ -1037,9 +843,8 @@ export const CalendarPage: React.FC<Props> = () => {
                                         <h4 className="text-sm font-semibold text-yellow-300 mb-3 uppercase tracking-wide">{t('admin.calendar.pickups')} ({selectedDayPickups.length})</h4>
                                         <div className="space-y-3">
                                             {selectedDayPickups.map((order) => {
-                                                const car = cars.find(c => c.id.toString() === order.carId.toString());
-                                                const carName = car ? ((car as any).name || 'Unknown Car') : 'Unknown Car';
-                                                const customerName = order.customerName || 'Unknown Customer';
+                                                const car = order.car;
+                                                const carName = car !== null ? getCarName(car) : '';
 
                                                 return (
                                                     <motion.div
@@ -1060,12 +865,12 @@ export const CalendarPage: React.FC<Props> = () => {
                                                                         <User className="w-5 h-5 text-white" />
                                                                     </div>
                                                                     <div>
-                                                                        <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                                        <div className="font-semibold text-white text-sm">{order.customer_email}</div>
+                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{order.id.toString().padStart(4, '0')}</div>
                                                                     </div>
                                                                 </div>
                                                                 {(() => {
-                                                                    const statusDisplay = getStatusDisplay(order.status);
+                                                                    const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
                                                                     return (
                                                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
                                                                             {statusDisplay.text}
@@ -1079,7 +884,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                                                 </div>
                                                                 <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                                                                     <Clock className="w-4 h-4 text-yellow-400/70 flex-shrink-0" />
-                                                                    <span className="text-yellow-400 text-lg font-bold tracking-tight">{formatTime(order.pickupTime)}</span>
+                                                                    <span className="text-yellow-400 text-lg font-bold tracking-tight">{formatTime(order.start_time)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1096,9 +901,8 @@ export const CalendarPage: React.FC<Props> = () => {
                                         <h4 className="text-sm font-semibold text-blue-300 mb-3 uppercase tracking-wide">{t('admin.calendar.returns')} ({selectedDayReturns.length})</h4>
                                         <div className="space-y-3">
                                             {selectedDayReturns.map((order) => {
-                                                const car = cars.find(c => c.id.toString() === order.carId.toString());
-                                                const carName = car ? ((car as any).name || 'Unknown Car') : 'Unknown Car';
-                                                const customerName = order.customerName || 'Unknown Customer';
+                                                const car = order.car;
+                                                const carName = car !== null ? getCarName(car) : '';
 
                                                 return (
                                                     <motion.div
@@ -1119,12 +923,12 @@ export const CalendarPage: React.FC<Props> = () => {
                                                                         <User className="w-5 h-5 text-white" />
                                                                     </div>
                                                                     <div>
-                                                                        <div className="font-semibold text-white text-sm">{customerName}</div>
-                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{getOrderNumber(order).toString().padStart(4, '0')}</div>
+                                                                        <div className="font-semibold text-white text-sm">{order.customer_email}</div>
+                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{(order.id).toString().padStart(4, '0')}</div>
                                                                     </div>
                                                                 </div>
                                                                 {(() => {
-                                                                    const statusDisplay = getStatusDisplay(order.status);
+                                                                    const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
                                                                     return (
                                                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
                                                                             {statusDisplay.text}
@@ -1138,7 +942,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                                                 </div>
                                                                 <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                                                                     <Clock className="w-4 h-4 text-blue-400/70 flex-shrink-0" />
-                                                                    <span className="text-blue-400 text-lg font-bold tracking-tight">{formatTime(order.returnTime)}</span>
+                                                                    <span className="text-blue-400 text-lg font-bold tracking-tight">{formatTime(order.end_time)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1185,34 +989,13 @@ export const CalendarPage: React.FC<Props> = () => {
                         selectedDayPickups={selectedDayPickups}
                         selectedDayReturns={selectedDayReturns}
                         setSelectedDate={setSelectedDate}
+                        selectedCar={selectedCar}
                         setSelectedOrder={setSelectedOrder}
                         setIsModalOpen={setIsModalOpen}
-                        getOrderNumber={getOrderNumber}
-                        getStatusDisplay={getStatusDisplay}
                         formatTime={formatTime}
-                        sortBy={sortBy}
-                        sortOrder={sortOrder}
-                        handleSort={handleSort}
-                        sortOrders={sortOrders}
-                        clearSort={() => {
-                            setSortBy('time');
-                            setSortOrder('asc');
-                        }}
-                        cars={cars}
                     />
                 );
             })()}
-
-            {/* Order Details Modal */}
-            <OrderDetailsModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setSelectedOrder(null);
-                }}
-                order={selectedOrder}
-                cars={cars}
-            />
         </div>
     );
 };

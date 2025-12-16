@@ -22,7 +22,7 @@ interface OrderDetailsModalProps {
     showOrderNumber?: boolean; // Whether to show the order number for admins/users
 }
 
-export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
+export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
     isOpen,
     onClose,
     order,
@@ -53,7 +53,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
         try {
             // Import the fetch function
-            const { fetchRentalsOnly } = await import('../../lib/orders');
+            const { fetchRentalsForCalendarPageByMonth: fetchRentalsOnly } = await import('../../lib/orders');
             const cars = await fetchCars();
 
             const refreshedOrders = await fetchRentalsOnly(cars);
@@ -504,172 +504,172 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
             >
-                                {/* Header */}
-                                <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
-                                    <div>
-                                        <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails')}</h2>
-                                        {showOrderNumber && (
-                                            <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                                                {t('admin.orders.orderNumber')}{order.id ? order.id.toString().padStart(4, '0') : 'N/A'}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <button
-                                        onClick={onClose}
-                                        className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
-                                    >
-                                        <X className="w-5 h-5 text-white" />
-                                    </button>
+                {/* Header */}
+                <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails')}</h2>
+                        {showOrderNumber && (
+                            <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                                {t('admin.orders.orderNumber')}{order.id ? order.id.toString().padStart(4, '0') : 'N/A'}
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+                    >
+                        <X className="w-5 h-5 text-white" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+
+                    {/* Rental Period */}
+                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
+                            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                {(car?.image_url || (car as any)?.image || (order as any).car?.image_url) && (
+                                    <img
+                                        src={car?.image_url || (car as any)?.image || (order as any).car?.image_url}
+                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || ((order as any).car?.make + ' ' + (order as any).car?.model) || t('admin.orders.unknownCar')}
+                                        className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded-md border border-white/10"
+                                    />
+                                )}
+                                <span className="text-white font-semibold text-xs sm:text-sm">
+                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (((order as any).car?.make + ' ' + (order as any).car?.model && (order as any).car?.make + ' ' + (order as any).car?.model !== 'Unknown Car' ? (order as any).car?.make + ' ' + (order as any).car?.model : '')) || t('admin.orders.unknownCar')}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
+                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(startDate)}</span>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(startTime)}</span>
+                                </div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
+                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(endDate)}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(endTime)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/10">
+                            <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.duration')}: <span className="text-white font-semibold">{days} {t('admin.orders.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours') || 'ore'}` : ''}</span></p>
+                        </div>
+                    </div>
 
-                                {/* Content */}
-                                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                    {/* Financial Details */}
+                    {(() => {
+                        // Calculate additional costs from features/options if available
+                        // Check both options (from requests) and features (from rentals)
+                        let parsedOptions: any = {};
 
-                                    {/* Rental Period */}
-                                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
-                                            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                                                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
-                                            </h3>
-                                            <div className="flex items-center gap-2">
-                                                {(car?.image_url || (car as any)?.image || (order as any).car?.image_url) && (
-                                                    <img
-                                                        src={car?.image_url || (car as any)?.image || (order as any).car?.image_url}
-                                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || ((order as any).car?.make + ' ' + (order as any).car?.model) || t('admin.orders.unknownCar')}
-                                                        className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded-md border border-white/10"
-                                                    />
-                                                )}
-                                                <span className="text-white font-semibold text-xs sm:text-sm">
-                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (((order as any).car?.make + ' ' + (order as any).car?.model && (order as any).car?.make + ' ' + (order as any).car?.model !== 'Unknown Car' ? (order as any).car?.make + ' ' + (order as any).car?.model : '')) || t('admin.orders.unknownCar')}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
-                                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(startDate)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(startTime)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
-                                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(endDate)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(endTime)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/10">
-                                            <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.duration')}: <span className="text-white font-semibold">{days} {t('admin.orders.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours') || 'ore'}` : ''}</span></p>
-                                        </div>
-                                    </div>
+                        // First, try to get options from the original request (if request_id exists)
+                        if (requestOptions && Object.keys(requestOptions).length > 0) {
+                            console.log('OrderDetailsModal: Using options from request:', requestOptions);
+                            parsedOptions = requestOptions;
+                        }
+                        // Then try to get options directly (for requests)
+                        else if ((order as any).options && Object.keys((order as any).options).length > 0) {
+                            console.log('OrderDetailsModal: Using options from order:', (order as any).options);
+                            if (typeof (order as any).options === 'string') {
+                                try {
+                                    parsedOptions = JSON.parse((order as any).options);
+                                } catch (e) {
+                                    parsedOptions = {};
+                                }
+                            } else {
+                                parsedOptions = (order as any).options;
+                            }
+                        }
+                        // If no options, try to parse features array (for rentals)
+                        // But skip car features like "Motor V6 3.0" - only look for service options
+                        else if (!parsedOptions || Object.keys(parsedOptions).length === 0) {
+                            console.log('OrderDetailsModal: No options found, checking features');
+                            const features = (order as any).features;
+                            if (features) {
+                                console.log('OrderDetailsModal: Found features:', features);
+                                if (Array.isArray(features)) {
+                                    // Convert feature names to option keys
+                                    // Features might be stored as option keys (e.g., "personalDriver") or as display names
+                                    features.forEach((feature: string) => {
+                                        // First check if it's already an option key (camelCase)
+                                        const featureKey = feature.replace(/\s+/g, '');
+                                        const optionKeyMap: Record<string, string> = {
+                                            'unlimitedKm': 'unlimitedKm',
+                                            'unlimitedkm': 'unlimitedKm',
+                                            'speedLimitIncrease': 'speedLimitIncrease',
+                                            'speedlimitincrease': 'speedLimitIncrease',
+                                            'tireInsurance': 'tireInsurance',
+                                            'tireinsurance': 'tireInsurance',
+                                            'personalDriver': 'personalDriver',
+                                            'personaldriver': 'personalDriver',
+                                            'priorityService': 'priorityService',
+                                            'priorityservice': 'priorityService',
+                                            'childSeat': 'childSeat',
+                                            'childseat': 'childSeat',
+                                            'simCard': 'simCard',
+                                            'simcard': 'simCard',
+                                            'roadsideAssistance': 'roadsideAssistance',
+                                            'roadsideassistance': 'roadsideAssistance',
+                                        };
 
-                                    {/* Financial Details */}
-                                    {(() => {
-                                        // Calculate additional costs from features/options if available
-                                        // Check both options (from requests) and features (from rentals)
-                                        let parsedOptions: any = {};
-
-                                        // First, try to get options from the original request (if request_id exists)
-                                        if (requestOptions && Object.keys(requestOptions).length > 0) {
-                                            console.log('OrderDetailsModal: Using options from request:', requestOptions);
-                                            parsedOptions = requestOptions;
-                                        }
-                                        // Then try to get options directly (for requests)
-                                        else if ((order as any).options && Object.keys((order as any).options).length > 0) {
-                                            console.log('OrderDetailsModal: Using options from order:', (order as any).options);
-                                            if (typeof (order as any).options === 'string') {
-                                                try {
-                                                    parsedOptions = JSON.parse((order as any).options);
-                                                } catch (e) {
-                                                    parsedOptions = {};
-                                                }
-                                            } else {
-                                                parsedOptions = (order as any).options;
+                                        const normalizedKey = featureKey.charAt(0).toLowerCase() + featureKey.slice(1);
+                                        if (optionKeyMap[featureKey] || optionKeyMap[normalizedKey]) {
+                                            // It's already an option key, use it directly
+                                            const key = optionKeyMap[featureKey] || optionKeyMap[normalizedKey] || featureKey;
+                                            parsedOptions[key] = true;
+                                        } else {
+                                            // Try to match by name
+                                            const featureLower = feature.toLowerCase();
+                                            if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
+                                                parsedOptions.unlimitedKm = true;
+                                            } else if (featureLower.includes('speed') || featureLower.includes('viteză') || featureLower.includes('limita')) {
+                                                parsedOptions.speedLimitIncrease = true;
+                                            } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
+                                                parsedOptions.tireInsurance = true;
+                                            } else if (featureLower.includes('driver') || featureLower.includes('șofer') || featureLower.includes('sofer')) {
+                                                parsedOptions.personalDriver = true;
+                                            } else if (featureLower.includes('priority')) {
+                                                parsedOptions.priorityService = true;
+                                            } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
+                                                parsedOptions.childSeat = true;
+                                            } else if (featureLower.includes('sim') || featureLower.includes('card')) {
+                                                parsedOptions.simCard = true;
+                                            } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră') || featureLower.includes('asistenta')) {
+                                                parsedOptions.roadsideAssistance = true;
                                             }
                                         }
-                                        // If no options, try to parse features array (for rentals)
-                                        // But skip car features like "Motor V6 3.0" - only look for service options
-                                        else if (!parsedOptions || Object.keys(parsedOptions).length === 0) {
-                                            console.log('OrderDetailsModal: No options found, checking features');
-                                            const features = (order as any).features;
-                                            if (features) {
-                                                console.log('OrderDetailsModal: Found features:', features);
-                                                if (Array.isArray(features)) {
-                                                    // Convert feature names to option keys
-                                                    // Features might be stored as option keys (e.g., "personalDriver") or as display names
-                                                    features.forEach((feature: string) => {
-                                                        // First check if it's already an option key (camelCase)
-                                                        const featureKey = feature.replace(/\s+/g, '');
-                                                        const optionKeyMap: Record<string, string> = {
-                                                            'unlimitedKm': 'unlimitedKm',
-                                                            'unlimitedkm': 'unlimitedKm',
-                                                            'speedLimitIncrease': 'speedLimitIncrease',
-                                                            'speedlimitincrease': 'speedLimitIncrease',
-                                                            'tireInsurance': 'tireInsurance',
-                                                            'tireinsurance': 'tireInsurance',
-                                                            'personalDriver': 'personalDriver',
-                                                            'personaldriver': 'personalDriver',
-                                                            'priorityService': 'priorityService',
-                                                            'priorityservice': 'priorityService',
-                                                            'childSeat': 'childSeat',
-                                                            'childseat': 'childSeat',
-                                                            'simCard': 'simCard',
-                                                            'simcard': 'simCard',
-                                                            'roadsideAssistance': 'roadsideAssistance',
-                                                            'roadsideassistance': 'roadsideAssistance',
-                                                        };
+                                    });
+                                } else if (typeof features === 'string') {
+                                    try {
+                                        parsedOptions = JSON.parse(features);
+                                    } catch (e) {
+                                        parsedOptions = {};
+                                    }
+                                } else {
+                                    parsedOptions = features;
+                                }
+                            }
+                        }
 
-                                                        const normalizedKey = featureKey.charAt(0).toLowerCase() + featureKey.slice(1);
-                                                        if (optionKeyMap[featureKey] || optionKeyMap[normalizedKey]) {
-                                                            // It's already an option key, use it directly
-                                                            const key = optionKeyMap[featureKey] || optionKeyMap[normalizedKey] || featureKey;
-                                                            parsedOptions[key] = true;
-                                                        } else {
-                                                            // Try to match by name
-                                                            const featureLower = feature.toLowerCase();
-                                                            if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-                                                                parsedOptions.unlimitedKm = true;
-                                                            } else if (featureLower.includes('speed') || featureLower.includes('viteză') || featureLower.includes('limita')) {
-                                                                parsedOptions.speedLimitIncrease = true;
-                                                            } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-                                                                parsedOptions.tireInsurance = true;
-                                                            } else if (featureLower.includes('driver') || featureLower.includes('șofer') || featureLower.includes('sofer')) {
-                                                                parsedOptions.personalDriver = true;
-                                                            } else if (featureLower.includes('priority')) {
-                                                                parsedOptions.priorityService = true;
-                                                            } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-                                                                parsedOptions.childSeat = true;
-                                                            } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-                                                                parsedOptions.simCard = true;
-                                                            } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră') || featureLower.includes('asistenta')) {
-                                                                parsedOptions.roadsideAssistance = true;
-                                                            }
-                                                        }
-                                                    });
-                                                } else if (typeof features === 'string') {
-                                                    try {
-                                                        parsedOptions = JSON.parse(features);
-                                                    } catch (e) {
-                                                        parsedOptions = {};
-                                                    }
-                                                } else {
-                                                    parsedOptions = features;
-                                                }
-                                            }
-                                        }
-
-                                        console.log('OrderDetailsModal: Final parsedOptions:', parsedOptions);
+                        console.log('OrderDetailsModal: Final parsedOptions:', parsedOptions);
 
                                         // For rentals, use the rental's stored price_per_day as the primary source
                                         // For requests, use the car's price_per_day
@@ -753,9 +753,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                             usingStoredTotal
                                         });
 
-                                        const totalPrice = usingStoredTotal && storedAmount > 0 ?
-                                            storedAmount :
-                                            calculatedAmount;
+                        const totalPrice = usingStoredTotal && storedAmount > 0 ?
+                            storedAmount :
+                            calculatedAmount;
 
                                         // Use priceSummary for breakdown details, or manual calculation
                                         const breakdown = priceSummary || {
@@ -909,71 +909,71 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         );
                                     })()}
 
-                                    {/* Contract Download - Show first */}
-                                    {displayOrder?.contract_url && (
-                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10 mb-4">
-                                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
-                                            </h3>
-                                            <a
-                                                href={displayOrder.contract_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
-                                            >
-                                                <Download className="w-4 h-4" />
-                                                <span>{t('admin.orders.downloadContractPDF')}</span>
-                                            </a>
-                                            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                                Descarcă contractul de închiriere
-                                            </p>
-                                        </div>
-                                    )}
+                    {/* Contract Download - Show first */}
+                    {displayOrder?.contract_url && (
+                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10 mb-4">
+                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
+                            </h3>
+                            <a
+                                href={displayOrder.contract_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                            >
+                                <Download className="w-4 h-4" />
+                                <span>{t('admin.orders.downloadContractPDF')}</span>
+                            </a>
+                            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
+                                Descarcă contractul de închiriere
+                            </p>
+                        </div>
+                    )}
 
-                                    {/* Action Buttons - Show after contract */}
-                                    {showOrderNumber && (displayOrder as any)?.status !== 'COMPLETED' && (
-                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                                            <span className="text-sm sm:text-base">Acțiuni</span>
-                                        </h3>
+                    {/* Action Buttons - Show after contract */}
+                    {showOrderNumber && (displayOrder as any)?.status !== 'COMPLETED' && (
+                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-sm sm:text-base">Acțiuni</span>
+                            </h3>
 
-                                        <div className="space-y-3">
-                                            {/* Create Contract Button - for CONTRACT status */}
-                                            {(displayOrder as any)?.status === 'CONTRACT' && (
-                                                <button
-                                                    onClick={handleOpenContractModal}
-                                                    className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
-                                                    disabled={isGeneratingContract}
-                                                >
-                                                    {isGeneratingContract ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                    ) : (
-                                                        <FileText className="w-4 h-4" />
-                                                    )}
-                                                    <span>Creează Contract</span>
-                                                </button>
-                                            )}
+                            <div className="space-y-3">
+                                {/* Create Contract Button - for CONTRACT status */}
+                                {(displayOrder as any)?.status === 'CONTRACT' && (
+                                    <button
+                                        onClick={handleOpenContractModal}
+                                        className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
+                                        disabled={isGeneratingContract}
+                                    >
+                                        {isGeneratingContract ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <FileText className="w-4 h-4" />
+                                        )}
+                                        <span>Creează Contract</span>
+                                    </button>
+                                )}
 
-                                            {/* Cancel Order Button - for ACTIVE and CONTRACT status */}
-                                            {((displayOrder as any)?.status === 'ACTIVE' || (displayOrder as any)?.status === 'CONTRACT') && onCancel && (
-                                                <button
-                                                    onClick={() => {
-                                                        if (window.confirm('Ești sigur că vrei să anulezi această comandă? Această acțiune va anula și cererea corespunzătoare.')) {
-                                                            onCancel(displayOrder as OrderDisplay);
-                                                        }
-                                                    }}
-                                                    className="w-full px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
-                                                >
-                                                    <AlertTriangle className="w-4 h-4" />
-                                                    <span>Anulează Comanda</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    )}
-                                </div>
+                                {/* Cancel Order Button - for ACTIVE and CONTRACT status */}
+                                {((displayOrder as any)?.status === 'ACTIVE' || (displayOrder as any)?.status === 'CONTRACT') && onCancel && (
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Ești sigur că vrei să anulezi această comandă? Această acțiune va anula și cererea corespunzătoare.')) {
+                                                onCancel(displayOrder as OrderDisplay);
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                                    >
+                                        <AlertTriangle className="w-4 h-4" />
+                                        <span>Anulează Comanda</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>,
         document.body

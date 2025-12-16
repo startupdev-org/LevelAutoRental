@@ -27,7 +27,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                
+
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
                     fetchedCars.map(async (car) => {
@@ -44,7 +44,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
                         };
                     })
                 );
-                
+
                 setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
@@ -56,7 +56,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
     const loadOrders = async () => {
         if (cars.length === 0) return;
         try {
-            const { fetchRentalsOnly } = await import('../../../../lib/orders');
+            const { fetchRentalsForCalendarPageByMonth: fetchRentalsOnly } = await import('../../../../lib/orders');
             const data = await fetchRentalsOnly(cars);
             const rentalsOnly = data.filter(order => order.type === 'rental');
             setOrdersList(rentalsOnly);

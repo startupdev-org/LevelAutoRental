@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { cars as staticCars } from '../../../data/cars';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
-import { OrderDetailsModal } from '../../../components/modals/OrderDetailsModal';
+import { RentalDetailsModal } from '../../../components/modals/OrderDetailsModal';
 import { ContractCreationModal } from '../../../components/modals/ContractCreationModal';
-import { cancelRentalOrder, redoRentalOrder, fetchRentalsOnly } from '../../../lib/orders';
+import { cancelRentalOrder, redoRentalOrder, fetchRentalsForCalendarPage } from '../../../lib/orders';
 import { SalesChartCard } from '../../../components/dashboard/Chart';
 import { motion } from 'framer-motion';
 import { Save, X, Loader2 } from 'lucide-react';
@@ -347,7 +347,7 @@ export const OrdersViewSection: React.FC = () => {
         if (cars.length === 0) return;
         try {
             setOrdersLoading(true);
-            const data = await fetchRentalsOnly(cars);
+            const data = await fetchRentalsForCalendarPageByMonth(cars);
             const rentalsOnly = data.filter(order => order.type === 'rental');
             setOrders(rentalsOnly);
         } catch (error) {
@@ -840,7 +840,7 @@ export const OrdersViewSection: React.FC = () => {
             </motion.div>
 
             {/* Order Details Modal */}
-            <OrderDetailsModal
+            <RentalDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     console.log('Modal onClose called, closing modal')
