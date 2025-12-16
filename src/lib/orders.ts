@@ -133,6 +133,162 @@ export async function fetchRentalsForCalendarPage(
 }
 
 /**
+ * Fetch all rentals (only) and format them for display - used in Orders page
+ */
+export async function fetchRentalsForCalendarPageByMonth(cars: Car[]): Promise<OrderDisplay[]> {
+  try {
+    // Fetch only rentals (no requests)
+    const rentals = await fetchRentals();
+
+    // Collect all unique user IDs (filter out null/undefined for guest bookings)
+    const userIds = new Set<string>();
+    rentals.forEach(r => {
+      if (r.user_id) userIds.add(r.user_id);
+    });
+
+    // Fetch user profiles if available
+    const profilesArray = await fetchUserProfiles(Array.from(userIds));
+    const profiles = new Map<string, any>();
+    profilesArray.forEach(profile => {
+      if (profile.id) {
+        profiles.set(profile.id, profile);
+      }
+    });
+
+    const orders: OrderDisplay[] = [];
+
+    // Process rentals - use Promise.all to handle async car fetching
+    const processedRentals = await Promise.all(rentals.map(async (rental) => {
+      const carIdMatch = typeof rental.car_id === 'number'
+        ? rental.car_id
+        : parseInt(rental.car_id);
+
+      let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === rental.car_id?.toString());
+
+      // If car not found (might be deleted), fetch it directly from database
+      if (!car && rental.car_id) {
+        try {
+          const { data: carData, error } = await supabase
+            .from('Cars')
+            .select('*')
+            .eq('id', carIdMatch)
+            .single();
+
+          if (!error && carData) {
+            // Map database row to Car type
+            car = {
+              id: carData.id,
+              make: carData.make,
+              model: carData.model,
+              name: carData.name || undefined,
+              year: carData.year || new Date().getFullYear(),
+              price_per_day: carData.price_per_day,
+              discount_percentage: carData.discount_percentage || undefined,
+              category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
+              image_url: carData.image_url || undefined,
+              photo_gallery: carData.photo_gallery || undefined,
+              seats: carData.seats || undefined,
+              transmission: carData.transmission as 'Automatic' | 'Manual' || undefined,
+              body: carData.body as 'Coupe' | 'Sedan' | 'SUV' || undefined,
+              fuel_type: carData.fuel_type as 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' || undefined,
+              features: carData.features || undefined,
+              rating: carData.rating || undefined,
+              reviews: carData.reviews || undefined,
+              status: carData.status || undefined,
+              drivetrain: carData.drivetrain || undefined,
+            } as Car & { name?: string };
+
+            // Fetch images from storage for this car
+            if (car) {
+              const carName = (car as any).name || `${car.make} ${car.model}`;
+              const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+              car.image_url = mainImage || car.image_url;
+              car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching car ${carIdMatch} from database:`, err);
+        }
+      }
+      const profile = rental.user_id ? profiles.get(rental.user_id) : null;
+      const email = profile?.email || rental.user?.email || '';
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      const phoneNumber = profile?.phone_number || '';
+      const userName = (firstName && lastName)
+        ? `${firstName} ${lastName}`
+        : firstName || lastName
+          ? `${firstName}${lastName}`
+          : (email ? email.split('@')[0] : '')
+          || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
+
+      // Calculate amount based on days and car price
+      const startDate = new Date(rental.start_date || new Date());
+      const endDate = new Date(rental.end_date || new Date());
+      const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+      const amount = rental.total_amount || (car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0);
+
+      // Get the stored price_per_day from rental, or fallback to car's current price
+      const pricePerDay = rental.price_per_day || car?.price_per_day || 0;
+
+      // Get options - if not in rental, try to fetch from linked request
+      let rentalOptions = (rental as any).options;
+      if (!rentalOptions && (rental as any).request_id) {
+        try {
+          const { data: requestData } = await supabase
+            .from('BorrowRequest')
+            .select('options')
+            .eq('id', (rental as any).request_id)
+            .single();
+          
+          if (requestData?.options) {
+            rentalOptions = requestData.options;
+          }
+        } catch (err) {
+          console.debug('Could not fetch options from linked request:', err);
+        }
+      }
+
+      return {
+        id: rental.id,
+        type: 'rental' as const,
+        customerName: userName,
+        customerEmail: email,
+        customerPhone: phoneNumber,
+        carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
+        avatar: car?.image_url || (car as any)?.image || '',
+        pickupDate: rental.start_date,
+        pickupTime: rental.start_time,
+        returnDate: rental.end_date,
+        returnTime: rental.end_time,
+        status: rental.rental_status || (rental as any).rental_status,
+        total_amount: amount.toString(),
+        amount: amount,
+        createdAt: rental.created_at,
+        carId: rental.car_id,
+        userId: rental.user_id,
+        price_per_day: pricePerDay,
+        options: rentalOptions,
+        request_id: (rental as any).request_id,
+        contract_url: (rental as any).contract_url || undefined,
+      } as OrderDisplay;
+    }));
+
+    orders.push(...processedRentals);
+
+    // Sort by creation date (newest first)
+    return orders.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  } catch (error) {
+    console.error('Error in fetchRentalsForCalendarPageByMonth:', error);
+    return [];
+  }
+}
+
+/**
  * Fetch all orders (both requests and rentals) and format them for display
  */
 export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
@@ -217,8 +373,9 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       }
       const profile = profiles.get(request.user_id);
       const email = profile?.email || request.user?.email || '';
-      const firstName = profile?.firstName || '';
-      const lastName = profile?.lastName || '';
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      const phoneNumber = profile?.phone_number || '';
       const userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
@@ -231,6 +388,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         type: 'request' as const,
         customerName: userName,
         customerEmail: email,
+        customerPhone: phoneNumber,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
         pickupDate: request.start_date.includes(' ') ? request.start_date.split(' ')[0] : request.start_date.split('T')[0],
@@ -243,6 +401,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: request.created_at,
         carId: request.car_id,
         userId: request.user_id,
+        contract_url: (request as any).contract_url || undefined,
       } as OrderDisplay;
     }));
 
@@ -303,8 +462,9 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       }
       const profile = rental.user_id ? profiles.get(rental.user_id) : null;
       const email = profile?.email || rental.user?.email || '';
-      const firstName = profile?.firstName || '';
-      const lastName = profile?.lastName || '';
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      const phoneNumber = profile?.phone_number || '';
       const userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
@@ -318,11 +478,33 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
       const amount = rental.total_amount || (car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0);
 
+      // Get the stored price_per_day from rental, or fallback to car's current price
+      const pricePerDay = rental.price_per_day || car?.price_per_day || 0;
+
+      // Get options - if not in rental, try to fetch from linked request
+      let rentalOptions = (rental as any).options;
+      if (!rentalOptions && (rental as any).request_id) {
+        try {
+          const { data: requestData } = await supabase
+            .from('BorrowRequest')
+            .select('options')
+            .eq('id', (rental as any).request_id)
+            .single();
+          
+          if (requestData?.options) {
+            rentalOptions = requestData.options;
+          }
+        } catch (err) {
+          console.debug('Could not fetch options from linked request:', err);
+        }
+      }
+
       return {
         id: rental.id,
         type: 'rental' as const,
         customerName: userName,
         customerEmail: email,
+        customerPhone: phoneNumber,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
         pickupDate: rental.start_date,
@@ -335,6 +517,10 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: rental.created_at,
         carId: rental.car_id,
         userId: rental.user_id,
+        price_per_day: pricePerDay,
+        options: rentalOptions,
+        request_id: (rental as any).request_id,
+        contract_url: (rental as any).contract_url || undefined,
       } as OrderDisplay;
     }));
 

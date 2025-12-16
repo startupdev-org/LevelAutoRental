@@ -4,8 +4,10 @@ import { format } from 'date-fns';
 import { ArrowRight, Car, Check, Truck } from 'lucide-react';
 import { RentalDetailsModal } from "../../../../components/modals/OrderDetailsModal";
 import { getUserRentals as fetchUsersRentals } from "../../../../lib/db/rentals/rentals";
-import { Rental } from "../../../../types";
+import { Rental, Car as CarType } from "../../../../types";
 import { formatDateLocal } from "../../../../utils/date";
+import { fetchCars } from "../../../../lib/cars";
+import { fetchImagesByCarName } from "../../../../lib/db/cars/cars";
 
 export const UserOrdersSection: React.FC = () => {
 
@@ -15,6 +17,7 @@ export const UserOrdersSection: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [cars, setCars] = useState<CarType[]>([]);
 
     useEffect(() => {
         async function loadRentals() {
@@ -22,6 +25,34 @@ export const UserOrdersSection: React.FC = () => {
             setRentals(orders);
         }
         loadRentals();
+    }, []);
+
+    // Load cars for pricing calculation
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                setCars(carsWithImages);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
     }, []);
 
     return (
@@ -294,6 +325,7 @@ export const UserOrdersSection: React.FC = () => {
                 }}
                 order={selectedOrder}
                 showOrderNumber={false}
+                cars={cars}
             />
 
         </div>

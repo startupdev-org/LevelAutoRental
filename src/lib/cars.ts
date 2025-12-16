@@ -60,6 +60,7 @@ const mapCarRowToCar = (row: CarRow): Car & { name?: string; color?: string; lic
     model: row.model,
     name: row.name || undefined,
     year: row.year || new Date().getFullYear(),
+    price_per_day: row.price_per_day || row.price_2_4_days || undefined,
     price_2_4_days: row.price_2_4_days || undefined,
     price_5_15_days: row.price_5_15_days || undefined,
     price_16_30_days: row.price_16_30_days || undefined,

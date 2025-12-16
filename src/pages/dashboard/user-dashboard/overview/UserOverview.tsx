@@ -5,12 +5,25 @@ import { fetchFavoriteCarsFromStorage, getUserBorrowRequests as fetchUserBorrowR
 import { supabase } from '../../../../lib/supabase';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { TabType } from '../../UserDashboard';
-import { BorrowRequest } from '../../../../types';
+import { BorrowRequest, Car as CarType } from '../../../../types';
+import { fetchCars } from '../../../../lib/cars';
+import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 
 // Extended type for borrow requests with car information
-interface BorrowRequestWithCar extends BorrowRequest {
+interface BorrowRequestWithCar extends Omit<BorrowRequest, 'price_per_day' | 'total_amount'> {
     car: any; // Car information is attached by getUserBorrowRequests
     created_at?: string;
+    // Override price_per_day and total_amount to allow string or number
+    price_per_day: number | string;
+    total_amount: number | string;
+    // Additional fields from linked Rental (if the request was approved)
+    linkedRental?: {
+        id: number;
+        price_per_day: number | string;
+        total_amount: number | string;
+        contract_url?: string;
+    };
+    contract_url?: string;
 }
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
@@ -43,13 +56,24 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
     // Modal state for order details
     const [selectedRequest, setSelectedRequest] = useState<BorrowRequestWithCar | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [cars, setCars] = useState<CarType[]>([]);
 
     // Convert BorrowRequest to OrderDisplay format for modal compatibility
     const convertBorrowRequestToOrderDisplay = (request: BorrowRequestWithCar): any => {
         const startDate = new Date(request.start_date || new Date());
         const endDate = new Date(request.end_date || new Date());
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-        const amount = request.car ? ((request.car as any)?.pricePerDay || request.car.price_per_day || 0) * days : 0;
+        
+        // CRITICAL: Use price_per_day from linked Rental if available (stored when rental was created)
+        // Otherwise fallback to car's price
+        const pricePerDay = (request as any).price_per_day 
+            ? (typeof (request as any).price_per_day === 'string' ? parseFloat((request as any).price_per_day) : (request as any).price_per_day)
+            : (request.car ? ((request.car as any)?.pricePerDay || request.car.price_per_day || 0) : 0);
+        
+        // Use total_amount from linked Rental if available, otherwise calculate
+        const totalAmount = (request as any).total_amount 
+            ? (typeof (request as any).total_amount === 'string' ? parseFloat((request as any).total_amount) : (request as any).total_amount)
+            : pricePerDay * days;
 
         return {
             id: request.id,
@@ -69,14 +93,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             returnDate: request.end_date ? new Date(request.end_date).toISOString().split('T')[0] : '',
             returnTime: request.end_time || '17:00',
             status: request.status,
-            amount: amount,
-            total_amount: amount.toString(),
+            amount: totalAmount,
+            total_amount: totalAmount.toString(),
             carId: request.car_id.toString(),
             userId: request.user_id,
             createdAt: request.created_at,
             features: request.car?.features || [],
             options: (request as any).options || {},
-            contract_url: request.contract_url,
+            contract_url: (request as any).contract_url || request.contract_url,
+            // CRITICAL: Include price_per_day from rental for the modal
+            price_per_day: pricePerDay,
+            // Attach the full car object for pricing calculations
+            car: request.car,
         };
     };
 
@@ -124,6 +152,33 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
         };
     }, []);
 
+    // Load cars for pricing calculation
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                setCars(carsWithImages);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
+    }, []);
 
     async function handleFetchUserBorrowRequests() {
         const requests = await fetchUserBorrowRequests();
@@ -464,6 +519,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 }}
                 order={selectedRequest ? convertBorrowRequestToOrderDisplay(selectedRequest) : null}
                 showOrderNumber={false}
+                cars={cars}
             />
 
         </div>

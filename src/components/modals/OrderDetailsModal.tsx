@@ -20,6 +20,7 @@ interface OrderDetailsModalProps {
     isProcessing?: boolean;
     onOpenContractModal?: () => void; // Callback to open contract modal from parent
     showOrderNumber?: boolean; // Whether to show the order number for admins/users
+    cars?: Car[]; // Optional cars array passed from parent (for pricing calculation)
 }
 
 export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
@@ -31,6 +32,7 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
     isProcessing,
     onOpenContractModal,
     showOrderNumber = true, // Default to showing order number for backward compatibility
+    cars: externalCars, // Rename to avoid conflict with internal state
 }) => {
     const { t } = useTranslation();
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
@@ -60,7 +62,6 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
             const refreshedOrder = refreshedOrders.find(o => o.id === (order as any).id);
 
             if (refreshedOrder) {
-                console.log('Refreshed order data:', refreshedOrder);
                 setCurrentOrder(refreshedOrder);
             }
         } catch (error) {
@@ -79,11 +80,17 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
     const [cars, setCars] = useState<Car[]>([]);
     const [car, setCar] = useState<Car | undefined>(undefined);
 
-    // Fetch cars when modal opens
+    // Fetch cars when modal opens (only if not provided by parent)
     useEffect(() => {
         const loadCars = async () => {
             if (!isOpen) {
                 return; // Don't load if modal is closed
+            }
+
+            // If external cars are provided, use them
+            if (externalCars && externalCars.length > 0) {
+                setCars(externalCars);
+                return;
             }
 
             try {
@@ -120,7 +127,7 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
         };
 
         loadCars();
-    }, [isOpen]);
+    }, [isOpen, externalCars]);
 
     // Fetch original request options if request_id exists
     useEffect(() => {
@@ -130,15 +137,8 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 return;
             }
             const requestId = (displayOrder as any).request_id;
-            console.log('OrderDetailsModal: Checking for request_id. Order:', {
-                id: order.id,
-                request_id: requestId,
-                orderKeys: Object.keys(order),
-                fullOrder: order
-            });
 
             if (!requestId) {
-                console.log('OrderDetailsModal: No request_id found in order. Trying to find request by matching data...');
 
                 // Try to find the request by matching user_id, car_id, and dates
                 try {
@@ -154,7 +154,6 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                     if (!searchError && matchingRequests && matchingRequests.length > 0) {
                         const matchingRequest = matchingRequests[0];
-                        console.log('OrderDetailsModal: Found matching request:', matchingRequest);
 
                         if (matchingRequest.options) {
                             let parsedOptions: any = {};
@@ -169,7 +168,6 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             }
 
                             if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
-                                console.log('OrderDetailsModal: Using options from matching request:', parsedOptions);
                                 setRequestOptions(parsedOptions);
                                 return;
                             }
@@ -185,7 +183,6 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
             try {
                 const { supabase } = await import('../../lib/supabase');
-                console.log('OrderDetailsModal: Fetching request options for request_id:', requestId);
 
                 const { data: request, error } = await supabase
                     .from('BorrowRequest')
@@ -198,8 +195,6 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     setRequestOptions(null);
                     return;
                 }
-
-                console.log('OrderDetailsModal: Fetched request:', request);
 
                 if (request && request.options) {
                     let parsedOptions: any = {};
@@ -216,14 +211,11 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                     // Check if options is not empty (not just {})
                     if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
-                        console.log('OrderDetailsModal: Parsed options from request:', parsedOptions);
                         setRequestOptions(parsedOptions);
                     } else {
-                        console.log('OrderDetailsModal: Request has empty options object');
                         setRequestOptions(null);
                     }
                 } else {
-                    console.log('OrderDetailsModal: Request has no options field');
                     setRequestOptions(null);
                 }
             } catch (error) {
@@ -245,8 +237,24 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
         }
 
         const findCar = async () => {
-            // First, try to find in cars array
+            // First, check if car is already attached to the order (from getUserRentals or convertBorrowRequestToOrderDisplay)
+            let attachedCar = (order as any).car;
+            if (attachedCar) {
+                // Ensure the attached car has all necessary pricing fields
+                // If order has price_per_day from rental, use that instead of car's price
+                if ((order as any).price_per_day && !attachedCar.price_per_day) {
+                    attachedCar = {
+                        ...attachedCar,
+                        price_per_day: (order as any).price_per_day
+                    };
+                }
+                setCar(attachedCar);
+                return;
+            }
+            
+            // Otherwise, try to find in cars array
             const carId = (order as Rental).car_id || (order as OrderDisplay).carId;
+            
             let foundCar = cars.find(c => {
                 if (!carId) return false;
 
@@ -269,10 +277,6 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
             // If car not found in cars array, fetch from database
             if (!foundCar && carId) {
-                console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
-                    orderCarId: carId,
-                    orderCarName: order.carName
-                });
 
                 try {
                     const { supabase } = await import('../../lib/supabase');
@@ -295,6 +299,10 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             name: carData.name || undefined,
                             year: carData.year || new Date().getFullYear(),
                             price_per_day: carData.price_per_day,
+                            price_2_4_days: carData.price_2_4_days,
+                            price_5_15_days: carData.price_5_15_days,
+                            price_16_30_days: carData.price_16_30_days,
+                            price_over_30_days: carData.price_over_30_days,
                             discount_percentage: carData.discount_percentage || undefined,
                             category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
                             image_url: carData.image_url || undefined,
@@ -329,9 +337,7 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
         findCar();
     }, [order, cars, order?.car_id]);
 
-    console.log('OrderDetailsModal checking conditions - order:', !!order, 'isOpen:', isOpen);
     if (!order) {
-        console.log('OrderDetailsModal: No order, returning null');
         return null;
     }
 
@@ -484,14 +490,6 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
     };
 
 
-    if (!isOpen) {
-        console.log('OrderDetailsModal: Not open, returning null');
-        return null;
-    }
-    console.log('OrderDetailsModal: Rendering modal for order:', order?.id);
-
-    console.log('OrderDetailsModal: About to render portal');
-
     if (!isOpen) return null;
 
     return createPortal(
@@ -582,12 +580,10 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                         // First, try to get options from the original request (if request_id exists)
                         if (requestOptions && Object.keys(requestOptions).length > 0) {
-                            console.log('OrderDetailsModal: Using options from request:', requestOptions);
                             parsedOptions = requestOptions;
                         }
                         // Then try to get options directly (for requests)
                         else if ((order as any).options && Object.keys((order as any).options).length > 0) {
-                            console.log('OrderDetailsModal: Using options from order:', (order as any).options);
                             if (typeof (order as any).options === 'string') {
                                 try {
                                     parsedOptions = JSON.parse((order as any).options);
@@ -598,100 +594,44 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                 parsedOptions = (order as any).options;
                             }
                         }
-                        // If no options, try to parse features array (for rentals)
-                        // But skip car features like "Motor V6 3.0" - only look for service options
-                        else if (!parsedOptions || Object.keys(parsedOptions).length === 0) {
-                            console.log('OrderDetailsModal: No options found, checking features');
-                            const features = (order as any).features;
-                            if (features) {
-                                console.log('OrderDetailsModal: Found features:', features);
-                                if (Array.isArray(features)) {
-                                    // Convert feature names to option keys
-                                    // Features might be stored as option keys (e.g., "personalDriver") or as display names
-                                    features.forEach((feature: string) => {
-                                        // First check if it's already an option key (camelCase)
-                                        const featureKey = feature.replace(/\s+/g, '');
-                                        const optionKeyMap: Record<string, string> = {
-                                            'unlimitedKm': 'unlimitedKm',
-                                            'unlimitedkm': 'unlimitedKm',
-                                            'speedLimitIncrease': 'speedLimitIncrease',
-                                            'speedlimitincrease': 'speedLimitIncrease',
-                                            'tireInsurance': 'tireInsurance',
-                                            'tireinsurance': 'tireInsurance',
-                                            'personalDriver': 'personalDriver',
-                                            'personaldriver': 'personalDriver',
-                                            'priorityService': 'priorityService',
-                                            'priorityservice': 'priorityService',
-                                            'childSeat': 'childSeat',
-                                            'childseat': 'childSeat',
-                                            'simCard': 'simCard',
-                                            'simcard': 'simCard',
-                                            'roadsideAssistance': 'roadsideAssistance',
-                                            'roadsideassistance': 'roadsideAssistance',
-                                        };
 
-                                        const normalizedKey = featureKey.charAt(0).toLowerCase() + featureKey.slice(1);
-                                        if (optionKeyMap[featureKey] || optionKeyMap[normalizedKey]) {
-                                            // It's already an option key, use it directly
-                                            const key = optionKeyMap[featureKey] || optionKeyMap[normalizedKey] || featureKey;
-                                            parsedOptions[key] = true;
-                                        } else {
-                                            // Try to match by name
-                                            const featureLower = feature.toLowerCase();
-                                            if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-                                                parsedOptions.unlimitedKm = true;
-                                            } else if (featureLower.includes('speed') || featureLower.includes('viteză') || featureLower.includes('limita')) {
-                                                parsedOptions.speedLimitIncrease = true;
-                                            } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-                                                parsedOptions.tireInsurance = true;
-                                            } else if (featureLower.includes('driver') || featureLower.includes('șofer') || featureLower.includes('sofer')) {
-                                                parsedOptions.personalDriver = true;
-                                            } else if (featureLower.includes('priority')) {
-                                                parsedOptions.priorityService = true;
-                                            } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-                                                parsedOptions.childSeat = true;
-                                            } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-                                                parsedOptions.simCard = true;
-                                            } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră') || featureLower.includes('asistenta')) {
-                                                parsedOptions.roadsideAssistance = true;
-                                            }
-                                        }
-                                    });
-                                } else if (typeof features === 'string') {
-                                    try {
-                                        parsedOptions = JSON.parse(features);
-                                    } catch (e) {
-                                        parsedOptions = {};
-                                    }
-                                } else {
-                                    parsedOptions = features;
-                                }
-                            }
+                        // For rentals, use the rental's stored price_per_day as the PRIMARY source
+                        // CRITICAL: Always check order.price_per_day FIRST before car prices
+                        // PRIORITY ORDER: rental's price > attached car's price > found car's price
+                        let rawPricePerDay = 0;
+                        
+                        if ((order as any).price_per_day) {
+                            rawPricePerDay = (order as any).price_per_day;
+                        } else if ((order as any).car?.price_per_day) {
+                            rawPricePerDay = (order as any).car.price_per_day;
+                        } else if (car?.price_per_day) {
+                            rawPricePerDay = car.price_per_day;
                         }
-
-                        console.log('OrderDetailsModal: Final parsedOptions:', parsedOptions);
-
-                                        // For rentals, use the rental's stored price_per_day as the primary source
-                                        // For requests, use the car's price_per_day
-                                        const storedPricePerDay = (order as any).price_per_day || car?.price_per_day || (order as any).car?.price_per_day || 0;
+                        
+                        const storedPricePerDay = typeof rawPricePerDay === 'string' 
+                            ? parseFloat(rawPricePerDay) 
+                            : Number(rawPricePerDay);
 
                                         // Try to use the centralized calculatePriceSummary function first
                                         let priceSummary = null;
-                                        if (car && storedPricePerDay > 0) {
-                                            // Create a car object with the correct price for calculatePriceSummary
-                                            const carWithPrice = { ...car, price_per_day: storedPricePerDay };
-                                            priceSummary = calculatePriceSummary(
-                                                carWithPrice,
-                                                {
-                                                    ...order,
-                                                    start_date: (order as any).start_date,
-                                                    end_date: (order as any).end_date,
-                                                    start_time: (order as any).start_time,
-                                                    end_time: (order as any).end_time,
-                                                },
-                                                parsedOptions
-                                            );
-                                        }
+                                        // Use attached car if no car found in array
+                                        const carToUse = car || (order as any).car;
+                                        
+                        if (carToUse && storedPricePerDay > 0) {
+                            // Create a car object with the correct price for calculatePriceSummary
+                            const carWithPrice = { ...carToUse, price_per_day: storedPricePerDay };
+                            priceSummary = calculatePriceSummary(
+                                carWithPrice,
+                                {
+                                    ...order,
+                                    start_date: (order as any).start_date,
+                                    end_date: (order as any).end_date,
+                                    start_time: (order as any).start_time,
+                                    end_time: (order as any).end_time,
+                                },
+                                parsedOptions
+                            );
+                        }
 
                                         // Manual calculation as fallback
                                         let manualBasePrice = 0;
@@ -738,20 +678,8 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                                         // Use the rental's stored total_amount for consistency, or calculated amount as fallback
                                         const usingStoredTotal = !!(order as any).total_amount || !!(order as any).amount;
-                                        const storedAmount = (order as any).total_amount || (order as any).amount;
-                                        const calculatedAmount = priceSummary ? priceSummary.totalPrice : (manualBasePrice + manualAdditionalCosts);
-
-                                        console.log('OrderDetailsModal pricing:', {
-                                            orderId: order?.id,
-                                            total_amount: (order as any).total_amount,
-                                            amount: (order as any).amount,
-                                            storedAmount,
-                                            calculatedAmount,
-                                            priceSummary,
-                                            manualBasePrice,
-                                            manualAdditionalCosts,
-                                            usingStoredTotal
-                                        });
+                        const storedAmount = (order as any).total_amount || (order as any).amount;
+                        const calculatedAmount = priceSummary ? priceSummary.totalPrice : (manualBasePrice + manualAdditionalCosts);
 
                         const totalPrice = usingStoredTotal && storedAmount > 0 ?
                             storedAmount :
@@ -909,27 +837,27 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         );
                                     })()}
 
-                    {/* Contract Download - Show first */}
-                    {displayOrder?.contract_url && (
-                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10 mb-4">
-                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
-                            </h3>
-                            <a
-                                href={displayOrder.contract_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
-                            >
-                                <Download className="w-4 h-4" />
-                                <span>{t('admin.orders.downloadContractPDF')}</span>
-                            </a>
-                            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
-                                Descarcă contractul de închiriere
-                            </p>
-                        </div>
-                    )}
+                                    {/* Contract Download - Show first */}
+                                    {displayOrder?.contract_url && (
+                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10 mb-4">
+                                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                                                <span className="text-sm sm:text-base">{t('admin.orders.contract')}</span>
+                                            </h3>
+                                            <a
+                                                href={displayOrder.contract_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                <span>{t('admin.orders.downloadContractPDF')}</span>
+                                            </a>
+                                            <p className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center">
+                                                Descarcă contractul de închiriere
+                                            </p>
+                                        </div>
+                                    )}
 
                     {/* Action Buttons - Show after contract */}
                     {showOrderNumber && (displayOrder as any)?.status !== 'COMPLETED' && (

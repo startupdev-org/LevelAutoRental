@@ -694,7 +694,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     customerFirstName: request.customer_first_name,
                     customerLastName: request.customer_last_name,
                     requestId: request.id,
-                    features: request.options ? Object.keys(request.options) : undefined,
+                    options: request.options || undefined, // Store the actual options object
                     contractUrl: request.contract_url // Copy contract URL from request to rental
                 }
             );

@@ -587,7 +587,7 @@ export async function createRentalManually(
         rentalStatus?: 'CONTRACT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
         notes?: string;
         specialRequests?: string;
-        features?: string[];
+        options?: any; // Service options (unlimitedKm, priorityService, etc.) - stored as JSON
         customerName?: string;
         customerEmail?: string;
         customerPhone?: string;
@@ -642,7 +642,7 @@ export async function createRentalManually(
                 payment_method: options?.paymentMethod || null,
                 notes: options?.notes || null,
                 special_requests: options?.specialRequests || null,
-                features: options?.features || null,
+                options: options?.options || null, // Store service options as JSON
                 request_id: options?.requestId ? (typeof options.requestId === 'string' ? parseInt(options.requestId) : options.requestId) : null,
                 contract_url: options?.contractUrl || null,
             })

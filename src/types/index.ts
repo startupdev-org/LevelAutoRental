@@ -5,6 +5,7 @@ export interface Car {
   make: string;
   model: string;
   year: number;
+  price_per_day?: number; // Default price per day (can be overridden by rental-specific price)
   price_2_4_days?: number; // Price per day for 2-4 days rentals
   price_5_15_days?: number; // Price per day for 5-15 days rentals
   price_16_30_days?: number; // Price per day for 16-30 days rentals
@@ -169,7 +170,7 @@ export interface Rental {
   customer_email?: string;
 
   car_id: string;
-  price_per_day: string;
+  price_per_day: string | number;
 
   start_date: string;
   start_time: string;
@@ -183,6 +184,7 @@ export interface Rental {
   created_at?: string;
   updated_at?: string;
   contract_url?: string;
+  options?: any; // JSON object for additional service options
 }
 
 export interface RentalDTO {
@@ -194,7 +196,7 @@ export interface RentalDTO {
 
   car?: Car;
   car_id: string;
-  price_per_day: string;
+  price_per_day: string | number;
 
   start_date: string;
   start_time: string;
@@ -208,6 +210,7 @@ export interface RentalDTO {
   created_at?: string;
   updated_at?: string;
   contract_url?: string;
+  options?: any; // JSON object for additional service options
 }
 
 export interface OrderDisplay {
@@ -232,8 +235,7 @@ export interface OrderDisplay {
   type?: 'request' | 'rental',
   amount?: number,
   contract_url?: string,
-  features?: string[] | any,
-  options?: any,
+  options?: any, // Service options (unlimitedKm, priorityService, etc.) stored as JSON
   request_id?: string | number,
   price_per_day?: number,
 }
