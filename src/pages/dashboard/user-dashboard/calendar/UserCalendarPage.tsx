@@ -3,11 +3,10 @@ import { createPortal } from "react-dom";
 import { Filter } from "lucide-react";
 import { CalendarFilters } from "./CalendarFilter";
 import { useTranslation } from "react-i18next";
-import { CalendarSection } from "./CalendarSection";
-import { fetchUserRentalsForCalendarPage } from "../../../../lib/db/rentals/rentals";
-import { Rental } from "../../../../lib/orders";
-import { Car } from "../../../../types";
+import { UserCalendarSection } from "./UserCalendarSection";
+import { BorrowRequestDTO, Car } from "../../../../types";
 import { LoadingState } from "../../../../components/ui/LoadingState";
+import { fetchBorrowRequestForUserCalendarPage } from "../../../../lib/db/requests/requests";
 
 export const CalendarPage: React.FC = () => {
     const { t } = useTranslation();
@@ -21,7 +20,7 @@ export const CalendarPage: React.FC = () => {
     const [car, setCar] = useState<Car | null>(null);
     const [month, setMonth] = useState<Date>(new Date());
 
-    const [orders, setOrders] = useState<Rental[] | null>([])
+    const [orders, setOrders] = useState<BorrowRequestDTO[]>([])
 
     const [loading, setLoading] = useState(true);
 
@@ -38,7 +37,7 @@ export const CalendarPage: React.FC = () => {
     }, [filters, month]);
 
     async function hadleFetchUserRentals() {
-        const orders = await fetchUserRentalsForCalendarPage(
+        const orders = await fetchBorrowRequestForUserCalendarPage(
             (filters.carId)?.toString(),
             month,
         );
@@ -89,7 +88,7 @@ export const CalendarPage: React.FC = () => {
 
             {/* Calendar Section */}
             {orders && (
-                <CalendarSection
+                <UserCalendarSection
                     orders={orders}
                     month={month}
                     setMonth={setMonth}

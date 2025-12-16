@@ -2,21 +2,21 @@ import React, { useState, useMemo } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from "date-fns";
 import { motion } from "framer-motion";
 import { User, Clock, X } from "lucide-react";
-import { Rental } from "../../../../lib/orders";
-import { Car } from "../../../../types";
+import { BorrowRequestDTO, Car } from "../../../../types";
+import { getBorrowRequestsStatusDisplay } from "../../../../utils/car/car";
 
-interface CalendarSectionProps {
+interface UserCalendarSectionProps {
     month: Date;
     setMonth: React.Dispatch<React.SetStateAction<Date>>;
-    orders: Rental[];
+    orders: BorrowRequestDTO[];
     t: (key: string) => string;
     car: Car | null;
     onCarChange: (car: Car | null) => void;
 }
 
-export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month, setMonth, t, car, onCarChange }) => {
+export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders, month, setMonth, t, car, onCarChange }) => {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<BorrowRequestDTO | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const nextMonth = () => setMonth(prev => addMonths(prev, 1));
@@ -27,7 +27,7 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
         setSelectedDate(day);
     };
 
-    const getOrderNumber = (order: Rental) => order.id;
+    const getOrderNumber = (order: BorrowRequestDTO) => order.id;
 
     const getStatusDisplay = (status: string) => {
         switch (status) {
@@ -101,12 +101,12 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
             .sort((a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime());
     }, [selectedDate, orders]);
 
-    const renderOrderCard = (order: Rental, isPickup: boolean) => {
+    const renderOrderCard = (order: BorrowRequestDTO, isPickup: boolean) => {
         if (!order || !order.car) return null;
 
         const carName = `${order.car.make} ${order.car.model}`;
-        const colorClass = isPickup ? "text-yellow-400" : "text-blue-400";
-        const statusDisplay = getStatusDisplay(order.rental_status);
+        const colorClass = isPickup ? "text-yellow-400" : "text-blue-4  00";
+        const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
 
         return (
             <motion.div
@@ -268,3 +268,4 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
         </div >
     );
 };
+

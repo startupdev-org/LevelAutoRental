@@ -770,65 +770,67 @@ export async function getEarliestFutureRentalStart(
  * @param status 
  * @returns 
  */
-// export async function fetchBorrowRequestForUserCalendarPage(
-//     carId?: string,
-//     month?: Date,
-//     status?: string
-// ): Promise<Rental[]> {
-//     const user = await getLoggedUser();
-//     if (!user) return [];
+export async function fetchBorrowRequestForUserCalendarPage(
+    carId?: string,
+    month?: Date,
+    status?: string
+): Promise<BorrowRequestDTO[]> {
+    const user = await getLoggedUser();
+    if (!user) return [];
 
-//     let query = supabase
-//         .from("Rentals")
-//         .select("*");
-
-//     // Filter by month (expects "YYYY-MM")
-//     if (month) {
-//         const year = month.getFullYear();
-//         const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
-
-//         // First day of current month
-//         const firstDay = formatDateForSQL(year, m, 1);
-
-//         // First day of next month using JS Date rollover
-//         const nextMonthDate = new Date(year, m + 1, 1);
-//         const nextMonthFirst = formatDateForSQL(
-//             nextMonthDate.getFullYear(),
-//             nextMonthDate.getMonth(), // always 0–11
-//             1
-//         );
-
-//         query = query
-//             .lt("start_date", nextMonthFirst)
-//             .gte("end_date", firstDay);
-//     }
+    let query = supabase
+        .from("BorrowRequest")
+        .select("*")
+        .eq('user_id', user.id)
 
 
-//     if (carId) {
-//         // if there is a selected car, fetch the orders for that car
-//         query = query.eq('car_id', carId)
-//     } else {
-//         // otherwise fetch user's calendar 
-//         query = query.eq("user_id", user.id)
-//     }
+    // Filter by month (expects "YYYY-MM")
+    if (month) {
+        const year = month.getFullYear();
+        const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
 
-//     if (status) {
-//         query = query.eq("rental_status", status);
-//     }
+        // First day of current month
+        const firstDay = formatDateForSQL(year, m, 1);
 
-//     const { data, error } = await query;
+        // First day of next month using JS Date rollover
+        const nextMonthDate = new Date(year, m + 1, 1);
+        const nextMonthFirst = formatDateForSQL(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(), // always 0–11
+            1
+        );
 
-//     if (error) {
-//         console.error("Error fetching rentals calendar:", error);
-//         return [];
-//     }
+        query = query
+            .lt("start_date", nextMonthFirst)
+            .gte("end_date", firstDay);
+    }
 
-//     return Promise.all(
-//         (data ?? []).map((row: any) =>
-//             toBorrowRequestDTO(row, row.car_id)
-//         )
-//     );
-// }
+
+    if (carId) {
+        // if there is a selected car, fetch the orders for that car
+        query = query.eq('car_id', carId)
+    } else {
+        // otherwise fetch user's calendar 
+        query = query.eq("user_id", user.id)
+    }
+
+    if (status) {
+        query = query.eq("rental_status", status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching rentals calendar:", error);
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((row: any) =>
+            toBorrowRequestDTO(row, row.car_id)
+        )
+    );
+}
 
 
 export async function fetchBorrowRequestForCalendarPage(
