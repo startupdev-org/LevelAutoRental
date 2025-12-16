@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus,
     Trash2,
@@ -387,23 +386,14 @@ export const CarsView: React.FC = () => {
 
     if (loading) {
         return (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center justify-center h-64"
-            >
+            <div className="flex items-center justify-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-white" />
-            </motion.div>
+            </div>
         );
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-6"
-        >
+        <div className="space-y-6">
 
             {/* Cars Table Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
@@ -908,29 +898,27 @@ export const CarsView: React.FC = () => {
             </div>
 
             {/* Add/Edit Car Modal */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <CarFormModal
-                        car={editingCar}
-                        onSave={async (carData) => {
-                            try {
-                                const result = await handleSaveCar(carData);
-                                // Reload cars after save
-                                const fetchedCars = await fetchCars();
-                                setLocalCars(fetchedCars);
-                                return result;
-                            } catch (error) {
-                                throw error;
-                            }
-                        }}
-                        onClose={() => {
-                            setShowAddModal(false);
-                            setEditingCar(null);
-                        }}
-                    />
-                )}
-            </AnimatePresence>
-        </motion.div>
+            {showAddModal && (
+                <CarFormModal
+                    car={editingCar}
+                    onSave={async (carData) => {
+                        try {
+                            const result = await handleSaveCar(carData);
+                            // Reload cars after save
+                            const fetchedCars = await fetchCars();
+                            setLocalCars(fetchedCars);
+                            return result;
+                        } catch (error) {
+                            throw error;
+                        }
+                    }}
+                    onClose={() => {
+                        setShowAddModal(false);
+                        setEditingCar(null);
+                    }}
+                />
+            )}
+        </div>
     );
 };
 

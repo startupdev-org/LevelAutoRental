@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
     LayoutDashboard,
     ShoppingCart,
@@ -201,7 +200,7 @@ export const Admin: React.FC = () => {
         if (orderId) return t('admin.orderDetails.title', { id: orderId });
         const requestId = searchParams.get('requestId');
         if (requestId && section === 'requests') {
-            return t('admin.requestDetails.title', { id: requestId });
+            return t('admin.requestDetails.title');
         }
         if (carId && section === 'cars') {
             const car = cars.find(c => c.id.toString() === carId);
@@ -524,32 +523,22 @@ export const Admin: React.FC = () => {
 
                         {/* Content Area */}
                         <div className="flex-1 overflow-y-auto p-4 lg:p-8 relative z-0">
-                            <motion.div
-                                key={section}
-                                initial={{ opacity: 1 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0 }}
-                            >
+                            <div key={section}>
                                 {renderContent()}
-                            </motion.div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             {/* Settings Modal */}
             {isSettingsModalOpen && createPortal(
-                <motion.div
-                    initial={{ opacity: 1 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 1 }}
+                <div
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
                     onClick={() => setIsSettingsModalOpen(false)}
                     style={{ zIndex: 10000 }}
+                    data-modal-settings
                 >
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
+                    <div
                         onClick={(e) => e.stopPropagation()}
                         className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto"
                     >
@@ -592,27 +581,20 @@ export const Admin: React.FC = () => {
                                 </button>
                             </div>
                         </div>
-                    </motion.div>
-                </motion.div>,
-
-
-                document.body
+                    </div>
+                </div>,
+                document.getElementById('modal-root') || document.body
             )}
 
             {/* Help Modal */}
             {isHelpModalOpen && createPortal(
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                <div
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
                     onClick={() => setIsHelpModalOpen(false)}
                     style={{ zIndex: 10000 }}
+                    data-modal-help
                 >
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
+                    <div
                         onClick={(e) => e.stopPropagation()}
                         className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
                     >
@@ -812,9 +794,9 @@ export const Admin: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
-                </motion.div>,
-                document.body
+                    </div>
+                </div>,
+                document.getElementById('modal-root') || document.body
             )}
         </>
     );

@@ -33,6 +33,7 @@ export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders
         switch (status) {
             case "pending": return { text: "Pending", className: "bg-yellow-500/30 text-yellow-300" };
             case "active": return { text: "Active", className: "bg-green-500/30 text-green-300" };
+            case "processed": return { text: "Started", className: "bg-blue-500/30 text-blue-300" };
             case "completed": return { text: "Completed", className: "bg-blue-500/30 text-blue-300" };
             case "canceled": return { text: "Canceled", className: "bg-red-500/30 text-red-300" };
             default: return { text: status, className: "bg-gray-500/30 text-gray-300" };
@@ -138,7 +139,7 @@ export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders
                         <div className="flex items-center gap-2">
                             <Clock className={`w-4 h-4 ${colorClass}/70 flex-shrink-0`} />
                             <span className={`${colorClass} text-lg font-bold tracking-tight`}>
-                                {isPickup ? order.start_time : order.end_time}
+                                {isPickup ? order.start_time?.slice(0, 5) : order.end_time?.slice(0, 5)}
                             </span>
                         </div>
                     </div>

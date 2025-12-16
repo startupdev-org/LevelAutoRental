@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, CheckCircle, X, RefreshCw, ArrowLeft, Loader2, Pen, FileText, Download, Edit as EditIcon, Play } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, X, RefreshCw, ArrowLeft, Loader2, Pen, FileText, Download, Edit as EditIcon, Play, DollarSign } from 'lucide-react';
 import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { formatDateLocal, calculateRentalDuration } from '../../../../utils/date';
 import { BorrowRequestDTO } from '../../../../types';
 import { formatAmount } from '../../../../utils/currency';
 import { parseRequestOptions } from '../../../../utils/car/options';
+import { calculatePriceSummary } from '../../../../utils/car/pricing';
 import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest, createRentalManually } from '../../../../lib/db/requests/requests';
 import { getLoggedUser } from '../../../../lib/db/user/profile';
 import { supabase } from '../../../../lib/supabase';
@@ -27,11 +28,12 @@ export interface RequestDetailsViewProps {
     onCreateContract?: () => void;
     onEditContract?: () => void;
     onDownloadContract?: () => void;
+    onOpenOrder?: (request: BorrowRequestDTO) => void;
     isProcessing?: boolean;
     rentalExists?: boolean;
 }
 
-export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onStartRental, onCreateContract, onEditContract, onDownloadContract, isProcessing = false, rentalExists = false }) => {
+export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request, onBack, onAccept, onReject, onUndoReject, onSetToPending, onEdit, onStartRental, onCreateContract, onEditContract, onDownloadContract, onOpenOrder, isProcessing = false, rentalExists = false }) => {
 
     const car = request.car;
 
@@ -137,17 +139,143 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                     })()}
                                 </div>
                             </div>
-                            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                <h3 className="text-sm font-semibold text-white mb-2">Informații Preț</h3>
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-300 text-sm">Preț pe zi:</span>
-                                        <span className="text-white font-medium">{formatAmount(request.price_per_day)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                                        <span className="text-gray-300 text-sm font-medium">Sumă Totală:</span>
-                                        <span className="text-white font-bold">{formatAmount(request.total_amount)}</span>
-                                    </div>
+                            <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                                <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-sm sm:text-base">Detalii Preț</span>
+                                </h3>
+                                <div className="space-y-3">
+                                    {(() => {
+                                        // Calculate detailed price breakdown
+                                        const duration = calculateRentalDuration(
+                                            request.start_date,
+                                            request.start_time || '09:00',
+                                            request.end_date,
+                                            request.end_time || '17:00'
+                                        );
+
+                                        // Parse options if needed
+                                        let parsedOptions: any = {};
+                                        if (request.options) {
+                                            if (typeof request.options === 'string') {
+                                                try {
+                                                    parsedOptions = JSON.parse(request.options);
+                                                } catch (e) {
+                                                    parsedOptions = {};
+                                                }
+                                            } else {
+                                                parsedOptions = request.options;
+                                            }
+                                        }
+
+                                        const priceSummary = calculatePriceSummary(
+                                            request.car,
+                                            {
+                                                ...request,
+                                                start_date: request.start_date,
+                                                end_date: request.end_date,
+                                                start_time: request.start_time,
+                                                end_time: request.end_time,
+                                            },
+                                            parsedOptions
+                                        );
+
+
+                                        if (!priceSummary) return null;
+
+                                        return (
+                                            <>
+                                                {/* Price per day and duration */}
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-300 text-xs sm:text-sm">Preț pe zi</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.pricePerDay)} MDL</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-300 text-xs sm:text-sm">Durată închiriere</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">
+                                                        {priceSummary.rentalDays} zile{priceSummary.rentalHours > 0 ? `, ${priceSummary.rentalHours} ore` : ''}
+                                                    </span>
+                                                </div>
+
+                                                {/* Base price */}
+                                                <div className="pt-2 border-t border-white/10">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-white font-medium text-sm sm:text-base">Preț de bază</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.basePrice).toLocaleString()} MDL</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Additional services */}
+                                                {priceSummary.additionalCosts > 0 && (
+                                                    <div className="pt-3 border-t border-white/10">
+                                                        <h4 className="text-sm font-bold text-white mb-3">Servicii Adiționale</h4>
+                                                        <div className="space-y-2 text-sm">
+                                                            {parsedOptions.unlimitedKm && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Kilometraj nelimitat</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.personalDriver && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Șofer personal</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(800 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.priorityService && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Priority Service</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(1000 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.childSeat && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Scaun auto pentru copii</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.simCard && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Cartelă SIM cu internet</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {parsedOptions.roadsideAssistance && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-300">Asistență rutieră 24/7</span>
+                                                                    <span className="text-white font-medium">
+                                                                        {Math.round(500 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between pt-2 border-t border-white/10">
+                                                                <span className="text-white font-medium">Costuri suplimentare</span>
+                                                                <span className="text-white font-semibold">{Math.round(priceSummary.additionalCosts).toLocaleString()} MDL</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Total */}
+                                                <div className="pt-3 border-t border-white/20">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-white font-bold text-base">Total</span>
+                                                        <span className="text-emerald-400 font-bold text-lg">{Math.round(priceSummary.totalPrice).toLocaleString()} MDL</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -291,20 +419,35 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                 ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                 : request.status === 'APPROVED'
                                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                    : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                    : request.status === 'PROCESSED'
+                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                        : 'bg-red-500/20 text-red-300 border-red-500/50'
                                 }`}
                         >
                             {request.status === 'PENDING' ? 'În Așteptare' :
                                 request.status === 'APPROVED' ? 'Aprobat' :
-                                    request.status === 'REJECTED' ? 'Respins' : ''}
+                                    request.status === 'PROCESSED' ? 'Procesat' :
+                                        request.status === 'REJECTED' ? 'Respins' : ''}
                         </span>
                         <div className="flex flex-col gap-1">
                             {request.requested_at && (
                                 <span className="text-gray-400 text-sm">
                                     Solicitată la {(() => {
-                                        const date = new Date(request.requested_at);
+                                        // Parse UTC timestamp and ensure it's displayed in local time
+                                        let date = new Date(request.requested_at);
+
+                                        // If the timestamp string doesn't include timezone info, treat it as UTC
+                                        if (typeof request.requested_at === 'string' && !request.requested_at.includes('Z') && !request.requested_at.includes('+')) {
+                                            // Supabase timestamps are typically in UTC format like "2025-12-14T18:30:00"
+                                            date = new Date(request.requested_at + 'Z'); // Add Z to indicate UTC
+                                        }
+
                                         const formattedDate = formatDateLocal(date);
-                                        const formattedTime = date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+                                        const formattedTime = date.toLocaleTimeString('ro-RO', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: false
+                                        });
                                         return `${formattedDate} la ${formattedTime}`;
                                     })()}
                                 </span>
@@ -364,14 +507,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                 </button>
                             )}
                             {/* Start Rental Button */}
-                            {(() => {
-                                console.log('Button conditions:', {
-                                    onStartRental: !!onStartRental,
-                                    contract_url: request.contract_url,
-                                    rentalExists: rentalExists
-                                });
-                                return onStartRental && request.contract_url && !rentalExists;
-                            })() && (
+                            {onStartRental && !rentalExists && request.contract_url && (
                                 <button
                                     onClick={() => onStartRental?.(request)}
                                     disabled={isProcessing}
@@ -427,6 +563,37 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                     Anulează Respingerea
                                 </button>
                             )}
+                        </div>
+                    )}
+                    {request.status === 'PROCESSED' && onOpenOrder && rentalExists && (
+                        <div className="space-y-4">
+                            {/* Informational Status Card */}
+                            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/20 backdrop-blur-sm">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent"></div>
+                                <div className="relative flex items-center gap-3 px-4 py-3">
+                                    <div className="flex-shrink-0">
+                                        <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50"></div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-blue-300 font-medium text-sm leading-tight">
+                                            Închirierea este activă și a început
+                                        </p>
+                                        <p className="text-blue-400/70 text-xs mt-0.5">
+                                            Poți anula comanda dacă este necesar
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <button
+                                onClick={() => onOpenOrder(request)}
+                                disabled={isProcessing}
+                                className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 hover:border-red-500/60 text-red-300 hover:text-red-200 font-semibold py-3 px-6 rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <X className="w-4 h-4" />
+                                Anulează comandă
+                            </button>
                         </div>
                     )}
                 </motion.div>
@@ -489,13 +656,25 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
         try {
             setIsProcessing(true);
-            console.log('Starting rental for request:', request);
 
             // Get current logged-in user for the rental
             const currentUser = await getLoggedUser();
             if (!currentUser?.id) {
                 throw new Error('User not logged in');
             }
+
+            // Fetch fresh car data to ensure we have correct price information
+            const { fetchCarById } = await import('../../../../lib/db/cars/cars');
+            console.log('handleStartRental: Fetching car data for car_id:', request.car_id, 'type:', typeof request.car_id);
+            const freshCarData = await fetchCarById(request.car_id.toString());
+
+            console.log('handleStartRental: Fresh car data:', freshCarData);
+
+            if (!freshCarData) {
+                throw new Error('Car data not found');
+            }
+
+            console.log('handleStartRental: Car price_per_day:', freshCarData.price_per_day, 'price_over_30_days:', freshCarData.price_over_30_days);
 
             // Create a rental record from the approved request
             const rentalResult = await createRentalManually(
@@ -506,7 +685,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 typeof request.end_date === 'string' ? request.end_date : request.end_date.toISOString().split('T')[0],
                 request.end_time,
                 request.total_amount,
-                [request.car],
+                [freshCarData],
                 {
                     rentalStatus: 'ACTIVE',
                     customerName: request.customer_name,
@@ -515,7 +694,8 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     customerFirstName: request.customer_first_name,
                     customerLastName: request.customer_last_name,
                     requestId: request.id,
-                    features: request.options ? Object.keys(request.options) : undefined
+                    features: request.options ? Object.keys(request.options) : undefined,
+                    contractUrl: request.contract_url // Copy contract URL from request to rental
                 }
             );
 
@@ -523,7 +703,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 showSuccess('Închiriere începută cu succes!');
                 // Update request status to indicate rental has started
                 const updateResult = await updateBorrowRequest(request.id?.toString() || '', {
-                    status: 'APPROVED' // Keep as APPROVED, but rental is now ACTIVE
+                    status: 'PROCESSED' // Rental has actually started
                 });
 
                 if (updateResult.success) {
@@ -552,19 +732,20 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     // Check if rental already exists for this request
     const checkRentalExists = async (requestId: string) => {
         try {
+            // Only consider ACTIVE rentals as "existing" - cancelled rentals don't prevent new rentals
             const { data, error } = await supabase
                 .from('Rentals')
                 .select('id')
                 .eq('request_id', requestId)
-                .single();
+                .eq('rental_status', 'ACTIVE')
+                .limit(1); // Just check if any exist
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+            if (error) {
                 console.error('Error checking rental existence:', error);
                 return false;
             }
 
-            const exists = !!data;
-            console.log('checkRentalExists result:', { requestId, data, exists });
+            const exists = data && data.length > 0;
             setRentalExists(exists);
             return exists;
         } catch (error) {
@@ -605,9 +786,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
         setIsProcessing(true);
         try {
-            console.log('Accepting request:', request);
             const result = await acceptBorrowRequest(request.id);
-            console.log('Accept result:', result);
 
             if (result.success) {
                 // Update local state to reflect the change
@@ -635,9 +814,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
         setIsProcessing(true);
         try {
-            console.log('Rejecting request:', request, 'Reason:', reason);
             const result = await rejectBorrowRequest(request.id, reason);
-            console.log('Reject result:', result);
 
             if (result.success) {
                 // Update local state to reflect the change
@@ -662,9 +839,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
         setIsProcessing(true);
         try {
-            console.log('Undoing reject for request:', request);
             const result = await undoRejectBorrowRequest(request.id);
-            console.log('Undo reject result:', result);
 
             if (result.success) {
                 // Update local state to reflect the change
@@ -691,11 +866,8 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
         setIsProcessing(true);
         try {
-            console.log('Setting request to pending:', request);
-
             // Call the update function
             const result = await updateBorrowRequest(request.id, { status: 'PENDING' });
-            console.log('Set to pending result:', result);
 
             if (result.success) {
                 // Update local state safely
@@ -719,31 +891,91 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
     }
 
 
-    const handleEdit = async (request: BorrowRequestDTO) => {
-        // TODO: Implement edit functionality
-        // alert('Funcționalitatea de editare va fi implementată în curând');
-
+    const handleEdit = async (updatedRequest: BorrowRequestDTO) => {
         if (isProcessing) return;
 
         try {
-            console.log('Editing request:', request);
-            const updates = request;
-            const result = await updateBorrowRequest(request.id, updates)
-            console.log('Editing request result:', result);
+            setIsProcessing(true);
+            const result = await updateBorrowRequest(updatedRequest.id, updatedRequest);
 
             if (result.success) {
-                // Update local state to reflect the change
-                console.log('succes la editarea cererii')
+                // If this request has been processed into a rental, update the rental's total_amount too
+                if (rentalExists && updatedRequest.total_amount) {
+                    try {
+                        // Find the associated rental
+                        const { data: rental, error: rentalError } = await supabase
+                            .from('Rentals')
+                            .select('id')
+                            .eq('request_id', updatedRequest.id)
+                            .eq('rental_status', 'ACTIVE')
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (rental && !rentalError) {
+                            // Update the rental's total_amount
+                            const { error: updateRentalError } = await supabase
+                                .from('Rentals')
+                                .update({ total_amount: updatedRequest.total_amount })
+                                .eq('id', rental.id);
+
+                            if (updateRentalError) {
+                                console.warn('Failed to update associated rental total_amount:', updateRentalError);
+                            } else {
+                                console.log('Updated associated rental total_amount successfully');
+                            }
+                        }
+                    } catch (rentalUpdateError) {
+                        console.warn('Error updating associated rental:', rentalUpdateError);
+                    }
+                }
+
+                // Refresh the request data from the database
+                const refreshedRequest = await fetchBorrowRequestById(updatedRequest.id);
+                if (refreshedRequest) {
+                    // Update local state with refreshed data (deep copy to force re-render)
+                    setRequest(JSON.parse(JSON.stringify(refreshedRequest)));
+                    // Close the modal
+                    handleCloseEditModal();
+                    alert('Cererea a fost actualizată cu succes!');
+                } else {
+                    alert('Eroare la reîmprospătarea datelor');
+                }
             } else {
                 alert(`Eroare la editarea cererii: ${result.error || 'Eroare necunoscută'}`);
             }
         } catch (error) {
             console.error('Error editing request:', error);
-            alert('Eroare la setarea statusului');
+            alert('Eroare la editarea cererii');
         } finally {
             setIsProcessing(false);
         }
+    };
 
+    const handleOpenOrder = async (request: BorrowRequestDTO) => {
+        try {
+            // Find the most recent ACTIVE rental linked to this request
+            const { data, error } = await supabase
+                .from('Rentals')
+                .select('id')
+                .eq('request_id', request.id)
+                .eq('rental_status', 'ACTIVE')
+                .order('created_at', { ascending: false }) // Most recent first
+                .limit(1)
+                .single();
+
+            if (error || !data) {
+                console.error('No active rental found for this request:', error);
+                alert('Nu s-a găsit nicio comandă activă pentru această cerere');
+                return;
+            }
+
+            // Navigate to the order details view
+            navigate(`/admin?section=orders&orderId=${data.id}`);
+        } catch (error) {
+            console.error('Error opening order:', error);
+            alert('Eroare la deschiderea comenzii');
+        }
     };
 
     if (loading) {
@@ -789,6 +1021,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 onCreateContract={handleCreateContract}
                 onEditContract={handleEditContract}
                 onDownloadContract={handleDownloadContract}
+                onOpenOrder={handleOpenOrder}
                 isProcessing={isProcessing}
                 rentalExists={rentalExists}
             />
@@ -797,6 +1030,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                 isEditing && (
                     <>
                         <EditRequestModal
+                            isOpen={true}
                             request={request}
                             onSave={handleEdit}
                             onClose={handleCloseEditModal}
@@ -833,22 +1067,42 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     car={request?.car}
                     onContractCreated={async (contractUrl?: string | null) => {
                         console.log('Contract created, URL:', contractUrl);
-                        // Update the request's contract_url field
-                        if (contractUrl && request) {
-                            const updateResult = await updateBorrowRequest(request.id?.toString() || '', {
-                                contract_url: contractUrl
-                            } as any);
 
-                            if (updateResult.success) {
-                                showSuccess('Contract creat și salvat cu succes!');
-                                // Update local state
-                                setRequest(prev => {
-                                    const updated = prev ? { ...prev, contract_url: contractUrl } : null;
-                                    console.log('Updated request state:', updated);
-                                    return updated;
-                                });
-                            } else {
-                                showError(`Contract creat dar nu s-a putut salva URL-ul: ${updateResult.error}`);
+                        if (contractUrl) {
+                            // Update the request's contract_url field
+                            if (request) {
+                                const updateResult = await updateBorrowRequest(request.id?.toString() || '', {
+                                    contract_url: contractUrl
+                                } as any);
+
+                                if (updateResult.success) {
+                                    showSuccess('Contract creat și salvat cu succes!');
+                                    // Update local state
+                                    setRequest(prev => {
+                                        const updated = prev ? { ...prev, contract_url: contractUrl } : null;
+                                        return updated;
+                                    });
+                                } else {
+                                    showError(`Contract creat dar nu s-a putut salva URL-ul în cerere: ${updateResult.error}`);
+                                }
+                            }
+
+                            // Also update any associated rental's contract_url if one exists
+                            if (rentalExists && request?.id) {
+                                try {
+                                    const { error: rentalUpdateError } = await supabase
+                                        .from('Rentals')
+                                        .update({ contract_url: contractUrl })
+                                        .eq('request_id', request.id)
+                                        .eq('rental_status', 'ACTIVE'); // Only update active rentals
+
+                                    if (rentalUpdateError) {
+                                        console.error('Error updating rental contract_url:', rentalUpdateError);
+                                        // Don't show error to user since the contract was created successfully
+                                    }
+                                } catch (error) {
+                                    console.error('Error updating rental contract_url:', error);
+                                }
                             }
                         }
 

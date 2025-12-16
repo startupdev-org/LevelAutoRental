@@ -5,5 +5,7 @@ export function formatAmount(amount: number | string | null | undefined) {
         ? parseFloat(amount)
         : amount;
 
-    return `${num.toLocaleString('ro-RO')} MDL`;
+    // Round down to whole number and use standard formatting
+    const floored = Math.floor(num);
+    return `${floored.toLocaleString()} MDL`;
 }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     X,
     ArrowRight,
@@ -281,18 +280,12 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
     };
 
     return createPortal(
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 1 }}
+        <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
             onClick={onClose}
             style={{ zIndex: 10000 }}
         >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
+            <div
                 onClick={(e) => e.stopPropagation()}
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             >
@@ -686,8 +679,8 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                         </div>
                     </div>
                 )}
-            </motion.div>
-        </motion.div>,
+            </div>
+        </div>,
         document.body
     );
 };

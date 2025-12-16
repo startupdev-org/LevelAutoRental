@@ -121,7 +121,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         unlimitedKm: false,
         personalDriver: false,
         priorityService: false,
-        tireInsurance: false,
         childSeat: false,
         simCard: false,
         roadsideAssistance: false,
@@ -130,6 +129,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
     // Calculate additional costs in MDL for rental request modal
     const rentalDays = rentalCalculation?.days || 0;
+    const rentalHours = rentalCalculation?.hours || 0;
+    const totalDays = rentalDays + rentalHours / 24; // Include hours in percentage calculations
     let additionalCosts = 0;
 
     // Use fresh car data if available, otherwise fallback to provided car
@@ -152,29 +153,27 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const carDiscount = (carData as any).discount_percentage || 0;
     const discountedPricePerDay = carDiscount > 0 ? basePricePerDayMDL * (1 - carDiscount / 100) : basePricePerDayMDL;
 
-    // Percentage-based options (calculated as percentage of base car price * days)
+    // Percentage-based options (calculated as percentage of base car price * totalDays)
+    // These should be calculated on the total rental period (days + hours)
     if (options.unlimitedKm) {
-        additionalCosts += discountedPricePerDay * rentalDays * 0.5; // 50%
-    }
-    if (options.tireInsurance) {
-        additionalCosts += discountedPricePerDay * rentalDays * 0.2; // 20%
+        additionalCosts += discountedPricePerDay * totalDays * 0.5; // 50%
     }
 
-    // Fixed daily costs (in MDL)
+    // Fixed daily costs (in MDL) - calculated per total rental period including hours
     if (options.personalDriver) {
-        additionalCosts += 800 * rentalDays;
+        additionalCosts += 800 * totalDays;
     }
     if (options.priorityService) {
-        additionalCosts += 1000 * rentalDays;
+        additionalCosts += 1000 * totalDays;
     }
     if (options.childSeat) {
-        additionalCosts += 100 * rentalDays;
+        additionalCosts += 100 * totalDays;
     }
     if (options.simCard) {
-        additionalCosts += 100 * rentalDays;
+        additionalCosts += 100 * totalDays;
     }
     if (options.roadsideAssistance) {
-        additionalCosts += 500 * rentalDays;
+        additionalCosts += 500 * totalDays;
     }
 
     const formatDate = (dateString: string): string => {
@@ -575,7 +574,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
             if (options.unlimitedKm) optionsData.unlimitedKm = true;
             if (options.personalDriver) optionsData.personalDriver = true;
             if (options.priorityService) optionsData.priorityService = true;
-            if (options.tireInsurance) optionsData.tireInsurance = true;
             if (options.childSeat) optionsData.childSeat = true;
             if (options.simCard) optionsData.simCard = true;
             if (options.roadsideAssistance) optionsData.roadsideAssistance = true;
@@ -671,7 +669,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                 unlimitedKm: false,
                 personalDriver: false,
                 priorityService: false,
-                tireInsurance: false,
                 childSeat: false,
                 simCard: false,
                 roadsideAssistance: false,
@@ -1112,43 +1109,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* Insurance */}
-                                            <div className="mb-5 md:mb-6">
-                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Asigurare</h4>
-                                                <div className="space-y-2">
-                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                        <div className="flex items-center gap-3 md:gap-4">
-                                                            <div className="relative flex-shrink-0">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={options.tireInsurance}
-                                                                    onChange={(e) => handleOptionChange('tireInsurance', e.target.checked)}
-                                                                    className="sr-only"
-                                                                />
-                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.tireInsurance
-                                                                    ? 'bg-red-500 border-red-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                    }`}>
-                                                                    <svg
-                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.tireInsurance ? 'opacity-100' : 'opacity-0'
-                                                                            }`}
-                                                                        fill="currentColor"
-                                                                        viewBox="0 0 20 20"
-                                                                    >
-                                                                        <path
-                                                                            fillRule="evenodd"
-                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                            clipRule="evenodd"
-                                                                        />
-                                                                    </svg>
-                                                                </div>
-                                                            </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Asigurare anvelope & parbriz</span>
-                                                        </div>
-                                                        <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+20%</span>
-                                                    </label>
-                                                </div>
-                                            </div>
 
                                             {/* Additional */}
                                             <div>
@@ -1328,7 +1288,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between text-sm md:text-base">
                                                     <span className="text-gray-600">Preț pe zi</span>
-                                                    <span className="text-gray-900 font-medium">{getCurrencySymbol()}{convertPriceToMDL(rentalCalculation.pricePerDay).toLocaleString('ro-RO')}</span>
+                                                    <span className="text-gray-900 font-medium">{convertPriceToMDL(rentalCalculation.pricePerDay).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm md:text-base">
                                                     <span className="text-gray-600">Perioadă</span>
@@ -1340,7 +1300,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 <div className="pt-2 border-t border-gray-300">
                                                     <div className="flex items-center justify-between text-sm md:text-base">
                                                         <span className="text-gray-900 font-medium">Preț de bază</span>
-                                                        <span className="text-gray-900 font-medium">{getCurrencySymbol()}{convertPriceToMDL(Math.round(basePrice)).toLocaleString('ro-RO')}</span>
+                                                        <span className="text-gray-900 font-medium">{convertPriceToMDL(Math.round(basePrice)).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
                                                     </div>
                                                 </div>
 
@@ -1353,52 +1313,44 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Kilometraj nelimitat</span>
                                                                         <span className="text-gray-900 font-medium">
-                                                                            {getCurrencySymbol()}{convertPriceToMDL(Math.round(rentalCalculation.pricePerDay * rentalCalculation.days * 0.5)).toLocaleString('ro-RO')}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                                {options.tireInsurance && (
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-gray-600">Asigurare anvelope & parbriz</span>
-                                                                        <span className="text-gray-900 font-medium">
-                                                                            {getCurrencySymbol()}{convertPriceToMDL(Math.round(rentalCalculation.pricePerDay * rentalCalculation.days * 0.2)).toLocaleString('ro-RO')}
+                                                                            {convertPriceToMDL(Math.round(discountedPricePerDay * totalDays * 0.5)).toLocaleString('ro-RO')} {getCurrencySymbol()}
                                                                         </span>
                                                                     </div>
                                                                 )}
                                                                 {options.personalDriver && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Șofer personal</span>
-                                                                        <span className="text-gray-900 font-medium">{800 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(800 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.priorityService && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Priority Service</span>
-                                                                        <span className="text-gray-900 font-medium">{1000 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(1000 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.childSeat && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Scaun auto pentru copii</span>
-                                                                        <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(100 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.simCard && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Cartelă SIM cu internet</span>
-                                                                        <span className="text-gray-900 font-medium">{100 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(100 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 {options.roadsideAssistance && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Asistență rutieră</span>
-                                                                        <span className="text-gray-900 font-medium">{500 * rentalCalculation.days} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{Math.round(500 * totalDays)} MDL</span>
                                                                     </div>
                                                                 )}
                                                                 <div className="pt-2 border-t border-gray-300">
                                                                     <div className="flex justify-between font-medium text-sm md:text-base">
                                                                         <span className="text-gray-900">Total servicii</span>
-                                                                        <span className="text-gray-900">{getCurrencySymbol()}{convertPriceToMDL(Math.round(additionalCosts)).toLocaleString('ro-RO')}</span>
+                                                                        <span className="text-gray-900">{convertPriceToMDL(Math.round(additionalCosts)).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1408,7 +1360,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                                 <div className="pt-3 border-t border-gray-300 flex items-center justify-between">
                                                     <span className="text-gray-900 font-bold text-base md:text-lg">Total</span>
-                                                    <span className="text-gray-900 font-bold text-lg md:text-xl">{getCurrencySymbol()}{convertPriceToMDL(totalCost).toLocaleString('ro-RO')}</span>
+                                                    <span className="text-gray-900 font-bold text-lg md:text-xl">{convertPriceToMDL(totalCost).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
                                                 </div>
                                             </div>
                                         </div>

@@ -433,7 +433,6 @@ export async function processActiveRentals(cars: Car[]): Promise<{ success: bool
           }
 
           processed++;
-          console.log(`Updated rental to ACTIVE and request to APPROVED for request ${request.id}`);
         }
 
         // Update car status to "booked" when rental becomes ACTIVE
@@ -540,10 +539,10 @@ export async function processStatusTransitions(cars: Car[]): Promise<{ success: 
  */
 export async function cancelRentalOrder(rentalId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // First, get the rental to find the car_id
+    // First, get the rental to find the car_id and request_id
     const { data: rental, error: fetchError } = await supabase
       .from('Rentals')
-      .select('car_id')
+      .select('car_id, request_id')
       .eq('id', rentalId)
       .single();
 
@@ -565,6 +564,22 @@ export async function cancelRentalOrder(rentalId: string): Promise<{ success: bo
 
     // Update car status - check if there are other ACTIVE rentals
     await updateCarStatusBasedOnRentals(rental.car_id);
+
+    // If this rental was created from a request, update the request status back to PENDING
+    if (rental.request_id) {
+      const { error: requestError } = await supabase
+        .from('BorrowRequest')
+        .update({
+          status: 'PENDING',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', rental.request_id);
+
+      if (requestError) {
+        console.error('Error updating borrow request status:', requestError);
+        // Don't fail the entire operation if request update fails
+      }
+    }
 
     return { success: true };
   } catch (error) {

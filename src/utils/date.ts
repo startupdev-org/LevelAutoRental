@@ -75,6 +75,7 @@ export function calculateRentalDuration(
     const endDateTime = new Date(endDate);
     if (endHour === 0 && endMin === 0) {
         // treat 00:00 as end of previous day
+        endDateTime.setDate(endDateTime.getDate() - 1);
         endDateTime.setHours(23, 59, 59, 999);
     } else {
         endDateTime.setHours(endHour, endMin, 0, 0);

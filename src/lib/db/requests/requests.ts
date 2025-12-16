@@ -1,6 +1,6 @@
-import { BorrowRequest, BorrowRequestDTO, Car, Rental } from '../../../types';
+import { BorrowRequest, BorrowRequestDTO, Car } from '../../../types';
 import { getCarPrice } from '../../../utils/car/pricing';
-import { getDateDiffInDays } from '../../../utils/date';
+import { calculateRentalDuration, getDateDiffInDays } from '../../../utils/date';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 import { formatDateForSQL } from '../rentals/rentals';
@@ -206,9 +206,9 @@ export async function fetchBorrowRequestsForDisplay(
  */
 export async function acceptBorrowRequest(
     requestId: string
-): Promise<{ success: boolean; rentalId?: string; error?: string }> {
+): Promise<{ success: boolean; error?: string }> {
     try {
-        // 1️⃣ Fetch the pending borrow request
+        // 1️⃣ Fetch the borrow request (must be PENDING)
         const { data: request, error: fetchError } = await supabase
             .from('BorrowRequest')
             .select('*')
@@ -220,38 +220,7 @@ export async function acceptBorrowRequest(
             return { success: false, error: 'Request not found or not pending' };
         }
 
-        const rentalData: Rental = {
-            car_id: request.car_id,
-            request_id: request.id,
-            rental_status: 'APPROVED',
-            start_date: request.start_date,
-            start_time: request.start_time,
-            end_date: request.end_date,
-            end_time: request.end_time,
-            price_per_day: request.price_per_day,
-            total_amount: request.total_amount,
-            subtotal: request.subtotal,
-            taxes_fees: request.taxes_fees,
-            additional_taxes: request.additional_taxes,
-        };
-
-        // If the request has a user_id, set it. Otherwise, use guest_email
-        if (request.user_id) {
-            rentalData.user_id = request.user_id;
-        } else if (request.email) {
-            rentalData.customer_email = request.email;
-        }
-
-        const { data: rental, error: insertError } = await supabase
-            .from('Rentals')
-            .insert([rentalData])
-            .select()
-            .single();
-
-        if (insertError || !rental) {
-            return { success: false, error: insertError?.message || 'Failed to create rental' };
-        }
-
+        // 2️⃣ Update request status to APPROVED (rental creation happens later in handleStartRental)
         const { error: updateError } = await supabase
             .from('BorrowRequest')
             .update({ status: 'APPROVED' })
@@ -261,7 +230,7 @@ export async function acceptBorrowRequest(
             return { success: false, error: updateError.message || 'Failed to update borrow request' };
         }
 
-        return { success: true, rentalId: rental.id };
+        return { success: true };
     } catch (error) {
         console.error('Error accepting borrow request:', error);
         return {
@@ -358,6 +327,7 @@ export async function updateBorrowRequest(
         if (updates.options !== undefined) updateData.options = typeof updates.options === 'string' ? updates.options : JSON.stringify(updates.options);
         if (updates.status !== undefined) updateData.status = updates.status;
         if ((updates as any).contract_url !== undefined) updateData.contract_url = (updates as any).contract_url;
+        if ((updates as any).total_amount !== undefined) updateData.total_amount = (updates as any).total_amount;
 
         const { error } = await supabase
             .from('BorrowRequest')
@@ -625,6 +595,7 @@ export async function createRentalManually(
         customerLastName?: string;
         customerAge?: number;
         requestId?: string | number; // Link to BorrowRequest if rental was created from a request
+        contractUrl?: string; // Contract URL if one exists
     }
 ): Promise<{ success: boolean; rentalId?: string; error?: string }> {
     try {
@@ -633,13 +604,18 @@ export async function createRentalManually(
             return { success: false, error: 'Car not found' };
         }
 
-        const pricePerDay = (car as any)?.pricePerDay || car.price_per_day || 0;
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+        // Calculate rental duration to determine correct price tier
+        const duration = calculateRentalDuration(startDate, startTime, endDate, endTime);
+        const rentalDays = duration.days;
+
+        // Get the correct price per day based on rental duration
+        const pricePerDayStr = getCarPrice(rentalDays, car);
+        const pricePerDay = parseFloat(pricePerDayStr) || 0;
+
+        console.log('createRentalManually: Calculated price per day:', pricePerDay, 'for', rentalDays, 'days using car:', car);
 
         // Calculate subtotal if not provided
-        const subtotal = options?.subtotal || (pricePerDay * days);
+        const subtotal = options?.subtotal || (pricePerDay * rentalDays);
         // Calculate taxes (10% of subtotal) if not provided
         const taxesFees = options?.taxesFees || (subtotal * 0.1);
         const additionalTaxes = options?.additionalTaxes || 0;
@@ -661,13 +637,14 @@ export async function createRentalManually(
                 taxes_fees: taxesFees,
                 additional_taxes: additionalTaxes,
                 total_amount: finalTotal,
-                rental_status: options?.rentalStatus || 'CONTRACT',
+                rental_status: options?.rentalStatus || 'ACTIVE',
                 payment_status: options?.paymentStatus || 'PENDING',
                 payment_method: options?.paymentMethod || null,
                 notes: options?.notes || null,
                 special_requests: options?.specialRequests || null,
                 features: options?.features || null,
                 request_id: options?.requestId ? (typeof options.requestId === 'string' ? parseInt(options.requestId) : options.requestId) : null,
+                contract_url: options?.contractUrl || null,
             })
             .select()
             .single();
@@ -691,7 +668,7 @@ export async function isDateUnavailable(date: string, carId: string): Promise<bo
         .from('Rentals')
         .select('id')
         .eq('car_id', carId)
-        .eq('rental_status', 'APPROVED')
+        .eq('rental_status', 'ACTIVE')
         .lte('start_date', endOfDay)
         .gte('end_date', startOfDay);
 
@@ -714,7 +691,7 @@ export async function isDateInActualApprovedRequest(
         .from('Rentals')
         .select('id')
         .eq('car_id', carId)
-        .eq('rental_status', 'APPROVED')
+        .eq('rental_status', 'ACTIVE')
         .lte('start_date', date)
         .gte('end_date', date);
 
@@ -725,6 +702,7 @@ export async function isDateInActualApprovedRequest(
 
     return (data?.length ?? 0) > 0;
 }
+
 
 
 /**
@@ -742,7 +720,7 @@ export async function getEarliestFutureRentalStart(
             .from('Rentals')
             .select('start_date')
             .eq('car_id', carId)
-            .eq('rental_status', 'APPROVED')
+            .eq('rental_status', 'ACTIVE')
             .gt('start_date', dateString) // only future rentals
             .order('start_date', { ascending: true })
             .limit(1);
