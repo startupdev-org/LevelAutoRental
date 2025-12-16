@@ -118,3 +118,23 @@ export async function fetchUserProfiles(userIds: string[]): Promise<User[]> {
     }
 }
 
+export async function fetchUserProfileByEmail(userEmail: string): Promise<User> {
+    try {
+        const { data, error } = await supabase
+            .from('Profiles')
+            .select('*')
+            .eq('email', userEmail)
+            .single();
+
+        if (error) {
+            console.error('Error while fetching user\s profile by email:', error);
+            throw Error(error.message)
+        }
+
+        return data;
+    } catch (err) {
+        console.error('Unexpected error when fetching user\'s profile by email:', err);
+        throw Error('Unexpected error when fetching user\'s profile by email')
+    }
+}
+

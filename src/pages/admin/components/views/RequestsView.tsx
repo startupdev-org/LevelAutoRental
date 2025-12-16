@@ -17,7 +17,7 @@ import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { CreateRentalModal } from '../modals/CreateRentalModal';
 import { EditRequestModal } from '../modals/EditRequestModal';
 import { getInitials } from '../../../../utils/customer';
-import { getCarName } from '../../../../utils/car';
+import { getCarName } from '../../../../utils/car/car';
 import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';

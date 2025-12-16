@@ -14,7 +14,7 @@ interface BorrowRequestWithCar extends BorrowRequest {
 }
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
-import { OrderDetailsModal } from '../../../../components/modals/OrderDetailsModal';
+import { RentalDetailsModal } from '../../../../components/modals/OrderDetailsModal';
 
 export interface Booking {
     id: string;
@@ -262,30 +262,30 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
 
                                             {/* Status Badge */}
                                             <div className="absolute top-3 right-3">
-                                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm ${getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).color}`}>
-                                                <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
-                                                <span>{getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).text}</span>
+                                                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm ${getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).color}`}>
+                                                    <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+                                                    <span>{getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).text}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Button - Inside card but outside overflow container */}
+                                        <div className="p-3 bg-transparent relative z-10" style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
+                                            <div style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedRequest(activeRequest);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg"
+                                                    style={{ position: 'relative', zIndex: 30, pointerEvents: 'auto', cursor: 'pointer' }}
+                                                >
+                                                    <span>Vezi detalii</span>
+                                                    <ArrowRight size={14} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Action Button - Inside card but outside overflow container */}
-                                    <div className="p-3 bg-transparent relative z-10" style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
-                                        <div style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedRequest(activeRequest);
-                                                    setIsModalOpen(true);
-                                                }}
-                                                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg"
-                                                style={{ position: 'relative', zIndex: 30, pointerEvents: 'auto', cursor: 'pointer' }}
-                                            >
-                                                <span>Vezi detalii</span>
-                                                <ArrowRight size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                                 );
                             })
                     ) : (
@@ -333,17 +333,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             </div>
 
             {/* Past Borrow Requests */}
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-white">Request History</h3>
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className="text-gray-400 hover:text-gray-300 transition-colors duration-300 text-sm font-medium hover:underline"
-                    >
-                        Vezi toate
-                    </button>
-                </div>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">Request History</h3>
+                <button
+                    onClick={() => setActiveTab('overview')}
+                    className="text-gray-400 hover:text-gray-300 transition-colors duration-300 text-sm font-medium hover:underline"
+                >
+                    Vezi toate
+                </button>
+            </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {borrowRequests && borrowRequests.length > 0 ? (
                     borrowRequests
                         .filter(request => {
@@ -369,8 +369,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                     }} />
                                 </div>
 
-                        {/* Car Image - Hero Style */}
-                        <div className="relative h-40 overflow-hidden rounded-t-xl">
+                                {/* Car Image - Hero Style */}
+                                <div className="relative h-40 overflow-hidden rounded-t-xl">
                                     <img
                                         src={request.car?.image_url || '/placeholder-car.jpg'}
                                         alt={request.car?.make}
@@ -453,7 +453,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             </div>
 
             {/* Order Details Modal */}
-            <OrderDetailsModal
+            <RentalDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);

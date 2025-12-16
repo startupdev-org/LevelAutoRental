@@ -4,7 +4,7 @@ import { Car } from '../../../types';
 /**
  * Fetch car by id
  */
-export async function fetchCarById(carId: string): Promise<Car | null> {
+export async function fetchCarById(carId: string): Promise<Car> {
     console.log('fetching car by id from database');
     try {
         const { data, error } = await supabase
@@ -20,12 +20,10 @@ export async function fetchCarById(carId: string): Promise<Car | null> {
         }
 
         // console.log('car fetched: ', data)
-
-        // data can be null, so default to empty array
-        return data ?? null;
+        return data;
     } catch (err) {
         console.error('Unexpected error while fetching a car:', err);
-        return null;
+        throw Error('Unexpected error while fetching a car:' + err)
     }
 }
 
