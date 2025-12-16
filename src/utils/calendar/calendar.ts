@@ -1,3 +1,4 @@
+import { TFunction } from "i18next";
 import { formatDateLocal } from "../date";
 
 export interface DayState {
@@ -27,6 +28,8 @@ interface ReturnDateStatusArgs {
 
     isDateInActualApprovedRequest: (date: string) => boolean;
     isDateAlreadyBooked: (date: string) => boolean;
+
+    t: TFunction;
 }
 
 export function getReturnDateStatus({
@@ -36,11 +39,12 @@ export function getReturnDateStatus({
     effectiveNextAvailableDate,
     earliestFutureRentalStart,
     isDateInActualApprovedRequest,
-    isDateAlreadyBooked
+    isDateAlreadyBooked,
+    t
 }: ReturnDateStatusArgs): ReturnDateStatusResult {
 
-    const day = formatDateLocal(dayString);
-    const today = formatDateLocal(new Date());
+    const day = formatDateLocal(dayString, t('config.date'));
+    const today = formatDateLocal(new Date(), t('config.date'));
 
     // --- BASE STATES ---
     const isSelected = day === selectedReturnDate;
@@ -107,10 +111,10 @@ export function getReturnDateStatus({
 
     // Rule: blocked by future rental
     if (pickupDate && earliestFutureRentalStart) {
-        const futureStart = formatDateLocal(earliestFutureRentalStart);
+        const futureStart = formatDateLocal(earliestFutureRentalStart, t('config.date'));
 
         if (pickupDate < futureStart && day >= futureStart) {
-            const formatted = new Date(futureStart).toLocaleDateString('ro-RO', {
+            const formatted = new Date(futureStart).toLocaleDateString(t('config.date'), {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric'
@@ -128,7 +132,7 @@ export function getReturnDateStatus({
 
     // Rule: Before next available only if current booking exists
     if (effectiveNextAvailableDate) {
-        const nextAvail = formatDateLocal(effectiveNextAvailableDate);
+        const nextAvail = formatDateLocal(effectiveNextAvailableDate, t('config.date'));
 
         if (nextAvail <= today && day < nextAvail) {
             return {

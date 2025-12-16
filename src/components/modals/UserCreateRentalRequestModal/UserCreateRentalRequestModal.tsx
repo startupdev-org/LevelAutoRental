@@ -680,7 +680,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                                 }`}
                                                         >
                                                             <Calendar className="w-4 h-4" />
-                                                            <span>{formData.start_date ? formatDateLocal(formData.start_date) : 'Data primirii'}</span>
+                                                            <span>{formData.start_date ? formatDateLocal(formData.start_date, t('config.date')) : 'Data primirii'}</span>
                                                         </button>
                                                         <AnimatePresence>
                                                             {showPickupCalendar && (
@@ -736,7 +736,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                                             const dayString = day;
                                                                             const today = new Date();
                                                                             today.setHours(0, 0, 0, 0);
-                                                                            const todayString = formatDateLocal(today);
+                                                                            const todayString = formatDateLocal(today, t('config.date'));
                                                                             // Only block dates that are strictly in the past (not today)
                                                                             const isPast = dayString < todayString;
                                                                             const isUnavailable = false; // placeholder - implement later
@@ -863,7 +863,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                                             if (formData.start_date) {
                                                                                 const today = new Date();
                                                                                 today.setHours(0, 0, 0, 0);
-                                                                                const todayString = formatDateLocal(today);
+                                                                                const todayString = formatDateLocal(today, t('config.date'));
 
                                                                                 if (formData.start_date === todayString) {
                                                                                     // Selected date is today - start from 2 hours from now
@@ -936,7 +936,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                                 }`}
                                                         >
                                                             <Calendar className="w-4 h-4" />
-                                                            <span>{formData.end_date ? formatDateLocal(formData.end_date) : 'Data returnării'}</span>
+                                                            <span>{formData.end_date ? formatDateLocal(formData.end_date, t('config.date')) : 'Data returnării'}</span>
                                                         </button>
                                                         <AnimatePresence>
                                                             {showReturnCalendar && (
@@ -992,7 +992,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                                             const dayString = day;
                                                                             const today = new Date();
                                                                             today.setHours(0, 0, 0, 0);
-                                                                            const todayString = formatDateLocal(today);
+                                                                            const todayString = formatDateLocal(today, t('config.date'));
                                                                             // Only block dates that are strictly in the past (not today)
                                                                             const isPast = dayString < todayString;
                                                                             const isUnavailable = isUnavailableDate(todayString)
