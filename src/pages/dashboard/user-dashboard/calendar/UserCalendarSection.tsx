@@ -155,7 +155,7 @@ export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders
                     className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                         <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors">◀</button>
-                        <div className="text-sm font-medium text-white">{month.toLocaleDateString("ro-RO", { month: "long", year: "numeric" })}</div>
+                        <div className="text-sm font-medium text-white">{month.toLocaleDateString(t('config.date'), { month: "long", year: "numeric" })}</div>
                         <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors">▶</button>
                     </div>
                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
@@ -244,10 +244,12 @@ export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-0">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-bold text-white">
-                                {(() => {
-                                    const dateStr = displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                                    return dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-                                })()}
+                                {displayDateObj.toLocaleDateString(t('config.date'), {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
                                 {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t("admin.calendar.today")})</span>}
                             </h3>
                             {selectedDate && <button onClick={() => setSelectedDate(null)} className="text-gray-400 hover:text-white transition-colors p-1">✕</button>}

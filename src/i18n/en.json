@@ -805,5 +805,8 @@
             "noFavoriteCar": "You haven't borrowed any car, so you don't have a favorite car yet.",
             "startBorrowing": "Start borrowing"
         }
+    },
+    "config": {
+        "date": "en-GB"
     }
 }
