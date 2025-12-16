@@ -33,11 +33,15 @@ import { supabase } from '../../../lib/supabase';
 import { RentalOptionsSection } from '../sections/RentalOptionsSection';
 import { useExchangeRates } from '../../../hooks/useExchangeRates';
 import { NoImagePlaceholder } from '../../../components/car/NoImage';
+import { useTranslation } from 'react-i18next';
+import { formatPrice } from '../../../utils/currency';
 
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();
     const navigate = useNavigate();
     const { eur: eurRate, usd: usdRate, selectedCurrency, setSelectedCurrency } = useExchangeRates();
+
+    const { t, i18n } = useTranslation()
 
     // ───── CONSTANTS ─────
     const SHOW_DATE_INPUTS = true; // Temporarily hide date inputs
@@ -1247,7 +1251,9 @@ export const CarDetails: React.FC = () => {
                                             <>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="text-4xl font-bold text-gray-900">
-                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} <span className="text-lg font-normal text-gray-600">pe zi</span>
+                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                        {/* {/* {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString(t('config.date'), { minimumFractionDigits: 0, maximumFractionDigits: 0 })}  */}
+                                                        <span className="text-lg font-normal text-gray-600"> pe zi</span>
                                                     </div>
                                                     {/* Currency Dropdown */}
                                                     <div className="relative ml-4">
@@ -1269,7 +1275,7 @@ export const CarDetails: React.FC = () => {
                                                 </div>
                                                 {discount > 0 && (
                                                     <div className="text-sm text-gray-400 line-through mb-1">
-                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString(t('config.date'))}
                                                     </div>
                                                 )}
                                             </>
@@ -1985,10 +1991,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_2_4_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_2_4_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -2013,10 +2016,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_5_15_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_5_15_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -2041,10 +2041,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_16_30_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_16_30_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -2069,10 +2066,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_over_30_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_over_30_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -2255,7 +2249,9 @@ export const CarDetails: React.FC = () => {
                                             <>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="text-4xl font-bold text-gray-900">
-                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} <span className="text-lg font-normal text-gray-600">pe zi</span>
+                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                        {/* {/* {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}  */}
+                                                        <span className="text-lg font-normal text-gray-600"> pe zi</span>
                                                     </div>
                                                     {/* Currency Dropdown */}
                                                     <div className="relative ml-4">
@@ -3014,10 +3010,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_2_4_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_2_4_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -3042,10 +3035,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_5_15_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_5_15_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -3070,10 +3060,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_16_30_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_16_30_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -3098,10 +3085,7 @@ export const CarDetails: React.FC = () => {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-gray-900">
-                                                            <span className="text-sm font-medium text-gray-600">{getCurrencySymbol(selectedCurrency)}</span>{convertPrice(car.discount_percentage && car.discount_percentage > 0
-                                                                ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                : (car.price_over_30_days || 0)
-                                                            ).toLocaleString('ro-RO')}
+                                                            {formatPrice(convertPrice(car.price_over_30_days || 0), selectedCurrency, i18n.language)}
                                                         </span>
                                                     </div>
                                                 </div>

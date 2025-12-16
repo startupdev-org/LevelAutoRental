@@ -701,7 +701,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                 </svg>
                             </button>
                             <div className="text-sm font-medium text-white">
-                                {currentMonth.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
+                                {currentMonth.toLocaleDateString(t('config.date'), { month: 'long', year: 'numeric' })}
                             </div>
                             <button
                                 onClick={nextMonth}
@@ -750,30 +750,40 @@ export const CalendarPage: React.FC<Props> = () => {
 
                                 // Determine styling based on today, selected, events, and past dates
                                 let dayClassName = '';
+
                                 if (isToday && isSelected) {
-                                    // Today when selected - red background with selection ring
-                                    dayClassName = 'bg-red-500 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold';
-                                } else if (isToday) {
-                                    // Today always has red background
-                                    dayClassName = 'bg-red-500 text-white';
-                                } else if (isSelected) {
-                                    // Selected (but not today) - show ring effect
+                                    // Today + selected → red with white highlight
+                                    dayClassName =
+                                        'bg-red-500 text-white ring-2 ring-white/70 ring-offset-1 ring-offset-transparent font-semibold';
+                                }
+                                else if (isSelected) {
+                                    // Selected (not today) → white highlight
                                     if (hasEvents) {
                                         if (isPast) {
-                                            dayClassName = 'bg-gray-500/40 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-gray-500/50';
+                                            dayClassName =
+                                                'bg-gray-500/40 text-white ring-2 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-gray-500/50';
                                         } else {
-                                            dayClassName = 'bg-yellow-500/20 text-white ring-1 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-yellow-500/30';
+                                            dayClassName =
+                                                'bg-yellow-500/20 text-white ring-2 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold hover:bg-yellow-500/30';
                                         }
                                     } else {
-                                        dayClassName = 'ring-1 ring-white/60 ring-offset-1 ring-offset-transparent text-white hover:ring-white/50 bg-white/5 font-semibold';
+                                        dayClassName =
+                                            'bg-white/10 text-white ring-2 ring-white/60 ring-offset-1 ring-offset-transparent font-semibold';
                                     }
-                                } else if (hasEvents) {
+                                }
+                                else if (isToday) {
+                                    // Today (not selected)
+                                    dayClassName = 'bg-red-500 text-white';
+                                }
+                                else if (hasEvents) {
+                                    // Events (not selected)
                                     if (isPast) {
                                         dayClassName = 'bg-gray-500/40 text-white hover:bg-gray-500/50';
                                     } else {
                                         dayClassName = 'bg-yellow-500/20 text-white hover:bg-yellow-500/30';
                                     }
-                                } else {
+                                }
+                                else {
                                     dayClassName = 'hover:bg-white/10';
                                 }
 
