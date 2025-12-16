@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next"
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowRight, Car, Check, Truck } from 'lucide-react';
-import { OrderDetailsModal } from "../../../../components/modals/OrderDetailsModal";
+import { RentalDetailsModal } from "../../../../components/modals/OrderDetailsModal";
 import { getUserRentals as fetchUsersRentals } from "../../../../lib/db/rentals/rentals";
 import { Rental } from "../../../../types";
 import { formatDateLocal } from "../../../../utils/date";
@@ -127,7 +127,7 @@ export const UserOrdersSection: React.FC = () => {
                                                 <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
                                                 <span>
                                                     {isActive && isStarted ? 'Început' :
-                                                     isActive ? 'Activă' : 'Contract'}
+                                                        isActive ? 'Activă' : 'Contract'}
                                                 </span>
                                             </div>
                                         </div>
@@ -285,7 +285,7 @@ export const UserOrdersSection: React.FC = () => {
             </div>
 
             {/* Order Details Modal */}
-            <OrderDetailsModal
+            <RentalDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);

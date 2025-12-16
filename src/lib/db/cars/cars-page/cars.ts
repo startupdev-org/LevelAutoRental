@@ -1,6 +1,6 @@
 import { supabase } from '../../../supabase';
 import { Car, CarFilterOptions } from '../../../../types';
-import { fetchCarWithImagesById, fetchImagesByCarName } from '../cars';
+import { fetchImagesByCarName } from '../cars';
 
 /**
  * Filter interface for car queries

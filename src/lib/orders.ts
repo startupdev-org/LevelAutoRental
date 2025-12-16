@@ -1,8 +1,10 @@
 import { supabase, supabaseAdmin } from './supabase';
-import { BorrowRequest, Car, OrderDisplay, Rental } from '../types';
-import { fetchImagesByCarName } from './db/cars/cars';
+import { BorrowRequest, Car, OrderDisplay, Rental, RentalDTO } from '../types';
+import { fetchCarById, fetchImagesByCarName } from './db/cars/cars';
 import { fetchUserProfiles } from './db/user/profile';
 import { fetchBorrowRequests } from './db/requests/requests';
+import { getCarPrice } from '../utils/car/pricing';
+import { formatDateForSQL, toRentalDTO } from './db/rentals/rentals';
 
 /**
  * Update car status based on rental status
@@ -80,263 +82,49 @@ export async function fetchRentals(): Promise<Rental[]> {
 /**
  * Fetch only rentals (not requests) and format them for display
  */
-export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
+export async function fetchRentalsForCalendarPage(
+  month: Date,
+  carId?: string,
+): Promise<RentalDTO[]> {
   try {
-    const rentals = await fetchRentals();
 
-    // If no data from database, return empty array
-    if (rentals.length === 0) {
+    let query = supabase
+      .from("Rentals")
+      .select("*");
+
+    if (month) {
+      const year = month.getFullYear();
+      const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
+
+      // First day of current month
+      const firstDay = formatDateForSQL(year, m, 1);
+
+      // First day of next month using JS Date rollover
+      const nextMonthDate = new Date(year, m + 1, 1);
+      const nextMonthFirst = formatDateForSQL(
+        nextMonthDate.getFullYear(),
+        nextMonthDate.getMonth(), // always 0–11
+        1
+      );
+
+      query = query
+        .lt("start_date", nextMonthFirst)
+        .gte("end_date", firstDay);
+    }
+
+    if (carId) {
+      // if there is a selected car, fetch the orders for that car
+      query = query.eq('car_id', carId)
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching rentals for calendar page:", error);
       return [];
     }
 
-    // Collect all unique user IDs (filter out null/undefined for guest bookings)
-    const userIds = new Set<string>();
-    rentals.forEach(r => {
-        if (r.user_id) userIds.add(r.user_id);
-    });
-
-    // Fetch user profiles if available
-    const profilesArray = await fetchUserProfiles(Array.from(userIds));
-    const profiles = new Map<string, any>();
-    profilesArray.forEach(profile => {
-        if (profile.id) {
-            profiles.set(profile.id, profile);
-        }
-    });
-
-    const orders: OrderDisplay[] = [];
-
-    // Collect all request IDs from rentals that have them
-    const requestIds = new Set<number>();
-    rentals.forEach(r => {
-      const requestId = (r as any).request_id;
-      if (requestId) {
-        requestIds.add(typeof requestId === 'number' ? requestId : parseInt(requestId));
-      }
-    });
-
-    // Fetch customer information and options from BorrowRequest table for rentals created from requests
-    const requestCustomerMap = new Map<number, { name: string; email: string; phone: string; firstName?: string; lastName?: string }>();
-    const requestOptionsMap = new Map<number, any>();
-    if (requestIds.size > 0) {
-      try {
-        const { data: requestsData, error: requestsError } = await supabase
-          .from('BorrowRequest')
-          .select('id, customer_name, customer_email, customer_phone, customer_first_name, customer_last_name, options')
-          .in('id', Array.from(requestIds));
-
-        if (!requestsError && requestsData) {
-          requestsData.forEach((request: any) => {
-            requestCustomerMap.set(request.id, {
-              name: request.customer_name || '',
-              email: request.customer_email || '',
-              phone: request.customer_phone || '',
-              firstName: request.customer_first_name,
-              lastName: request.customer_last_name,
-            });
-            // Store options for later use
-            if (request.options) {
-              requestOptionsMap.set(request.id, request.options);
-            }
-          });
-        }
-      } catch (err) {
-        console.debug('Error fetching customer info from requests:', err);
-      }
-    }
-
-    // Process rentals only - use Promise.all to handle async car fetching
-    const processedOrders = await Promise.all(rentals.map(async (rental) => {
-      // Handle both string and number car_id
-      const carIdMatch = typeof rental.car_id === 'number'
-        ? rental.car_id
-        : parseInt(rental.car_id);
-
-      let car = cars.find((c) => c.id === carIdMatch || c.id.toString() === rental.car_id?.toString());
-
-      // If car not found (might be deleted), fetch it directly from database
-      if (!car && rental.car_id) {
-        try {
-          const { data: carData, error } = await supabase
-            .from('Cars')
-            .select('*')
-            .eq('id', carIdMatch)
-            .single();
-
-          if (!error && carData) {
-            // Map database row to Car type
-            car = {
-              id: carData.id,
-              make: carData.make,
-              model: carData.model,
-              name: carData.name || undefined,
-              year: carData.year || new Date().getFullYear(),
-              price_per_day: carData.price_per_day,
-              discount_percentage: carData.discount_percentage || undefined,
-              category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
-              image_url: carData.image_url || undefined,
-              photo_gallery: carData.photo_gallery || undefined,
-              seats: carData.seats || undefined,
-              transmission: carData.transmission as 'Automatic' | 'Manual' || undefined,
-              body: carData.body as 'Coupe' | 'Sedan' | 'SUV' || undefined,
-              fuel_type: carData.fuel_type as 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol' || undefined,
-              features: carData.features || undefined,
-              rating: carData.rating || undefined,
-              reviews: carData.reviews || undefined,
-              status: carData.status || undefined,
-              drivetrain: carData.drivetrain || undefined,
-            } as Car & { name?: string };
-
-            // Fetch images from storage for this car
-            if (car) {
-              const carName = (car as any).name || `${car.make} ${car.model}`;
-              const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-              car.image_url = mainImage || car.image_url;
-              car.photo_gallery = photoGallery.length > 0 ? photoGallery : car.photo_gallery;
-            }
-          }
-        } catch (err) {
-          console.error(`Error fetching car ${carIdMatch} from database:`, err);
-        }
-      }
-
-      // Get customer information - prefer from request if rental was created from a request
-      const requestId = (rental as any).request_id;
-      const requestCustomer = requestId ? requestCustomerMap.get(typeof requestId === 'number' ? requestId : parseInt(requestId)) : null;
-
-      let email = '';
-      let phone = '';
-      let firstName = '';
-      let lastName = '';
-      let userName = '';
-
-      if (requestCustomer) {
-        // Use customer info from the original request
-        email = requestCustomer.email;
-        phone = requestCustomer.phone;
-        firstName = requestCustomer.firstName || '';
-        lastName = requestCustomer.lastName || '';
-        userName = requestCustomer.name ||
-          (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || email.split('@')[0] || 'Unknown');
-      } else {
-        // Fallback to profile lookup
-        const profile = rental.user_id ? profiles.get(rental.user_id) : null;
-        email = profile?.email || rental.user?.email || '';
-        phone = profile?.phone || '';
-        firstName = profile?.firstName || '';
-        lastName = profile?.lastName || '';
-        userName = (firstName && lastName)
-          ? `${firstName} ${lastName}`
-          : firstName || lastName
-            ? `${firstName}${lastName}`
-            : (email ? email.split('@')[0] : '')
-            || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
-      }
-
-      // Calculate amount based on days and car price
-      const startDate = new Date(rental.start_date || new Date());
-      const endDate = new Date(rental.end_date || new Date());
-      const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-      const amount = rental.total_amount || (car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0);
-
-      // Format dates properly
-      const formatDate = (dateStr: string | Date | null | undefined): string => {
-        if (!dateStr) return '';
-        if (typeof dateStr === 'string') {
-          // If it's already in YYYY-MM-DD format, return as is
-          if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-            return dateStr.split('T')[0];
-          }
-          // Otherwise parse and format
-          const date = new Date(dateStr);
-          return date.toISOString().split('T')[0];
-        }
-        return new Date(dateStr).toISOString().split('T')[0];
-      };
-
-      // Parse features/options from rental
-      // First priority: options from the original request (if rental was created from a request)
-      const rentalRequestId = (rental as any).request_id;
-      const features = (rental as any).features;
-      let options: Record<string, any> | undefined = undefined;
-
-      if (rentalRequestId && requestOptionsMap.has(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId))) {
-        // Use options from the original request
-        options = requestOptionsMap.get(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId));
-      } else {
-        // Fallback to features parsing from rental
-        if (features) {
-          // If features is an array of strings, convert to options object
-          if (Array.isArray(features)) {
-            options = {};
-            features.forEach((feature: string) => {
-              // Map feature names to option keys
-              const featureLower = feature.toLowerCase();
-              if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-                options!.unlimitedKm = true;
-              } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
-                options!.speedLimitIncrease = true;
-              } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-                options!.tireInsurance = true;
-              } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
-                options!.personalDriver = true;
-              } else if (featureLower.includes('priority')) {
-                options!.priorityService = true;
-              } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-                options!.childSeat = true;
-              } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-                options!.simCard = true;
-              } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
-                options!.roadsideAssistance = true;
-              }
-            });
-          } else if (typeof features === 'string') {
-            try {
-              options = JSON.parse(features);
-            } catch (e) {
-              options = {};
-            }
-          } else {
-            options = features;
-          }
-        }
-      }
-
-      return {
-        id: rental.id,
-        type: 'rental' as const,
-        customerName: userName,
-        customerEmail: email,
-        customerPhone: phone || '',
-        customerFirstName: firstName || undefined,
-        customerLastName: lastName || undefined,
-        carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
-        avatar: car?.image_url || (car as any)?.image || '',
-        pickupDate: formatDate(rental.start_date),
-        pickupTime: rental.start_time || '09:00',
-        returnDate: formatDate(rental.end_date),
-        returnTime: rental.end_time || '17:00',
-        status: rental.rental_status || (rental as any).rental_status || 'CONTRACT',
-        total_amount: amount.toString(),
-        amount: amount,
-        createdAt: rental.created_at || new Date().toISOString(),
-        carId: rental.car_id?.toString() || '',
-        userId: rental.user_id || '',
-        contract_url: (rental as any).contract_url || undefined,
-        features: features,
-        options: options,
-        request_id: (rental as any).request_id || undefined,
-      } as OrderDisplay;
-    }));
-
-    orders.push(...processedOrders);
-
-    // Sort by creation date (newest first)
-    return orders.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
+    return data;
   } catch (error) {
     console.error('Error in fetchRentalsOnly:', error);
     // Return empty array on error - only show real data from Supabase
@@ -357,19 +145,19 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
     // Collect all unique user IDs (filter out null/undefined for guest bookings)
     const userIds = new Set<string>();
     requests.forEach(r => {
-        if (r.user_id) userIds.add(r.user_id);
+      if (r.user_id) userIds.add(r.user_id);
     });
     rentals.forEach(r => {
-        if (r.user_id) userIds.add(r.user_id);
+      if (r.user_id) userIds.add(r.user_id);
     });
 
     // Fetch user profiles if available
     const profilesArray = await fetchUserProfiles(Array.from(userIds));
     const profiles = new Map<string, any>();
     profilesArray.forEach(profile => {
-        if (profile.id) {
-            profiles.set(profile.id, profile);
-        }
+      if (profile.id) {
+        profiles.set(profile.id, profile);
+      }
     });
 
     const orders: OrderDisplay[] = [];

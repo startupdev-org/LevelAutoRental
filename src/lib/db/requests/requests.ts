@@ -3,6 +3,7 @@ import { getCarPrice } from '../../../utils/car/pricing';
 import { getDateDiffInDays } from '../../../utils/date';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
+import { formatDateForSQL } from '../rentals/rentals';
 import { getLoggedUser } from '../user/profile';
 
 
@@ -762,15 +763,145 @@ export async function getEarliestFutureRentalStart(
     }
 }
 
+/**
+ * Method just for the user !!!
+ * @param carId 
+ * @param month 
+ * @param status 
+ * @returns 
+ */
+export async function fetchBorrowRequestForUserCalendarPage(
+    carId?: string,
+    month?: Date,
+    status?: string
+): Promise<BorrowRequestDTO[]> {
+    const user = await getLoggedUser();
+    if (!user) return [];
+
+    let query = supabase
+        .from("BorrowRequest")
+        .select("*")
+        .eq('user_id', user.id)
 
 
-export function toBorrowRequestDTO(
+    // Filter by month (expects "YYYY-MM")
+    if (month) {
+        const year = month.getFullYear();
+        const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
+
+        // First day of current month
+        const firstDay = formatDateForSQL(year, m, 1);
+
+        // First day of next month using JS Date rollover
+        const nextMonthDate = new Date(year, m + 1, 1);
+        const nextMonthFirst = formatDateForSQL(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(), // always 0–11
+            1
+        );
+
+        query = query
+            .lt("start_date", nextMonthFirst)
+            .gte("end_date", firstDay);
+    }
+
+
+    if (carId) {
+        // if there is a selected car, fetch the orders for that car
+        query = query.eq('car_id', carId)
+    } else {
+        // otherwise fetch user's calendar 
+        query = query.eq("user_id", user.id)
+    }
+
+    if (status) {
+        query = query.eq("rental_status", status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching rentals calendar:", error);
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((row: any) =>
+            toBorrowRequestDTO(row, row.car_id)
+        )
+    );
+}
+
+
+export async function fetchBorrowRequestForCalendarPage(
+    carId?: string,
+    month?: Date,
+    status?: string
+): Promise<BorrowRequestDTO[]> {
+    const user = await getLoggedUser();
+    if (!user) return [];
+
+    console.log('making the query')
+
+    let query = supabase
+        .from("BorrowRequest")
+        .select("*");
+
+    // Filter by month (expects "YYYY-MM")
+    if (month) {
+        const year = month.getFullYear();
+        const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
+
+        // First day of current month
+        const firstDay = formatDateForSQL(year, m, 1);
+
+        // First day of next month using JS Date rollover
+        const nextMonthDate = new Date(year, m + 1, 1);
+        const nextMonthFirst = formatDateForSQL(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(), // always 0–11
+            1
+        );
+
+        query = query
+            .lt("start_date", nextMonthFirst)
+            .gte("end_date", firstDay);
+    }
+
+
+    if (carId) {
+        query = query.eq('car_id', Number(carId));
+    }
+    if (status) {
+        query = query.eq("status", status);
+    }
+
+    console.log('fetching info')
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching borrow requests for admin calendar:", error);
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((request: BorrowRequest) =>
+            toBorrowRequestDTO(request)
+        )
+    );
+}
+
+
+
+export async function toBorrowRequestDTO(
     borrowRequest: BorrowRequest,
-    car: Car
-): BorrowRequestDTO {
+): Promise<BorrowRequestDTO> {
     if (!borrowRequest.id) {
         throw new Error("BorrowRequest must have an id to convert to DTO");
     }
+
+    const car = await fetchCarById(borrowRequest.car_id);
 
     return {
         ...borrowRequest,

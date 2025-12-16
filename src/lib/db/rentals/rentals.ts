@@ -410,7 +410,13 @@ export async function fetchRentalsHistory(
     return { rentals, total: count ?? 0 };
 }
 
-
+/**
+ * Method just for the user !!!
+ * @param carId 
+ * @param month 
+ * @param status 
+ * @returns 
+ */
 export async function fetchUserRentalsForCalendarPage(
     carId?: string,
     month?: Date,
@@ -471,7 +477,7 @@ export async function fetchUserRentalsForCalendarPage(
     );
 }
 
-async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
+export async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
 
     const carWithImage = await fetchCarWithImagesById(carId);
 
@@ -482,7 +488,7 @@ async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
 }
 
 
-function formatDateForSQL(year: number, month: number, day: number): string {
+export function formatDateForSQL(year: number, month: number, day: number): string {
     // month is 0-based, so increase by 1
     const m = (month + 1).toString().padStart(2, "0");
     const d = day.toString().padStart(2, "0");

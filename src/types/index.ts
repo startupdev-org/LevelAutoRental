@@ -185,11 +185,11 @@ export interface Rental {
 }
 
 export interface RentalDTO {
-  id?: string;
+  id: string;
   request_id: string;
 
   user_id?: string;
-  customer_email?: string;
+  customer_email: string;
 
   car?: Car;
   car_id: string;
