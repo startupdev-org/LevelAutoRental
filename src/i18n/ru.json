@@ -9,6 +9,7 @@
         "contact": "Контакты",
         "auth": "Войти",
         "language": "Язык",
+        "currency": "Валюта",
         "dashboard": "Панель управления",
         "profile": "Профиль",
         "settings": "Настройки",
@@ -819,5 +820,24 @@
     },
     "config": {
         "date": "ru-RU"
+    },
+    "languageCurrencyModal": {
+        "title": "Добро пожаловать!",
+        "subtitle": "Выберите предпочитаемый язык и валюту",
+        "language": "Язык",
+        "currency": "Валюта",
+        "confirm": "Подтвердить"
+    },
+    "admin": {
+        "requests": {
+            "pickupDate": "Дата получения"
+        },
+        "calendar": {
+            "noBookings": "Нет бронирований на этот день",
+            "filters": "Фильтры",
+            "make": "Марка",
+            "model": "Модель",
+            "applyFilters": "Применить фильтры"
+        }
     }
 }

@@ -11,7 +11,6 @@ import {
     Home,
     X,
     RefreshCw,
-    HelpCircle,
     FileText,
     Car
 } from 'lucide-react';
@@ -77,7 +76,6 @@ export const Admin: React.FC = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const [totalRequests, setTotalRequests] = useState<number>(0);
     const [cars, setCars] = useState<CarType[]>([]);
 
@@ -350,14 +348,6 @@ export const Admin: React.FC = () => {
                                     </div>
                                     {/* Mobile Refresh and Settings */}
                                     <div className="lg:hidden flex items-center gap-2">
-                                        {/* Mobile Help Button */}
-                                        <button
-                                            onClick={() => setIsHelpModalOpen(true)}
-                                            className="flex items-center px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
-                                            title="Ajutor"
-                                        >
-                                            <HelpCircle className="w-4 h-4 text-white" />
-                                        </button>
                                         {/* Mobile Refresh Button */}
                                         <button
                                             onClick={handleRefresh}
@@ -500,14 +490,6 @@ export const Admin: React.FC = () => {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    {/* Help Button - Desktop Only */}
-                                    <button
-                                        onClick={() => setIsHelpModalOpen(true)}
-                                        className="hidden lg:flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-white/10 border border-white/20"
-                                        title="Ghid utilizare"
-                                    >
-                                        <HelpCircle className="w-4 h-4 text-white" />
-                                    </button>
                                     {/* Refresh Button - Desktop Only */}
                                     <button
                                         onClick={handleRefresh}
@@ -546,9 +528,6 @@ export const Admin: React.FC = () => {
                         <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                             <div>
                                 <h2 className="text-2xl font-bold text-white">{t('admin.common.settings')}</h2>
-                                <p className="text-gray-400 text-sm mt-1">
-                                    {t('admin.settings.description')}
-                                </p>
                             </div>
                             <button
                                 onClick={() => setIsSettingsModalOpen(false)}
@@ -560,244 +539,16 @@ export const Admin: React.FC = () => {
 
                         {/* Content */}
                         <div className="p-6">
-                            <Settings />
-
-                            {/* Mobile Only: Navigation Buttons */}
-                            <div className="lg:hidden mt-8 pt-6 border-t border-white/10 space-y-3">
-                                <button
-                                    onClick={handleBackToSite}
-                                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white/5 border border-white/10 text-gray-200 text-sm font-medium rounded-lg hover:bg-white/10 hover:border-white/20 hover:text-white transition-all duration-200"
-                                >
-                                    <Home className="w-4 h-4" />
-                                    <span>Înapoi la Site</span>
-                                </button>
-
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-300 text-sm font-medium rounded-lg hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-200 transition-all duration-200"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                    <span>Deconectare</span>
-                                </button>
-                            </div>
+                            <Settings 
+                                onBackToSite={handleBackToSite}
+                                onLogout={handleLogout}
+                            />
                         </div>
                     </div>
                 </div>,
                 document.getElementById('modal-root') || document.body
             )}
 
-            {/* Help Modal */}
-            {isHelpModalOpen && createPortal(
-                <div
-                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-                    onClick={() => setIsHelpModalOpen(false)}
-                    style={{ zIndex: 10000 }}
-                    data-modal-help
-                >
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-                    >
-                        {/* Header */}
-                        <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
-                            <h2 className="text-xl sm:text-2xl font-bold text-white">Ghid de Utilizare Admin</h2>
-                            <button
-                                onClick={() => setIsHelpModalOpen(false)}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
-                            >
-                                <X className="w-5 h-5 text-white" />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-4 sm:p-6 space-y-4">
-                            {/* Flow Diagram */}
-                            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                <h3 className="text-base sm:text-lg font-bold text-white mb-3 flex items-center gap-2">
-                                    <ShoppingCart className="w-5 h-5 text-red-400" />
-                                    <span>Cum funcționează sistemul?</span>
-                                </h3>
-                                <div className="space-y-3">
-                                    {/* Step 1 */}
-                                    <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-red-400 font-bold text-sm">1.</span>
-                                            <h4 className="font-bold text-white text-sm">Clientul trimite cerere</h4>
-                                        </div>
-                                        <p className="text-gray-300 text-xs ml-5 leading-relaxed">
-                                            Când un client vrea să închirieze o mașină, completează un formular pe site.
-                                            Cererea lui apare automat în secțiunea "Cereri" cu status "În așteptare".
-                                            Poți vedea ce mașină vrea, când o ia și când o aduce înapoi.
-                                        </p>
-                                    </div>
-                                    {/* Step 2 */}
-                                    <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-red-400 font-bold text-sm">2.</span>
-                                            <h4 className="font-bold text-white text-sm">Aprobați cererea</h4>
-                                        </div>
-                                        <p className="text-gray-300 text-xs ml-5 leading-relaxed">
-                                            După ce verifici că totul e în regulă, apasă butonul "Aprobă" pe cererea respectivă.
-                                            Sistemul va crea automat o comandă nouă în secțiunea "Comenzi" cand vine ziua de închiriere.
-                                            Dacă nu esti deacord cu cererea, poți respinge și clientul va primi notificare prin email.
-                                        </p>
-                                    </div>
-                                    {/* Step 3 */}
-                                    <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-red-400 font-bold text-sm">3.</span>
-                                            <h4 className="font-bold text-white text-sm">Generați contractul</h4>
-                                        </div>
-                                        <p className="text-gray-300 text-xs ml-5 leading-relaxed">
-                                            Mergi în secțiunea "Comenzi" și apasă pe comanda creată.
-                                            Acolo vei găsi butonul "Generează Contract" care creează un PDF cu toate detaliile.
-                                            Poți descărca contractul și să-l trimiți clientului sau să-l printezi.
-                                        </p>
-                                    </div>
-                                    {/* Step 4 */}
-                                    <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-red-400 font-bold text-sm">4.</span>
-                                            <h4 className="font-bold text-white text-sm">Închirierea se finalizează</h4>
-                                        </div>
-                                        <p className="text-gray-300 text-xs ml-5 leading-relaxed">
-                                            Când clientul aduce mașina înapoi, comanda se marchează automat ca "Finalizată".
-                                            Poți vedea toate comenzile finalizate în secțiunea "Comenzi" și să verifici istoricul
-                                            pentru a vedea cât a plătit fiecare client.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Sections Quick Guide */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {/* Dashboard */}
-                                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <LayoutDashboard className="w-5 h-5 text-red-400" />
-                                        <h4 className="font-bold text-white text-sm">Panou Principal</h4>
-                                    </div>
-                                    <p className="text-gray-300 text-xs leading-relaxed">
-                                        Aici vezi rapid cât ai câștigat în total, câte comenzi ai avut și câte mașini sunt
-                                        disponibile momentan. Graficele arată cum merg vânzările pe perioade diferite.
-                                        E util să verifici aici zilnic pentru a vedea cum merge afacerea.
-                                    </p>
-                                </div>
-
-                                {/* Cereri */}
-                                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <ShoppingCart className="w-5 h-5 text-red-400" />
-                                        <h4 className="font-bold text-white text-sm">Cereri</h4>
-                                    </div>
-                                    <p className="text-gray-300 text-xs leading-relaxed">
-                                        Când clienții completează formularul pe site, cererile lor apar aici.
-                                        Vezi numele, telefonul, ce mașină vor și perioada. Poți apăsa pe fiecare cerere
-                                        pentru detalii complete, apoi decizi dacă o aprobi (creând o comandă) sau o respingi.
-                                    </p>
-                                </div>
-
-                                {/* Comenzi */}
-                                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <FileText className="w-5 h-5 text-red-400" />
-                                        <h4 className="font-bold text-white text-sm">Comenzi</h4>
-                                    </div>
-                                    <p className="text-gray-300 text-xs leading-relaxed">
-                                        Toate închirierile active și finalizate sunt aici. Când aprobi o cerere,
-                                        apare automat o comandă nouă. Apasă pe o comandă pentru a vedea toate detaliile,
-                                        să generezi contractul PDF sau să modifici statusul comenzii.
-                                    </p>
-                                </div>
-
-                                {/* Mașini */}
-                                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Car className="w-5 h-5 text-red-400" />
-                                        <h4 className="font-bold text-white text-sm">Mașini</h4>
-                                    </div>
-                                    <p className="text-gray-300 text-xs leading-relaxed">
-                                        Aici gestionezi toate mașinile din flotă. Poți adăuga mașini noi, modifica prețurile,
-                                        schimba descrierile sau actualiza imaginile. Când o mașină e în service sau nu mai e
-                                        disponibilă, poți marca statusul corespunzător. Clienții vor vedea doar mașinile disponibile.
-                                    </p>
-                                </div>
-
-                                {/* Calendar */}
-                                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <CalendarDays className="w-5 h-5 text-red-400" />
-                                        <h4 className="font-bold text-white text-sm">Calendar</h4>
-                                    </div>
-                                    <p className="text-gray-300 text-xs leading-relaxed">
-                                        Vezi toate rezervările pe un calendar lunar. Fiecare zi arată câte mașini sunt închiriate
-                                        și care. Poți filtra după marcă sau model pentru a vedea doar anumite mașini.
-                                        E foarte util când vrei să verifici rapid disponibilitatea pentru o anumită perioadă.
-                                    </p>
-                                </div>
-
-                                {/* Utilizatori */}
-                                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <UsersIcon className="w-5 h-5 text-red-400" />
-                                        <h4 className="font-bold text-white text-sm">Utilizatori</h4>
-                                    </div>
-                                    <p className="text-gray-300 text-xs leading-relaxed">
-                                        Lista cu toți clienții care au făcut conturi pe site. Vezi datele lor de contact,
-                                        câte închirieri au făcut și cât au cheltuit în total. Apasă pe un utilizator pentru
-                                        a vedea istoricul complet al comenzilor lui. E util când vrei să contactezi un client
-                                        sau să vezi dacă e client fidel.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Status Colors */}
-                            <div className="bg-white/5 rounded-lg p-4 sm:p-6 border border-white/10">
-                                <h3 className="text-base sm:text-lg font-bold text-white mb-3 flex items-center gap-2">
-                                    <span className="text-xl">🎨</span>
-                                    <span>Culorile statusurilor</span>
-                                </h3>
-                                <p className="text-gray-300 text-xs mb-3 leading-relaxed">
-                                    Fiecare comandă sau cerere are o culoare care arată starea ei.
-                                    Asta te ajută să vezi rapid ce trebuie să faci fără să citești tot textul.
-                                </p>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
-                                        <span className="text-gray-300 text-xs">În așteptare</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-500/50"></div>
-                                        <span className="text-gray-300 text-xs">Activă</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
-                                        <span className="text-gray-300 text-xs">Finalizată</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-gray-500/20 border border-gray-500/50"></div>
-                                        <span className="text-gray-300 text-xs">Anulată</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Quick Tips */}
-                            <div className="bg-white/5 rounded-lg p-4 border border-blue-500/20 pb-20">
-                                <h3 className="text-base font-bold text-blue-300 mb-2 flex items-center gap-2">
-                                    <span>💡</span>
-                                    <span>Sfaturi</span>
-                                </h3>
-                                <div className="space-y-2 text-xs text-blue-200 leading-relaxed">
-                                    <p>• Apasă pe orice card sau rând pentru a vedea toate detaliile. Nu trebuie să cauți prin meniuri</p>
-                                    <p>• Când ai multe comenzi sau mașini, folosește căutarea de sus. Scrie numele clientului sau mașinii și găsești rapid ce cauți</p>
-                                    <p>• Butonul de actualizare (refresh) reîncarcă toate datele. Folosește-l dacă ai impresia că nu vezi ultimele schimbări</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>,
-                document.getElementById('modal-root') || document.body
-            )}
         </>
     );
 };

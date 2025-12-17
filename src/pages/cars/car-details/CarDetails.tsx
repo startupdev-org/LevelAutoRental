@@ -1416,10 +1416,10 @@ export const CarDetails: React.FC = () => {
                                         return (
                                             <>
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <div className="text-4xl font-bold text-gray-900">
+                                                    <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
                                                         {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
                                                         {/* {/* {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString(t('config.date'), { minimumFractionDigits: 0, maximumFractionDigits: 0 })}  */}
-                                                        <span className="text-lg font-normal text-gray-600"> {t('car.perDay')}</span>
+                                                        <span className="text-sm sm:text-base md:text-lg font-normal text-gray-600"> {t('car.perDay')}</span>
                                                     </div>
                                                     {/* Currency Dropdown */}
                                                     <div className="relative ml-4">
@@ -3474,9 +3474,9 @@ export const CarDetails: React.FC = () => {
                                     msOverflowStyle: 'none', // IE/Edge
                                 }}
                             >
-                                <div className="flex gap-6 min-w-max">
+                                <div className="flex gap-6 min-w-max py-4">
                                     {recommendedCars.map((recommendedCar, index) => (
-                                        <div key={recommendedCar.id} className="w-80 flex-shrink-0">
+                                        <div key={recommendedCar.id} className="w-[340px] sm:w-[360px] md:w-80 flex-shrink-0">
                                             <CarCard car={recommendedCar} index={index} />
                                         </div>
                                     ))}

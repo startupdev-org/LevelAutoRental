@@ -8,6 +8,7 @@
         "contact": "Contactează-ne",
         "auth": "Autentificare",
         "language": "Limbă",
+        "currency": "Monedă",
         "dashboard": "Panou de control",
         "profile": "Profil",
         "settings": "Setări",
@@ -954,6 +955,7 @@
             "customer": "Client",
             "car": "Mașină",
             "pickup": "Preluare",
+            "pickupDate": "Data preluării",
             "return": "Returnare",
             "actions": "Acțiuni",
             "accept": "Acceptă",
@@ -1183,7 +1185,12 @@
             "pickups": "Preluări",
             "returns": "Returnări",
             "rental": "Închiriere",
-            "today": "Astăzi"
+            "today": "Astăzi",
+            "noBookings": "Nu există rezervări pentru această zi",
+            "filters": "Filtre",
+            "make": "Marca",
+            "model": "Model",
+            "applyFilters": "Aplică Filtrele"
         },
         "users": {
             "title": "Gestionează conturile utilizatorilor",
@@ -1374,5 +1381,12 @@
     },
     "config": {
         "date": "ro-RO"
+    },
+    "languageCurrencyModal": {
+        "title": "Bine ați venit!",
+        "subtitle": "Selectați limba și moneda preferată",
+        "language": "Limbă",
+        "currency": "Monedă",
+        "confirm": "Confirmă"
     }
 }

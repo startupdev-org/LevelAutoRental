@@ -12,12 +12,17 @@ export const getMonthFromDate = (date: Date): string => {
     return month.charAt(0).toUpperCase() + month.slice(1);
 };
 
-export const formatDateLocal = (date: string | Date, dateType: string): string => {
+export const formatDateLocal = (date: string | Date, _dateType?: string): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
 
     if (isNaN(d.getTime())) return '';
 
-    return new Intl.DateTimeFormat(dateType).format(d);
+    // Format as "dd.mm.yyyy" (e.g., "10.02.2026")
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    
+    return `${day}.${month}.${year}`;
 };
 
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {

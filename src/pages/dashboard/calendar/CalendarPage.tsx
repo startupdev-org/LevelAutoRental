@@ -6,6 +6,7 @@ import {
     addMonths,
     subMonths,
 } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { fetchCars } from "../../../lib/cars";
 import { fetchImagesByCarName } from "../../../lib/db/cars/cars";
 import { BorrowRequestDTO, Car } from "../../../types";
@@ -14,7 +15,7 @@ import { Filter, User, Clock, X } from "lucide-react";
 import { CalendarPageDesktop } from "./CalendarPageDesktop";
 import { useTranslation } from 'react-i18next';
 import { fetchCarsModels } from "../../../lib/db/cars/cars-page/cars";
-import { getMakeLogo, getBorrowRequestsStatusDisplay, getCarName } from "../../../utils/car/car";
+import { getMakeLogo, getCarName } from "../../../utils/car/car";
 import { formatTime } from "../../../utils/time";
 import { fetchBorrowRequestForCalendarPage } from "../../../lib/db/requests/requests";
 
@@ -24,6 +25,7 @@ interface Props {
 
 export const CalendarPage: React.FC<Props> = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     const [showFilters, setShowFilters] = useState(false);
     const [selectedCar, setSelectedCar] = useState<Car | null>(null);
@@ -119,7 +121,9 @@ export const CalendarPage: React.FC<Props> = () => {
     }, []);
 
     const makeToModels = useMemo(() => {
-        const mapping: Record<string, string[]> = {};
+        const mapping: Record<string, Set<string>> = {};
+        const makeCasingMap: Record<string, string> = {}; // Store original casing for each normalized make
+        
         cars.forEach((car) => {
             // Try to get make and model from car object
             let make = '';
@@ -134,21 +138,43 @@ export const CalendarPage: React.FC<Props> = () => {
                 const carName = (car as any).name || `${(car as any).make || ''} ${(car as any).model || ''}`.trim();
                 const parts = carName.split(" ");
                 const firstPart = parts[0];
-                make = firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
-                model = parts.slice(1).join(" ");
+                make = firstPart.includes("-") ? firstPart.split("-")[0].trim() : firstPart.trim();
+                model = parts.slice(1).join(" ").trim();
             }
 
             if (make) {
-                if (!mapping[make]) mapping[make] = [];
-                if (model && !mapping[make].includes(model)) mapping[make].push(model);
+                // Normalize make key (case-insensitive)
+                const normalizedMake = make.toLowerCase();
+                // Store original casing (use first occurrence)
+                if (!makeCasingMap[normalizedMake]) {
+                    makeCasingMap[normalizedMake] = make;
+                }
+                
+                if (!mapping[normalizedMake]) {
+                    mapping[normalizedMake] = new Set<string>();
+                }
+                if (model && model.length > 0) {
+                    mapping[normalizedMake].add(model);
+                }
             }
         });
-        return mapping;
+        
+        // Convert Sets to arrays and sort, using original casing
+        const result: Record<string, string[]> = {};
+        Object.keys(mapping).forEach(normalizedMake => {
+            const originalMake = makeCasingMap[normalizedMake] || normalizedMake;
+            result[originalMake] = Array.from(mapping[normalizedMake]).sort();
+        });
+        
+        return result;
     }, [cars]);
 
     const availableModels = useMemo(() => {
         if (!filters.make) return [];
-        return makeToModels[filters.make] || [];
+        // Normalize the make key to handle case-insensitive matching
+        const normalizedMake = filters.make.toLowerCase();
+        const makeKey = Object.keys(makeToModels).find(key => key.toLowerCase() === normalizedMake);
+        return makeKey ? makeToModels[makeKey] || [] : [];
     }, [filters.make, makeToModels]);
 
     const uniqueMakes = useMemo(() => {
@@ -156,15 +182,26 @@ export const CalendarPage: React.FC<Props> = () => {
             // Try to get make directly from car object
             if ((car as any).make) {
                 const make = (car as any).make;
-                return make.includes("-") ? make.split("-")[0] : make;
+                return make.includes("-") ? make.split("-")[0].trim() : make.trim();
             }
 
             // Fallback to parsing from name
             const carName = (car as any).name || '';
             const firstPart = carName.split(" ")[0];
-            return firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
-        }).filter(make => make); // Filter out empty strings
-        return [...new Set(makes)];
+            return firstPart.includes("-") ? firstPart.split("-")[0].trim() : firstPart.trim();
+        }).filter(make => make && make.length > 0); // Filter out empty strings
+        
+        // Normalize makes (case-insensitive) and remove duplicates
+        const normalizedMakes = new Map<string, string>();
+        makes.forEach(make => {
+            const normalized = make.toLowerCase();
+            if (!normalizedMakes.has(normalized)) {
+                // Keep the first occurrence's original casing
+                normalizedMakes.set(normalized, make);
+            }
+        });
+        
+        return Array.from(normalizedMakes.values()).sort();
     }, [cars]);
 
     const handleFilterChange = (key: "make" | "model", value: string) => {
@@ -267,8 +304,8 @@ export const CalendarPage: React.FC<Props> = () => {
     // Get logo size class based on make
     const getLogoSize = (make: string): string => {
         const makeLower = make.toLowerCase();
-        // Maserati and Audi need bigger logos
-        if (makeLower === 'maserati' || makeLower === 'audi') {
+        // Maserati, Audi, Lincoln, and Porsche need bigger logos
+        if (makeLower === 'maserati' || makeLower === 'audi' || makeLower === 'lincoln' || makeLower === 'porsche') {
             return 'w-6 h-6';
         }
         return 'w-4 h-4';
@@ -492,7 +529,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                 <div className="p-6">
                                     {/* Header */}
                                     <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-lg font-semibold text-white">Filters</h3>
+                                        <h3 className="text-lg font-semibold text-white">{t('admin.calendar.filters')}</h3>
                                         <button
                                             onClick={() => setShowFilters(false)}
                                             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -507,7 +544,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                         {/* Make */}
                                         <div className="flex-1 relative dropdown-container z-[10000]">
                                             <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
-                                                Marca
+                                                {t('admin.calendar.make')}
                                             </label>
                                             <div
                                                 className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer border border-white/10 flex items-center gap-2 ${filters.make ? "text-white" : "text-white/70"}`}
@@ -595,7 +632,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                         {/* Model */}
                                         <div className="flex-1 relative dropdown-container z-[9999]">
                                             <label className="block text-[11px] font-semibold mb-2 uppercase tracking-widest text-white/80">
-                                                Model
+                                                {t('admin.calendar.model')}
                                             </label>
                                             <div
                                                 className={`px-3 py-2 rounded-md bg-white/5 cursor-pointer border border-white/10 flex items-center gap-2 ${!filters.make ? "text-white/50 cursor-not-allowed" : "text-white"
@@ -667,7 +704,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                     </svg>
-                                                    Apply Filters
+                                                    {t('admin.calendar.applyFilters')}
                                                 </button>
                                             </div>
                                         )}
@@ -827,12 +864,16 @@ export const CalendarPage: React.FC<Props> = () => {
                             >
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-semibold text-white">
-                                        {displayDateObj.toLocaleDateString('ro-RO', {
-                                            weekday: 'long',
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        })}
+                                        {(() => {
+                                            const formatted = displayDateObj.toLocaleDateString('ro-RO', {
+                                                weekday: 'long',
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
+                                            });
+                                            // Capitalize the first letter of the weekday
+                                            return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+                                        })()}
                                         {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t('admin.calendar.today')})</span>}
                                     </h3>
                                     {selectedDate && (
@@ -863,30 +904,22 @@ export const CalendarPage: React.FC<Props> = () => {
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ duration: 0.2 }}
                                                         onClick={() => {
-                                                            setSelectedOrder(order);
-                                                            setIsModalOpen(true);
+                                                            // Navigate to request details view
+                                                            navigate(`/admin?section=requests&requestId=${order.id}`);
                                                         }}
                                                         className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
                                                     >
                                                         <div className="space-y-3">
-                                                            <div className="flex items-start justify-between">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                                                        <User className="w-5 h-5 text-white" />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="font-semibold text-white text-sm">{order.customer_email}</div>
-                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{order.id.toString().padStart(4, '0')}</div>
-                                                                    </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                                                    <User className="w-5 h-5 text-white" />
                                                                 </div>
-                                                                {(() => {
-                                                                    const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
-                                                                    return (
-                                                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
-                                                                            {statusDisplay.text}
-                                                                        </span>
-                                                                    );
-                                                                })()}
+                                                                <div>
+                                                                    <div className="font-semibold text-white text-sm">
+                                                                        {order.customer_name || `${order.customer_first_name || ''} ${order.customer_last_name || ''}`.trim() || order.customer_email}
+                                                                    </div>
+                                                                    <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{order.id.toString().padStart(4, '0')}</div>
+                                                                </div>
                                                             </div>
                                                             <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
                                                                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -921,30 +954,22 @@ export const CalendarPage: React.FC<Props> = () => {
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ duration: 0.2 }}
                                                         onClick={() => {
-                                                            setSelectedOrder(order);
-                                                            setIsModalOpen(true);
+                                                            // Navigate to request details view
+                                                            navigate(`/admin?section=requests&requestId=${order.id}`);
                                                         }}
                                                         className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
                                                     >
                                                         <div className="space-y-3">
-                                                            <div className="flex items-start justify-between">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                                                        <User className="w-5 h-5 text-white" />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="font-semibold text-white text-sm">{order.customer_email}</div>
-                                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{(order.id).toString().padStart(4, '0')}</div>
-                                                                    </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                                                    <User className="w-5 h-5 text-white" />
                                                                 </div>
-                                                                {(() => {
-                                                                    const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
-                                                                    return (
-                                                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
-                                                                            {statusDisplay.text}
-                                                                        </span>
-                                                                    );
-                                                                })()}
+                                                                <div>
+                                                                    <div className="font-semibold text-white text-sm">
+                                                                        {order.customer_name || `${order.customer_first_name || ''} ${order.customer_last_name || ''}`.trim() || order.customer_email}
+                                                                    </div>
+                                                                    <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{(order.id).toString().padStart(4, '0')}</div>
+                                                                </div>
                                                             </div>
                                                             <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
                                                                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -965,7 +990,7 @@ export const CalendarPage: React.FC<Props> = () => {
 
                                 {selectedDayPickups.length === 0 && selectedDayReturns.length === 0 && (
                                     <div className="text-center py-8 text-gray-400 text-sm">
-                                        No bookings for this day
+                                        {t('admin.calendar.noBookings')}
                                     </div>
                                 )}
                             </motion.div>

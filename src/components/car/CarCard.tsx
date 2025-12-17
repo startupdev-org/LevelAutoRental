@@ -5,6 +5,7 @@ import { PiSpeedometerFill } from "react-icons/pi";
 import { BiSolidHeart } from "react-icons/bi";
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Car } from '../../types';
 import { Card } from '../ui/Card';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +30,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     const [carWithImages, setCarWithImages] = useState<Car>(car);
     const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<any[]>([]);
     const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     // Load favorite state from localStorage
     const getFavorites = (): string[] => {
@@ -40,20 +42,27 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
         }
     };
 
+    // Helper to convert car ID to string consistently
+    const getCarIdString = (carId: string | number): string => {
+        return String(carId);
+    };
+
     const [isFavorite, setIsFavorite] = useState(() => {
         const favorites = getFavorites();
-        return favorites.includes(carWithImages.id);
+        const carIdString = getCarIdString(carWithImages.id);
+        return favorites.includes(carIdString);
     });
 
     // Save favorites to localStorage
-    const saveFavorite = (carId: string, favorite: boolean) => {
+    const saveFavorite = (carId: string | number, favorite: boolean) => {
         const favorites = getFavorites();
+        const carIdString = getCarIdString(carId);
         if (favorite) {
-            if (!favorites.includes(carId)) {
-                favorites.push(carId);
+            if (!favorites.includes(carIdString)) {
+                favorites.push(carIdString);
             }
         } else {
-            const index = favorites.indexOf(carId);
+            const index = favorites.indexOf(carIdString);
             if (index > -1) {
                 favorites.splice(index, 1);
             }
@@ -66,7 +75,18 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
         saveFavorite(carWithImages.id, newFavoriteState);
+        
+        // Trigger animation
+        setIsAnimating(true);
+        setTimeout(() => setIsAnimating(false), 600);
     };
+
+    // Update favorite state when car changes
+    useEffect(() => {
+        const favorites = getFavorites();
+        const carIdString = getCarIdString(carWithImages.id);
+        setIsFavorite(favorites.includes(carIdString));
+    }, [carWithImages.id]);
 
     // Fetch car images from storage
     useEffect(() => {
@@ -684,12 +704,88 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             handleFavoriteToggle();
                         }}
                     >
+                        <motion.div
+                            animate={{
+                                scale: isAnimating ? [1, 1.5, 1.2, 1] : 1,
+                                rotate: isAnimating ? [0, -10, 10, -5, 5, 0] : 0,
+                            }}
+                            transition={{
+                                duration: 0.6,
+                                ease: "easeOut",
+                            }}
+                            className="relative"
+                    >
                         {React.createElement(BiSolidHeart as any, {
-                            className: `transition-all duration-300 hover:scale-110 ${isFavorite
+                                className: `transition-all duration-300 ${isFavorite
                                 ? 'w-6 h-6 text-red-500'
-                                : 'w-6 h-6 text-gray-400 group-hover/heart:text-red-500'
+                                    : 'w-6 h-6 text-gray-400 group-hover/heart:text-gray-200 group-hover/heart:scale-110 group-hover/heart:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]'
                                 }`
                         })}
+                            
+                            {/* Particle effect when liked */}
+                            <AnimatePresence>
+                                {isAnimating && isFavorite && (
+                                    <>
+                                        {[...Array(8)].map((_, i) => (
+                                            <motion.div
+                                                key={i}
+                                                initial={{ 
+                                                    opacity: 1, 
+                                                    scale: 0,
+                                                    x: 0,
+                                                    y: 0
+                                                }}
+                                                animate={{
+                                                    opacity: [1, 1, 0],
+                                                    scale: [0, 1, 0.5],
+                                                    x: Math.cos((i * Math.PI * 2) / 8) * 30,
+                                                    y: Math.sin((i * Math.PI * 2) / 8) * 30,
+                                                }}
+                                                exit={{ opacity: 0, scale: 0 }}
+                                                transition={{
+                                                    duration: 0.6,
+                                                    delay: i * 0.05,
+                                                    ease: "easeOut"
+                                                }}
+                                                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                                            >
+                                                <motion.div
+                                                    className="w-2 h-2 bg-red-500 rounded-full"
+                                                    animate={{
+                                                        scale: [0, 1, 0],
+                                                    }}
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </>
+                                )}
+                            </AnimatePresence>
+                            
+                            {/* Ripple effect */}
+                            <AnimatePresence>
+                                {isAnimating && (
+                                    <motion.div
+                                        initial={{ 
+                                            scale: 0, 
+                                            opacity: 0.6 
+                                        }}
+                                        animate={{ 
+                                            scale: 2.5, 
+                                            opacity: 0 
+                                        }}
+                                        exit={{ 
+                                            scale: 0, 
+                                            opacity: 0 
+                                        }}
+                                        transition={{ 
+                                            duration: 0.6,
+                                            ease: "easeOut"
+                                        }}
+                                        className="absolute inset-0 -m-3 rounded-full border-2 border-red-400 pointer-events-none"
+                                    />
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
                     </div>
                 </div>
 

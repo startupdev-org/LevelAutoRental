@@ -8,6 +8,7 @@ import { LANGUAGES } from "../../constants";
 import { useTranslation } from 'react-i18next';
 import { hiddenPaths } from '../../data';
 import { useAuth } from '../../hooks/useAuth';
+import { useExchangeRateContext } from '../../context/ExchangeRateContext';
 
 interface HeaderProps {
   forceRender?: boolean;
@@ -19,6 +20,14 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut, isAdmin } = useAuth();
+  const { selectedCurrency, setSelectedCurrency } = useExchangeRateContext();
+  
+  // Currency options
+  const CURRENCIES = [
+    { code: 'MDL', symbol: 'MDL', label: 'MDL' },
+    { code: 'EUR', symbol: '€', label: 'EUR' },
+    { code: 'USD', symbol: '$', label: 'USD' },
+  ];
 
   const shouldRenderHeader = forceRender || !hiddenPaths.some(path => location.pathname.startsWith(path));
 
@@ -474,23 +483,60 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className={`absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]`}
+                    className={`absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]`}
                   >
-                    {LANGUAGES.map(({ code, iconClass }) => (
-                      <button
-                        key={code}
-                        onClick={() => {
-                          i18n.changeLanguage(code);
-                          setCurrentLanguage(code);
-                          setShowLanguageDropdown(false);
-                          localStorage.setItem("selectedLanguage", code);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                      >
-                        <span className={iconClass}></span>
-                        <span>{t(`languages.${code}`)}</span>
-                      </button>
-                    ))}
+                    {/* Languages Section */}
+                    <div className="py-1">
+                      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {t('header.language') || 'Language'}
+                      </div>
+                      {LANGUAGES.map(({ code, iconClass }) => (
+                        <button
+                          key={code}
+                          onClick={() => {
+                            i18n.changeLanguage(code);
+                            setCurrentLanguage(code);
+                            setShowLanguageDropdown(false);
+                            localStorage.setItem("selectedLanguage", code);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
+                        >
+                          <span className={iconClass}></span>
+                          <span>{t(`languages.${code}`)}</span>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 my-1"></div>
+                    
+                    {/* Currency Section */}
+                    <div className="py-1">
+                      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {t('header.currency') || 'Currency'}
+                      </div>
+                      {CURRENCIES.map((currency) => (
+                        <button
+                          key={currency.code}
+                          onClick={() => {
+                            setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
+                            setShowLanguageDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
+                            selectedCurrency === currency.code
+                              ? 'bg-theme-50 text-theme-600'
+                              : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
+                          }`}
+                        >
+                          <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${
+                            currency.code === 'MDL' ? 'text-xs' : 'text-base'
+                          }`}>
+                            {currency.symbol}
+                          </span>
+                          <span className="flex-1 text-left">{currency.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -519,23 +565,60 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className={`absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg ${forceRender ? 'z-[99999999]' : 'z-50'} min-w-[140px]`}
+                    className={`absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg ${forceRender ? 'z-[99999999]' : 'z-50'} min-w-[160px]`}
                   >
-                    {LANGUAGES.map(({ code, iconClass }) => (
-                      <button
-                        key={code}
-                        onClick={() => {
-                          i18n.changeLanguage(code);
-                          setCurrentLanguage(code);
-                          setShowLanguageDropdown(false);
-                          localStorage.setItem("selectedLanguage", code);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                      >
-                        <span className={iconClass}></span>
-                        <span>{t(`languages.${code}`)}</span>
-                      </button>
-                    ))}
+                    {/* Languages Section */}
+                    <div className="py-1">
+                      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {t('header.language') || 'Language'}
+                      </div>
+                      {LANGUAGES.map(({ code, iconClass }) => (
+                        <button
+                          key={code}
+                          onClick={() => {
+                            i18n.changeLanguage(code);
+                            setCurrentLanguage(code);
+                            setShowLanguageDropdown(false);
+                            localStorage.setItem("selectedLanguage", code);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
+                        >
+                          <span className={iconClass}></span>
+                          <span>{t(`languages.${code}`)}</span>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 my-1"></div>
+                    
+                    {/* Currency Section */}
+                    <div className="py-1">
+                      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {t('header.currency') || 'Currency'}
+                      </div>
+                      {CURRENCIES.map((currency) => (
+                        <button
+                          key={currency.code}
+                          onClick={() => {
+                            setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
+                            setShowLanguageDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
+                            selectedCurrency === currency.code
+                              ? 'bg-theme-50 text-theme-600'
+                              : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
+                          }`}
+                        >
+                          <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${
+                            currency.code === 'MDL' ? 'text-xs' : 'text-base'
+                          }`}>
+                            {currency.symbol}
+                          </span>
+                          <span className="flex-1 text-left">{currency.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -721,6 +804,36 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                           ))}
                         </div>
                       </div>
+
+                      {/* Mobile Currency Selector */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                          {t('header.currency') || 'Currency'}
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {CURRENCIES.map((currency) => (
+                            <button
+                              key={currency.code}
+                              onClick={() => {
+                                setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
+                                setIsMenuOpen(false);
+                              }}
+                              className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
+                                selectedCurrency === currency.code
+                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span className={`w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 mb-2 ${
+                                currency.code === 'MDL' ? 'text-sm' : 'text-lg'
+                              }`}>
+                                {currency.symbol}
+                              </span>
+                              <span className="text-xs font-medium">{currency.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -896,6 +1009,32 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               >
                                 <span className={`${iconClass} w-6 h-4 mb-1`}></span>
                                 <span className="text-xs font-medium">{t(`languages.${code}`)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Mobile Currency Selector */}
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                            {t('header.currency') || 'Currency'}
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {CURRENCIES.map((currency) => (
+                              <button
+                                key={currency.code}
+                                onClick={() => {
+                                  setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
+                                  setIsMenuOpen(false);
+                                }}
+                                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
+                                  selectedCurrency === currency.code
+                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span className="text-lg font-semibold mb-1">{currency.symbol}</span>
+                                <span className="text-xs font-medium">{currency.label}</span>
                               </button>
                             ))}
                           </div>

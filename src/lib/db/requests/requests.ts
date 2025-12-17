@@ -821,7 +821,9 @@ export async function fetchBorrowRequestForCalendarPage(
     const user = await getLoggedUser();
     if (!user) return [];
 
-    
+    let query = supabase
+        .from("BorrowRequest")
+        .select("*");
 
     // Filter by month (expects "YYYY-MM")
     if (month) {

@@ -72,6 +72,14 @@ export const Cars: React.FC = () => {
 
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
 
+  // Recommended cars state
+  const [recommendedCars, setRecommendedCars] = useState<CarType[]>([]);
+  const [recommendedLoading, setRecommendedLoading] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoSlidingPaused, setIsAutoSlidingPaused] = useState(false);
+  const recommendedSliderRef = React.useRef<HTMLDivElement>(null);
+  const pauseTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
   async function handleFetchCarsWithPhotos() {
     setLoading(true);
     try {
@@ -193,6 +201,82 @@ export const Cars: React.FC = () => {
     // Always fetch all cars initially to populate the make-to-models mapping
       handleFetchCarsWithPhotos();
   }, []);
+
+  // Fetch recommended cars
+  useEffect(() => {
+    const fetchRecommendedCars = async () => {
+      setRecommendedLoading(true);
+      try {
+        // Fetch available cars for recommendations
+        const generalFilters: CarFilters = { limit: 15 };
+        const generalCars = await fetchFilteredCarsWithPhotos(generalFilters);
+
+        // Shuffle/randomize the array and take first 5
+        const shuffled = generalCars.sort(() => Math.random() - 0.5);
+        const recommended = shuffled.slice(0, 5);
+
+        setRecommendedCars(recommended);
+      } catch (error) {
+        console.error('Error fetching recommended cars:', error);
+      } finally {
+        setRecommendedLoading(false);
+      }
+    };
+
+    fetchRecommendedCars();
+  }, []);
+
+  // Auto-slide recommended cars
+  useEffect(() => {
+    if (recommendedCars.length <= 1 || isAutoSlidingPaused) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => {
+        const next = (prev + 1) % Math.ceil(recommendedCars.length / 1);
+        return next;
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [recommendedCars.length, isAutoSlidingPaused]);
+
+  // Scroll to the current slide
+  useEffect(() => {
+    if (recommendedSliderRef.current) {
+      const cardWidth = 336; // w-80 = 320px + gap 16px = 336px
+      const scrollLeft = currentSlide * cardWidth;
+      recommendedSliderRef.current.scrollTo({
+        left: scrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  }, [currentSlide]);
+
+  // Pause auto-sliding on user interaction
+  const pauseAutoSliding = React.useCallback(() => {
+    setIsAutoSlidingPaused(true);
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+    pauseTimeoutRef.current = setTimeout(() => {
+      setIsAutoSlidingPaused(false);
+    }, 5000);
+  }, []);
+
+  // Handle manual scrolling to pause auto-sliding
+  useEffect(() => {
+    const handleScroll = () => {
+      pauseAutoSliding();
+    };
+
+    const sliderElement = recommendedSliderRef.current;
+    if (sliderElement) {
+      sliderElement.addEventListener('scroll', handleScroll);
+      return () => {
+        sliderElement.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [recommendedCars.length, pauseAutoSliding]);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -367,6 +451,8 @@ export const Cars: React.FC = () => {
       'maserati': '/logos/maserati.png',
       'volkswagen': '/logos/volkswagen-1-logo-black-and-white.png',
       'vw': '/logos/volkswagen-1-logo-black-and-white.png',
+      'lincoln': '/logos/lincoln.png',
+      'porsche': '/logos/porsche.png',
     };
     return logoMap[makeLower] || null;
   };
@@ -374,7 +460,7 @@ export const Cars: React.FC = () => {
   // Get logo size class based on make
   const getLogoSizeClass = (make: string): string => {
     const makeLower = make.toLowerCase();
-    if (makeLower === 'audi' || makeLower === 'maserati') {
+    if (makeLower === 'audi' || makeLower === 'maserati' || makeLower === 'lincoln' || makeLower === 'porsche') {
       return 'w-6 h-6';
     }
     return 'w-4 h-4';
@@ -1114,6 +1200,76 @@ export const Cars: React.FC = () => {
 
           {/* Contract Section */}
           <ContractSection />
+
+          {/* Recommended Cars Slider */}
+          {recommendedCars.length > 0 && (
+            <div className="mt-12">
+              <div className="mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+                  {t('car.recommendedCars', 'Mașini Recomandate')}
+                </h2>
+                <p className="text-gray-600">
+                  {t('car.recommendedDescription', 'Descoperă alte mașini care s-ar putea să îți placă')}
+                </p>
+              </div>
+
+              {recommendedLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <style>{`
+                    .recommended-slider::-webkit-scrollbar {
+                      display: none;
+                    }
+                  `}</style>
+                  <div
+                    ref={recommendedSliderRef}
+                    className="overflow-x-auto pb-4 recommended-slider"
+                    style={{
+                      scrollBehavior: 'smooth',
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                    }}
+                  >
+                    <div className="flex gap-6 min-w-max py-4">
+                      {recommendedCars.map((recommendedCar, index) => (
+                        <div key={recommendedCar.id} className="w-[340px] sm:w-[360px] md:w-80 flex-shrink-0">
+                          <CarCard car={recommendedCar} index={index} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Slide Indicators */}
+                  {recommendedCars.length > 1 && (
+                    <div className="flex justify-center mt-4 space-x-2">
+                      {Array.from({ length: Math.ceil(recommendedCars.length / 1) }).map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setCurrentSlide(index);
+                            pauseAutoSliding();
+                          }}
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            index === currentSlide
+                              ? 'bg-red-500'
+                              : 'bg-gray-300 hover:bg-gray-400'
+                          }`}
+                          aria-label={`Go to slide ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
       </div>

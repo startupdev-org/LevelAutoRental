@@ -1,10 +1,11 @@
 import React from "react";
 import { isSameMonth } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { BorrowRequestDTO, Car } from "../../../types";
 import { motion } from "framer-motion";
 import { User, Clock } from "lucide-react";
 import { useTranslation } from 'react-i18next';
-import { getCarName, getBorrowRequestsStatusDisplay } from "../../../utils/car/car";
+import { getCarName } from "../../../utils/car/car";
 
 interface CalendarPageDesktopProps {
     currentMonth: Date;
@@ -42,6 +43,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
     formatTime,
 }) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const sortedPickups = selectedDayPickups;
     const sortedReturns = selectedDayReturns;
 
@@ -169,12 +171,16 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                 >
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-white">
-                            {displayDateObj.toLocaleDateString(t('config.date'), {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}
+                            {(() => {
+                                const formatted = displayDateObj.toLocaleDateString(t('config.date'), {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                });
+                                // Capitalize the first letter of the weekday
+                                return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+                            })()}
                             {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t('admin.calendar.today')})</span>}
                         </h3>
                         {selectedDate && (
@@ -205,30 +211,22 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.2 }}
                                             onClick={() => {
-                                                setSelectedOrder(order);
-                                                setIsModalOpen(true);
+                                                // Navigate to request details view
+                                                navigate(`/admin?section=requests&requestId=${order.id}`);
                                             }}
                                             className="p-5 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
                                         >
                                             <div className="space-y-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                                            <User className="w-5 h-5 text-white" />
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-semibold text-white text-sm">{order.customer_email}</div>
-                                                            <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{(order.id).toString().padStart(4, '0')}</div>
-                                                        </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                                        <User className="w-5 h-5 text-white" />
                                                     </div>
-                                                    {(() => {
-                                                        const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
-                                                        return (
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
-                                                                {statusDisplay.text}
-                                                            </span>
-                                                        );
-                                                    })()}
+                                                    <div>
+                                                        <div className="font-semibold text-white text-sm">
+                                                            {order.customer_name || `${order.customer_first_name || ''} ${order.customer_last_name || ''}`.trim() || order.customer_email}
+                                                        </div>
+                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{(order.id).toString().padStart(4, '0')}</div>
+                                                    </div>
                                                 </div>
                                                 <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
                                                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -263,30 +261,22 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.2 }}
                                             onClick={() => {
-                                                setSelectedOrder(order);
-                                                setIsModalOpen(true);
+                                                // Navigate to request details view
+                                                navigate(`/admin?section=requests&requestId=${order.id}`);
                                             }}
                                             className="p-5 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
                                         >
                                             <div className="space-y-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                                            <User className="w-5 h-5 text-white" />
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-semibold text-white text-sm">{order.customer_email}</div>
-                                                            <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{(order.id).toString().padStart(4, '0')}</div>
-                                                        </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                                        <User className="w-5 h-5 text-white" />
                                                     </div>
-                                                    {(() => {
-                                                        const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
-                                                        return (
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusDisplay.className} flex-shrink-0`}>
-                                                                {statusDisplay.text}
-                                                            </span>
-                                                        );
-                                                    })()}
+                                                    <div>
+                                                        <div className="font-semibold text-white text-sm">
+                                                            {order.customer_name || `${order.customer_first_name || ''} ${order.customer_last_name || ''}`.trim() || order.customer_email}
+                                                        </div>
+                                                        <div className="text-gray-400 text-xs">{t('admin.calendar.rental')} #{(order.id).toString().padStart(4, '0')}</div>
+                                                    </div>
                                                 </div>
                                                 <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
                                                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -307,7 +297,7 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
 
                     {sortedPickups.length === 0 && sortedReturns.length === 0 && (
                         <div className="text-center py-8 text-gray-400 text-sm">
-                            No bookings for this day
+                            Nu există rezervări pentru această zi
                         </div>
                     )}
                 </motion.div>
