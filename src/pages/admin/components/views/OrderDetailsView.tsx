@@ -9,7 +9,8 @@ import { Car as CarType } from '../../../../types';
 import { OrderDisplay } from '../../../../lib/orders';
 import { cancelRentalOrder, redoRentalOrder } from '../../../../lib/orders';
 import { generateContractFromOrder } from '../../../../lib/contract';
-import { getDateDiffInDays } from '../../../../utils/date';
+import { getDateDiffInDays, calculateRentalDuration } from '../../../../utils/date';
+import { getCarPrice } from '../../../../utils/car/pricing';
 
 interface OrderDetailsViewProps {
     orderId: string;
@@ -27,7 +28,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
         const loadCars = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                
+
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
                     fetchedCars.map(async (car) => {
@@ -44,7 +45,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
                         };
                     })
                 );
-                
+
                 setCars(carsWithImages);
             } catch (error) {
                 console.error('Error loading cars:', error);
@@ -56,7 +57,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
     const loadOrders = async () => {
         if (cars.length === 0) return;
         try {
-            const { fetchRentalsOnly } = await import('../../../../lib/orders');
+            const { fetchRentalsForCalendarPageByMonth: fetchRentalsOnly } = await import('../../../../lib/orders');
             const data = await fetchRentalsOnly(cars);
             const rentalsOnly = data.filter(order => order.type === 'rental');
             setOrdersList(rentalsOnly);
@@ -142,7 +143,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
             return;
         }
 
-        console.log('Starting contract generation...', { order, car });
+        
         setIsGeneratingContract(true);
         try {
             await generateContractFromOrder(
@@ -153,7 +154,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
                     customerPhone: order.customerPhone || '',
                 } as any
             );
-            console.log('Contract generation completed successfully');
+            
         } catch (error) {
             console.error('Error generating contract:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -240,7 +241,26 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ orderId }) =
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Price</p>
-                            <span className="text-white text-lg font-bold">{(order.amount ?? 0) > 0 ? `${order.amount} MDL` : `${getDateDiffInDays(order.pickupDate, order.returnDate) * car.price_per_day} MDL`}</span>
+                            <span className="text-white text-lg font-bold">
+                                {(() => {
+                                    if ((order.amount ?? 0) > 0) {
+                                        return `${order.amount} MDL`;
+                                    }
+                                    // Calculate price with discount applied
+                                    const rentalDays = getDateDiffInDays(order.pickupDate, order.returnDate);
+                                    const pricePerDayStr = getCarPrice(rentalDays, car);
+                                    let pricePerDay = parseFloat(pricePerDayStr) || car.price_per_day || 0;
+                                    
+                                    // Apply discount if exists
+                                    const carDiscount = car.discount_percentage || (car as any).discount || 0;
+                                    if (carDiscount > 0) {
+                                        pricePerDay = pricePerDay * (1 - carDiscount / 100);
+                                    }
+                                    
+                                    const totalPrice = Math.round(rentalDays * pricePerDay);
+                                    return `${totalPrice} MDL`;
+                                })()}
+                            </span>
                         </div>
                     </div>
 

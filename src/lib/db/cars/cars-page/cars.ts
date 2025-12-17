@@ -1,6 +1,6 @@
 import { supabase } from '../../../supabase';
 import { Car, CarFilterOptions } from '../../../../types';
-import { fetchCarWithImagesById, fetchImagesByCarName } from '../cars';
+import { fetchImagesByCarName } from '../cars';
 
 /**
  * Filter interface for car queries
@@ -65,7 +65,6 @@ export async function fetchCarsMake() {
             return [];
         }
 
-        // console.log('cars make fetched: ', data);
 
         // Make them distinct
         const distinctMakes = [...new Set(data.map(car => car.make))];
@@ -82,7 +81,6 @@ export async function fetchCarsMake() {
  */
 export async function fetchCarsModels(make: string): Promise<string[]> {
     try {
-        // console.log('fetching model for car make: ', make);
         const { data, error } = await supabase
             .from("Cars")
             .select("model")
@@ -93,7 +91,6 @@ export async function fetchCarsModels(make: string): Promise<string[]> {
             return [];
         }
 
-        // console.log('the fetched models are: ', data)
 
         return data?.map(item => item.model) ?? [];
     } catch (err) {
@@ -116,13 +113,13 @@ export async function fetchFilteredCarsWithPhotos(filters: CarFilters): Promise<
                 const { mainImage, photoGallery } = await fetchImagesByCarName(carName)
                 return {
                     ...car,
+                    discount_percentage: car.discount,
                     image_url: mainImage,
                     photo_gallery: photoGallery
                 };
             })
         );
 
-        console.log('cars with images are: ', carsWithImages)
 
         return carsWithImages;
     } catch (err) {
@@ -137,7 +134,6 @@ export async function fetchFilteredCarsWithPhotos(filters: CarFilters): Promise<
  */
 export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
     try {
-        console.log('fetching filtered cars from database', filters);
 
         let query = supabase
             .from("Cars")
@@ -198,8 +194,7 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
         if (filters.fuelType) {
             // Map display fuel types to database values
             const fuelTypeMap: Record<string, string> = {
-                'Petrol': 'gasoline',
-                'Gasoline': 'gasoline',
+                'Benzina': 'gasoline',
                 'Diesel': 'diesel',
                 'Electric': 'electric',
                 'Hybrid': 'hybrid'
@@ -230,7 +225,6 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
             return [];
         }
 
-        console.log('!!!! filtered cars fetched: ', data);
 
         return data ?? [];
     } catch (err) {
@@ -256,12 +250,12 @@ export async function fetchCarsWithMainImage(): Promise<(Car[])> {
             const { mainImage } = await fetchImagesByCarName(carName)
             return {
                 ...car,
+                discount_percentage: car.discount,
                 image_url: mainImage,
             };
         })
     );
 
-    console.log('cars with main image: ', carsWithImages)
 
     return carsWithImages;
 }
@@ -283,6 +277,7 @@ export async function fetchCarsWithPhotos(limit?: number): Promise<(Car[])> {
             const { mainImage, photoGallery } = await fetchImagesByCarName(carName)
             return {
                 ...car,
+                discount_percentage: car.discount,
                 image_url: mainImage,
                 photo_gallery: photoGallery
             };
@@ -296,7 +291,6 @@ export async function fetchCarsWithMainImageFilteredPaginated(
     filters: CarFilterOptions
 ): Promise<{ cars: Car[]; total: number }> {
 
-    console.log('the filters are: ', filters)
     const page = filters.page || 1;
     const pageSize = filters.pageSize || 10;
 

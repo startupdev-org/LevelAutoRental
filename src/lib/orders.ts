@@ -1,6 +1,10 @@
 import { supabase, supabaseAdmin } from './supabase';
-import { BorrowRequest, Car, OrderDisplay, Rental } from '../types';
-import { fetchImagesByCarName } from './db/cars/cars';
+import { BorrowRequest, Car, OrderDisplay, Rental, RentalDTO } from '../types';
+import { fetchCarById, fetchImagesByCarName } from './db/cars/cars';
+import { fetchUserProfiles } from './db/user/profile';
+import { fetchBorrowRequests } from './db/requests/requests';
+import { getCarPrice } from '../utils/car/pricing';
+import { formatDateForSQL, toRentalDTO } from './db/rentals/rentals';
 
 /**
  * Update car status based on rental status
@@ -78,66 +82,83 @@ export async function fetchRentals(): Promise<Rental[]> {
 /**
  * Fetch only rentals (not requests) and format them for display
  */
-export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
+export async function fetchRentalsForCalendarPage(
+  month: Date,
+  carId?: string,
+): Promise<RentalDTO[]> {
   try {
-    const rentals = await fetchRentals();
 
-    // If no data from database, return empty array
-    if (rentals.length === 0) {
+    let query = supabase
+      .from("Rentals")
+      .select("*");
+
+    if (month) {
+      const year = month.getFullYear();
+      const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
+
+      // First day of current month
+      const firstDay = formatDateForSQL(year, m, 1);
+
+      // First day of next month using JS Date rollover
+      const nextMonthDate = new Date(year, m + 1, 1);
+      const nextMonthFirst = formatDateForSQL(
+        nextMonthDate.getFullYear(),
+        nextMonthDate.getMonth(), // always 0–11
+        1
+      );
+
+      query = query
+        .lt("start_date", nextMonthFirst)
+        .gte("end_date", firstDay);
+    }
+
+    if (carId) {
+      // if there is a selected car, fetch the orders for that car
+      query = query.eq('car_id', carId)
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching rentals for calendar page:", error);
       return [];
     }
 
-    // Collect all unique user IDs
+    return data;
+  } catch (error) {
+    console.error('Error in fetchRentalsOnly:', error);
+    // Return empty array on error - only show real data from Supabase
+    return [];
+  }
+}
+
+/**
+ * Fetch all rentals (only) and format them for display - used in Orders page
+ */
+export async function fetchRentalsForCalendarPageByMonth(cars: Car[]): Promise<OrderDisplay[]> {
+  try {
+    // Fetch only rentals (no requests)
+    const rentals = await fetchRentals();
+
+    // Collect all unique user IDs (filter out null/undefined for guest bookings)
     const userIds = new Set<string>();
-    rentals.forEach(r => userIds.add(r.user_id));
+    rentals.forEach(r => {
+      if (r.user_id) userIds.add(r.user_id);
+    });
 
     // Fetch user profiles if available
-    const profiles = await fetchUserProfiles(Array.from(userIds));
-
-    const orders: OrderDisplay[] = [];
-
-    // Collect all request IDs from rentals that have them
-    const requestIds = new Set<number>();
-    rentals.forEach(r => {
-      const requestId = (r as any).request_id;
-      if (requestId) {
-        requestIds.add(typeof requestId === 'number' ? requestId : parseInt(requestId));
+    const profilesArray = await fetchUserProfiles(Array.from(userIds));
+    const profiles = new Map<string, any>();
+    profilesArray.forEach(profile => {
+      if (profile.id) {
+        profiles.set(profile.id, profile);
       }
     });
 
-    // Fetch customer information and options from BorrowRequest table for rentals created from requests
-    const requestCustomerMap = new Map<number, { name: string; email: string; phone: string; firstName?: string; lastName?: string }>();
-    const requestOptionsMap = new Map<number, any>();
-    if (requestIds.size > 0) {
-      try {
-        const { data: requestsData, error: requestsError } = await supabase
-          .from('BorrowRequest')
-          .select('id, customer_name, customer_email, customer_phone, customer_first_name, customer_last_name, options')
-          .in('id', Array.from(requestIds));
+    const orders: OrderDisplay[] = [];
 
-        if (!requestsError && requestsData) {
-          requestsData.forEach((request: any) => {
-            requestCustomerMap.set(request.id, {
-              name: request.customer_name || '',
-              email: request.customer_email || '',
-              phone: request.customer_phone || '',
-              firstName: request.customer_first_name,
-              lastName: request.customer_last_name,
-            });
-            // Store options for later use
-            if (request.options) {
-              requestOptionsMap.set(request.id, request.options);
-            }
-          });
-        }
-      } catch (err) {
-        console.debug('Error fetching customer info from requests:', err);
-      }
-    }
-
-    // Process rentals only - use Promise.all to handle async car fetching
-    const processedOrders = await Promise.all(rentals.map(async (rental) => {
-      // Handle both string and number car_id
+    // Process rentals - use Promise.all to handle async car fetching
+    const processedRentals = await Promise.all(rentals.map(async (rental) => {
       const carIdMatch = typeof rental.car_id === 'number'
         ? rental.car_id
         : parseInt(rental.car_id);
@@ -189,39 +210,17 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
           console.error(`Error fetching car ${carIdMatch} from database:`, err);
         }
       }
-
-      // Get customer information - prefer from request if rental was created from a request
-      const requestId = (rental as any).request_id;
-      const requestCustomer = requestId ? requestCustomerMap.get(typeof requestId === 'number' ? requestId : parseInt(requestId)) : null;
-
-      let email = '';
-      let phone = '';
-      let firstName = '';
-      let lastName = '';
-      let userName = '';
-
-      if (requestCustomer) {
-        // Use customer info from the original request
-        email = requestCustomer.email;
-        phone = requestCustomer.phone;
-        firstName = requestCustomer.firstName || '';
-        lastName = requestCustomer.lastName || '';
-        userName = requestCustomer.name ||
-          (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || email.split('@')[0] || 'Unknown');
-      } else {
-        // Fallback to profile lookup
-        const profile = profiles.get(rental.user_id);
-        email = profile?.email || rental.user?.email || '';
-        phone = profile?.phone || '';
-        firstName = profile?.firstName || '';
-        lastName = profile?.lastName || '';
-        userName = (firstName && lastName)
-          ? `${firstName} ${lastName}`
-          : firstName || lastName
-            ? `${firstName}${lastName}`
-            : (email ? email.split('@')[0] : '')
-            || `User ${rental.user_id.slice(0, 8)}`;
-      }
+      const profile = rental.user_id ? profiles.get(rental.user_id) : null;
+      const email = profile?.email || rental.user?.email || '';
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      const phoneNumber = profile?.phone_number || '';
+      const userName = (firstName && lastName)
+        ? `${firstName} ${lastName}`
+        : firstName || lastName
+          ? `${firstName}${lastName}`
+          : (email ? email.split('@')[0] : '')
+          || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
 
       // Calculate amount based on days and car price
       const startDate = new Date(rental.start_date || new Date());
@@ -229,66 +228,24 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
       const amount = rental.total_amount || (car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0);
 
-      // Format dates properly
-      const formatDate = (dateStr: string | Date | null | undefined): string => {
-        if (!dateStr) return '';
-        if (typeof dateStr === 'string') {
-          // If it's already in YYYY-MM-DD format, return as is
-          if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-            return dateStr.split('T')[0];
-          }
-          // Otherwise parse and format
-          const date = new Date(dateStr);
-          return date.toISOString().split('T')[0];
-        }
-        return new Date(dateStr).toISOString().split('T')[0];
-      };
+      // Get the stored price_per_day from rental, or fallback to car's current price
+      const pricePerDay = rental.price_per_day || car?.price_per_day || 0;
 
-      // Parse features/options from rental
-      // First priority: options from the original request (if rental was created from a request)
-      const rentalRequestId = (rental as any).request_id;
-      const features = (rental as any).features;
-      let options: Record<string, any> | undefined = undefined;
-
-      if (rentalRequestId && requestOptionsMap.has(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId))) {
-        // Use options from the original request
-        options = requestOptionsMap.get(typeof rentalRequestId === 'number' ? rentalRequestId : parseInt(rentalRequestId));
-      } else {
-        // Fallback to features parsing from rental
-        if (features) {
-          // If features is an array of strings, convert to options object
-          if (Array.isArray(features)) {
-            options = {};
-            features.forEach((feature: string) => {
-              // Map feature names to option keys
-              const featureLower = feature.toLowerCase();
-              if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-                options!.unlimitedKm = true;
-              } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
-                options!.speedLimitIncrease = true;
-              } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-                options!.tireInsurance = true;
-              } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
-                options!.personalDriver = true;
-              } else if (featureLower.includes('priority')) {
-                options!.priorityService = true;
-              } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-                options!.childSeat = true;
-              } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-                options!.simCard = true;
-              } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
-                options!.roadsideAssistance = true;
-              }
-            });
-          } else if (typeof features === 'string') {
-            try {
-              options = JSON.parse(features);
-            } catch (e) {
-              options = {};
-            }
-          } else {
-            options = features;
+      // Get options - if not in rental, try to fetch from linked request
+      let rentalOptions = (rental as any).options;
+      if (!rentalOptions && (rental as any).request_id) {
+        try {
+          const { data: requestData } = await supabase
+            .from('BorrowRequest')
+            .select('options')
+            .eq('id', (rental as any).request_id)
+            .single();
+          
+          if (requestData?.options) {
+            rentalOptions = requestData.options;
           }
+        } catch (err) {
+          console.debug('Could not fetch options from linked request:', err);
         }
       }
 
@@ -297,29 +254,27 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
         type: 'rental' as const,
         customerName: userName,
         customerEmail: email,
-        customerPhone: phone || '',
-        customerFirstName: firstName || undefined,
-        customerLastName: lastName || undefined,
+        customerPhone: phoneNumber,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
-        pickupDate: formatDate(rental.start_date),
-        pickupTime: rental.start_time || '09:00',
-        returnDate: formatDate(rental.end_date),
-        returnTime: rental.end_time || '17:00',
-        status: rental.rental_status || (rental as any).rental_status || 'CONTRACT',
+        pickupDate: rental.start_date,
+        pickupTime: rental.start_time,
+        returnDate: rental.end_date,
+        returnTime: rental.end_time,
+        status: rental.rental_status || (rental as any).rental_status,
         total_amount: amount.toString(),
         amount: amount,
-        createdAt: rental.created_at || new Date().toISOString(),
-        carId: rental.car_id?.toString() || '',
-        userId: rental.user_id || '',
+        createdAt: rental.created_at,
+        carId: rental.car_id,
+        userId: rental.user_id,
+        price_per_day: pricePerDay,
+        options: rentalOptions,
+        request_id: (rental as any).request_id,
         contract_url: (rental as any).contract_url || undefined,
-        features: features,
-        options: options,
-        request_id: (rental as any).request_id || undefined,
       } as OrderDisplay;
     }));
 
-    orders.push(...processedOrders);
+    orders.push(...processedRentals);
 
     // Sort by creation date (newest first)
     return orders.sort((a, b) => {
@@ -328,8 +283,7 @@ export async function fetchRentalsOnly(cars: Car[]): Promise<OrderDisplay[]> {
       return dateB - dateA;
     });
   } catch (error) {
-    console.error('Error in fetchRentalsOnly:', error);
-    // Return empty array on error - only show real data from Supabase
+    console.error('Error in fetchRentalsForCalendarPageByMonth:', error);
     return [];
   }
 }
@@ -344,13 +298,23 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       fetchRentals(),
     ]);
 
-    // Collect all unique user IDs
+    // Collect all unique user IDs (filter out null/undefined for guest bookings)
     const userIds = new Set<string>();
-    requests.forEach(r => userIds.add(r.user_id));
-    rentals.forEach(r => userIds.add(r.user_id));
+    requests.forEach(r => {
+      if (r.user_id) userIds.add(r.user_id);
+    });
+    rentals.forEach(r => {
+      if (r.user_id) userIds.add(r.user_id);
+    });
 
     // Fetch user profiles if available
-    const profiles = await fetchUserProfiles(Array.from(userIds));
+    const profilesArray = await fetchUserProfiles(Array.from(userIds));
+    const profiles = new Map<string, any>();
+    profilesArray.forEach(profile => {
+      if (profile.id) {
+        profiles.set(profile.id, profile);
+      }
+    });
 
     const orders: OrderDisplay[] = [];
 
@@ -409,8 +373,9 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       }
       const profile = profiles.get(request.user_id);
       const email = profile?.email || request.user?.email || '';
-      const firstName = profile?.firstName || '';
-      const lastName = profile?.lastName || '';
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      const phoneNumber = profile?.phone_number || '';
       const userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
@@ -423,6 +388,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         type: 'request' as const,
         customerName: userName,
         customerEmail: email,
+        customerPhone: phoneNumber,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
         pickupDate: request.start_date.includes(' ') ? request.start_date.split(' ')[0] : request.start_date.split('T')[0],
@@ -435,6 +401,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: request.created_at,
         carId: request.car_id,
         userId: request.user_id,
+        contract_url: (request as any).contract_url || undefined,
       } as OrderDisplay;
     }));
 
@@ -493,16 +460,17 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
           console.error(`Error fetching car ${carIdMatch} from database:`, err);
         }
       }
-      const profile = profiles.get(rental.user_id);
+      const profile = rental.user_id ? profiles.get(rental.user_id) : null;
       const email = profile?.email || rental.user?.email || '';
-      const firstName = profile?.firstName || '';
-      const lastName = profile?.lastName || '';
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      const phoneNumber = profile?.phone_number || '';
       const userName = (firstName && lastName)
         ? `${firstName} ${lastName}`
         : firstName || lastName
           ? `${firstName}${lastName}`
           : (email ? email.split('@')[0] : '')
-          || `User ${rental.user_id.slice(0, 8)}`;
+          || (rental.user_id ? `User ${rental.user_id.slice(0, 8)}` : 'Guest User');
 
       // Calculate amount based on days and car price
       const startDate = new Date(rental.start_date || new Date());
@@ -510,11 +478,33 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
       const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
       const amount = rental.total_amount || (car ? ((car as any)?.pricePerDay || car.price_per_day || 0) * days : 0);
 
+      // Get the stored price_per_day from rental, or fallback to car's current price
+      const pricePerDay = rental.price_per_day || car?.price_per_day || 0;
+
+      // Get options - if not in rental, try to fetch from linked request
+      let rentalOptions = (rental as any).options;
+      if (!rentalOptions && (rental as any).request_id) {
+        try {
+          const { data: requestData } = await supabase
+            .from('BorrowRequest')
+            .select('options')
+            .eq('id', (rental as any).request_id)
+            .single();
+          
+          if (requestData?.options) {
+            rentalOptions = requestData.options;
+          }
+        } catch (err) {
+          console.debug('Could not fetch options from linked request:', err);
+        }
+      }
+
       return {
         id: rental.id,
         type: 'rental' as const,
         customerName: userName,
         customerEmail: email,
+        customerPhone: phoneNumber,
         carName: (car as any)?.name || `${car?.make || ''} ${car?.model || ''}`.trim() || 'Unknown Car',
         avatar: car?.image_url || (car as any)?.image || '',
         pickupDate: rental.start_date,
@@ -527,6 +517,10 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         createdAt: rental.created_at,
         carId: rental.car_id,
         userId: rental.user_id,
+        price_per_day: pricePerDay,
+        options: rentalOptions,
+        request_id: (rental as any).request_id,
+        contract_url: (rental as any).contract_url || undefined,
       } as OrderDisplay;
     }));
 
@@ -610,22 +604,21 @@ export async function processActiveRentals(cars: Car[]): Promise<{ success: bool
             continue;
           }
 
-          // Also update the BorrowRequest status to EXECUTED when start date has passed
+          // Also update the BorrowRequest status to APPROVED when start date has passed
           const { error: updateRequestError } = await supabase
             .from('BorrowRequest')
             .update({
-              status: 'EXECUTED',
+              status: 'APPROVED',
               updated_at: new Date().toISOString()
             })
             .eq('id', request.id);
 
           if (updateRequestError) {
-            console.error(`Error updating request status to EXECUTED for request ${request.id}:`, updateRequestError);
+            console.error(`Error updating request status to APPROVED for request ${request.id}:`, updateRequestError);
             continue;
           }
 
           processed++;
-          console.log(`Updated rental to ACTIVE and request to EXECUTED for request ${request.id}`);
         }
 
         // Update car status to "booked" when rental becomes ACTIVE
@@ -732,10 +725,10 @@ export async function processStatusTransitions(cars: Car[]): Promise<{ success: 
  */
 export async function cancelRentalOrder(rentalId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // First, get the rental to find the car_id
+    // First, get the rental to find the car_id and request_id
     const { data: rental, error: fetchError } = await supabase
       .from('Rentals')
-      .select('car_id')
+      .select('car_id, request_id')
       .eq('id', rentalId)
       .single();
 
@@ -757,6 +750,22 @@ export async function cancelRentalOrder(rentalId: string): Promise<{ success: bo
 
     // Update car status - check if there are other ACTIVE rentals
     await updateCarStatusBasedOnRentals(rental.car_id);
+
+    // If this rental was created from a request, update the request status back to PENDING
+    if (rental.request_id) {
+      const { error: requestError } = await supabase
+        .from('BorrowRequest')
+        .update({
+          status: 'PENDING',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', rental.request_id);
+
+      if (requestError) {
+        console.error('Error updating borrow request status:', requestError);
+        // Don't fail the entire operation if request update fails
+      }
+    }
 
     return { success: true };
   } catch (error) {

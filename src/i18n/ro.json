@@ -107,7 +107,7 @@
                 "description": "Cu totul pregătit, porniți spre destinația dorită, beneficiind de libertatea și confortul oferit de flota noastră premium."
             }
         },
-        "tagline": "Level Auto Rental – ușor, rapid, comod"
+        "tagline": "Level Auto Rental - ușor, rapid, comod"
     },
     "testimonials": {
         "sectionLabel": "Recenzii",
@@ -338,6 +338,14 @@
                 "Vânzare": "Vânzare",
                 "Detailing auto": "Detailing auto"
             },
+            "home-page": {
+                "1": "Serviciu uimitor! Mașina a fost curată, fiabilă, iar procesul de rezervare extrem de simplu. Cu siguranță voi mai folosi acest serviciu!",
+                "2": "Cea mai bună experiență de închiriere auto pe care am avut-o. Prețuri excelente, serviciu clienți extraordinar, iar mașina a depășit așteptările mele.",
+                "3": "Serviciu foarte profesional. Preluarea a fost rapidă, iar mașina era exact cum a fost descrisă. Recomand cu încredere!",
+                "4": "Experiență fantastică de la început până la sfârșit. Site-ul este ușor de folosit, iar mașina a fost perfectă pentru călătoria noastră în familie.",
+                "5": "Serviciu excelent! Mașina a fost în stare perfectă, iar procesul de rezervare foarte simplu. Prețuri rezonabile, recomand cu încredere!",
+                "6": "Foarte mulțumit de serviciu! Mașina corespundea descrierii, iar personalul a fost profesionist. Cu siguranță voi reveni."
+            },
             "comments": {
                 "1": "Am avut experiență cu mai multe servicii de închiriere, iar acesta este, probabil, unul dintre cele mai rapide și de încredere. Mașinile îngrijite, contractul este transparent și bine detaliat, fără condiții speciale sau plată în plus pentru plecări peste hotare, loiali. Dacă ar trebui să recomand un parc de închirieri, cu siguranță ar fi acesta.",
                 "2": "Totul super 🔥 service la nivel, masini fain, personal de nota 10. 🙌😍",
@@ -541,6 +549,13 @@
         }
     },
     "car": {
+        "specifications": "Specificații",
+        "characteristics": "Caracteristici vehicul",
+        "technicalSpecs": "Specificații tehnice",
+        "seats": "Locuri",
+        "transmissionLabel": "Transmisie",
+        "fuelLabel": "Combustibil",
+        "bodyType": "Caroserie",
         "mileageLimit": "200km/zi",
         "seeCar": "Vezi mașina",
         "seeMorePhotos": "Vezi încă {{count}} fotografii",
@@ -555,11 +570,22 @@
         "fuel": {
             "gasoline": "Benzină",
             "diesel": "Diesel",
-            "petrol": "Benzină",
+            "benzina": "Benzină",
             "hybrid": "Hibrid",
             "electric": "Electric"
         },
-        "perDay": "pe zi"
+        "perDay": "pe zi",
+        "available": "Disponibil",
+        "chooseDates": "Alegeți datele",
+        "rentalCost": "Costul închirierii",
+        "rental": "Închiriere",
+        "year": "an",
+        "writeOnTelegram": "Scrie-ne pe Telegram",
+        "contactHelpText": "Ne puteți scrie sau apela, vă vom ajuta",
+        "discount": "REDUCERE",
+        "days": "ZILE",
+        "equipment": "Echipament",
+        "equipmentIncluded": "Echipament inclus"
     },
     "filters": {
         "title": "Filtre",
@@ -589,7 +615,7 @@
         "fuel": {
             "label": "Combustibil",
             "any": "Oricare",
-            "petrol": "Benzină",
+            "benzina": "Benzină",
             "gasoline": "Benzină",
             "diesel": "Diesel",
             "hybrid": "Hibrid",
@@ -801,6 +827,7 @@
         "bookings": {
             "title": "Rezervările mele",
             "details": "Detalii",
+            "contract": "Contract",
             "receipt": "Chitanță",
             "noBookings": "Nicio rezervare încă",
             "startExploring": "Începe să explorezi flota noastră premium!",
@@ -917,10 +944,10 @@
             "rentalRequests": "Cereri de Închiriere",
             "pending": "În așteptare",
             "approved": "Aprobat",
+            "processed": "Procesat",
             "rejected": "Respins",
             "search": "Caută cereri...",
             "sortBy": "Sortează după:",
-            "pickupDate": "Data Preluării",
             "amount": "Sumă",
             "status": "Status",
             "clearSort": "Șterge Sortarea",
@@ -940,11 +967,21 @@
             "hideInPending": "Ascunde in asteptare",
             "showApproved": "Arata acceptate",
             "hideApproved": "Ascunde acceptate",
+            "showProcessed": "Arată procesate",
+            "hideProcessed": "Ascunde procesate",
             "addRental": "Adaugă Închiriere",
             "createRequest": "Creează Cerere Nouă",
             "createNew": "Creează Cerere Nouă",
             "createRental": "Creează Închiriere",
             "editRequest": "Editează Cererea",
+            "showing": "Afișare",
+            "to": "la",
+            "of": "din",
+            "requests": "cereri",
+            "previous": "Anterior",
+            "page": "Pagina",
+            "ofPage": "din",
+            "next": "Următorul",
             "selectCar": "Selectare automobil",
             "selectACar": "Selectează automobil",
             "requestAccepted": "Cerere acceptată! Închirierea a fost creată cu succes.",
@@ -1076,7 +1113,7 @@
             "delete": "Șterge",
             "addCar": "Adaugă Mașină",
             "noCars": "Nicio mașină găsită",
-            "seats": "locuri",
+            "seats": "Locuri",
             "basicInfo": "Informații de Bază",
             "carName": "Nume Mașină",
             "bodyType": "Tip Caroserie",
@@ -1102,7 +1139,7 @@
             "gallery": "Galerie",
             "addNewDescription": "Creează o nouă intrare de vehicul în flotă",
             "discountPercentage": "Reducere Preț (%)",
-            "discountPercentageHint": "Introduceți procentajul de reducere (0-100)",
+            "discountPercentageHint": "Procent reducere (0-100)",
             "discountedPrice": "Preț cu reducere",
             "saving": "Se salvează...",
             "categorySuv": "SUV",
@@ -1126,7 +1163,12 @@
             "imageUploaded": "Imagine încărcată cu succes!",
             "galleryImageUploaded": "Imagine din galerie încărcată cu succes!",
             "imageUploadError": "Eroare la încărcarea imaginii. Te rugăm să încerci din nou.",
-            "confirmDeleteCar": "Ești sigur că vrei să ștergi această mașină?"
+            "confirmDeleteCar": "Ești sigur că vrei să ștergi această mașină?",
+            "imageInstructions": {
+                "size": "Dimensiunea maximă: {{size}}",
+                "formats": "Formate acceptate: PNG, JPG, JPEG, WEBP",
+                "recommendation": "Recomandare: Imagine clară, de înaltă calitate (minimum 800x600 pixeli)"
+            }
         },
         "calendar": {
             "title": "Vezi și gestionează calendarul rezervărilor",
@@ -1191,15 +1233,13 @@
             "downloadContract": "Descarcă Contract"
         },
         "requestDetails": {
-            "title": "Cerere #{{id}}",
+            "title": "Cerere Închiriere",
             "description": "Vezi și gestionează detaliile cererii de închiriere",
             "rentalRequest": "Cerere de închiriere",
             "rentalPeriod": "Perioada închirierii",
             "contactInformation": "Date de contact",
             "rentalOptions": "Opțiuni de închiriere",
             "priceDetails": "Detalii preț",
-            "pickupDate": "Data preluării",
-            "returnDate": "Data returnării",
             "pricePerDay": "Preț pe zi",
             "numberOfDays": "Număr zile",
             "basePrice": "Preț de bază",
@@ -1331,5 +1371,8 @@
         "model": "Model",
         "selectModel": "Selectează modelul",
         "search": "Caută"
+    },
+    "config": {
+        "date": "ro-RO"
     }
 }

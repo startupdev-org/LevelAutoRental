@@ -8,6 +8,7 @@ import {
     Loader2,
     Plus,
     Save,
+    Trash2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { fetchCarById } from '../../../../lib/cars';
@@ -60,17 +61,9 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                             : [];
 
                     // Debug logging
-                    console.log('Fetched car data:', fetchedCar);
-                    console.log('Fetched price ranges:', {
-                        price_2_4_days: fetchedCar.price_2_4_days,
-                        price_5_15_days: fetchedCar.price_5_15_days,
-                        price_16_30_days: fetchedCar.price_16_30_days,
-                        price_over_30_days: fetchedCar.price_over_30_days,
-                    });
-                    console.log('Fetched image URLs:', {
-                        image_url: fetchedCar.image_url,
-                        photo_gallery: fetchedCar.photo_gallery,
-                    });
+                    
+                    
+                    
 
                     setFormData({
                         ...fetchedCar,
@@ -93,6 +86,21 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
         };
         loadCar();
     }, [car.id]);
+
+    // Prevent page refresh when edit modal is open
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = ''; // Chrome requires returnValue to be set
+            return ''; // Some browsers show this message
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -117,34 +125,34 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
             const oldName = (car as any).name || `${car.make} ${car.model}`;
             const newName = (formData as any).name || `${formData.make} ${formData.model}`;
 
-            console.log(`[CarUpdate] Checking name change: "${oldName}" -> "${newName}" for car ID ${(car as any).id}`);
+            
 
             if (oldName !== newName && updatedImageUrl && !updatedImageUrl.includes('http')) {
                 // Name changed, update image URLs to new folder structure
                 const oldFolderName = createFolderName(oldName);
                 const newFolderName = createFolderName(newName);
 
-                console.log(`[CarUpdate] Folder names: old="${oldFolderName}", new="${newFolderName}"`);
-                console.log(`[CarUpdate] Original URL: ${updatedImageUrl}`);
-                console.log(`[CarUpdate] URL contains old folder? ${updatedImageUrl.includes(oldFolderName)}`);
+                
+                
+                
 
                 // Only update if the URL actually contains the old folder name
                 if (updatedImageUrl.includes(oldFolderName)) {
                     updatedImageUrl = updatedImageUrl.replace(oldFolderName, newFolderName);
-                    console.log(`[CarUpdate] Updated URL: ${updatedImageUrl}`);
+                    
                 }
 
                 if (updatedPhotoGallery && Array.isArray(updatedPhotoGallery)) {
                     updatedPhotoGallery = updatedPhotoGallery.map((url: string) => {
                         if (url && url.includes(oldFolderName)) {
-                            console.log(`[CarUpdate] Updating gallery URL: ${url} -> ${url.replace(oldFolderName, newFolderName)}`);
+                            
                             return url.replace(oldFolderName, newFolderName);
                         }
                         return url;
                     });
                 }
             } else {
-                console.log(`[CarUpdate] No name change or no local URLs to update`);
+                
             }
 
             // Map form data to database fields
@@ -157,23 +165,16 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                 price_5_15_days: (formData as any).price_5_15_days || formData.price_5_15_days,
                 price_16_30_days: (formData as any).price_16_30_days || formData.price_16_30_days,
                 price_over_30_days: (formData as any).price_over_30_days || formData.price_over_30_days,
-                discount_percentage: (formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : formData.discount_percentage,
+                discount: (formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : formData.discount_percentage,
                 fuel_type: (formData as any).fuelType || formData.fuel_type,
                 category: categories.length === 1 ? categories[0] : categories,
             };
 
             // Debug logging
-            console.log('Car data to save:', carDataToSave);
-            console.log('Price ranges:', {
-                price_2_4_days: carDataToSave.price_2_4_days,
-                price_5_15_days: carDataToSave.price_5_15_days,
-                price_16_30_days: carDataToSave.price_16_30_days,
-                price_over_30_days: carDataToSave.price_over_30_days,
-            });
-            console.log('Image URLs to save:', {
-                image_url: carDataToSave.image_url,
-                photo_gallery: carDataToSave.photo_gallery,
-            });
+            
+            
+            
+            
 
             await onSave(carDataToSave as Partial<CarType>);
             // Show success notification
@@ -387,6 +388,35 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Marcă *</label>
+                                <input
+                                    type="text"
+                                    value={formData.make || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        make: e.target.value
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Model *</label>
+                                <input
+                                    type="text"
+                                    value={formData.model || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        model: e.target.value
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.year')}</label>
                                 <input
                                     type="number"
@@ -424,7 +454,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')}</label>
-                            <div className="flex flex-col md:flex-row md:gap-4 gap-2">
+                            <div className="flex flex-row gap-4">
                                 {['suv', 'sports', 'luxury'].map((cat) => {
                                     const categories = Array.isArray(formData.category) 
                                         ? formData.category 
@@ -475,7 +505,85 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                             </div>
                         </div>
 
-                        {/* Price Ranges */}
+                        {/* Technical Specifications */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.transmission')}</label>
+                                <select
+                                    value={(formData as any).transmission || formData.transmission || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        transmission: e.target.value as 'Automatic' | 'Manual' || null
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
+                                >
+                                    <option value="">Selectează transmisie</option>
+                                    <option value="Automatic">Automatic</option>
+                                    <option value="Manual">Manual</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.fuelType')}</label>
+                                <select
+                                    value={(formData as any).fuelType || formData.fuel_type || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        fuelType: e.target.value || null,
+                                        fuel_type: e.target.value || null
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
+                                >
+                                    <option value="">Selectează combustibil</option>
+                                    <option value="petrol">Benzina</option>
+                                    <option value="diesel">Diesel</option>
+                                    <option value="hybrid">Hybrid</option>
+                                    <option value="electric">Electric</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.drivetrain')}</label>
+                                <select
+                                    value={formData.drivetrain || ''}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        drivetrain: e.target.value || null
+                                    }))}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
+                                >
+                                    <option value="">Selectează tracțiune</option>
+                                    <option value="FWD">FWD</option>
+                                    <option value="RWD">RWD</option>
+                                    <option value="AWD">AWD</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Price Ranges */}
+                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
+                        <h3 className="text-lg font-bold text-white mb-4">Prețuri și Reduceri</h3>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">2-4 zile</label>
@@ -571,7 +679,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                     setFormData(prev => ({
                                         ...prev,
                                         discountPercentage: discountValue,
-                                        discount_percentage: discountValue
+                                        discount: discountValue
                                     }));
                                 }}
                                 placeholder="0"
@@ -588,93 +696,6 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                         </div>
                     </div>
 
-                    {/* Specifications */}
-                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg space-y-4">
-                        <h3 className="text-lg font-bold text-white mb-4">{t('admin.cars.specifications')}</h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.bodyType')}</label>
-                            <select
-                                value={formData.body || 'Sedan'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value as CarType['body'] }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                            >
-                                <option value="Coupe">Coupe</option>
-                                <option value="Sedan">Sedan</option>
-                                <option value="SUV">SUV</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.transmission')}</label>
-                            <select
-                                value={formData.transmission || 'Automatic'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, transmission: e.target.value as CarType['transmission'] }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                            >
-                                <option value="Automatic">Automatic</option>
-                                <option value="Manual">Manual</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.fuelType')}</label>
-                            <select
-                                value={(formData as any).fuelType || formData.fuel_type || 'gasoline'}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    fuelType: e.target.value as CarType['fuel_type'],
-                                    fuel_type: e.target.value as CarType['fuel_type']
-                                }))}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                            >
-                                <option value="gasoline">Gasoline</option>
-                                <option value="diesel">Diesel</option>
-                                <option value="hybrid">Hybrid</option>
-                                <option value="electric">Electric</option>
-                                <option value="petrol">Petrol</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.drivetrain')}</label>
-                            <input
-                                type="text"
-                                value={formData.drivetrain || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, drivetrain: e.target.value }))}
-                                placeholder={t('admin.placeholders.drivetrain')}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                            />
-                        </div>
-                    </div>
                 </div>
 
                 {/* Images */}
@@ -900,10 +921,10 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-3">
                                     <div className="flex items-center gap-3">
                                         {(() => {
-                                            const allImages = [
-                                                formData.image_url || (formData as any).image,
-                                                ...((formData as any).photoGallery || formData.photo_gallery || [])
-                                            ].filter(Boolean);
+                                            const mainImage = formData.image_url || (formData as any).image;
+                                            const galleryImages = ((formData as any).photoGallery || formData.photo_gallery || []);
+                                            const filteredGalleryImages = galleryImages.filter((url: string) => url !== mainImage);
+                                            const allImages = [mainImage, ...filteredGalleryImages].filter(Boolean);
 
                                             if (allImages.length <= 1) return null;
 
@@ -919,21 +940,97 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                             </span>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={() => setShowImageGallery(false)}
-                                        className="p-2 hover:bg-white/10 text-white/80 hover:text-white rounded-lg transition-colors"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={async () => {
+                                                const mainImage = formData.image_url || (formData as any).image;
+                                                const galleryImages = ((formData as any).photoGallery || formData.photo_gallery || []);
+                                                const filteredGalleryImages = galleryImages.filter((url: string) => url !== mainImage);
+                                                const allImages = [mainImage, ...filteredGalleryImages].filter(Boolean);
+                                                const imageToDelete = allImages[selectedImageIndex];
+
+                                                if (!imageToDelete) return;
+
+                                                // Confirm deletion
+                                                if (!window.confirm('Ești sigur că vrei să ștergi această imagine?')) {
+                                                    return;
+                                                }
+
+                                                try {
+                                                    // Delete from storage bucket
+                                                    if (selectedImageIndex === 0) {
+                                                        // Main image - just remove from form data (file will be cleaned up separately)
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            image_url: undefined,
+                                                            image: undefined
+                                                        }));
+                                                    } else {
+                                                        // Gallery image - remove from photoGallery array
+                                                        const updatedGallery = [...filteredGalleryImages];
+                                                        updatedGallery.splice(selectedImageIndex - 1, 1); // -1 because main image is index 0
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            photoGallery: updatedGallery,
+                                                            photo_gallery: updatedGallery
+                                                        }));
+
+                                                        // Try to delete from storage bucket
+                                                        try {
+                                                            const imageUrl = new URL(imageToDelete);
+                                                            const pathParts = imageUrl.pathname.split('/');
+                                                            const fileName = pathParts[pathParts.length - 1];
+                                                            if (fileName) {
+                                                                const { supabase } = await import('../../../../lib/supabase');
+                                                                await supabase.storage
+                                                                    .from('cars')
+                                                                    .remove([`cars/${fileName}`]);
+                                                            }
+                                                        } catch (storageError) {
+                                                            console.warn('Could not delete from storage:', storageError);
+                                                        }
+                                                    }
+
+                                                    // Close gallery if no images left, or adjust selected index
+                                                    const remainingImages = selectedImageIndex === 0 ?
+                                                        [mainImage, ...filteredGalleryImages].filter((url, idx) => idx !== 0 || url !== imageToDelete) :
+                                                        [mainImage, ...filteredGalleryImages].filter((_, idx) => idx !== selectedImageIndex);
+
+                                                    if (remainingImages.length === 0) {
+                                                        setShowImageGallery(false);
+                                                    } else if (selectedImageIndex >= remainingImages.length) {
+                                                        setSelectedImageIndex(remainingImages.length - 1);
+                                                    }
+
+                                                    showSuccess('Imagine ștearsă cu succes!');
+                                                } catch (error) {
+                                                    console.error('Error deleting image:', error);
+                                                    showError('Eroare la ștergerea imaginii');
+                                                }
+                                            }}
+                                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 hover:text-red-200 rounded-lg transition-all font-medium flex items-center gap-2 shadow-lg"
+                                            title="Șterge imaginea"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                            <span className="text-sm">Șterge</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setShowImageGallery(false)}
+                                            className="p-2 hover:bg-white/10 text-white/80 hover:text-white rounded-lg transition-colors"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Main Image Display */}
                                 <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
                                     {(() => {
-                                        const allImages = [
-                                            formData.image_url || (formData as any).image,
-                                            ...((formData as any).photoGallery || formData.photo_gallery || [])
-                                        ].filter(Boolean);
+                                        const mainImage = formData.image_url || (formData as any).image;
+                                        const galleryImages = ((formData as any).photoGallery || formData.photo_gallery || []);
+                                        // Filter out main image if it appears in gallery to prevent duplication
+                                        const filteredGalleryImages = galleryImages.filter((url: string) => url !== mainImage);
+                                        const allImages = [mainImage, ...filteredGalleryImages].filter(Boolean);
                                         const currentImage = allImages[selectedImageIndex];
 
                                         return currentImage ? (
@@ -951,10 +1048,11 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
 
                                 {/* Photo Grid */}
                                 {(() => {
-                                    const allImages = [
-                                        formData.image_url || (formData as any).image,
-                                        ...((formData as any).photoGallery || formData.photo_gallery || [])
-                                    ].filter(Boolean);
+                                    const mainImage = formData.image_url || (formData as any).image;
+                                    const galleryImages = ((formData as any).photoGallery || formData.photo_gallery || []);
+                                    // Filter out main image if it appears in gallery to prevent duplication
+                                    const filteredGalleryImages = galleryImages.filter((url: string) => url !== mainImage);
+                                    const allImages = [mainImage, ...filteredGalleryImages].filter(Boolean);
 
                                     if (allImages.length <= 1) return null;
 

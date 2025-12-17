@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -12,17 +12,16 @@ import {
     ArrowRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { BorrowRequest, BorrowRequestDTO, Car as CarType, OrderDisplay } from '../../../../types';
+import { BorrowRequestDTO, Car as CarType } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { CreateRentalModal } from '../modals/CreateRentalModal';
 import { EditRequestModal } from '../modals/EditRequestModal';
-import { ContractCreationModal } from '../../../../components/modals/ContractCreationModal';
 import { getInitials } from '../../../../utils/customer';
-import { getCarName } from '../../../../utils/car';
-import { acceptBorrowRequest, BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest } from '../../../../lib/db/requests/requests';
+import { getCarName } from '../../../../utils/car/car';
+import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
 import { formatAmount } from '../../../../utils/currency';
-import { RequestDetailsModal } from '../modals/RequestDetailsModal';
+import { formatTime } from '../../../../utils/time';
 import { supabase } from '../../../../lib/supabase';
 
 export const RequestsView: React.FC = () => {
@@ -32,18 +31,11 @@ export const RequestsView: React.FC = () => {
     const { showSuccess, showError } = useNotification();
     const [requests, setRequests] = useState<BorrowRequestDTO[]>([]);
     const [loading, setLoading] = useState(false);
-    const [cars, setCars] = useState<CarType[]>([]);
+    const [cars] = useState<CarType[]>([]);
     const [showAddRentalModal, setShowAddRentalModal] = useState(false);
     const [selectedCarIdForRental, setSelectedCarIdForRental] = useState<string | undefined>(undefined);
-    const [processingRequest, setProcessingRequest] = useState<string | null>(null);
-    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestDTO | null>(null);
-    const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingRequest, setEditingRequest] = useState<BorrowRequestDTO | null>(null);
-    const [showContractModal, setShowContractModal] = useState(false);
-    const [selectedRentalForContract, setSelectedRentalForContract] = useState<OrderDisplay | null>(null);
-    const [showRequestContractModal, setShowRequestContractModal] = useState(false);
-    const [selectedRequestForContract, setSelectedRequestForContract] = useState<BorrowRequest | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalRequests, setTotalRequests] = useState(0);
@@ -52,7 +44,7 @@ export const RequestsView: React.FC = () => {
 
     const [sortBy, setSortBy] = useState<'start_date' | 'amount' | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [status, setStatus] = useState<'PENDING' | 'REJECTED' | 'APPROVED' | null>(null);
+    const [status, setStatus] = useState<'PENDING' | 'REJECTED' | 'APPROVED' | 'PROCESSED' | null>(null);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearch] = useState(searchQuery);
@@ -121,134 +113,7 @@ export const RequestsView: React.FC = () => {
 
 
 
-    const handleAccept = async (request: BorrowRequestDTO) => {
-        console.log('should accept the request: ', request)
-        const success = await acceptBorrowRequest(request.id)
-        console.log('result: ', success)
 
-        // setProcessingRequest(request.id.toString());
-        // setShowRequestDetailsModal(false);
-        // setSelectedRequest(null);
-    };
-
-    const handleReject = async (request: BorrowRequestDTO) => {
-        const reason = window.prompt(`${t('admin.requests.confirmRejectRequest')} ${request.customer_name}? ${t('admin.requests.rejectReasonPrompt')}`);
-        if (reason === null) return; // User cancelled
-
-        setProcessingRequest(request.id.toString());
-        try {
-            // If request is already APPROVED, use updateBorrowRequest instead
-            if (request.status === 'APPROVED') {
-                const result = await updateBorrowRequest(request.id.toString(), { status: 'REJECTED' } as any);
-                if (result.success) {
-                    showSuccess(t('admin.requests.requestRejected'));
-                    await loadRequests();
-                } else {
-                    showError(`${t('admin.requests.requestRejectFailed')} ${result.error || t('admin.common.unknownError')}`);
-                }
-            } else {
-                const result = await rejectBorrowRequest(request.id.toString(), reason || undefined);
-                if (result.success) {
-                    showSuccess(t('admin.requests.requestRejected'));
-                    await loadRequests();
-                } else {
-                    showError(`${t('admin.requests.requestRejectFailed')} ${result.error || t('admin.common.unknownError')}`);
-                }
-            }
-        } catch (error) {
-            console.error('Error rejecting request:', error);
-            showError(t('admin.requests.requestRejectErrorOccurred'));
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
-
-    const handleUndoReject = async (request: BorrowRequestDTO) => {
-        if (!window.confirm(`${t('admin.requests.confirmRestoreRequest')} ${request.customer_name} ${t('admin.requests.forCar')} ${getCarName(request.car)} ${t('admin.requests.toPending')}`)) {
-            return;
-        }
-
-        setProcessingRequest(request.id.toString());
-        try {
-            const result = await undoRejectBorrowRequest(request.id.toString());
-            if (result.success) {
-                showSuccess(t('admin.requests.requestRestored'));
-                await loadRequests();
-            } else {
-                showError(`${t('admin.requests.requestRestoreFailed')} ${result.error || t('admin.common.unknownError')}`);
-            }
-        } catch (error) {
-            console.error('Error undoing reject request:', error);
-            showError(t('admin.requests.requestRestoreErrorOccurred'));
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
-
-    const handleSetToPending = async (request: BorrowRequestDTO) => {
-        if (!window.confirm(`${t('admin.requests.confirmSetToPending')} ${request.customer_name} ${t('admin.requests.forCar')} ${request.car} ${t('admin.requests.backToPending')}`)) {
-            return;
-        }
-
-        setProcessingRequest(request.id.toString());
-        try {
-            const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
-            if (result.success) {
-                showSuccess(t('admin.requests.requestSetToPending'));
-                await loadRequests();
-            } else {
-                showError(`${t('admin.requests.requestUpdateFailed')} ${result.error || t('admin.common.unknownError')}`);
-            }
-        } catch (error) {
-            console.error('Error setting request to pending:', error);
-            showError(t('admin.requests.requestUpdateErrorOccurred'));
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
-
-    const handleEdit = (request: BorrowRequestDTO) => {
-        setEditingRequest(request);
-        setShowEditModal(true);
-    };
-
-    const handleCancelRental = async (request: BorrowRequestDTO) => {
-        if (!window.confirm(`Sunteți sigur că doriți să anulați închirierea pentru ${request.customer_name}? Această acțiune va seta cererea la In Asteptare și va șterge comanda de închiriere.`)) {
-            return;
-        }
-
-        setProcessingRequest(request.id.toString());
-        try {
-            const requestId = typeof request.id === 'string' ? parseInt(request.id) : request.id;
-
-            // First, delete the rental with matching request_id
-            const { error: deleteError } = await supabase
-                .from('Rentals')
-                .delete()
-                .eq('request_id', requestId);
-
-            if (deleteError) {
-                console.error('Error deleting rental:', deleteError);
-                showError(`Eroare la ștergerea închirierii: ${deleteError.message}`);
-                setProcessingRequest(null);
-                return;
-            }
-
-            // Then, set the request status to PENDING
-            const result = await updateBorrowRequest(request.id.toString(), { status: 'PENDING' } as any);
-            if (result.success) {
-                showSuccess('Închirierea a fost anulată și cererea a fost setată la În Asteptare');
-                await loadRequests();
-            } else {
-                showError(`Eroare la actualizarea cererii: ${result.error || 'Eroare necunoscută'}`);
-            }
-        } catch (error) {
-            console.error('Error canceling rental:', error);
-            showError('Eroare la anularea închirierii');
-        } finally {
-            setProcessingRequest(null);
-        }
-    };
 
 
     const handleSort = (field: 'start_date' | 'amount') => {
@@ -263,9 +128,9 @@ export const RequestsView: React.FC = () => {
     };
 
     function handleSelectRequest(request: BorrowRequestDTO) {
-        console.log('should select this request: ', request)
-        setSelectedRequest(request);
-        setShowRequestDetailsModal(true);
+        // Navigate to request details view
+        const requestId = request.id || '';
+        setSearchParams({ section: 'requests', requestId: requestId.toString() });
     }
 
     function clearSort() {
@@ -332,6 +197,18 @@ export const RequestsView: React.FC = () => {
                                     {status === 'APPROVED'
                                         ? t('admin.requests.hideApproved')
                                         : t('admin.requests.showApproved')}
+                                </button>
+
+                                <button
+                                    onClick={() => setStatus(prev => prev === 'PROCESSED' ? null : 'PROCESSED')}
+                                    className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${status === 'PROCESSED'
+                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 hover:bg-blue-500/30 hover:border-blue-500/60'
+                                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                >
+                                    {status === 'PROCESSED'
+                                        ? t('admin.requests.hideProcessed')
+                                        : t('admin.requests.showProcessed')}
                                 </button>
 
                                 <button
@@ -441,12 +318,15 @@ export const RequestsView: React.FC = () => {
                                                     ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                     : request.status === 'APPROVED'
                                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                        : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                        : request.status === 'PROCESSED'
+                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                            : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                     }`}
                                             >
-                                                {request.status === 'PENDING' ? t('admin.status.pending') :
-                                                    request.status === 'APPROVED' ? t('admin.status.approved') :
-                                                        request.status === 'REJECTED' ? t('admin.status.rejected') : ''
+                                                {request.status === 'PENDING' ? t('admin.requests.pending') :
+                                                    request.status === 'APPROVED' ? t('admin.requests.approved') :
+                                                        request.status === 'PROCESSED' ? t('admin.requests.processed') :
+                                                            request.status === 'REJECTED' ? t('admin.requests.rejected') : ''
                                                 }
                                             </span>
                                         </div>
@@ -465,13 +345,13 @@ export const RequestsView: React.FC = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.pickup')}</p>
-                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.start_date)}</p>
-                                                <p className="text-gray-400 text-xs">{request.start_time}</p>
+                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.start_date, t('config.date'))}</p>
+                                                <p className="text-gray-400 text-xs">{formatTime(request.start_time)}</p>
                                             </div>
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.return')}</p>
-                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</p>
-                                                <p className="text-gray-400 text-xs">{request.end_time}</p>
+                                                <p className="text-white text-sm font-medium">{formatDateLocal(request.end_date, t('config.date'))}</p>
+                                                <p className="text-gray-400 text-xs">{formatTime(request.end_time)}</p>
                                             </div>
                                         </div>
 
@@ -479,7 +359,7 @@ export const RequestsView: React.FC = () => {
                                         <div className="mt-4 pt-4 border-t border-white/10">
                                             <p className="text-gray-400 text-xs mb-1">{t('admin.requests.amount')}</p>
                                             <p className="text-white font-semibold text-base">
-                                                {formatAmount(request.total_amount)} MDL
+                                                {formatAmount(request.total_amount)}
                                             </p>
                                         </div>
                                     </div>
@@ -550,19 +430,19 @@ export const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
-                                                        <span className="text-gray-400 text-xs">{request.start_time}</span>
+                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.start_date, t('config.date'))}</span>
+                                                        <span className="text-gray-400 text-xs">{formatTime(request.start_time)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date)}</span>
-                                                        <span className="text-gray-400 text-xs">{request.end_time}</span>
+                                                        <span className="text-white text-sm font-medium">{formatDateLocal(request.end_date, t('config.date'))}</span>
+                                                        <span className="text-gray-400 text-xs">{formatTime(request.end_time)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-white font-semibold text-sm">
-                                                        {formatAmount(request.total_amount)} MDL
+                                                        {formatAmount(request.total_amount)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -571,12 +451,15 @@ export const RequestsView: React.FC = () => {
                                                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
                                                             : request.status === 'APPROVED'
                                                                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                                                : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                                                : request.status === 'PROCESSED'
+                                                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                                                    : 'bg-red-500/20 text-red-300 border-red-500/50'
                                                             }`}
                                                     >
-                                                        {request.status === 'PENDING' ? t('admin.status.pending') :
-                                                            request.status === 'APPROVED' ? t('admin.status.approved') :
-                                                                request.status === 'REJECTED' ? t('admin.status.rejected') : ''}
+                                                        {request.status === 'PENDING' ? t('admin.requests.pending') :
+                                                            request.status === 'APPROVED' ? t('admin.requests.approved') :
+                                                                request.status === 'PROCESSED' ? t('admin.requests.processed') :
+                                                                    request.status === 'REJECTED' ? t('admin.requests.rejected') : ''}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -591,34 +474,33 @@ export const RequestsView: React.FC = () => {
                         {searchQuery ? t('admin.requests.noRequests') : t('admin.requests.noRequests')}
                     </div>
                 )}
-            </div>
 
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-                <div className="text-m text-gray-300">
-                    Showing {requests.length > 0 ? (currentPage - 1) * requestsPerPage + 1 : 0} to {Math.min(currentPage * requestsPerPage, totalRequests)} of {totalRequests} requests
-
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Previous
-                    </button>
-                    <div className="text-sm text-gray-300 px-2">
-                        Page {currentPage} of {totalPages || 1}
+                {/* Pagination */}
+                <div className="px-3 md:px-6 py-3 md:py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="text-xs md:text-sm text-gray-300 text-center sm:text-left">
+                        {t('admin.requests.showing')} {requests.length > 0 ? (currentPage - 1) * requestsPerPage + 1 : 0} {t('admin.requests.to')} {Math.min(currentPage * requestsPerPage, totalRequests)} {t('admin.requests.of')} {totalRequests} {t('admin.requests.requests')}
                     </div>
-                    <button
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages || totalPages === 0}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-sm"
-                    >
-                        Next
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-xs md:text-sm"
+                        >
+                            <ArrowLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            <span className="hidden sm:inline">{t('admin.requests.previous')}</span>
+                        </button>
+                        <div className="text-xs md:text-sm text-gray-300 px-2">
+                            {t('admin.requests.page')} {currentPage} {t('admin.requests.ofPage')} {totalPages || 1}
+                        </div>
+                        <button
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-xl text-white disabled:opacity-50 hover:bg-white/20 transition-all text-xs md:text-sm"
+                        >
+                            <span className="hidden sm:inline">{t('admin.requests.next')}</span>
+                            <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -665,23 +547,6 @@ export const RequestsView: React.FC = () => {
                 />
             )}
 
-            {/* Request Details Modal */}
-            {showRequestDetailsModal && selectedRequest && (
-                <RequestDetailsModal
-                    request={selectedRequest}
-                    handleClose={() => {
-                        setShowRequestDetailsModal(false);
-                        setSelectedRequest(null);
-                    }}
-                    handleAccept={handleAccept}
-                    handleReject={handleReject}
-                    handleUndoReject={handleUndoReject}
-                    handleSetToPending={handleSetToPending}
-                    handleEdit={handleEdit}
-                    handleCancel={handleCancelRental}
-                    isProcessing={processingRequest === selectedRequest.id.toString()}
-                />
-            )}
 
             {/* Contract Creation Modal */}
             {/* {showContractModal && selectedRentalForContract && (() => {
@@ -704,42 +569,50 @@ export const RequestsView: React.FC = () => {
                 ) : null;
             })()} */}
 
-            {/* Contract Creation Modal for Requests */}
-            {/* {showRequestContractModal && selectedRequestForContract && (() => {
-                const car = cars.find(c => c.id.toString() === selectedRequestForContract.carId);
-                return car ? (
-                    <ContractCreationModal
-                        isOpen={showRequestContractModal}
-                        onClose={() => {
-                            setShowRequestContractModal(false);
-                            setSelectedRequestForContract(null);
-                        }}
-                        order={{
-                            ...selectedRequestForContract,
-                            request_id: selectedRequestForContract.id // Set request_id to the request's own ID
-                        } as any}
-                        car={car}
-                        onContractCreated={async () => {
-                            // Contract has been created and request approved, close modal and reload
-                            setProcessingRequest(null);
-                            setShowRequestContractModal(false);
-                            setSelectedRequestForContract(null);
-                            await loadRequests();
-                            showSuccess('Cerere aprobată și contract creat cu succes!');
-                        }}
-                    />
-                ) : null;
-            })()} */}
 
             {/* Edit Request Modal */}
             {showEditModal && editingRequest && (
                 <EditRequestModal
-                    cars={cars}
                     request={editingRequest}
                     onSave={async (updatedData) => {
                         try {
+                            if (!editingRequest?.id) {
+                                console.error("Editing request has no ID");
+                                return;
+                            }
                             const result = await updateBorrowRequest(editingRequest.id.toString(), updatedData);
                             if (result.success) {
+                                // If this request has been processed into a rental, update the rental's total_amount too
+                                if (updatedData.total_amount) {
+                                    try {
+                                        // Find the associated rental
+                                        const { data: rental, error: rentalError } = await supabase
+                                            .from('Rentals')
+                                            .select('id')
+                                            .eq('request_id', editingRequest.id)
+                                            .in('rental_status', ['ACTIVE', 'COMPLETED'])
+                                            .order('created_at', { ascending: false })
+                                            .limit(1)
+                                            .single();
+
+                                        if (rental && !rentalError) {
+                                            // Update the rental's total_amount
+                                            const { error: updateRentalError } = await supabase
+                                                .from('Rentals')
+                                                .update({ total_amount: updatedData.total_amount })
+                                                .eq('id', rental.id);
+
+                                            if (updateRentalError) {
+                                                console.warn('Failed to update associated rental total_amount:', updateRentalError);
+                                            } else {
+                                                
+                                            }
+                                        }
+                                    } catch (rentalUpdateError) {
+                                        console.warn('Error updating associated rental:', rentalUpdateError);
+                                    }
+                                }
+
                                 alert(t('admin.requests.requestUpdated'));
                                 setShowEditModal(false);
                                 setEditingRequest(null);
@@ -756,6 +629,7 @@ export const RequestsView: React.FC = () => {
                         setShowEditModal(false);
                         setEditingRequest(null);
                     }}
+                // isOpen={isModa}
                 />
             )}
         </motion.div>

@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus,
     Trash2,
@@ -16,6 +15,24 @@ import { fetchCars, createCar, updateCar } from '../../../../lib/cars';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 import { Car as CarType } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
+
+// Utility function to format and translate categories
+const formatCategories = (category: string | string[] | undefined): string => {
+    if (!category) return '';
+
+    const categories = Array.isArray(category) ? category : [category];
+
+    const translatedCategories = categories.map(cat => {
+        switch (cat.toLowerCase()) {
+            case 'suv': return 'SUV';
+            case 'sports': return 'Sport';
+            case 'luxury': return 'Lux';
+            default: return cat;
+        }
+    });
+
+    return translatedCategories.join(', ');
+};
 import { CarDetailsEditView } from './CarDetailsEditView';
 import { CarFormModal } from '../modals/CarFormModal';
 
@@ -68,57 +85,43 @@ export const CarsView: React.FC = () => {
                         if (!carName || carName.trim() === '') {
                             carName = `${car.make} ${car.model}`;
                         }
-                        console.log(`[Admin] Loading images for car: "${carName}" (make: "${car.make}", model: "${car.model}", id: ${car.id})`);
+                        
                         if (carName.toLowerCase().includes('q7') || car.model?.toLowerCase().includes('q7')) {
-                            console.log(`[Admin] Q7 car detected:`, { car, carName });
+                            
                         }
 
                         try {
                             const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-                            console.log(`[Admin] Images for "${carName}": main=${!!mainImage}, gallery=${photoGallery.length}`);
+                            
                             const result = {
                                 ...car,
                                 image_url: mainImage || car.image_url,
                                 photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
                             };
                             if (carName.toLowerCase().includes('q7')) {
-                                console.log(`[Admin] Q7 result:`, {
-                                    original_image_url: car.image_url,
-                                    original_photo_gallery: car.photo_gallery,
-                                    final_image_url: result.image_url,
-                                    final_photo_gallery: result.photo_gallery,
-                                    mainImage_found: !!mainImage,
-                                    photoGallery_length: photoGallery.length
-                                });
+                                
                             }
                             return result;
                         } catch (error) {
                             console.warn(`[Admin] Failed to fetch images for car "${carName}":`, error);
                             // Fall back to database URLs if image fetching fails
-                            console.log(`[Admin] Using fallback URLs for "${carName}": main=${car.image_url}, gallery=${car.photo_gallery?.length || 0}`);
+                            
                             const result = {
                                 ...car,
                                 image_url: car.image_url,
                                 photo_gallery: car.photo_gallery,
                             };
                             if (carName.toLowerCase().includes('q7')) {
-                                console.log(`[Admin] Q7 fallback result:`, result);
+                                
                             }
                             return result;
                         }
                     })
                 );
-                console.log(`[Admin] Setting ${carsWithImages.length} cars to state`);
+                
                 const q7Car = carsWithImages.find(c => (c as any).name?.toLowerCase().includes('q7') || c.model?.toLowerCase().includes('q7'));
                 if (q7Car) {
-                    console.log(`[Admin] Q7 car in final result:`, {
-                        id: q7Car.id,
-                        name: (q7Car as any).name,
-                        make: q7Car.make,
-                        model: q7Car.model,
-                        image_url: q7Car.image_url,
-                        photo_gallery: q7Car.photo_gallery
-                    });
+                    
                 }
                 setLocalCars(carsWithImages);
             } catch (error) {
@@ -210,6 +213,69 @@ export const CarsView: React.FC = () => {
     const handleDeleteCar = async (carId: number) => {
         if (window.confirm(t('admin.cars.confirmDeleteCar'))) {
             try {
+                // Find the car to get its details for storage cleanup
+                const carToDelete = localCars.find(car => parseInt(car.id, 10) === carId);
+                if (!carToDelete) {
+                    throw new Error('Car not found');
+                }
+
+                // Clean up storage files before marking as deleted
+                try {
+                    const { supabase } = await import('../../../../lib/supabase');
+                    const carName = (carToDelete as any).name || `${carToDelete.make} ${carToDelete.model}`;
+
+                    // Create folder name using the same logic as upload
+                    const createFolderName = (name: string): string => {
+                        return name
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/^-+|-+$/g, '');
+                    };
+
+                    const getModelPart = (name: string): string => {
+                        const parts = name.trim().split(/\s+/);
+                        if (parts.length < 2) return 'car';
+                        const modelParts = parts.slice(1);
+                        return modelParts
+                            .join('-')
+                            .toLowerCase()
+                            .replace(/[^a-z0-9-]+/g, '-');
+                    };
+
+                    const folderName = createFolderName(carName);
+                    const modelPart = getModelPart(carName);
+
+                    // Try to delete known image files for this car
+                    const filesToDelete = [
+                        `${folderName}/${modelPart}-main.jpg`,
+                        `${folderName}/${modelPart}-gallery-1.jpg`,
+                        `${folderName}/${modelPart}-gallery-2.jpg`,
+                        `${folderName}/${modelPart}-gallery-3.jpg`,
+                        `${folderName}/${modelPart}-gallery-4.jpg`,
+                        `${folderName}/${modelPart}-gallery-5.jpg`
+                    ];
+
+                    
+
+                    // Delete files from storage (will not error if files don't exist)
+                    const deletePromises = filesToDelete.map(filePath => {
+                        return supabase.storage
+                            .from('cars')
+                            .remove([filePath])
+                            .catch(err => {
+                                
+                                return null;
+                            });
+                    });
+
+                    await Promise.all(deletePromises);
+                    
+
+                } catch (storageError) {
+                    console.warn('Storage cleanup failed, but continuing with car deletion:', storageError);
+                    // Continue with deletion even if storage cleanup fails
+                }
+
                 // Soft delete: update status to 'deleted' instead of actually deleting
                 await updateCar(carId, { status: 'deleted' });
                 // Reload cars to get updated list (deleted cars will be filtered out)
@@ -297,6 +363,8 @@ export const CarsView: React.FC = () => {
                     price_over_30_days: (carData as any).price_over_30_days,
                     discount_percentage: (carData as any).discountPercentage !== undefined ? (carData as any).discountPercentage : carData.discount_percentage,
                     fuel_type: (carData as any).fuelType || carData.fuel_type,
+                    transmission: (carData as any).transmission,
+                    drivetrain: (carData as any).drivetrain,
                 };
                 const updatedCar = await updateCar(parseInt(editingCar.id, 10), updateData as Partial<CarType>);
                 if (updatedCar) {
@@ -322,12 +390,9 @@ export const CarsView: React.FC = () => {
                     model: model,
                     image_url: (carData as any).image || carData.image_url,
                     photo_gallery: (carData as any).photoGallery || carData.photo_gallery,
-                    price_2_4_days: (carData as any).price_2_4_days,
-                    price_5_15_days: (carData as any).price_5_15_days,
-                    price_16_30_days: (carData as any).price_16_30_days,
-                    price_over_30_days: (carData as any).price_over_30_days,
-                    discount_percentage: (carData as any).discountPercentage !== undefined ? (carData as any).discountPercentage : carData.discount_percentage,
                     fuel_type: (carData as any).fuelType || carData.fuel_type,
+                    transmission: (carData as any).transmission,
+                    drivetrain: (carData as any).drivetrain,
                     status: 'available',
                 } as Partial<CarType>);
                 if (newCar) {
@@ -358,6 +423,27 @@ export const CarsView: React.FC = () => {
         }
     }, [carId, localCars]);
 
+    // Prevent page refresh when modals are open
+    useEffect(() => {
+        const isModalOpen = showAddModal || editingCar !== null;
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isModalOpen) {
+                e.preventDefault();
+                e.returnValue = ''; // Chrome requires returnValue to be set
+                return ''; // Some browsers show this message
+            }
+        };
+
+        if (isModalOpen) {
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        }
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [showAddModal, editingCar]);
+
     // If carId is in URL, show car details/edit view
     if (carId) {
         const car = localCars.find(c => c.id.toString() === carId);
@@ -387,23 +473,14 @@ export const CarsView: React.FC = () => {
 
     if (loading) {
         return (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center justify-center h-64"
-            >
+            <div className="flex items-center justify-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-white" />
-            </motion.div>
+            </div>
         );
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-6"
-        >
+        <div className="space-y-6">
 
             {/* Cars Table Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden">
@@ -580,7 +657,7 @@ export const CarsView: React.FC = () => {
                                         <div className="grid grid-cols-2 gap-4 mb-3 pb-3 border-b border-white/10">
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.cars.category')}</p>
-                                                <p className="text-white text-sm font-medium capitalize">{car.category}</p>
+                                                <p className="text-white text-sm font-medium">{formatCategories(car.category)}</p>
                                             </div>
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.cars.year')}</p>
@@ -691,7 +768,7 @@ export const CarsView: React.FC = () => {
                                                 >
                                                     {/* @ts-ignore - react-icons type compatibility */}
                                                 <LuPencil className="w-3.5 h-3.5" />
-                                                <span>Edit</span>
+                                                <span>{t('admin.cars.edit')}</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteCar(parseInt(car.id, 10))}
@@ -699,7 +776,7 @@ export const CarsView: React.FC = () => {
                                                     title={t('admin.common.delete')}
                                                 >
                                                 <Trash2 className="w-3.5 h-3.5" />
-                                                <span>Delete</span>
+                                                <span>{t('admin.cars.delete')}</span>
                                                 </button>
                                         </div>
                                     </div>
@@ -794,7 +871,7 @@ export const CarsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="px-2 py-1 text-xs font-semibold bg-white/10 text-gray-300 rounded capitalize">
-                                                        {car.category}
+                                                        {formatCategories(car.category)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -908,29 +985,27 @@ export const CarsView: React.FC = () => {
             </div>
 
             {/* Add/Edit Car Modal */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <CarFormModal
-                        car={editingCar}
-                        onSave={async (carData) => {
-                            try {
-                                const result = await handleSaveCar(carData);
-                                // Reload cars after save
-                                const fetchedCars = await fetchCars();
-                                setLocalCars(fetchedCars);
-                                return result;
-                            } catch (error) {
-                                throw error;
-                            }
-                        }}
-                        onClose={() => {
-                            setShowAddModal(false);
-                            setEditingCar(null);
-                        }}
-                    />
-                )}
-            </AnimatePresence>
-        </motion.div>
+            {showAddModal && (
+                <CarFormModal
+                    car={editingCar}
+                    onSave={async (carData) => {
+                        try {
+                            const result = await handleSaveCar(carData);
+                            // Reload cars after save
+                            const fetchedCars = await fetchCars();
+                            setLocalCars(fetchedCars);
+                            return result;
+                        } catch (error) {
+                            throw error;
+                        }
+                    }}
+                    onClose={() => {
+                        setShowAddModal(false);
+                        setEditingCar(null);
+                    }}
+                />
+            )}
+        </div>
     );
 };
 

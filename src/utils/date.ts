@@ -12,12 +12,12 @@ export const getMonthFromDate = (date: Date): string => {
     return month.charAt(0).toUpperCase() + month.slice(1);
 };
 
-export const formatDateLocal = (date: string | Date): string => {
+export const formatDateLocal = (date: string | Date, dateType: string): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
 
     if (isNaN(d.getTime())) return '';
 
-    return new Intl.DateTimeFormat('ro-RO').format(d);
+    return new Intl.DateTimeFormat(dateType).format(d);
 };
 
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {
@@ -52,9 +52,9 @@ export const getDateDiffInDays = (date1: string | Date, date2: string | Date): n
  * @returns { days: number, hours: number, totalHours: number }
  */
 export function calculateRentalDuration(
-    startDateStr: string,
+    startDateStr: Date | string,
     startTimeStr: string,
-    endDateStr: string,
+    endDateStr: Date | string,
     endTimeStr: string
 ) {
     const parseTime = (timeString: string) => {
@@ -75,6 +75,7 @@ export function calculateRentalDuration(
     const endDateTime = new Date(endDate);
     if (endHour === 0 && endMin === 0) {
         // treat 00:00 as end of previous day
+        endDateTime.setDate(endDateTime.getDate() - 1);
         endDateTime.setHours(23, 59, 59, 999);
     } else {
         endDateTime.setHours(endHour, endMin, 0, 0);

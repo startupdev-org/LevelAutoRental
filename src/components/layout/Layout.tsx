@@ -1,7 +1,5 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { pageTransition } from '../../utils/animations';
 import { Footer } from './Footer';
 import { Header } from './Header';
 import Loader from './Loader';
@@ -84,20 +82,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
         {showContent && (
-        <AnimatePresence {...({ mode: "wait" } as any)} initial={false}>
-          <motion.main
+          <main
             id="main-content"
-            key={location.pathname}
-            variants={pageTransition}
-            initial="initial"
-            animate="animate"
-            exit="exit"
             className="flex-1"
             tabIndex={-1}
           >
             {children}
-          </motion.main>
-        </AnimatePresence>
+          </main>
         )}
         {!isAuthPage && !isDashboardPage && <Footer />}
       </div>

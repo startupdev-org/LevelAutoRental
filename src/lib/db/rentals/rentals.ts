@@ -1,4 +1,4 @@
-import { FavoriteCar, Rental, RentalDTO } from '../../../types';
+import { FavoriteCar, Rental, RentalDTO, BorrowRequest } from '../../../types';
 import { supabase } from '../../supabase';
 import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
@@ -12,8 +12,6 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
         .from('Rentals')
         .select('*')
         .eq('user_id', user?.id)
-
-    console.log('user rentals: ', data);
 
     // If no rentals found, return empty array
     if (!data || data.length === 0) {
@@ -40,7 +38,6 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
 
             if (!error && carsData) {
                 cars = carsData;
-                console.log('Fetched cars data:', cars);
             }
         } catch (error) {
             console.error('Error fetching cars for rentals:', error);
@@ -52,7 +49,24 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
         // Find the car for this rental
         const carId = typeof rental.car_id === 'number' ? rental.car_id : parseInt(rental.car_id);
         let car = cars.find((c: any) => c.id === carId);
-        console.log('Processing rental for car ID:', carId, 'Found car:', car);
+
+        // Get options - if not in rental, try to fetch from linked request
+        let rentalOptions = rental.options;
+        if (!rentalOptions && rental.request_id) {
+            try {
+                const { data: requestData } = await supabase
+                    .from('BorrowRequest')
+                    .select('options')
+                    .eq('id', rental.request_id)
+                    .single();
+                
+                if (requestData?.options) {
+                    rentalOptions = requestData.options;
+                }
+            } catch (err) {
+                console.debug('Could not fetch options from linked request:', err);
+            }
+        }
 
         // If car exists, ensure it has images from storage
         if (car) {
@@ -75,7 +89,7 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
                         if (result.mainImage) {
                             mainImage = result.mainImage;
                             photoGallery = result.photoGallery;
-                            console.log('✅ Found images for car:', carName, '->', mainImage);
+                            
                             break;
                         }
                     } catch (e) {
@@ -100,10 +114,21 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
             }
         }
 
+        // Ensure price_per_day is a number, not a string
+        const pricePerDay = rental.price_per_day 
+            ? (typeof rental.price_per_day === 'string' ? parseFloat(rental.price_per_day) : rental.price_per_day)
+            : undefined;
+
         return {
             ...rental,
+            id: rental.id, // Explicitly include id
             car: car || null,
-        };
+            // Ensure all critical fields are present with proper types
+            price_per_day: pricePerDay,
+            options: rentalOptions || undefined,
+            request_id: rental.request_id,
+            contract_url: rental.contract_url,
+        } as RentalDTO;
     }));
 
     return processedRentals;
@@ -112,13 +137,21 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
 export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
     const user = await getLoggedUser();
 
-    const { data } = await supabase
+    // Build query to get requests for this user
+    let query = supabase
         .from('BorrowRequest')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('requested_at', { ascending: false });
+        .select('*');
 
-    console.log('user borrow requests: ', data);
+    // Include requests where user is the owner OR where customer_email matches
+    if (user?.id && user?.email) {
+        query = query.or(`user_id.eq.${user.id},customer_email.eq.${user.email}`);
+    } else if (user?.id) {
+        query = query.eq('user_id', user.id);
+    } else if (user?.email) {
+        query = query.eq('customer_email', user.email);
+    }
+
+    const { data } = await query.order('requested_at', { ascending: false });
 
     // If no borrow requests found, return empty array
     if (!data || data.length === 0) {
@@ -145,19 +178,33 @@ export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
 
             if (!error && carsData) {
                 cars = carsData;
-                console.log('Fetched cars data for borrow requests:', cars);
             }
         } catch (error) {
             console.error('Error fetching cars for borrow requests:', error);
         }
     }
 
-    // Process the borrow requests to include car data with images
+    // Process the borrow requests to include car data with images AND linked rental data
     const processedRequests = await Promise.all(data.map(async (request: any) => {
         // Find the car for this request
         const carId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id);
         let car = cars.find((c: any) => c.id === carId);
-        console.log('Processing borrow request for car ID:', carId, 'Found car:', car);
+
+        // FETCH LINKED RENTAL DATA (if this request has been converted to a rental)
+        let linkedRental = null;
+        try {
+            const { data: rentalData, error: rentalError } = await supabase
+                .from('Rentals')
+                .select('id, price_per_day, total_amount, contract_url')
+                .eq('request_id', request.id)
+                .single();
+            
+            if (!rentalError && rentalData) {
+                linkedRental = rentalData;
+            }
+        } catch (err) {
+            console.debug('No linked rental found for request', request.id);
+        }
 
         // If car exists, ensure it has images from storage
         if (car) {
@@ -180,7 +227,7 @@ export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
                         if (result.mainImage) {
                             mainImage = result.mainImage;
                             photoGallery = result.photoGallery;
-                            console.log('✅ Found images for car:', carName, '->', mainImage);
+                            
                             break;
                         }
                     } catch (e) {
@@ -208,6 +255,12 @@ export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
         return {
             ...request,
             car: car || null,
+            // Include rental data if it exists
+            linkedRental: linkedRental,
+            // Override price_per_day and total_amount with rental values if available
+            price_per_day: linkedRental?.price_per_day || undefined,
+            total_amount: linkedRental?.total_amount || undefined,
+            contract_url: linkedRental?.contract_url || request.contract_url,
         };
     }));
 
@@ -228,18 +281,13 @@ export async function fetchFavoriteCar(): Promise<FavoriteCar> {
         return { car: null, lastRental: null, borrowCount: null };
     }
 
-    // console.log('data from favorite car: ', data)
 
     // if (!data || data.length === 0) return null;
 
     const favoriteCarId = data[0].car_id;
     const lastRental = data[0].last_rental;
     const borrowCount = data[0].rental_count;
-    // console.log('car id: ', favoriteCarId)
-    // console.log('lastRental: ', lastRental)
-    // console.log('borrowcount: ', borrowCount)
-
-    const car = await fetchCarWithImagesById(favoriteCarId);
+    // 
 
     return {
         car,
@@ -304,8 +352,6 @@ export async function fetchRecentRentals(): Promise<Rental[]> {
         return [];
     }
 
-    console.log('sql!!! -> recent rentals: ', data)
-
     // Convert rentals using DTO mapping
     const rentals: Rental[] = await Promise.all(
         data.map(async (rentalRow: Rental) => {
@@ -313,12 +359,10 @@ export async function fetchRecentRentals(): Promise<Rental[]> {
         })
     );
 
-    console.log('rentals after structuring to dtos: ', rentals);
-
     return rentals;
 }
 
-const ACTIVE_RENTAL_STATUS = 'ACTIVE'
+const ACTIVE_RENTAL_STATUS = 'ACTIVE';
 
 export async function fetchActiveRentals(): Promise<Rental[]> {
 
@@ -336,16 +380,12 @@ export async function fetchActiveRentals(): Promise<Rental[]> {
         return [];
     }
 
-    console.log('sql!!! -> active rentals: ', data)
-
     // Convert rentals using DTO mapping
     const rentals: RentalDTO[] = await Promise.all(
         data.map(async (rentalRow: Rental) => {
             return toRentalDTO(rentalRow, rentalRow.car_id);
         })
     );
-
-    console.log('active rentals after structuring to dtos: ', rentals);
 
     return rentals;
 }
@@ -400,7 +440,13 @@ export async function fetchRentalsHistory(
     return { rentals, total: count ?? 0 };
 }
 
-
+/**
+ * Method just for the user !!!
+ * @param carId 
+ * @param month 
+ * @param status 
+ * @returns 
+ */
 export async function fetchUserRentalsForCalendarPage(
     carId?: string,
     month?: Date,
@@ -461,7 +507,7 @@ export async function fetchUserRentalsForCalendarPage(
     );
 }
 
-async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
+export async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
 
     const carWithImage = await fetchCarWithImagesById(carId);
 
@@ -472,7 +518,7 @@ async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
 }
 
 
-function formatDateForSQL(year: number, month: number, day: number): string {
+export function formatDateForSQL(year: number, month: number, day: number): string {
     // month is 0-based, so increase by 1
     const m = (month + 1).toString().padStart(2, "0");
     const d = day.toString().padStart(2, "0");

@@ -17,7 +17,7 @@ import {
     fetchAllOrders
 } from '../../../lib/orders';
 import { useNotification } from '../../../components/ui/NotificationToaster';
-import { OrderDetailsModal } from '../../../components/modals/OrderDetailsModal';
+import { RentalDetailsModal } from '../../../components/modals/OrderDetailsModal';
 
 // Dashboard View Component
 export const DashboardView: React.FC = () => {
@@ -35,7 +35,7 @@ export const DashboardView: React.FC = () => {
         const loadData = async () => {
             try {
                 const fetchedCars = await fetchCars();
-                
+
                 // Fetch images from storage for each car
                 const carsWithImages = await Promise.all(
                     fetchedCars.map(async (car) => {
@@ -52,9 +52,9 @@ export const DashboardView: React.FC = () => {
                         };
                     })
                 );
-                
+
                 setCars(carsWithImages);
-                
+
                 // Load orders after cars are loaded
                 if (carsWithImages.length > 0) {
                     const fetchedOrders = await fetchAllOrders(carsWithImages);
@@ -72,12 +72,7 @@ export const DashboardView: React.FC = () => {
     // Calculate car rental status (based on database status field)
     const getCarRentalStatus = () => {
         // Log all car statuses for debugging
-        console.log('[Dashboard] Car statuses:', cars.map(car => ({
-            id: car.id,
-            name: (car as any).name || `${car.make} ${car.model}`,
-            status: car.status,
-            statusLower: car.status?.toLowerCase()
-        })));
+        
 
         const freeCars = cars.filter(car => {
             // Normalize status: handle null, empty string, and different cases
@@ -92,13 +87,13 @@ export const DashboardView: React.FC = () => {
 
             // Consider available if status is null, empty, 'available', or not explicitly 'ascuns'/'hidden'/'maintenance'/rented
             const isAvailableStatus = carStatus === '' || carStatus === 'available' ||
-                   (carStatus !== 'ascuns' && carStatus !== 'hidden' && carStatus !== 'maintenance' &&
+                (carStatus !== 'ascuns' && carStatus !== 'hidden' && carStatus !== 'maintenance' &&
                     carStatus !== 'deleted' && carStatus !== 'închiriat' && carStatus !== 'rented' && carStatus !== 'borrowed');
 
             // Car is free only if it has available status AND no active orders
             return isAvailableStatus && !hasActiveOrder;
         });
-        
+
         const rentedCars = cars.filter(car => {
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
@@ -110,7 +105,7 @@ export const DashboardView: React.FC = () => {
             return hasActiveOrder || carStatus === 'închiriat' || carStatus === 'rented' || carStatus === 'borrowed';
         });
 
-        console.log(`[Dashboard] Free cars: ${freeCars.length}, Rented cars: ${rentedCars.length}`);
+        
 
         return { freeCars, rentedCars };
     };
@@ -128,12 +123,12 @@ export const DashboardView: React.FC = () => {
         const generateChartDataForPeriod = (period: '24H' | '7D' | '30D' | 'WEEKS' | '12M') => {
             const now = new Date();
             const data: { day: number; sales: number; baseline: number }[] = [];
-            
+
             // Calculate date ranges
             let startDate: Date;
             let intervals: number;
             let intervalMs: number;
-            
+
             switch (period) {
                 case '24H':
                     startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -166,30 +161,30 @@ export const DashboardView: React.FC = () => {
             for (let i = 0; i < intervals; i++) {
                 const intervalStart = new Date(startDate.getTime() + i * intervalMs);
                 const intervalEnd = new Date(startDate.getTime() + (i + 1) * intervalMs);
-                
+
                 const intervalOrders = rentalOrders.filter(order => {
                     if (!order.createdAt) return false;
                     const orderDate = new Date(order.createdAt);
                     return orderDate >= intervalStart && orderDate < intervalEnd;
                 });
-                
+
                 const sales = intervalOrders.reduce((sum, order) => {
                     const amount = order.amount || parseFloat(order.total_amount) || 0;
                     return sum + amount;
                 }, 0);
-                
+
                 // Baseline is 70% of average sales for visual reference
-                const avgSales = rentalOrders.length > 0 
+                const avgSales = rentalOrders.length > 0
                     ? (rentalOrders.reduce((sum, o) => sum + (o.amount || parseFloat(o.total_amount) || 0), 0) / rentalOrders.length) * 0.7
                     : 0;
-                
+
                 data.push({
                     day: i + 1,
                     sales: Math.round(sales),
                     baseline: Math.round(avgSales)
                 });
             }
-            
+
             return data;
         };
 
@@ -209,26 +204,26 @@ export const DashboardView: React.FC = () => {
             order.type === 'rental' &&
             order.status === 'COMPLETED'
         );
-        
+
         // Total sales: sum of all rental amounts
         const totalSales = rentalOrders.reduce((sum, order) => {
             const amount = order.amount || parseFloat(order.total_amount) || 0;
             return sum + amount;
         }, 0);
-        
+
         // Total orders: count of rental orders only (not requests)
         const totalOrders = rentalOrders.length;
-        
+
         // Average order price: total sales / number of rental orders
-        const avgOrderPrice = rentalOrders.length > 0 
-            ? totalSales / rentalOrders.length 
+        const avgOrderPrice = rentalOrders.length > 0
+            ? totalSales / rentalOrders.length
             : 0;
-        
+
         // Format numbers with thousand separators
         const formatNumber = (num: number, decimals: number = 2) => {
             return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         };
-        
+
         return {
             totalSales,
             totalOrders,
@@ -250,7 +245,7 @@ export const DashboardView: React.FC = () => {
             let periodStart: Date;
             let previousPeriodStart: Date;
             let previousPeriodEnd: Date;
-            
+
             switch (period) {
                 case '24H':
                     periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -301,8 +296,8 @@ export const DashboardView: React.FC = () => {
                 return sum + amount;
             }, 0);
 
-            const change = previousSales > 0 
-                ? ((currentSales - previousSales) / previousSales) * 100 
+            const change = previousSales > 0
+                ? ((currentSales - previousSales) / previousSales) * 100
                 : (currentSales > 0 ? 100 : 0);
 
             return {
@@ -441,7 +436,7 @@ export const DashboardView: React.FC = () => {
                                             className="w-12 h-12 object-cover rounded-md"
                                         />
                                         <p className="text-sm font-medium text-white truncate flex-1">{(car as any).name || `${car.make} ${car.model}`}</p>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 navigate(`/admin?section=requests&carId=${car.id}`);
                                             }}
@@ -492,19 +487,19 @@ export const DashboardView: React.FC = () => {
                                                                 }
                                                             }
                                                             returnTime = returnTime || '17:00';
-                                                            
+
                                                             // Format date in Romanian format (e.g., "19 nov. 2025")
-                                                            const formattedDate = returnDate.toLocaleDateString('ro-RO', { 
-                                                                day: 'numeric', 
-                                                                month: 'short', 
-                                                                year: 'numeric' 
+                                                            const formattedDate = returnDate.toLocaleDateString(t('config.date'), {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric'
                                                             });
-                                                            
+
                                                             // Format time (HH:MM)
-                                                            const formattedTime = returnTime.includes(':') 
+                                                            const formattedTime = returnTime.includes(':')
                                                                 ? returnTime.split(':').slice(0, 2).join(':')
                                                                 : returnTime;
-                                                            
+
                                                             return `${t('admin.dashboard.until')} ${formattedDate}, ${formattedTime}`;
                                                         } catch (e) {
                                                             return `${t('admin.dashboard.until')} ${carOrder.returnDate}`;
@@ -512,7 +507,7 @@ export const DashboardView: React.FC = () => {
                                                     })() : t('admin.dashboard.rented')}
                                                 </p>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     if (carOrder) {
                                                         setSelectedOrder(carOrder);
@@ -543,7 +538,7 @@ export const DashboardView: React.FC = () => {
                     transition={{ duration: 0.4, delay: 0.1 }}
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                 >
-                    <SalesChartCard 
+                    <SalesChartCard
                         allPeriodData={calculateChartData}
                         periodStats={calculatePeriodStats}
                     />
@@ -627,7 +622,7 @@ export const DashboardView: React.FC = () => {
             </div>
 
             {/* Order Details Modal */}
-            <OrderDetailsModal
+            <RentalDetailsModal
                 isOpen={showOrderDetailsModal}
                 onClose={() => {
                     setShowOrderDetailsModal(false);

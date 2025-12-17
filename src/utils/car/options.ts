@@ -47,13 +47,11 @@ export const parseRequestOptions = (request: any): RequestOption[] => {
         selectedOptions.push({ label: 'Șofer personal', price: '800 MDL/zi', category: 'vip' });
     }
     if (parsedOptions.priorityService) {
-        selectedOptions.push({ label: 'Priority Service', price: '1 000 MDL/zi', category: 'vip' });
+        selectedOptions.push({ label: 'Serviciu Prioritar', price: '1 000 MDL/zi', category: 'vip' });
     }
 
     // Insurance
-    if (parsedOptions.tireInsurance) {
-        selectedOptions.push({ label: 'Asigurare anvelope & parbriz', price: '+20%', category: 'insurance' });
-    }
+    // Tire insurance option removed
 
     // Additional
     if (parsedOptions.childSeat) {

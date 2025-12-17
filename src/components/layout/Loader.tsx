@@ -11,7 +11,7 @@ const preloadImages = (imageUrls: string[]): Promise<void[]> => {
     return new Promise<void>((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        console.log(`✅ Image loaded: ${url}`);
+        
         resolve();
       };
       img.onerror = () => {

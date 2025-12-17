@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { cars as staticCars } from '../../../data/cars';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
-import { OrderDetailsModal } from '../../../components/modals/OrderDetailsModal';
+import { RentalDetailsModal } from '../../../components/modals/OrderDetailsModal';
 import { ContractCreationModal } from '../../../components/modals/ContractCreationModal';
-import { cancelRentalOrder, redoRentalOrder, fetchRentalsOnly } from '../../../lib/orders';
+import { cancelRentalOrder, redoRentalOrder, fetchRentalsForCalendarPage, fetchRentalsForCalendarPageByMonth } from '../../../lib/orders';
+import { updateBorrowRequest } from '../../../lib/db/requests/requests';
 import { SalesChartCard } from '../../../components/dashboard/Chart';
 import { motion } from 'framer-motion';
 import { Save, X, Loader2 } from 'lucide-react';
@@ -298,6 +299,7 @@ export const OrdersViewSection: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpening, setIsModalOpening] = useState(false);
     const [showAddOrderModal, setShowAddOrderModal] = useState(false);
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [processingOrder, setProcessingOrder] = useState<string | null>(null);
@@ -346,7 +348,7 @@ export const OrdersViewSection: React.FC = () => {
         if (cars.length === 0) return;
         try {
             setOrdersLoading(true);
-            const data = await fetchRentalsOnly(cars);
+            const data = await fetchRentalsForCalendarPageByMonth(cars);
             const rentalsOnly = data.filter(order => order.type === 'rental');
             setOrders(rentalsOnly);
         } catch (error) {
@@ -360,7 +362,7 @@ export const OrdersViewSection: React.FC = () => {
         if (cars.length > 0) {
             loadOrders();
         }
-    }, [cars]);
+    }, [cars, searchParams]); // Reload when cars load or when navigation occurs
 
     const handleCancelOrder = async (order: OrderDisplay) => {
         setProcessingOrder(order.id.toString());
@@ -369,22 +371,15 @@ export const OrdersViewSection: React.FC = () => {
             if (result.success) {
                 // If this order was created from a request, also mark the request as REJECTED
                 const requestId = (order as any).request_id;
-                console.log('Order being cancelled:', order.id, 'Request ID:', requestId, 'Order object:', order);
                 if (requestId) {
                     try {
-                        console.log('Attempting to update request', requestId, 'to REJECTED');
                         const updateResult = await updateBorrowRequest(requestId.toString(), { status: 'REJECTED' } as any);
-                        console.log('Update result:', updateResult);
                         if (!updateResult.success) {
                             console.warn('Failed to update corresponding request status:', updateResult.error);
-                        } else {
-                            console.log('Successfully updated request to REJECTED');
                         }
                     } catch (requestError) {
                         console.warn('Error updating corresponding request:', requestError);
                     }
-                } else {
-                    console.log('No request_id found for this order');
                 }
 
                 showSuccess('Comanda a fost anulată cu succes și cererea corespunzătoare a fost setată ca respinsă!');
@@ -392,6 +387,7 @@ export const OrdersViewSection: React.FC = () => {
                 setIsModalOpen(false);
                 setSelectedOrder(null);
                 setOrderNumber(undefined);
+                setIsModalOpening(false);
                 await loadOrders();
             } else {
                 showError(`Eșuare la anularea comenzii: ${result.error || 'Eroare necunoscută'}`);
@@ -414,6 +410,7 @@ export const OrdersViewSection: React.FC = () => {
                 setIsModalOpen(false);
                 setSelectedOrder(null);
                 setOrderNumber(undefined);
+                setIsModalOpening(false);
                 await loadOrders();
             } else {
                 showError(`Failed to restore order: ${result.error || 'Unknown error'}`);
@@ -687,10 +684,16 @@ export const OrdersViewSection: React.FC = () => {
     const [showContractModal, setShowContractModal] = useState(false);
 
     const handleOrderClick = (order: OrderDisplay, orderNum: number) => {
-        console.log('handling order click for order: ', order)
-        setSelectedOrder(order);
-        setOrderNumber(orderNum);
-        setIsModalOpen(true);
+        if (!isModalOpening) {
+            setIsModalOpening(true);
+            setSelectedOrder(order);
+            setOrderNumber(orderNum);
+            setIsModalOpen(true);
+            // Reset modal opening state after animation
+            setTimeout(() => {
+                setIsModalOpening(false);
+            }, 300);
+        }
     };
 
     if (loading) {
@@ -838,12 +841,13 @@ export const OrdersViewSection: React.FC = () => {
             </motion.div>
 
             {/* Order Details Modal */}
-            <OrderDetailsModal
+            <RentalDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
-                    setIsModalOpen(false);
+                    
                     setSelectedOrder(null);
                     setOrderNumber(undefined);
+                    setIsModalOpening(false);
                 }}
                 order={selectedOrder}
                 orderNumber={orderNumber}
@@ -854,6 +858,7 @@ export const OrdersViewSection: React.FC = () => {
                 onOpenContractModal={() => {
                     setIsModalOpen(false); // Close order details modal
                     setShowContractModal(true); // Open contract modal
+                    setIsModalOpening(false);
                 }}
             />
             {/* Contract Creation Modal */}
@@ -873,6 +878,7 @@ export const OrdersViewSection: React.FC = () => {
                             // Also close the order details modal and clear selection
                             setIsModalOpen(false);
                             setSelectedOrder(null);
+                            setIsModalOpening(false);
                         }}
                     />
                 ) : null;
@@ -883,7 +889,6 @@ export const OrdersViewSection: React.FC = () => {
                 <OrderFormModal
                     onSave={async (orderData: Partial<OrderDisplay>) => {
                         // TODO: Implement save to database
-                        console.log('Saving order:', orderData);
                         // For now, just close the modal
                         setShowAddOrderModal(false);
                         // Reload orders

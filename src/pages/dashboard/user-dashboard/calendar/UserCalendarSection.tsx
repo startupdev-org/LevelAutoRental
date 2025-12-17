@@ -2,21 +2,21 @@ import React, { useState, useMemo } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from "date-fns";
 import { motion } from "framer-motion";
 import { User, Clock, X } from "lucide-react";
-import { Rental } from "../../../../lib/orders";
-import { Car } from "../../../../types";
+import { BorrowRequestDTO, Car } from "../../../../types";
+import { getBorrowRequestsStatusDisplay } from "../../../../utils/car/car";
 
-interface CalendarSectionProps {
+interface UserCalendarSectionProps {
     month: Date;
     setMonth: React.Dispatch<React.SetStateAction<Date>>;
-    orders: Rental[];
+    orders: BorrowRequestDTO[];
     t: (key: string) => string;
     car: Car | null;
     onCarChange: (car: Car | null) => void;
 }
 
-export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month, setMonth, t, car, onCarChange }) => {
+export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders, month, setMonth, t, car, onCarChange }) => {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<BorrowRequestDTO | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const nextMonth = () => setMonth(prev => addMonths(prev, 1));
@@ -27,12 +27,13 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
         setSelectedDate(day);
     };
 
-    const getOrderNumber = (order: Rental) => order.id;
+    const getOrderNumber = (order: BorrowRequestDTO) => order.id;
 
     const getStatusDisplay = (status: string) => {
         switch (status) {
             case "pending": return { text: "Pending", className: "bg-yellow-500/30 text-yellow-300" };
             case "active": return { text: "Active", className: "bg-green-500/30 text-green-300" };
+            case "processed": return { text: "Started", className: "bg-blue-500/30 text-blue-300" };
             case "completed": return { text: "Completed", className: "bg-blue-500/30 text-blue-300" };
             case "canceled": return { text: "Canceled", className: "bg-red-500/30 text-red-300" };
             default: return { text: status, className: "bg-gray-500/30 text-gray-300" };
@@ -101,12 +102,12 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
             .sort((a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime());
     }, [selectedDate, orders]);
 
-    const renderOrderCard = (order: Rental, isPickup: boolean) => {
+    const renderOrderCard = (order: BorrowRequestDTO, isPickup: boolean) => {
         if (!order || !order.car) return null;
 
         const carName = `${order.car.make} ${order.car.model}`;
-        const colorClass = isPickup ? "text-yellow-400" : "text-blue-400";
-        const statusDisplay = getStatusDisplay(order.rental_status);
+        const colorClass = isPickup ? "text-yellow-400" : "text-blue-4  00";
+        const statusDisplay = getBorrowRequestsStatusDisplay(order.status);
 
         return (
             <motion.div
@@ -138,7 +139,7 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                         <div className="flex items-center gap-2">
                             <Clock className={`w-4 h-4 ${colorClass}/70 flex-shrink-0`} />
                             <span className={`${colorClass} text-lg font-bold tracking-tight`}>
-                                {isPickup ? order.start_time : order.end_time}
+                                {isPickup ? order.start_time?.slice(0, 5) : order.end_time?.slice(0, 5)}
                             </span>
                         </div>
                     </div>
@@ -155,7 +156,7 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                     className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                         <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors">◀</button>
-                        <div className="text-sm font-medium text-white">{month.toLocaleDateString("ro-RO", { month: "long", year: "numeric" })}</div>
+                        <div className="text-sm font-medium text-white">{month.toLocaleDateString(t('config.date'), { month: "long", year: "numeric" })}</div>
                         <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-xl transition-colors">▶</button>
                     </div>
                     <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
@@ -177,11 +178,22 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                             const isRelated = relatedDates.has(day);
 
                             let dayClass = '';
-                            if (isToday && isSelected) dayClass = 'bg-red-500 text-white ring-1 ring-white/60 font-semibold';
-                            else if (isToday) dayClass = 'bg-red-500 text-white';
-                            else if (isSelected || isRelated) dayClass = hasEvents ? 'bg-blue-500/20 text-white ring-1 font-semibold' : 'bg-white/5 ring-1 text-white font-semibold';
-                            else if (hasEvents) dayClass = isPast ? 'bg-gray-500/40 text-white' : 'bg-yellow-500/20 text-white';
-                            else dayClass = 'hover:bg-white/10';
+
+                            if (isToday && isSelected)
+                                dayClass = 'bg-red-500 text-white ring-2 ring-white/70 font-semibold';
+                            else if (isToday)
+                                dayClass = 'bg-red-500 text-white';
+                            else if (isSelected)
+                                dayClass = 'bg-white/20 text-white ring-2 ring-white font-semibold';
+                            else if (isRelated)
+                                dayClass = 'bg-blue-500/20 text-white ring-1 ring-white/40 font-semibold';
+                            else if (hasEvents)
+                                dayClass = isPast
+                                    ? 'bg-gray-500/40 text-white'
+                                    : 'bg-yellow-500/20 text-white';
+                            else
+                                dayClass = 'hover:bg-white/10';
+
 
                             return (
                                 <div
@@ -233,10 +245,12 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-0">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-bold text-white">
-                                {(() => {
-                                    const dateStr = displayDateObj.toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                                    return dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-                                })()}
+                                {displayDateObj.toLocaleDateString(t('config.date'), {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
                                 {!selectedDate && <span className="ml-2 text-sm text-gray-400">({t("admin.calendar.today")})</span>}
                             </h3>
                             {selectedDate && <button onClick={() => setSelectedDate(null)} className="text-gray-400 hover:text-white transition-colors p-1">✕</button>}
@@ -268,3 +282,4 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({ orders, month,
         </div >
     );
 };
+

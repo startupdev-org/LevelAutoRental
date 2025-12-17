@@ -304,7 +304,7 @@ export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarCompon
                             <span className="text-sm font-medium">
                                 {favoriteCar.car?.fuel_type === 'gasoline' ? 'Benzină' :
                                     favoriteCar.car?.fuel_type === 'diesel' ? 'Diesel' :
-                                        favoriteCar.car?.fuel_type === 'petrol' ? 'Benzină' :
+                                        favoriteCar.car?.fuel_type === 'petrol' ? t('car.fuel.benzina') :
                                             favoriteCar.car?.fuel_type === 'hybrid' ? 'Hibrid' :
                                                 favoriteCar.car?.fuel_type === 'electric' ? 'Electric' : favoriteCar.car?.fuel_type}
                             </span>

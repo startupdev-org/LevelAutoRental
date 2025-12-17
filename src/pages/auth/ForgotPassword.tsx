@@ -17,7 +17,7 @@ export const ForgotPassword: React.FC = () => {
 
         sendForgotPasswordEmail(email)
 
-        console.log("forgot password", { email });
+        
         setIsSubmitted(true);
     };
 

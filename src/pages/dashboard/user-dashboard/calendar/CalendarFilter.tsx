@@ -23,8 +23,7 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
     setFilters,
     setCar
 }) => {
-    // console.log('selected car id in the calendar filter is: ', filters.carId)
-    const [cars, setCars] = useState<Car[] | null>(null);
+    // 
     const [page, setPage] = useState(1);
     const pageSize = 5;
     const [total, setTotal] = useState(0);
@@ -55,7 +54,6 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
     }, [page, debouncedSearch]);
 
     const handleFilterChange = (field: string, value: string) => {
-        console.log('the new filters is: ', field, ' ; value = ', value)
         setFilters({ ...filters, [field]: value });
         if (field === "carId")
             setShowFilters(false);

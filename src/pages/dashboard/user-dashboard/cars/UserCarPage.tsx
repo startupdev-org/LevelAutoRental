@@ -9,12 +9,13 @@ import {
 import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
 import { Car, CarFilterOptions, Car as CarType } from '../../../../types';
-import { fetchCarsWithMainImageFilteredPaginated } from '../../../../lib/db/cars/cars-page/cars';
+import { fetchCars } from '../../../../lib/db/cars/cars-page/cars';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { EmptyState } from '../../../../components/ui/EmptyState';
-import { UserCreateRentalModal } from '../../../../components/modals/UserCreateRentalRequestModal';
 import { supabase } from '../../../../lib/supabase';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
+import { AnimatePresence } from 'framer-motion';
+import { UserCreateRentalRequestModal } from '../../../../components/modals/UserCreateRentalRequestModal/UserCreateRentalRequestModal';
 
 
 // Cars Management View Component
@@ -22,6 +23,7 @@ export const CarsView: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const [cars, setCars] = useState<CarType[]>([]);
+    const [allCars, setAllCars] = useState<CarType[]>([]);
 
     // Modal state for rental request
     const [isRentalModalOpen, setIsRentalModalOpen] = useState(false);
@@ -42,16 +44,21 @@ export const CarsView: React.FC = () => {
     async function handleFetchCarsWithSortByFilters() {
         setLoading(true); // start loading
         try {
-            const filters = getCurrentFilters();
-            const { cars, total } = await fetchCarsWithMainImageFilteredPaginated(filters);
-            setCars(cars);
-            setTotalCars(total);
+            const allCars = await fetchCars();
+            setAllCars(allCars);
+            setTotalCars(allCars.length);
 
-            // Batch fetch availability and images for all cars
-            if (cars && cars.length > 0) {
+            // Apply client-side pagination
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedCars = allCars.slice(startIndex, endIndex);
+            setCars(paginatedCars);
+
+            // Batch fetch availability and images for current page cars only
+            if (paginatedCars && paginatedCars.length > 0) {
                 await Promise.all([
-                    fetchCarsAvailability(cars),
-                    fetchCarsImages(cars)
+                    fetchCarsAvailability(paginatedCars),
+                    fetchCarsImages(paginatedCars)
                 ]);
             }
         } catch (error) {
@@ -61,10 +68,20 @@ export const CarsView: React.FC = () => {
         }
     }
 
-    // Fetch cars on mount and when page changes
+    // Fetch cars on mount
     useEffect(() => {
         handleFetchCarsWithSortByFilters();
-    }, [page]);
+    }, []);
+
+    // Handle page changes by slicing allCars
+    useEffect(() => {
+        if (allCars.length > 0) {
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedCars = allCars.slice(startIndex, endIndex);
+            setCars(paginatedCars);
+        }
+    }, [page, allCars, pageSize]);
 
 
     const getCurrentFilters = (): CarFilterOptions => {
@@ -82,10 +99,21 @@ export const CarsView: React.FC = () => {
         navigate(`/cars/${car.id}`);
     };
 
-    const handleRentCar = (car: CarType) => {
+    function handleOpenModal(car: CarType) {
+        
+        
         setSelectedCarForRental(car);
+        
         setIsRentalModalOpen(true);
+        
     };
+
+    function handleCloseRentalModal() {
+        
+        setIsRentalModalOpen(false);
+        setSelectedCarForRental(null);
+    }
+
 
     // Batch fetch availability data for all cars
     const fetchCarsAvailability = async (cars: CarType[]) => {
@@ -109,7 +137,7 @@ export const CarsView: React.FC = () => {
                     .from('BorrowRequest')
                     .select('*')
                     .eq('car_id', carId)
-                    .in('status', ['APPROVED', 'EXECUTED'])
+                    .in('status', ['APPROVED'])
                     .order('requested_at', { ascending: false })
             );
 
@@ -214,7 +242,7 @@ export const CarsView: React.FC = () => {
                 start_time: rental.start_time || '09:00:00',
                 end_date: rental.end_date,
                 end_time: rental.end_time || '17:00:00',
-                status: 'EXECUTED' as const,
+                status: 'APPROVED' as const,
                 created_at: rental.created_at,
                 updated_at: rental.updated_at,
             }));
@@ -435,7 +463,7 @@ export const CarsView: React.FC = () => {
                     if (result) return true;
                 }
 
-                // Check active rentals (which come from EXECUTED requests)
+                // Check active rentals (which come from APPROVED requests)
                 if (carRentalsForCalendar.length > 0) {
                     const result = carRentalsForCalendar.some(rental => {
                         if (!rental.start_date || !rental.end_date) return false;
@@ -687,7 +715,13 @@ export const CarsView: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <div className="p-5 flex flex-col justify-between flex-1 cursor-pointer" onClick={() => handleViewCarDetails(carWithImages)}>
+                <div className="p-5 flex flex-col justify-between flex-1 cursor-pointer" onClick={(e) => {
+                    // Don't navigate if clicking on the rent button or its children
+                    if (e.target instanceof HTMLElement && e.target.closest('button')) {
+                        return;
+                    }
+                    handleViewCarDetails(carWithImages);
+                }}>
                     {/* Car Name and Year */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between">
@@ -737,7 +771,7 @@ export const CarsView: React.FC = () => {
                             <span className="text-sm font-medium">
                                 {carWithImages.fuel_type === 'gasoline' ? 'Benzină' :
                                     carWithImages.fuel_type === 'diesel' ? 'Diesel' :
-                                        carWithImages.fuel_type === 'petrol' ? 'Benzină' :
+                                        carWithImages.fuel_type === 'petrol' ? t('car.fuel.benzina') :
                                             carWithImages.fuel_type === 'hybrid' ? 'Hibrid' :
                                                 carWithImages.fuel_type === 'electric' ? 'Electric' : carWithImages.fuel_type}
                             </span>
@@ -777,10 +811,7 @@ export const CarsView: React.FC = () => {
 
                         {/* Rent Button */}
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleRentCar(carWithImages);
-                            }}
+                            onClick={() => handleOpenModal(carWithImages)}
                             disabled={carWithImages.status !== 'available'}
                             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-sm font-semibold ${carWithImages.status === 'available'
                                 ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
@@ -924,17 +955,15 @@ export const CarsView: React.FC = () => {
             )}
 
             {/* Rental Request Modal */}
-            {isRentalModalOpen && selectedCarForRental && (
-                <UserCreateRentalModal
-                    onClose={() => {
-                        setIsRentalModalOpen(false);
-                        setSelectedCarForRental(null);
-                    }}
+            {selectedCarForRental && (
+                <UserCreateRentalRequestModal
+                    isOpen={isRentalModalOpen}
+                    onClose={handleCloseRentalModal}
                     car={selectedCarForRental}
-                    propApprovedBorrowRequests={carsAvailability.get(selectedCarForRental.id.toString())?.borrowRequests || []}
-                    effectiveCarRentalsForCalendar={carsAvailability.get(selectedCarForRental.id.toString())?.rentals || []}
+                    initialCarId={selectedCarForRental?.id}
                 />
             )}
+
         </div>
     );
 };

@@ -1,13 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Rental } from '../../../../lib/orders';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search, Plus } from 'lucide-react';
 import { fetchRentalsHistory } from '../../../../lib/db/rentals/rentals';
 import { EmptyState } from '../../../ui/EmptyState';
-import LoadingScreen from '../../../layout/Loader';
 import { LoadingState } from '../../../ui/LoadingState';
-import { UserCreateRentalModal } from '../../../modals/UserCreateRentalRequestModal';
-import { getLoggedUser } from '../../../../lib/db/user/profile';
+import { Rental, RentalDTO } from '../../../../types';
+import UserCreateRentalRequestModal from '../../../modals/UserCreateRentalRequestModal/UserCreateRentalRequestModal';
 
 type OrdersTableProps = {
     title: string;
@@ -15,9 +13,7 @@ type OrdersTableProps = {
     onAddOrder: () => void;
 };
 
-export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick, onAddOrder }) => {
-
-    const user = getLoggedUser();
+export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClick }) => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -28,7 +24,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
     const [page, setPage] = useState(1);
     const pageSize = 5;
 
-    const [orders, setOrders] = useState<Rental[]>([]);
+    const [orders, setOrders] = useState<RentalDTO[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
 
@@ -55,8 +51,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
 
     async function handleFetchOrdersHistory() {
         setLoading(true);
-        // console.log('Making a request for this filters: ', { page, pageSize, sortBy, sortOrder, debouncedSearchQuery })
-        const { rentals, total } = await fetchRentalsHistory(page, pageSize, sortBy, sortOrder, debouncedSearchQuery);
+        // 
 
         setOrders(rentals);
         setTotal(total);
@@ -69,13 +64,6 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages) return;
         setPage(newPage);
-    };
-
-
-    const handleAddOrder = () => {
-        if (onAddOrder) {
-            onAddOrder();
-        }
     };
 
     const getStatusBadge = (status: string) => {
@@ -105,7 +93,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
 
     const handleOrderClick = (order: Rental) => {
         if (onOrderClick) {
-            const orderNumber = order.id
+            const orderNumber = order.id || '';
             onOrderClick(order, parseInt(orderNumber));
         }
     };
@@ -305,7 +293,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
 
 
             {isModalOpen && (
-                <UserCreateRentalModal
+                <UserCreateRentalRequestModal
                     onClose={closeModal}
                 />
             )}

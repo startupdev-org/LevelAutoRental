@@ -1,9 +1,9 @@
-import { BorrowRequest, BorrowRequestDTO, Car, Rental } from '../../../types';
+import { BorrowRequest, BorrowRequestDTO, Car } from '../../../types';
 import { getCarPrice } from '../../../utils/car/pricing';
-import { getDateDiffInDays } from '../../../utils/date';
-import { formatTimestamp } from '../../../utils/time/time';
+import { calculateRentalDuration, getDateDiffInDays } from '../../../utils/date';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
+import { formatDateForSQL } from '../rentals/rentals';
 import { getLoggedUser } from '../user/profile';
 
 
@@ -32,7 +32,7 @@ export async function saveBorrowRequest(borrowRequest: any) {
             throw error;
         }
 
-        console.log('Borrow request saved successfully:', data);
+        
         return data;
     } catch (err) {
         console.error('Unexpected error saving borrow request:', err);
@@ -59,6 +59,65 @@ export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
     } catch (error) {
         console.error('Error in fetchBorrowRequests:', error);
         return [];
+    }
+}
+
+/**
+ * Fetch a single borrow request by ID
+ */
+export async function fetchBorrowRequestById(requestId: string): Promise<BorrowRequestDTO | null> {
+    try {
+        const { data, error } = await supabase
+            .from('BorrowRequest')
+            .select('*')
+            .eq('id', parseInt(requestId))
+            .single();
+
+        if (error) {
+            console.error('Error fetching borrow request by ID:', error);
+            return null;
+        }
+
+        if (!data) {
+            return null;
+        }
+
+        // Fetch the car data
+        const car = await fetchCarWithImagesById(data.car_id);
+        if (!car) {
+            console.error('Car not found for request:', data.car_id);
+            return null;
+        }
+
+        // Use the stored total_amount from database, don't recalculate
+        const requestDTO: BorrowRequestDTO = {
+            id: data.id.toString(),
+            car_id: data.car_id.toString(),
+            start_date: data.start_date,
+            start_time: data.start_time,
+            end_date: data.end_date,
+            end_time: data.end_time,
+            customer_name: data.customer_name,
+            customer_first_name: data.customer_first_name,
+            customer_last_name: data.customer_last_name,
+            customer_email: data.customer_email,
+            customer_phone: data.customer_phone,
+            comment: data.comment,
+            options: data.options,
+            status: data.status,
+            requested_at: data.requested_at,
+            updated_at: data.updated_at,
+            price_per_day: data.price_per_day?.toString() || '0',
+            total_amount: data.total_amount || 0,
+            contract_url: data.contract_url,
+            car: car
+        };
+
+        return requestDTO;
+
+    } catch (error) {
+        console.error('Error in fetchBorrowRequestById:', error);
+        return null;
     }
 }
 
@@ -123,6 +182,7 @@ export async function fetchBorrowRequestsForDisplay(
             return { data: [], total: 0 }
         }
 
+
         const borrowRequestDTOs = await Promise.all(
             allRequests.map(async (request) => {
                 const car = await fetchCarWithImagesById(request.car_id)
@@ -144,9 +204,9 @@ export async function fetchBorrowRequestsForDisplay(
  */
 export async function acceptBorrowRequest(
     requestId: string
-): Promise<{ success: boolean; rentalId?: string; error?: string }> {
+): Promise<{ success: boolean; error?: string }> {
     try {
-        // 1️⃣ Fetch the pending borrow request
+        // 1️⃣ Fetch the borrow request (must be PENDING)
         const { data: request, error: fetchError } = await supabase
             .from('BorrowRequest')
             .select('*')
@@ -158,38 +218,7 @@ export async function acceptBorrowRequest(
             return { success: false, error: 'Request not found or not pending' };
         }
 
-        const rentalData: Rental = {
-            car_id: request.car_id,
-            request_id: request.id,
-            rental_status: 'APPROVED',
-            start_date: request.start_date,
-            start_time: request.start_time,
-            end_date: request.end_date,
-            end_time: request.end_time,
-            price_per_day: request.price_per_day,
-            total_amount: request.total_amount,
-            subtotal: request.subtotal,
-            taxes_fees: request.taxes_fees,
-            additional_taxes: request.additional_taxes,
-        };
-
-        // If the request has a user_id, set it. Otherwise, use guest_email
-        if (request.user_id) {
-            rentalData.user_id = request.user_id;
-        } else if (request.email) {
-            rentalData.customer_email = request.email;
-        }
-
-        const { data: rental, error: insertError } = await supabase
-            .from('Rentals')
-            .insert([rentalData])
-            .select()
-            .single();
-
-        if (insertError || !rental) {
-            return { success: false, error: insertError?.message || 'Failed to create rental' };
-        }
-
+        // 2️⃣ Update request status to APPROVED (rental creation happens later in handleStartRental)
         const { error: updateError } = await supabase
             .from('BorrowRequest')
             .update({ status: 'APPROVED' })
@@ -199,7 +228,7 @@ export async function acceptBorrowRequest(
             return { success: false, error: updateError.message || 'Failed to update borrow request' };
         }
 
-        return { success: true, rentalId: rental.id };
+        return { success: true };
     } catch (error) {
         console.error('Error accepting borrow request:', error);
         return {
@@ -212,15 +241,24 @@ export async function acceptBorrowRequest(
 /**
  * Reject a borrow request
  */
-export async function rejectBorrowRequest(requestId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+export async function rejectBorrowRequest(
+    requestId: string,
+    reason?: string
+): Promise<{ success: boolean; error?: string }> {
     try {
+        // Build the update object dynamically
+        const updateData: Record<string, any> = {
+            status: 'REJECTED',
+            updated_at: new Date().toISOString(),
+        };
+
+        if (reason != null && reason.trim() !== '') {
+            updateData.reason = reason.trim();
+        }
+
         const { error } = await supabase
             .from('BorrowRequest')
-            .update({
-                status: 'REJECTED',
-                updated_at: new Date().toISOString(),
-                // Store rejection reason if there's a notes/comment field
-            })
+            .update(updateData)
             .eq('id', requestId);
 
         if (error) {
@@ -230,9 +268,13 @@ export async function rejectBorrowRequest(requestId: string, reason?: string): P
         return { success: true };
     } catch (error) {
         console.error('Error rejecting borrow request:', error);
-        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }
+
 
 /**
  * Undo reject a borrow request (restore to PENDING)
@@ -263,20 +305,7 @@ export async function undoRejectBorrowRequest(requestId: string): Promise<{ succ
  */
 export async function updateBorrowRequest(
     requestId: string,
-    updates: {
-        car_id?: string;
-        start_date?: string;
-        start_time?: string;
-        end_date?: string;
-        end_time?: string;
-        customer_name?: string;
-        customer_email?: string;
-        customer_phone?: string;
-        customer_age?: string;
-        comment?: string;
-        options?: any;
-        status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'CANCELLED';
-    }
+    updates: Partial<BorrowRequestDTO>
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const updateData: any = {
@@ -291,10 +320,12 @@ export async function updateBorrowRequest(
         if (updates.customer_name !== undefined) updateData.customer_name = updates.customer_name;
         if (updates.customer_email !== undefined) updateData.customer_email = updates.customer_email;
         if (updates.customer_phone !== undefined) updateData.customer_phone = updates.customer_phone;
-        if (updates.customer_age !== undefined) updateData.customer_age = updates.customer_age;
+        // if (updates.customer_age !== undefined) updateData.customer_age = updates.customer_age;
         if (updates.comment !== undefined) updateData.comment = updates.comment;
         if (updates.options !== undefined) updateData.options = typeof updates.options === 'string' ? updates.options : JSON.stringify(updates.options);
         if (updates.status !== undefined) updateData.status = updates.status;
+        if ((updates as any).contract_url !== undefined) updateData.contract_url = (updates as any).contract_url;
+        if ((updates as any).total_amount !== undefined) updateData.total_amount = (updates as any).total_amount;
 
         const { error } = await supabase
             .from('BorrowRequest')
@@ -383,7 +414,96 @@ export async function createUserBorrowRequest(
 ): Promise<{ success: boolean; requestId?: string; error?: string }> {
     try {
 
-        console.log('the total amount: ', request.total_amount)
+
+        // Application-level security for guest users (since RLS is disabled)
+        if (!request.customer_email || !request.customer_first_name || !request.customer_last_name) {
+            throw new Error('Missing required customer information for booking')
+        }
+
+        // Input sanitization and validation
+        const sanitizeInput = (input: string) => input.trim().substring(0, 100) // Max 100 chars, trim whitespace
+
+        request.customer_email = request.customer_email.toLowerCase().trim()
+        request.customer_first_name = sanitizeInput(request.customer_first_name)
+        request.customer_last_name = sanitizeInput(request.customer_last_name)
+        if (request.customer_phone) {
+            request.customer_phone = request.customer_phone.trim().substring(0, 20)
+        }
+        if (request.comment) {
+            request.comment = sanitizeInput(request.comment)
+        }
+
+        // Email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(request.customer_email)) {
+            throw new Error('Invalid email format')
+        }
+
+        // Name validation (basic)
+        if (!/^[a-zA-Z\s\-']{2,50}$/.test(request.customer_first_name) ||
+            !/^[a-zA-Z\s\-']{2,50}$/.test(request.customer_last_name)) {
+            throw new Error('Invalid name format')
+        }
+
+        // Validate dates are reasonable (not too far in future/past)
+        const startDate = new Date(request.start_date)
+        const endDate = new Date(request.end_date)
+        const now = new Date()
+        const maxFutureDate = new Date()
+        maxFutureDate.setMonth(maxFutureDate.getMonth() + 6) // Max 6 months ahead
+
+        if (startDate < new Date(now.getFullYear(), now.getMonth(), now.getDate()) || startDate > maxFutureDate) {
+            throw new Error('Invalid booking dates - must be today or within 6 months')
+        }
+
+        if (endDate <= startDate) {
+            throw new Error('End date must be after start date')
+        }
+
+        // Enhanced rate limiting and abuse prevention
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+        const recentRequests = await supabase
+            .from('BorrowRequest')
+            .select('id, customer_email, created_at')
+            .eq('customer_email', request.customer_email)
+            .gte('created_at', oneHourAgo.toISOString())
+
+        // Stricter rate limiting: max 3 requests per hour per email
+        if (recentRequests.data && recentRequests.data.length >= 3) {
+            console.warn('Rate limit exceeded:', {
+                email: request.customer_email,
+                recentRequests: recentRequests.data.length,
+                timeWindow: '1 hour'
+            })
+            throw new Error('Too many booking requests. Please wait before submitting another request.')
+        }
+
+        // Additional abuse prevention: check for suspicious patterns
+        const suspiciousPatterns = [
+            /<script/i, /javascript:/i, /on\w+\s*=/i, // XSS attempts
+            /(\.\.|\/etc|passwd|shadow)/i, // Path traversal
+            /([';]+|union.*select|drop.*table)/i // SQL injection attempts
+        ]
+
+        const suspiciousData = [
+            request.customer_email,
+            request.customer_first_name,
+            request.customer_last_name,
+            request.comment
+        ].filter(field => field && suspiciousPatterns.some(pattern => pattern.test(field)))
+
+        if (suspiciousData.length > 0) {
+            console.warn('Suspicious booking request detected:', {
+                email: request.customer_email,
+                timestamp: new Date().toISOString(),
+                suspiciousFields: suspiciousData.length
+            })
+            throw new Error('Invalid request data. Please check your input.')
+        }
+
+        // Validate phone number format (basic)
+        if (request.customer_phone && !/^[\d\s\-\+\(\)]{7,20}$/.test(request.customer_phone.replace(/\s/g, ''))) {
+            throw new Error('Invalid phone number format')
+        }
 
         let finalUserId: string | null = null;
         try {
@@ -391,17 +511,26 @@ export async function createUserBorrowRequest(
             if (user !== null)
                 finalUserId = user.id
         } catch {
-            console.log('the user is not logged in')
-            console.log('using null values for the user id')
+            // User not logged in, continue with null userId
         }
 
-        const rentalDays = getDateDiffInDays(request.start_date, request.end_date)
-
+        // Fetch the car to calculate pricing
         const car = await fetchCarById(request.car_id);
+        if (!car) {
+            throw new Error('Car not found!');
+        }
 
-        if (car === null) throw Error('Car not found!')
+        // Calculate rental duration to determine correct price tier
+        const duration = calculateRentalDuration(
+            request.start_date,
+            request.start_time || '09:00',
+            request.end_date,
+            request.end_time || '17:00'
+        );
+        const rentalDays = duration.days;
 
-        const price_per_day = getCarPrice(rentalDays, car)
+        const price_per_day_str = getCarPrice(rentalDays, car)
+        const price_per_day = parseFloat(price_per_day_str);
 
         const insertData: BorrowRequest = {
             user_id: finalUserId,
@@ -424,7 +553,8 @@ export async function createUserBorrowRequest(
             options: request.options
         };
 
-        const { data, error } = await supabase
+        try {
+            const { data, error } = await supabase
             .from('BorrowRequest')
             .insert(insertData)
             .select()
@@ -438,6 +568,10 @@ export async function createUserBorrowRequest(
         return { success: true, requestId: data.id.toString() };
     } catch (error) {
         console.error('Error creating user borrow request:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+    } catch (error) {
+        console.error('Error in createUserBorrowRequest:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
@@ -463,7 +597,7 @@ export async function createRentalManually(
         rentalStatus?: 'CONTRACT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
         notes?: string;
         specialRequests?: string;
-        features?: string[];
+        options?: any; // Service options (unlimitedKm, priorityService, etc.) - stored as JSON
         customerName?: string;
         customerEmail?: string;
         customerPhone?: string;
@@ -471,6 +605,7 @@ export async function createRentalManually(
         customerLastName?: string;
         customerAge?: number;
         requestId?: string | number; // Link to BorrowRequest if rental was created from a request
+        contractUrl?: string; // Contract URL if one exists
     }
 ): Promise<{ success: boolean; rentalId?: string; error?: string }> {
     try {
@@ -479,13 +614,18 @@ export async function createRentalManually(
             return { success: false, error: 'Car not found' };
         }
 
-        const pricePerDay = (car as any)?.pricePerDay || car.price_per_day || 0;
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+        // Calculate rental duration to determine correct price tier
+        const duration = calculateRentalDuration(startDate, startTime, endDate, endTime);
+        const rentalDays = duration.days;
+
+        // Get the correct price per day based on rental duration
+        const pricePerDayStr = getCarPrice(rentalDays, car);
+        const pricePerDay = parseFloat(pricePerDayStr) || 0;
+
+        
 
         // Calculate subtotal if not provided
-        const subtotal = options?.subtotal || (pricePerDay * days);
+        const subtotal = options?.subtotal || (pricePerDay * rentalDays);
         // Calculate taxes (10% of subtotal) if not provided
         const taxesFees = options?.taxesFees || (subtotal * 0.1);
         const additionalTaxes = options?.additionalTaxes || 0;
@@ -507,13 +647,14 @@ export async function createRentalManually(
                 taxes_fees: taxesFees,
                 additional_taxes: additionalTaxes,
                 total_amount: finalTotal,
-                rental_status: options?.rentalStatus || 'CONTRACT',
+                rental_status: options?.rentalStatus || 'ACTIVE',
                 payment_status: options?.paymentStatus || 'PENDING',
                 payment_method: options?.paymentMethod || null,
                 notes: options?.notes || null,
                 special_requests: options?.specialRequests || null,
-                features: options?.features || null,
+                options: options?.options || null, // Store service options as JSON
                 request_id: options?.requestId ? (typeof options.requestId === 'string' ? parseInt(options.requestId) : options.requestId) : null,
+                contract_url: options?.contractUrl || null,
             })
             .select()
             .single();
@@ -529,19 +670,32 @@ export async function createRentalManually(
     }
 }
 
-export async function isDateInActualApprovedRequest(
-    date: string,
-    carId: string
-): Promise<boolean> {
-    console.log(`checking if the car with id: ${carId} is available on: ${date}`)
+export async function isDateUnavailable(date: string, carId: string): Promise<boolean> {
+    const startOfDay = `${date} 00:00:00`;
+    const endOfDay = `${date} 23:59:59`;
 
     const { data, error } = await supabase
         .from('Rentals')
         .select('id')
         .eq('car_id', carId)
-        .eq('rental_status', 'APPROVED')
-        .lte('start_date', date)
-        .gte('end_date', date);
+        .eq('rental_status', 'ACTIVE')
+        .lte('start_date', endOfDay)
+        .gte('end_date', startOfDay);
+
+    if (error) {
+        console.error("Error checking date:", error);
+        return false;
+    }
+
+    return data.length > 0;
+}
+
+
+export async function isDateInActualApprovedRequest(
+    date: string,
+    carId: string
+): Promise<boolean> {
+    
 
     if (error) {
         console.error('Error checking date in rental:', error.message);
@@ -552,6 +706,7 @@ export async function isDateInActualApprovedRequest(
 }
 
 
+
 /**
  * Get the start date of the earliest future approved rental for a car after a given date
  * @param dateString The reference date (YYYY-MM-DD)
@@ -559,7 +714,7 @@ export async function isDateInActualApprovedRequest(
  * @returns The start date string of the next rental, or null if none found
  */
 export async function getEarliestFutureRentalStart(
-    dateString: string,
+    dateString: Date | string,
     carId: string
 ): Promise<string | null> {
     try {
@@ -567,7 +722,7 @@ export async function getEarliestFutureRentalStart(
             .from('Rentals')
             .select('start_date')
             .eq('car_id', carId)
-            .eq('rental_status', 'APPROVED')
+            .eq('rental_status', 'ACTIVE')
             .gt('start_date', dateString) // only future rentals
             .order('start_date', { ascending: true })
             .limit(1);
@@ -588,14 +743,146 @@ export async function getEarliestFutureRentalStart(
     }
 }
 
+/**
+ * Method just for the user !!!
+ * @param carId 
+ * @param month 
+ * @param status 
+ * @returns 
+ */
+export async function fetchBorrowRequestForUserCalendarPage(
+    carId?: string,
+    month?: Date,
+    status?: string
+): Promise<BorrowRequestDTO[]> {
+    const user = await getLoggedUser();
+    if (!user) return [];
+
+    let query = supabase
+        .from("BorrowRequest")
+        .select("*")
+        .eq('user_id', user.id)
 
 
-export function toBorrowRequestDTO(
+    // Filter by month (expects "YYYY-MM")
+    if (month) {
+        const year = month.getFullYear();
+        const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
+
+        // First day of current month
+        const firstDay = formatDateForSQL(year, m, 1);
+
+        // First day of next month using JS Date rollover
+        const nextMonthDate = new Date(year, m + 1, 1);
+        const nextMonthFirst = formatDateForSQL(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(), // always 0–11
+            1
+        );
+
+        query = query
+            .lt("start_date", nextMonthFirst)
+            .gte("end_date", firstDay);
+    }
+
+
+    if (carId) {
+        // if there is a selected car, fetch the orders for that car
+        query = query.eq('car_id', carId)
+    } else {
+        // otherwise fetch user's calendar 
+        query = query.eq("user_id", user.id)
+    }
+
+    if (status) {
+        query = query.eq("rental_status", status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching rentals calendar:", error);
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((row: any) =>
+            toBorrowRequestDTO(row, row.car_id)
+        )
+    );
+}
+
+
+export async function fetchBorrowRequestForCalendarPage(
+    carId?: string,
+    month?: Date,
+    status?: string
+): Promise<BorrowRequestDTO[]> {
+    const user = await getLoggedUser();
+    if (!user) return [];
+
+    
+
+    // Filter by month (expects "YYYY-MM")
+    if (month) {
+        const year = month.getFullYear();
+        const m = month.getMonth(); // 0-based: Jan = 0, Dec = 11
+
+        // First day of current month
+        const firstDay = formatDateForSQL(year, m, 1);
+
+        // First day of next month using JS Date rollover
+        const nextMonthDate = new Date(year, m + 1, 1);
+        const nextMonthFirst = formatDateForSQL(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(), // always 0–11
+            1
+        );
+
+        query = query
+            .lt("start_date", nextMonthFirst)
+            .gte("end_date", firstDay);
+    }
+
+
+    if (carId) {
+        query = query.eq('car_id', Number(carId));
+    }
+    if (status) {
+        query = query.eq("status", status);
+    }
+
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching borrow requests for admin calendar:", error);
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((request: BorrowRequest) =>
+            toBorrowRequestDTO(request)
+        )
+    );
+}
+
+
+
+export async function toBorrowRequestDTO(
     borrowRequest: BorrowRequest,
-    car: Car
-): BorrowRequestDTO {
+): Promise<BorrowRequestDTO> {
+    if (!borrowRequest.id) {
+        throw new Error("BorrowRequest must have an id to convert to DTO");
+    }
+
+    const car = await fetchCarById(borrowRequest.car_id);
+
     return {
         ...borrowRequest,
+        id: borrowRequest.id, // guaranteed string now
+        car_id: borrowRequest.car_id.toString(),
+        price_per_day: borrowRequest.price_per_day.toString(),
         car,
     };
 }

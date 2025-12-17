@@ -73,24 +73,62 @@ export async function updateProfile(user: Partial<User>) {
         if (user.last_name) updateData.last_name = user.last_name;
         if (user.phone_number) updateData.phone_number = user.phone_number;
 
-        // console.log('The data to update: ', updateData)
-
-        const { data, error } = await supabase
-            .from('Profiles')
-            .update(updateData)
-            .eq('id', user.id)
-            .select();
+        // 
 
         if (error) {
             console.error('Error updating profile:', error);
             return { success: false, error: error.message };
         }
 
-        console.log('Updated user profile:', data);
+        
         return { success: true, data };
     } catch (err) {
         console.error('Unexpected error updating user profile:', err);
         return { success: false, error: 'Unexpected error occurred' };
+    }
+}
+
+/**
+ * Fetch multiple user profiles by their IDs
+ */
+export async function fetchUserProfiles(userIds: string[]): Promise<User[]> {
+    try {
+        if (userIds.length === 0) return [];
+
+        const { data, error } = await supabase
+            .from('Profiles')
+            .select('*')
+            .in('id', userIds);
+
+        if (error) {
+            console.error('Error fetching user profiles:', error);
+            return [];
+        }
+
+        return data || [];
+    } catch (err) {
+        console.error('Unexpected error fetching user profiles:', err);
+        return [];
+    }
+}
+
+export async function fetchUserProfileByEmail(userEmail: string): Promise<User> {
+    try {
+        const { data, error } = await supabase
+            .from('Profiles')
+            .select('*')
+            .eq('email', userEmail)
+            .single();
+
+        if (error) {
+            console.error('Error while fetching user\s profile by email:', error);
+            throw Error(error.message)
+        }
+
+        return data;
+    } catch (err) {
+        console.error('Unexpected error when fetching user\'s profile by email:', err);
+        throw Error('Unexpected error when fetching user\'s profile by email')
     }
 }
 

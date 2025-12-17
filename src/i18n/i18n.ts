@@ -7,7 +7,7 @@ import ru from "./ru.json";
 i18n
   .use(initReactI18next)
   .init({
-    lng: "ro",
+    lng: localStorage.getItem('selectedLanguage') || 'ro',
     fallbackLng: "ro",
     interpolation: { escapeValue: false },
     resources: { ro: { translation: ro }, ru: { translation: ru }, en: { translation: en } },

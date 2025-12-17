@@ -5,6 +5,7 @@ export interface Car {
   make: string;
   model: string;
   year: number;
+  price_per_day?: number; // Default price per day (can be overridden by rental-specific price)
   price_2_4_days?: number; // Price per day for 2-4 days rentals
   price_5_15_days?: number; // Price per day for 5-15 days rentals
   price_16_30_days?: number; // Price per day for 16-30 days rentals
@@ -23,7 +24,7 @@ export interface Car {
   status?: string; // optional
   mileage?: number;
   fuel_consumption?: number;
-  drivetrain?: string; // FWD, RWD, 4WD, AWD
+  drivetrain?: string; // FWD, RWD, AWD
   time?: string;
   power?: string; // e.g., "300 HP"
   acceleration?: string; // e.g., "5.2s"
@@ -44,7 +45,6 @@ export interface Testimonial {
   id: string;
   name: string;
   userName: string;
-  avatar: string;
   rating: number;
   comment: string;
   location: string;
@@ -109,27 +109,28 @@ export interface FavoriteCar {
 export interface BorrowRequest {
   id?: string;
   car_id: string;
-  user_id?: string | null;
+  user_id: string | null;
   start_date: Date | string;
   start_time: string;
   end_date: Date | string;
   end_time: string;
-  price_per_day: string;
+  price_per_day: number;
   customer_name: string;
   customer_first_name: string;
   customer_last_name: string;
   customer_email: string;
   customer_phone?: string;
+  customer_age?: number;
   total_amount: number;
-  options: OptionsState | null;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  options: OptionsState;
+  status: 'PENDING' | 'APPROVED' | 'PROCESSED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
   comment?: string;
 }
 
 export interface BorrowRequestDTO {
-  id?: string;
+  id: string;
   car_id: string;
   user_id?: string | null;
 
@@ -150,11 +151,12 @@ export interface BorrowRequestDTO {
   // must match original
   comment?: string;
 
-  options: OptionsState | null;
+  options: OptionsState;
 
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'PROCESSED' | 'REJECTED';
   requested_at: string;
   updated_at: string;
+  contract_url?: string;
 
   car: Car;
 }
@@ -168,7 +170,7 @@ export interface Rental {
   customer_email?: string;
 
   car_id: string;
-  price_per_day: string;
+  price_per_day: string | number;
 
   start_date: string;
   start_time: string;
@@ -181,18 +183,20 @@ export interface Rental {
   additional_taxes?: number;
   created_at?: string;
   updated_at?: string;
+  contract_url?: string;
+  options?: any; // JSON object for additional service options
 }
 
 export interface RentalDTO {
-  id?: string;
+  id: string;
   request_id: string;
 
   user_id?: string;
-  customer_email?: string;
+  customer_email: string;
 
   car?: Car;
   car_id: string;
-  price_per_day: string;
+  price_per_day: string | number;
 
   start_date: string;
   start_time: string;
@@ -205,6 +209,8 @@ export interface RentalDTO {
   additional_taxes?: number;
   created_at?: string;
   updated_at?: string;
+  contract_url?: string;
+  options?: any; // JSON object for additional service options
 }
 
 export interface OrderDisplay {
@@ -229,7 +235,7 @@ export interface OrderDisplay {
   type?: 'request' | 'rental',
   amount?: number,
   contract_url?: string,
-  features?: string[] | any,
-  options?: any,
+  options?: any, // Service options (unlimitedKm, priorityService, etc.) stored as JSON
   request_id?: string | number,
+  price_per_day?: number,
 }

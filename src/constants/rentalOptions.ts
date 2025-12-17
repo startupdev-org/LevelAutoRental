@@ -14,7 +14,6 @@ export interface OptionsState {
     speedLimitIncrease: boolean;
     personalDriver: boolean;
     priorityService: boolean;
-    tireInsurance: boolean;
     childSeat: boolean;
     simCard: boolean;
     airportDelivery: boolean;
@@ -42,13 +41,6 @@ export const rentalOptions: RentalOption[] = [
         category: "VIP Services",
         price: "1 000 MDL/zi",
         color: "gray",
-    },
-    {
-        id: "tireInsurance",
-        label: "Asigurare anvelope & parbriz",
-        category: "Insurance",
-        price: "+20%",
-        color: "red",
     },
     {
         id: "childSeat",

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Car as DollarSign, FileText, Download, Loader2, AlertTriangle } from 'lucide-react';
-import { Rental, OrderDisplay } from '../../lib/orders';
+import { Rental, OrderDisplay } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { calculatePriceSummary, PriceSummaryResult, getCarPrice } from '../../utils/car/pricing';
 import { calculateRentalDuration } from '../../utils/date';
+import { formatAmount } from '../../utils/currency';
 import { fetchCars } from '../../lib/cars';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 
@@ -19,9 +20,10 @@ interface OrderDetailsModalProps {
     isProcessing?: boolean;
     onOpenContractModal?: () => void; // Callback to open contract modal from parent
     showOrderNumber?: boolean; // Whether to show the order number for admins/users
+    cars?: Car[]; // Optional cars array passed from parent (for pricing calculation)
 }
 
-export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
+export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
     isOpen,
     onClose,
     order,
@@ -30,6 +32,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     isProcessing,
     onOpenContractModal,
     showOrderNumber = true, // Default to showing order number for backward compatibility
+    cars: externalCars, // Rename to avoid conflict with internal state
 }) => {
     const { t } = useTranslation();
     const [isGeneratingContract, setIsGeneratingContract] = useState(false);
@@ -42,7 +45,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     useEffect(() => {
         setCurrentOrder(order);
         // If order doesn't have contract_url but should (based on rental_status), try to refresh
-        if (displayOrder && !displayOrder.contract_url && (displayOrder as any).rental_status === 'ACTIVE') {
+        if (displayOrder && !displayOrder.contract_url && ((displayOrder as any).rental_status === 'ACTIVE' || (displayOrder as any).status === 'PROCESSED')) {
             refreshOrderData();
         }
     }, [order, isOpen, displayOrder]);
@@ -52,14 +55,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
         try {
             // Import the fetch function
-            const { fetchRentalsOnly } = await import('../../lib/orders');
+            const { fetchRentalsForCalendarPageByMonth: fetchRentalsOnly } = await import('../../lib/orders');
             const cars = await fetchCars();
 
             const refreshedOrders = await fetchRentalsOnly(cars);
             const refreshedOrder = refreshedOrders.find(o => o.id === (order as any).id);
 
             if (refreshedOrder) {
-                console.log('Refreshed order data:', refreshedOrder);
                 setCurrentOrder(refreshedOrder);
             }
         } catch (error) {
@@ -78,11 +80,17 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     const [cars, setCars] = useState<Car[]>([]);
     const [car, setCar] = useState<Car | undefined>(undefined);
 
-    // Fetch cars when modal opens
+    // Fetch cars when modal opens (only if not provided by parent)
     useEffect(() => {
         const loadCars = async () => {
             if (!isOpen) {
                 return; // Don't load if modal is closed
+            }
+
+            // If external cars are provided, use them
+            if (externalCars && externalCars.length > 0) {
+                setCars(externalCars);
+                return;
             }
 
             try {
@@ -119,7 +127,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         };
 
         loadCars();
-    }, [isOpen]);
+    }, [isOpen, externalCars]);
 
     // Fetch original request options if request_id exists
     useEffect(() => {
@@ -129,15 +137,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 return;
             }
             const requestId = (displayOrder as any).request_id;
-            console.log('OrderDetailsModal: Checking for request_id. Order:', {
-                id: order.id,
-                request_id: requestId,
-                orderKeys: Object.keys(order),
-                fullOrder: order
-            });
 
             if (!requestId) {
-                console.log('OrderDetailsModal: No request_id found in order. Trying to find request by matching data...');
 
                 // Try to find the request by matching user_id, car_id, and dates
                 try {
@@ -153,7 +154,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                     if (!searchError && matchingRequests && matchingRequests.length > 0) {
                         const matchingRequest = matchingRequests[0];
-                        console.log('OrderDetailsModal: Found matching request:', matchingRequest);
 
                         if (matchingRequest.options) {
                             let parsedOptions: any = {};
@@ -168,7 +168,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             }
 
                             if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
-                                console.log('OrderDetailsModal: Using options from matching request:', parsedOptions);
                                 setRequestOptions(parsedOptions);
                                 return;
                             }
@@ -184,7 +183,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
             try {
                 const { supabase } = await import('../../lib/supabase');
-                console.log('OrderDetailsModal: Fetching request options for request_id:', requestId);
 
                 const { data: request, error } = await supabase
                     .from('BorrowRequest')
@@ -197,8 +195,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     setRequestOptions(null);
                     return;
                 }
-
-                console.log('OrderDetailsModal: Fetched request:', request);
 
                 if (request && request.options) {
                     let parsedOptions: any = {};
@@ -215,14 +211,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                     // Check if options is not empty (not just {})
                     if (parsedOptions && typeof parsedOptions === 'object' && Object.keys(parsedOptions).length > 0) {
-                        console.log('OrderDetailsModal: Parsed options from request:', parsedOptions);
                         setRequestOptions(parsedOptions);
                     } else {
-                        console.log('OrderDetailsModal: Request has empty options object');
                         setRequestOptions(null);
                     }
                 } else {
-                    console.log('OrderDetailsModal: Request has no options field');
                     setRequestOptions(null);
                 }
             } catch (error) {
@@ -244,8 +237,24 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         }
 
         const findCar = async () => {
-            // First, try to find in cars array
+            // First, check if car is already attached to the order (from getUserRentals or convertBorrowRequestToOrderDisplay)
+            let attachedCar = (order as any).car;
+            if (attachedCar) {
+                // Ensure the attached car has all necessary pricing fields
+                // If order has price_per_day from rental, use that instead of car's price
+                if ((order as any).price_per_day && !attachedCar.price_per_day) {
+                    attachedCar = {
+                        ...attachedCar,
+                        price_per_day: (order as any).price_per_day
+                    };
+                }
+                setCar(attachedCar);
+                return;
+            }
+            
+            // Otherwise, try to find in cars array
             const carId = (order as Rental).car_id || (order as OrderDisplay).carId;
+            
             let foundCar = cars.find(c => {
                 if (!carId) return false;
 
@@ -268,10 +277,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
             // If car not found in cars array, fetch from database
             if (!foundCar && carId) {
-                console.warn('OrderDetailsModal: Car not found in cars array, fetching from database', {
-                    orderCarId: carId,
-                    orderCarName: order.carName
-                });
 
                 try {
                     const { supabase } = await import('../../lib/supabase');
@@ -294,6 +299,10 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             name: carData.name || undefined,
                             year: carData.year || new Date().getFullYear(),
                             price_per_day: carData.price_per_day,
+                            price_2_4_days: carData.price_2_4_days,
+                            price_5_15_days: carData.price_5_15_days,
+                            price_16_30_days: carData.price_16_30_days,
+                            price_over_30_days: carData.price_over_30_days,
                             discount_percentage: carData.discount_percentage || undefined,
                             category: carData.category as 'suv' | 'sports' | 'luxury' || undefined,
                             image_url: carData.image_url || undefined,
@@ -328,7 +337,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         findCar();
     }, [order, cars, order?.car_id]);
 
-    if (!order) return null;
+    if (!order) {
+        return null;
+    }
 
     // Handle both Rental and OrderDisplay formats
     const startDate = (order as Rental).start_date || (order as OrderDisplay).pickupDate;
@@ -481,234 +492,237 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     if (!isOpen) return null;
 
-    return (
-        <>
-            {createPortal(
-                <AnimatePresence>
-                    {isOpen && (
-                        <motion.div
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 1 }}
-                            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-                            style={{ zIndex: 10000 }}
-                            onClick={onClose}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
-                            >
-                                {/* Header */}
-                                <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
-                                    <div>
-                                        <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails')}</h2>
-                                        {showOrderNumber && (
-                                            <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                                                {t('admin.orders.orderNumber')}{order.id ? order.id.toString().padStart(4, '0') : 'N/A'}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <button
-                                        onClick={onClose}
-                                        className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
-                                    >
-                                        <X className="w-5 h-5 text-white" />
-                                    </button>
+    return createPortal(
+        <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            style={{ zIndex: 10000 }}
+            onClick={onClose}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
+            >
+                {/* Header */}
+                <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails')}</h2>
+                        {showOrderNumber && (
+                            <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                                {t('admin.orders.orderNumber')}{order.id ? order.id.toString().padStart(4, '0') : 'N/A'}
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+                    >
+                        <X className="w-5 h-5 text-white" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+
+                    {/* Rental Period */}
+                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
+                            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                {(car?.image_url || (car as any)?.image || (order as any).car?.image_url) && (
+                                    <img
+                                        src={car?.image_url || (car as any)?.image || (order as any).car?.image_url}
+                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || ((order as any).car?.make + ' ' + (order as any).car?.model) || t('admin.orders.unknownCar')}
+                                        className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded-md border border-white/10"
+                                    />
+                                )}
+                                <span className="text-white font-semibold text-xs sm:text-sm">
+                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (((order as any).car?.make + ' ' + (order as any).car?.model && (order as any).car?.make + ' ' + (order as any).car?.model !== 'Unknown Car' ? (order as any).car?.make + ' ' + (order as any).car?.model : '')) || t('admin.orders.unknownCar')}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
+                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(startDate)}</span>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(startTime)}</span>
+                                </div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
+                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(endDate)}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(endTime)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/10">
+                            <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.duration')}: <span className="text-white font-semibold">{days} {t('admin.orders.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours') || 'ore'}` : ''}</span></p>
+                        </div>
+                    </div>
 
-                                {/* Content */}
-                                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                    {/* Financial Details */}
+                    {(() => {
+                        // Calculate additional costs from features/options if available
+                        // Check both options (from requests) and features (from rentals)
+                        let parsedOptions: any = {};
 
-                                    {/* Rental Period */}
-                                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
-                                            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                                                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
-                                            </h3>
-                                            <div className="flex items-center gap-2">
-                                                {(car?.image_url || (car as any)?.image || (order as any).car?.image_url) && (
-                                                    <img
-                                                        src={car?.image_url || (car as any)?.image || (order as any).car?.image_url}
-                                                        alt={(car ? `${car.make} ${car.model}`.trim() : '') || ((order as any).car?.make + ' ' + (order as any).car?.model) || t('admin.orders.unknownCar')}
-                                                        className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded-md border border-white/10"
-                                                    />
-                                                )}
-                                                <span className="text-white font-semibold text-xs sm:text-sm">
-                                                    {(car ? `${car.make} ${car.model}`.trim() : '') || (((order as any).car?.make + ' ' + (order as any).car?.model && (order as any).car?.make + ' ' + (order as any).car?.model !== 'Unknown Car' ? (order as any).car?.make + ' ' + (order as any).car?.model : '')) || t('admin.orders.unknownCar')}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
-                                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(startDate)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(startTime)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
-                                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatDate(endDate)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="text-gray-300 text-sm sm:text-base">{formatTime(endTime)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/10">
-                                            <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.duration')}: <span className="text-white font-semibold">{days} {t('admin.orders.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours') || 'ore'}` : ''}</span></p>
-                                        </div>
-                                    </div>
+                        // First, try to get options from the original request (if request_id exists)
+                        if (requestOptions && Object.keys(requestOptions).length > 0) {
+                            parsedOptions = requestOptions;
+                        }
+                        // Then try to get options directly (for requests)
+                        else if ((order as any).options && Object.keys((order as any).options).length > 0) {
+                            if (typeof (order as any).options === 'string') {
+                                try {
+                                    parsedOptions = JSON.parse((order as any).options);
+                                } catch (e) {
+                                    parsedOptions = {};
+                                }
+                            } else {
+                                parsedOptions = (order as any).options;
+                            }
+                        }
 
-                                    {/* Financial Details */}
-                                    {(() => {
-                                        // Calculate additional costs from features/options if available
-                                        // Check both options (from requests) and features (from rentals)
-                                        let parsedOptions: any = {};
+                        // For rentals, use the rental's stored price_per_day as the PRIMARY source
+                        // CRITICAL: Always check order.price_per_day FIRST before car prices
+                        // PRIORITY ORDER: rental's price > attached car's price > found car's price
+                        let rawPricePerDay = 0;
+                        
+                        if ((order as any).price_per_day) {
+                            rawPricePerDay = (order as any).price_per_day;
+                        } else if ((order as any).car?.price_per_day) {
+                            rawPricePerDay = (order as any).car.price_per_day;
+                        } else if (car?.price_per_day) {
+                            rawPricePerDay = car.price_per_day;
+                        }
+                        
+                        const storedPricePerDay = typeof rawPricePerDay === 'string' 
+                            ? parseFloat(rawPricePerDay) 
+                            : Number(rawPricePerDay);
 
-                                        // First, try to get options from the original request (if request_id exists)
-                                        if (requestOptions && Object.keys(requestOptions).length > 0) {
-                                            console.log('OrderDetailsModal: Using options from request:', requestOptions);
-                                            parsedOptions = requestOptions;
-                                        }
-                                        // Then try to get options directly (for requests)
-                                        else if ((order as any).options && Object.keys((order as any).options).length > 0) {
-                                            console.log('OrderDetailsModal: Using options from order:', (order as any).options);
-                                            if (typeof (order as any).options === 'string') {
-                                                try {
-                                                    parsedOptions = JSON.parse((order as any).options);
-                                                } catch (e) {
-                                                    parsedOptions = {};
+                                        // Try to use the centralized calculatePriceSummary function first
+                                        let priceSummary = null;
+                                        // Use attached car if no car found in array
+                                        const carToUse = car || (order as any).car;
+                                        
+                        if (carToUse) {
+                            // Ensure discount_percentage is set (map from discount if needed)
+                            // Don't override price_per_day - let calculatePriceSummary use pricing tiers
+                            const carWithDiscount = { 
+                                ...carToUse, 
+                                discount_percentage: carToUse.discount_percentage || (carToUse as any).discount || undefined
+                            };
+                            priceSummary = calculatePriceSummary(
+                                carWithDiscount,
+                                {
+                                    ...order,
+                                    start_date: (order as any).start_date,
+                                    end_date: (order as any).end_date,
+                                    start_time: (order as any).start_time,
+                                    end_time: (order as any).end_time,
+                                },
+                                parsedOptions
+                            );
+                        }
+
+                                        // Manual calculation as fallback
+                                        let manualBasePrice = 0;
+                                        let manualAdditionalCosts = 0;
+                                        let manualPricePerDay = storedPricePerDay;
+
+                                        if (!priceSummary) {
+                                            // Use the stored price per day (from rental or car)
+                                            // Apply discount if exists
+                                            const carToUse = car || (order as any).car;
+                                            const carDiscount = carToUse?.discount_percentage || (carToUse as any)?.discount || 0;
+                                            let baseCarPrice = storedPricePerDay;
+                                            
+                                            // Try to get the correct base price from pricing tiers
+                                            if (carToUse) {
+                                                const pricePerDayStr = getCarPrice(days, carToUse);
+                                                const tierPrice = parseFloat(pricePerDayStr);
+                                                if (tierPrice > 0) {
+                                                    baseCarPrice = tierPrice;
                                                 }
+                                            }
+                                            
+                                            // Apply discount if exists
+                                            if (carDiscount > 0) {
+                                                manualPricePerDay = baseCarPrice * (1 - carDiscount / 100);
                                             } else {
-                                                parsedOptions = (order as any).options;
+                                                manualPricePerDay = baseCarPrice;
                                             }
-                                        }
-                                        // If no options, try to parse features array (for rentals)
-                                        // But skip car features like "Motor V6 3.0" - only look for service options
-                                        else if (!parsedOptions || Object.keys(parsedOptions).length === 0) {
-                                            console.log('OrderDetailsModal: No options found, checking features');
-                                            const features = (order as any).features;
-                                            if (features) {
-                                                console.log('OrderDetailsModal: Found features:', features);
-                                                if (Array.isArray(features)) {
-                                                    // Convert feature names to option keys
-                                                    // Features might be stored as option keys (e.g., "personalDriver") or as display names
-                                                    features.forEach((feature: string) => {
-                                                        // First check if it's already an option key (camelCase)
-                                                        const featureKey = feature.replace(/\s+/g, '');
-                                                        const optionKeyMap: Record<string, string> = {
-                                                            'unlimitedKm': 'unlimitedKm',
-                                                            'unlimitedkm': 'unlimitedKm',
-                                                            'speedLimitIncrease': 'speedLimitIncrease',
-                                                            'speedlimitincrease': 'speedLimitIncrease',
-                                                            'tireInsurance': 'tireInsurance',
-                                                            'tireinsurance': 'tireInsurance',
-                                                            'personalDriver': 'personalDriver',
-                                                            'personaldriver': 'personalDriver',
-                                                            'priorityService': 'priorityService',
-                                                            'priorityservice': 'priorityService',
-                                                            'childSeat': 'childSeat',
-                                                            'childseat': 'childSeat',
-                                                            'simCard': 'simCard',
-                                                            'simcard': 'simCard',
-                                                            'roadsideAssistance': 'roadsideAssistance',
-                                                            'roadsideassistance': 'roadsideAssistance',
-                                                        };
 
-                                                        const normalizedKey = featureKey.charAt(0).toLowerCase() + featureKey.slice(1);
-                                                        if (optionKeyMap[featureKey] || optionKeyMap[normalizedKey]) {
-                                                            // It's already an option key, use it directly
-                                                            const key = optionKeyMap[featureKey] || optionKeyMap[normalizedKey] || featureKey;
-                                                            parsedOptions[key] = true;
-                                                        } else {
-                                                            // Try to match by name
-                                                            const featureLower = feature.toLowerCase();
-                                                            if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-                                                                parsedOptions.unlimitedKm = true;
-                                                            } else if (featureLower.includes('speed') || featureLower.includes('viteză') || featureLower.includes('limita')) {
-                                                                parsedOptions.speedLimitIncrease = true;
-                                                            } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-                                                                parsedOptions.tireInsurance = true;
-                                                            } else if (featureLower.includes('driver') || featureLower.includes('șofer') || featureLower.includes('sofer')) {
-                                                                parsedOptions.personalDriver = true;
-                                                            } else if (featureLower.includes('priority')) {
-                                                                parsedOptions.priorityService = true;
-                                                            } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-                                                                parsedOptions.childSeat = true;
-                                                            } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-                                                                parsedOptions.simCard = true;
-                                                            } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră') || featureLower.includes('asistenta')) {
-                                                                parsedOptions.roadsideAssistance = true;
-                                                            }
-                                                        }
-                                                    });
-                                                } else if (typeof features === 'string') {
-                                                    try {
-                                                        parsedOptions = JSON.parse(features);
-                                                    } catch (e) {
-                                                        parsedOptions = {};
-                                                    }
-                                                } else {
-                                                    parsedOptions = features;
-                                                }
+                                            // Calculate base price using discounted price per day
+                                            manualBasePrice = manualPricePerDay * days;
+                                            if (hours > 0) {
+                                                manualBasePrice += (hours / 24) * manualPricePerDay;
+                                            }
+
+                                            // Calculate additional costs
+                                            if (parsedOptions.unlimitedKm) {
+                                                manualAdditionalCosts += baseCarPrice * totalDays * 0.5; // 50%
+                                            }
+                                            if (parsedOptions.speedLimitIncrease) {
+                                                manualAdditionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+                                            }
+                                            if (parsedOptions.tireInsurance) {
+                                                manualAdditionalCosts += baseCarPrice * totalDays * 0.2; // 20%
+                                            }
+                                            if (parsedOptions.personalDriver) {
+                                                manualAdditionalCosts += 800 * totalDays;
+                                            }
+                                            if (parsedOptions.priorityService) {
+                                                manualAdditionalCosts += 1000 * totalDays;
+                                            }
+                                            if (parsedOptions.childSeat) {
+                                                manualAdditionalCosts += 100 * totalDays;
+                                            }
+                                            if (parsedOptions.simCard) {
+                                                manualAdditionalCosts += 100 * totalDays;
+                                            }
+                                            if (parsedOptions.roadsideAssistance) {
+                                                manualAdditionalCosts += 500 * totalDays;
                                             }
                                         }
 
-                                        console.log('OrderDetailsModal: Final parsedOptions:', parsedOptions);
+                                        // Use the rental's stored total_amount for consistency, or calculated amount as fallback
+                                        const usingStoredTotal = !!(order as any).total_amount || !!(order as any).amount;
+                        const storedAmount = (order as any).total_amount || (order as any).amount;
+                        const calculatedAmount = priceSummary ? priceSummary.totalPrice : (manualBasePrice + manualAdditionalCosts);
 
-                                        // Calculate additional costs (same logic as RequestDetailsModal)
-                                        let additionalCosts = 0;
-                                        const baseCarPrice = car?.price_per_day || (order as any).price_per_day || (order as any).car?.price_per_day || 0;
+                        const totalPrice = usingStoredTotal && storedAmount > 0 ?
+                            storedAmount :
+                            calculatedAmount;
 
-                                        // Percentage-based options (calculated as percentage of base car price * totalDays)
-                                        // These should be calculated on the total rental period (days + hours)
-                                        if (parsedOptions.unlimitedKm) {
-                                            additionalCosts += baseCarPrice * totalDays * 0.5; // 50%
-                                        }
-                                        if (parsedOptions.speedLimitIncrease) {
-                                            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
-                                        }
-                                        if (parsedOptions.tireInsurance) {
-                                            additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
-                                        }
-
-                                        // Fixed daily costs
-                                        if (parsedOptions.personalDriver) {
-                                            additionalCosts += 800 * rentalDays;
-                                        }
-                                        if (parsedOptions.priorityService) {
-                                            additionalCosts += 1000 * rentalDays;
-                                        }
-                                        if (parsedOptions.childSeat) {
-                                            additionalCosts += 100 * rentalDays;
-                                        }
-                                        if (parsedOptions.simCard) {
-                                            additionalCosts += 100 * rentalDays;
-                                        }
-                                        if (parsedOptions.roadsideAssistance) {
-                                            additionalCosts += 500 * rentalDays;
-                                        }
-
-                                        // Total price = base price + additional costs (same as RequestDetailsModal)
-                                        const totalPrice = basePrice + additionalCosts;
+                                        // Use priceSummary for breakdown details, or manual calculation
+                                        const breakdown = priceSummary || {
+                                            pricePerDay: manualPricePerDay,
+                                            rentalDays: days,
+                                            rentalHours: hours,
+                                            totalHours: totalHours,
+                                            basePrice: manualBasePrice,
+                                            additionalCosts: manualAdditionalCosts,
+                                            totalPrice: totalPrice,
+                                            baseCarPrice: storedPricePerDay
+                                        };
 
                                         // Service names mapping
                                         const serviceNames: Record<string, string> = {
                                             unlimitedKm: 'Kilometraj nelimitat',
                                             speedLimitIncrease: 'Creșterea limitei de viteză',
-                                            tireInsurance: 'Asigurare anvelope & parbriz',
                                             personalDriver: 'Șofer personal',
                                             priorityService: 'Priority Service',
                                             childSeat: 'Scaun copil',
@@ -723,28 +737,29 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <span className="text-sm sm:text-base">{t('admin.requestDetails.priceDetails')}</span>
                                                 </h3>
                                                 <div className="space-y-3">
+                                                    {/* Always show detailed pricing breakdown */}
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.pricePerDay')}</span>
-                                                        <span className="text-white font-semibold text-sm sm:text-base">{pricePerDay > 0 ? `${Math.round(pricePerDay)} MDL` : 'N/A'}</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{breakdown.pricePerDay > 0 ? `${Math.round(breakdown.pricePerDay)} MDL` : 'N/A'}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-300 text-xs sm:text-sm">{t('admin.requestDetails.numberOfDays')}</span>
                                                         <span className="text-white font-semibold text-sm sm:text-base">
-                                                            {rentalDays} {t('admin.requestDetails.days')}{hours > 0 ? `, ${hours} ${t('admin.requestDetails.hours')}` : ''}
+                                                            {breakdown.rentalDays} {t('admin.requestDetails.days')}{breakdown.rentalHours > 0 ? `, ${breakdown.rentalHours} ${t('admin.requestDetails.hours')}` : ''}
                                                         </span>
                                                     </div>
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-medium text-sm sm:text-base">{t('admin.requestDetails.basePrice')}</span>
-                                                            <span className="text-white font-semibold text-sm sm:text-base">{Math.round(basePrice).toLocaleString()} MDL</span>
+                                                            <span className="text-white font-semibold text-sm sm:text-base">{formatAmount(breakdown.basePrice)}</span>
                                                         </div>
                                                     </div>
 
-                                                    {/* Show services section if we have additional costs */}
-                                                    {additionalCosts > 0 && (
-                                                        <div className="pt-3 border-t border-white/10">
-                                                            <h4 className="text-sm font-bold text-white mb-3">{t('admin.requestDetails.additionalServices')}</h4>
-                                                            <div className="space-y-2 text-sm">
+                                                    {/* Show services section if we have additional costs or stored total */}
+                                                    {(breakdown.additionalCosts > 0 || usingStoredTotal) && (
+                                                                <div className="pt-3 border-t border-white/10">
+                                                                    <h4 className="text-sm font-bold text-white mb-3">{t('admin.requestDetails.additionalServices')}</h4>
+                                                                    <div className="space-y-2 text-sm">
                                                                 {/* Show individual services if we have parsed options with service keys */}
                                                                 {Object.keys(parsedOptions).length > 0 && (
                                                                     parsedOptions.unlimitedKm ||
@@ -761,7 +776,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.unlimitedKm}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {Math.round(baseCarPrice * totalDays * 0.5).toLocaleString()} MDL
+                                                                                    {formatAmount(breakdown.baseCarPrice * (breakdown.totalHours / 24) * 0.5)}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -769,7 +784,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.speedLimitIncrease}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
+                                                                                    {formatAmount(breakdown.baseCarPrice * (breakdown.totalHours / 24) * 0.2)}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -777,7 +792,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.tireInsurance}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
+                                                                                    {formatAmount(breakdown.baseCarPrice * (breakdown.totalHours / 24) * 0.2)}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -785,7 +800,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.personalDriver}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(800 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(800 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -793,7 +808,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.priorityService}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(1000 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(1000 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -801,7 +816,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.childSeat}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(100 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(100 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -809,7 +824,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.simCard}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(100 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(100 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -817,7 +832,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                                             <div className="flex justify-between">
                                                                                 <span className="text-gray-300">{serviceNames.roadsideAssistance}</span>
                                                                                 <span className="text-white font-medium">
-                                                                                    {(500 * rentalDays).toLocaleString()} MDL
+                                                                                    {formatAmount(500 * (breakdown.totalHours / 24))}
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -827,7 +842,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                             <div className="pt-2 border-t border-white/10 mt-2">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="text-gray-300 text-sm">{t('admin.requestDetails.totalServices')}</span>
-                                                                    <span className="text-white font-semibold text-sm">{Math.round(additionalCosts).toLocaleString()} MDL</span>
+                                                                    <span className="text-white font-semibold text-sm">{formatAmount(breakdown.additionalCosts)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -836,7 +851,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     <div className="pt-2 border-t border-white/10">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-white font-semibold text-base sm:text-lg">{t('admin.requestDetails.total')}</span>
-                                                            <span className="text-emerald-400 font-bold text-lg sm:text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
+                                                            <span className="text-emerald-400 font-bold text-lg sm:text-xl">{formatAmount(totalPrice)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -866,56 +881,52 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         </div>
                                     )}
 
-                                    {/* Action Buttons - Show after contract */}
-                                    {showOrderNumber && (displayOrder as any)?.status !== 'COMPLETED' && (
-                                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
-                                        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                                            <span className="text-sm sm:text-base">Acțiuni</span>
-                                        </h3>
+                    {/* Action Buttons - Show after contract */}
+                    {showOrderNumber && (displayOrder as any)?.status !== 'COMPLETED' && (
+                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-sm sm:text-base">Acțiuni</span>
+                            </h3>
 
-                                        <div className="space-y-3">
-                                            {/* Create Contract Button - for CONTRACT status */}
-                                            {(displayOrder as any)?.status === 'CONTRACT' && (
-                                                <button
-                                                    onClick={handleOpenContractModal}
-                                                    className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
-                                                    disabled={isGeneratingContract}
-                                                >
-                                                    {isGeneratingContract ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                    ) : (
-                                                        <FileText className="w-4 h-4" />
-                                                    )}
-                                                    <span>Creează Contract</span>
-                                                </button>
-                                            )}
+                            <div className="space-y-3">
+                                {/* Create Contract Button - for CONTRACT status */}
+                                {(displayOrder as any)?.status === 'CONTRACT' && (
+                                    <button
+                                        onClick={handleOpenContractModal}
+                                        className="w-full px-4 py-2.5 sm:py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
+                                        disabled={isGeneratingContract}
+                                    >
+                                        {isGeneratingContract ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <FileText className="w-4 h-4" />
+                                        )}
+                                        <span>Creează Contract</span>
+                                    </button>
+                                )}
 
-                                            {/* Cancel Order Button - for ACTIVE and CONTRACT status */}
-                                            {((displayOrder as any)?.status === 'ACTIVE' || (displayOrder as any)?.status === 'CONTRACT') && onCancel && (
-                                                <button
-                                                    onClick={() => {
-                                                        if (window.confirm('Ești sigur că vrei să anulezi această comandă? Această acțiune va anula și cererea corespunzătoare.')) {
-                                                            onCancel(displayOrder as OrderDisplay);
-                                                        }
-                                                    }}
-                                                    className="w-full px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
-                                                >
-                                                    <AlertTriangle className="w-4 h-4" />
-                                                    <span>Anulează Comanda</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        </motion.div>
+                                {/* Cancel Order Button - for ACTIVE and CONTRACT status */}
+                                {((displayOrder as any)?.status === 'ACTIVE' || (displayOrder as any)?.status === 'CONTRACT') && onCancel && (
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Ești sigur că vrei să anulezi această comandă? Această acțiune va anula și cererea corespunzătoare.')) {
+                                                onCancel(displayOrder as OrderDisplay);
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                                    >
+                                        <AlertTriangle className="w-4 h-4" />
+                                        <span>Anulează Comanda</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     )}
-                </AnimatePresence>,
-                document.body
-            )}
-        </>
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 };
 

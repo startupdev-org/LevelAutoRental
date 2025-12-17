@@ -5,10 +5,29 @@ import { fetchFavoriteCarsFromStorage, getUserBorrowRequests as fetchUserBorrowR
 import { supabase } from '../../../../lib/supabase';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { TabType } from '../../UserDashboard';
-import { BorrowRequest } from '../../../../lib/orders';
+import { BorrowRequest, Car as CarType } from '../../../../types';
+import { fetchCars } from '../../../../lib/cars';
+import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
+
+// Extended type for borrow requests with car information
+interface BorrowRequestWithCar extends Omit<BorrowRequest, 'price_per_day' | 'total_amount'> {
+    car: any; // Car information is attached by getUserBorrowRequests
+    created_at?: string;
+    // Override price_per_day and total_amount to allow string or number
+    price_per_day: number | string;
+    total_amount: number | string;
+    // Additional fields from linked Rental (if the request was approved)
+    linkedRental?: {
+        id: number;
+        price_per_day: number | string;
+        total_amount: number | string;
+        contract_url?: string;
+    };
+    contract_url?: string;
+}
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
-import { OrderDetailsModal } from '../../../../components/modals/OrderDetailsModal';
+import { RentalDetailsModal } from '../../../../components/modals/OrderDetailsModal';
 
 export interface Booking {
     id: string;
@@ -28,22 +47,33 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => {
 
-    const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[] | null>(null);
+    const [borrowRequests, setBorrowRequests] = useState<BorrowRequestWithCar[] | null>(null);
 
     const [favoriteCars, setFavoriteCars] = useState<FavoriteCar[]>([]);
 
     const [loading, setLoading] = useState(true);
 
     // Modal state for order details
-    const [selectedRequest, setSelectedRequest] = useState<BorrowRequest | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestWithCar | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [cars, setCars] = useState<CarType[]>([]);
 
     // Convert BorrowRequest to OrderDisplay format for modal compatibility
-    const convertBorrowRequestToOrderDisplay = (request: BorrowRequest): any => {
+    const convertBorrowRequestToOrderDisplay = (request: BorrowRequestWithCar): any => {
         const startDate = new Date(request.start_date || new Date());
         const endDate = new Date(request.end_date || new Date());
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-        const amount = request.car ? ((request.car as any)?.pricePerDay || request.car.price_per_day || 0) * days : 0;
+        
+        // CRITICAL: Use price_per_day from linked Rental if available (stored when rental was created)
+        // Otherwise fallback to car's price
+        const pricePerDay = (request as any).price_per_day 
+            ? (typeof (request as any).price_per_day === 'string' ? parseFloat((request as any).price_per_day) : (request as any).price_per_day)
+            : (request.car ? ((request.car as any)?.pricePerDay || request.car.price_per_day || 0) : 0);
+        
+        // Use total_amount from linked Rental if available, otherwise calculate
+        const totalAmount = (request as any).total_amount 
+            ? (typeof (request as any).total_amount === 'string' ? parseFloat((request as any).total_amount) : (request as any).total_amount)
+            : pricePerDay * days;
 
         return {
             id: request.id,
@@ -63,13 +93,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             returnDate: request.end_date ? new Date(request.end_date).toISOString().split('T')[0] : '',
             returnTime: request.end_time || '17:00',
             status: request.status,
-            amount: amount,
-            total_amount: amount.toString(),
+            amount: totalAmount,
+            total_amount: totalAmount.toString(),
             carId: request.car_id.toString(),
             userId: request.user_id,
             createdAt: request.created_at,
             features: request.car?.features || [],
             options: (request as any).options || {},
+            contract_url: (request as any).contract_url || request.contract_url,
+            // CRITICAL: Include price_per_day from rental for the modal
+            price_per_day: pricePerDay,
+            // Attach the full car object for pricing calculations
+            car: request.car,
         };
     };
 
@@ -104,7 +139,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                     table: 'BorrowRequest'
                 },
                 (payload) => {
-                    console.log('Borrow request updated:', payload);
+                    
                     // Refresh borrow request data when any borrow request is updated
                     handleFetchUserBorrowRequests();
                 }
@@ -117,10 +152,37 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
         };
     }, []);
 
+    // Load cars for pricing calculation
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                setCars(carsWithImages);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
+    }, []);
 
     async function handleFetchUserBorrowRequests() {
         const requests = await fetchUserBorrowRequests();
-        setBorrowRequests(requests);
+        setBorrowRequests(requests as BorrowRequestWithCar[]);
     }
 
     async function handleFetchUserFavoriteCars() {
@@ -157,16 +219,71 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             <div className="mt-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ pointerEvents: 'auto' }}>
                     {/* Current Active Borrow Requests or No Current Requests State */}
-                    {borrowRequests && borrowRequests.filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED').length > 0 ? (
-                        // Show all active borrow requests
+                    {borrowRequests && borrowRequests.filter(r => {
+                        if (r.status !== 'APPROVED' && r.status !== 'PROCESSED') return false;
+
+                        // Check if end date hasn't passed
+                        const now = new Date();
+                        const endDateTime = new Date(r.end_date);
+
+                        if (r.end_time) {
+                            const [hours, minutes] = r.end_time.split(':').map(Number);
+                            endDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                        } else {
+                            endDateTime.setHours(23, 59, 59, 999); // End of day
+                        }
+
+                        return now <= endDateTime;
+                    }).length > 0 ? (
+                        // Show active borrow requests that haven't ended yet
                         borrowRequests
-                            .filter(r => r.status === 'APPROVED' || r.status === 'EXECUTED')
+                            .filter(r => {
+                                if (r.status !== 'APPROVED' && r.status !== 'PROCESSED') return false;
+
+                                // Check if end date hasn't passed
+                                const now = new Date();
+                                const endDateTime = new Date(r.end_date);
+
+                                if (r.end_time) {
+                                    const [hours, minutes] = r.end_time.split(':').map(Number);
+                                    endDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                                } else {
+                                    endDateTime.setHours(23, 59, 59, 999); // End of day
+                                }
+
+                                return now <= endDateTime;
+                            })
                             .map((activeRequest) => {
-                                const getStatusInfo = (status: string) => {
+                                const getStatusInfo = (status: string, startDate: string | Date, endDate: string | Date, startTime?: string, endTime?: string) => {
+                                    // Check if current date/time is between start and end date/time
+                                    const now = new Date();
+
+                                    const rentalStartDateTime = new Date(startDate);
+                                    if (startTime) {
+                                        const [hours, minutes] = startTime.split(':').map(Number);
+                                        rentalStartDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+                                    } else {
+                                        rentalStartDateTime.setHours(0, 0, 0, 0); // Start of day if no time
+                                    }
+
+                                    const rentalEndDateTime = new Date(endDate);
+                                    if (endTime) {
+                                        const [hours, minutes] = endTime.split(':').map(Number);
+                                        rentalEndDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                                    } else {
+                                        rentalEndDateTime.setHours(23, 59, 59, 999); // End of day if no time
+                                    }
+
+                                    const isStarted = now >= rentalStartDateTime && now <= rentalEndDateTime;
+
                                     switch (status) {
-                                        case 'EXECUTED':
-                                            return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
                                         case 'APPROVED':
+                                            if (isStarted) {
+                                                return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
+                                            }
+                                            return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
+                                        case 'PROCESSED':
+                                            return { text: 'Început', color: 'bg-blue-500/90 text-blue-100 border-blue-400/50' };
                                         default:
                                             return { text: 'Aprobat', color: 'bg-emerald-500/90 text-emerald-100 border-emerald-400/50' };
                                     }
@@ -197,36 +314,36 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                                     {activeRequest.car?.make} {activeRequest.car?.model}
                                                 </h3>
                                                 <p className="text-white/80 text-xs">
-                                                    {formatDate(activeRequest.start_date)} - {formatDate(activeRequest.end_date)}
+                                                    {formatDate(activeRequest.start_date as string)} {activeRequest.start_time ? `la ${activeRequest.start_time.slice(0, 5)}` : ''} - {formatDate(activeRequest.end_date as string)} {activeRequest.end_time ? `la ${activeRequest.end_time.slice(0, 5)}` : ''}
                                                 </p>
                                             </div>
 
                                             {/* Status Badge */}
                                             <div className="absolute top-3 right-3">
-                                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${getStatusInfo(activeRequest.status).color}`}>
-                                                <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
-                                                <span>{getStatusInfo(activeRequest.status).text}</span>
+                                                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm ${getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).color}`}>
+                                                    <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+                                                    <span>{getStatusInfo(activeRequest.status, activeRequest.start_date, activeRequest.end_date, activeRequest.start_time, activeRequest.end_time).text}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Button - Inside card but outside overflow container */}
+                                        <div className="p-3 bg-transparent relative z-10" style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
+                                            <div style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedRequest(activeRequest);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg"
+                                                    style={{ position: 'relative', zIndex: 30, pointerEvents: 'auto', cursor: 'pointer' }}
+                                                >
+                                                    <span>Vezi detalii</span>
+                                                    <ArrowRight size={14} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Action Button - Inside card but outside overflow container */}
-                                    <div className="p-3 bg-transparent relative z-10" style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
-                                        <div style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedRequest(activeRequest);
-                                                    setIsModalOpen(true);
-                                                }}
-                                                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg transition-all duration-300 text-white text-sm font-semibold shadow-md hover:shadow-lg"
-                                                style={{ position: 'relative', zIndex: 30, pointerEvents: 'auto', cursor: 'pointer' }}
-                                            >
-                                                <span>Vezi detalii</span>
-                                                <ArrowRight size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                                 );
                             })
                     ) : (
@@ -274,20 +391,28 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             </div>
 
             {/* Past Borrow Requests */}
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-white">Request History</h3>
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className="text-gray-400 hover:text-gray-300 transition-colors duration-300 text-sm font-medium hover:underline"
-                    >
-                        Vezi toate
-                    </button>
-                </div>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">Request History</h3>
+                <button
+                    onClick={() => setActiveTab('overview')}
+                    className="text-gray-400 hover:text-gray-300 transition-colors duration-300 text-sm font-medium hover:underline"
+                >
+                    Vezi toate
+                </button>
+            </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {borrowRequests && borrowRequests.length > 0 ? (
                     borrowRequests
-                        .filter(request => request.status === 'EXECUTED')
+                        .filter(request => {
+                            if (request.status === 'APPROVED') {
+                                // Only show APPROVED requests in history if rental period has ended
+                                const endDate = new Date(request.end_date);
+                                const now = new Date();
+                                return endDate < now;
+                            }
+                            return false; // Don't show other statuses in history
+                        })
                         .slice(0, 6)
                         .map((request) => (
                             <div
@@ -302,8 +427,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                     }} />
                                 </div>
 
-                        {/* Car Image - Hero Style */}
-                        <div className="relative h-40 overflow-hidden rounded-t-xl">
+                                {/* Car Image - Hero Style */}
+                                <div className="relative h-40 overflow-hidden rounded-t-xl">
                                     <img
                                         src={request.car?.image_url || '/placeholder-car.jpg'}
                                         alt={request.car?.make}
@@ -318,7 +443,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                             {request.car?.make} {request.car?.model}
                                         </h3>
                                         <p className="text-white/80 text-xs">
-                                            {formatDate(request.start_date)} - {formatDate(request.end_date)}
+                                            {formatDate(request.start_date as string)} - {formatDate(request.end_date as string)}
                                         </p>
                                     </div>
 
@@ -386,7 +511,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             </div>
 
             {/* Order Details Modal */}
-            <OrderDetailsModal
+            <RentalDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
@@ -394,6 +519,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                 }}
                 order={selectedRequest ? convertBorrowRequestToOrderDisplay(selectedRequest) : null}
                 showOrderNumber={false}
+                cars={cars}
             />
 
         </div>

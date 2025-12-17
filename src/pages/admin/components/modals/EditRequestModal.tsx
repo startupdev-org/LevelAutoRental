@@ -1,151 +1,173 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     X,
     Calendar,
     Clock,
-    MapPin,
     Loader2,
-    CheckCircle,
+    Save,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { Car as CarType } from '../../../../types';
-import { OrderDisplay } from '../../../../lib/orders';
+import { BorrowRequestDTO, Car as CarType } from '../../../../types';
+import { calculatePriceSummary, PriceSummaryResult } from '../../../../utils/car/pricing';
+import { calculateRentalDuration } from '../../../../utils/date';
+import { OptionsState } from '../../../../constants/rentalOptions';
+import { DollarSign } from 'lucide-react';
+import { formatTimeHHMM } from '../../../../utils/time/time';
 
 export interface EditRequestModalProps {
-    request: OrderDisplay;
-    onSave: (updatedData: {
-        car_id?: string;
-        start_date?: string;
-        start_time?: string;
-        end_date?: string;
-        end_time?: string;
-        customer_name?: string;
-        customer_email?: string;
-        customer_phone?: string;
-        customer_age?: string;
-        comment?: string;
-        options?: any;
-    }) => void;
+    isOpen: boolean;
+    request: BorrowRequestDTO;
+    onSave: (updatedData: BorrowRequestDTO) => void;
     onClose: () => void;
-    cars: CarType[];
 }
 
-export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onSave, onClose, cars }) => {
-    const { t } = useTranslation();
-    // Parse existing request data
-    const parsePhoneNumber = (phone: string | undefined): { code: string; number: string } => {
-        if (!phone) return { code: '+373', number: '' };
-        const match = phone.match(/^(\+\d+)\s*(.+)$/);
-        if (match) {
-            return { code: match[1], number: match[2] };
-        }
-        return { code: '+373', number: phone };
-    };
+export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, request, onSave, onClose }) => {
 
-    const phoneData = parsePhoneNumber(request.customerPhone);
-    const initialCountryCode = COUNTRY_CODES.find(c => c.code === phoneData.code) || COUNTRY_CODES[0];
+    // Helper function to format date to YYYY-MM-DD for HTML date input
+    const formatDateForInput = (date: Date | string | undefined): string => {
+        if (!date) return '';
 
-    // Parse customer name into first and last name
-    const nameParts = (request.customerName || '').split(' ');
-    const initialFirstName = request.customerFirstName || nameParts[0] || '';
-    const initialLastName = request.customerLastName || nameParts.slice(1).join(' ') || '';
-
-    // Parse options
-    const requestOptions = (request as any).options;
-    let initialOptions: any = {
-        pickupAtAddress: false,
-        returnAtAddress: false,
-        unlimitedKm: false,
-        speedLimitIncrease: false,
-        personalDriver: false,
-        priorityService: false,
-        tireInsurance: false,
-        childSeat: false,
-        simCard: false,
-        roadsideAssistance: false
-    };
-
-    if (requestOptions) {
         try {
-            const parsed = typeof requestOptions === 'string' ? JSON.parse(requestOptions) : requestOptions;
-            initialOptions = { ...initialOptions, ...parsed };
+            const dateObj = typeof date === 'string' ? new Date(date) : date;
+            if (isNaN(dateObj.getTime())) return '';
+
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         } catch (e) {
-            // Keep defaults
+            return '';
         }
-    }
-
-    const [formData, setFormData] = useState<Partial<OrderDisplay> & {
-        firstName?: string;
-        lastName?: string;
-        age?: string;
-        comment?: string;
-        startDate?: string;
-        endDate?: string;
-        startTime?: string;
-        endTime?: string;
-    }>({
-        customerName: request.customerName || '',
-        customerFirstName: initialFirstName,
-        customerLastName: initialLastName,
-        customerEmail: request.customerEmail || '',
-        customerPhone: phoneData.number,
-        customerAge: request.customerAge || '',
-        carId: request.carId || '',
-        carName: request.carName || '',
-        startDate: request.pickupDate || '',
-        startTime: request.pickupTime || '09:00',
-        endDate: request.returnDate || '',
-        endTime: request.returnTime || '17:00',
-        status: (request.status || 'PENDING') as any,
-        amount: request.amount || 0,
-        userId: request.userId || '',
-        firstName: initialFirstName,
-        lastName: initialLastName,
-        age: request.customerAge ? String(request.customerAge) : '',
-        comment: (request as any).comment || (request as any).customerComment || '',
-    });
-
-    const [selectedCountryCode, setSelectedCountryCode] = useState(initialCountryCode);
-    const [showCountryCodeDropdown, setShowCountryCodeDropdown] = useState(false);
-    const [options, setOptions] = useState(initialOptions);
-
-    // Calendar state
-    const [showPickupCalendar, setShowPickupCalendar] = useState(false);
-    const [showReturnCalendar, setShowReturnCalendar] = useState(false);
-    const [showPickupTime, setShowPickupTime] = useState(false);
-    const [showReturnTime, setShowReturnTime] = useState(false);
-
-    const startDateObj = formData.startDate ? new Date(formData.startDate) : new Date();
-    const endDateObj = formData.endDate ? new Date(formData.endDate) : new Date();
-    const [calendarMonth, setCalendarMonth] = useState<{ pickup: Date; return: Date }>({
-        pickup: startDateObj,
-        return: endDateObj
-    });
-    const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
-    const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<any[]>([]);
-    const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
-    const [pickupCalendarInitialized, setPickupCalendarInitialized] = useState(false);
-    const [returnCalendarInitialized, setReturnCalendarInitialized] = useState(false);
-    const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
-    const [minDaysMessage, setMinDaysMessage] = useState<string>('');
-
-    // Refs for click outside detection
-    const pickupCalendarRef = React.useRef<HTMLDivElement>(null);
-    const returnCalendarRef = React.useRef<HTMLDivElement>(null);
-    const pickupTimeRef = React.useRef<HTMLDivElement>(null);
-    const returnTimeRef = React.useRef<HTMLDivElement>(null);
-
-    // Helper functions (same as CreateRentalModal)
-    const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}.${month}.${year}`;
     };
 
+    // Initialize form data with current request values (admin can only edit these fields)
+    const [formData, setFormData] = useState({
+        start_date: formatDateForInput(request.start_date),
+        start_time: formatTimeHHMM(request.start_time), // "HH:mm"
+        end_date: formatDateForInput(request.end_date),
+        end_time: formatTimeHHMM(request.end_time),     // "HH:mm"
+        total_amount: request.total_amount || 0,
+        comment: request.comment || '',
+    });
+
+
+
+    // Fixed time options for business hours
+    const timeOptions = [
+        '08:00', '09:00', '10:00', '11:00', '12:00',
+        '13:00', '14:00', '15:00', '16:00', '17:00',
+        '18:00', '19:00', '20:00', '21:00', '22:00'
+    ];
+
+    // Parse options from request
+    const parseOptions = (options: any) => {
+        const defaultOptions = {
+            unlimitedKm: false,
+            personalDriver: false,
+            priorityService: false,
+            childSeat: false,
+            simCard: false,
+            roadsideAssistance: false,
+            airportDelivery: false
+        };
+
+        if (!options) return defaultOptions;
+
+        try {
+            const parsed = typeof options === 'string' ? JSON.parse(options) : options;
+            return { ...defaultOptions, ...parsed };
+        } catch (e) {
+            return defaultOptions;
+        }
+    };
+
+    const [options, setOptions] = useState(parseOptions(request.options));
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Calendar states
+    const [showStartCalendar, setShowStartCalendar] = useState(false);
+    const [showEndCalendar, setShowEndCalendar] = useState(false);
+    const [calendarMonth, setCalendarMonth] = useState<{ start: Date; end: Date }>(() => {
+        const startDate = request.start_date ? new Date(request.start_date) : new Date();
+        const endDate = request.end_date ? new Date(request.end_date) : new Date();
+        return { start: startDate, end: endDate };
+    });
+    const [priceSummary, setPriceSummary] = useState<PriceSummaryResult | null>(null);
+
+    // Calendar refs
+    const startCalendarRef = useRef<HTMLDivElement>(null);
+    const endCalendarRef = useRef<HTMLDivElement>(null);
+
+    // Update form data when request changes
+    useEffect(() => {
+        setFormData({
+            start_date: formatDateForInput(request.start_date),
+            start_time: request.start_time || '09:00',
+            end_date: formatDateForInput(request.end_date),
+            end_time: request.end_time || '17:00',
+            total_amount: request.total_amount || 0,
+            comment: request.comment || '',
+        });
+
+        setOptions(parseOptions(request.options));
+
+        // Update calendar months when request changes
+        const startDate = request.start_date ? new Date(request.start_date) : new Date();
+        const endDate = request.end_date ? new Date(request.end_date) : new Date();
+        setCalendarMonth({ start: startDate, end: endDate });
+    }, [request]);
+
+    // Auto-calculate total amount and price summary when dates or options change
+    useEffect(() => {
+        if (!formData.start_date || !formData.end_date || !request.car) {
+            setPriceSummary(null);
+            return;
+        }
+
+        // Use the centralized calculatePriceSummary function for consistency
+        const priceSummary = calculatePriceSummary(
+            request.car,
+            {
+                ...request,
+                start_date: formData.start_date,
+                end_date: formData.end_date,
+                start_time: formData.start_time,
+                end_time: formData.end_time,
+            },
+            options
+        );
+
+        if (priceSummary) {
+            setPriceSummary(priceSummary);
+            setFormData(prev => ({ ...prev, total_amount: priceSummary.totalPrice }));
+        } else {
+            setPriceSummary(null);
+        }
+    }, [formData.start_date, formData.end_date, formData.start_time, formData.end_time, options, request.price_per_day]);
+
+    // Handle click outside calendars
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showStartCalendar && startCalendarRef.current && !startCalendarRef.current.contains(event.target as Node)) {
+                setShowStartCalendar(false);
+            }
+            if (showEndCalendar && endCalendarRef.current && !endCalendarRef.current.contains(event.target as Node)) {
+                setShowEndCalendar(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showStartCalendar, showEndCalendar]);
+
+    // Handle option changes
+    const handleOptionChange = (optionKey: string, checked: boolean) => {
+        setOptions((prev: OptionsState) => ({ ...prev, [optionKey]: checked }));
+    };
+
+    // Calendar helper functions
     const generateCalendarDays = (date: Date): (string | null)[] => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -168,1907 +190,691 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ request, onS
         return days;
     };
 
-    // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
-    const formatDateLocal = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+    // Handle date selection from calendar
+    const handleDateSelect = (dateString: string, isStartDate: boolean) => {
+        if (isStartDate) {
+            // Check if start date is being changed
+            const isChangingStartDate = formData.start_date && formData.start_date !== dateString;
 
-    const generateHours = (minHour?: number): string[] => {
-        const hours: string[] = [];
-        const startHour = minHour !== undefined ? minHour : 0;
-        for (let h = startHour; h < 24; h++) {
-            hours.push(`${String(h).padStart(2, '0')}:00`);
-        }
-        return hours;
-    };
-
-    // Check if a date/time is in a maintenance period (12 hours after rental ends)
-    const isInMaintenancePeriod = (checkDate: Date, checkTime?: string): boolean => {
-        if (carRentalsForCalendar.length === 0) return false;
-        
-        return carRentalsForCalendar.some(rental => {
-            if (!rental.end_date || !rental.end_time) return false;
-            
-            // Parse rental end date and time
-            const endDateStr = rental.end_date.includes('T')
-                ? rental.end_date.split('T')[0]
-                : rental.end_date.split(' ')[0];
-            const rentalEndDate = new Date(endDateStr);
-            
-            // Parse end time
-            const [endHours, endMinutes] = rental.end_time.split(':').map(Number);
-            rentalEndDate.setHours(endHours || 17, endMinutes || 0, 0, 0);
-            
-            // Calculate maintenance period: 12 hours after rental ends
-            const maintenanceEndDate = new Date(rentalEndDate);
-            maintenanceEndDate.setHours(maintenanceEndDate.getHours() + 12);
-            
-            // If checkTime is provided, check the exact datetime
-            if (checkTime) {
-                const [checkHours, checkMinutes] = checkTime.split(':').map(Number);
-                const checkDateTime = new Date(checkDate);
-                checkDateTime.setHours(checkHours || 0, checkMinutes || 0, 0, 0);
-                
-                // Check if the datetime falls within maintenance period
-                return checkDateTime >= rentalEndDate && checkDateTime < maintenanceEndDate;
+            // If changing start date, clear end date if it's before or equal to new start
+            if (isChangingStartDate && formData.end_date && dateString >= formData.end_date) {
+                setFormData(prev => ({ ...prev, start_date: dateString, end_date: '' }));
             } else {
-                // If no time provided, check if the date overlaps with maintenance period
-                // Maintenance period spans from rental end to 12 hours later
-                const checkDateStart = new Date(checkDate);
-                checkDateStart.setHours(0, 0, 0, 0);
-                const checkDateEnd = new Date(checkDate);
-                checkDateEnd.setHours(23, 59, 59, 999);
-                
-                // Check if maintenance period overlaps with the check date
-                return maintenanceEndDate > checkDateStart && rentalEndDate < checkDateEnd;
+                setFormData(prev => ({ ...prev, start_date: dateString }));
             }
-        });
-    };
 
-    // Find the earliest future approved/executed rental start date
-    const getEarliestFutureRentalStart = (): string | null => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        let earliestStart: Date | null = null;
-        
-        // Check approved/executed borrow requests
-        approvedBorrowRequests.forEach(request => {
-            if (!request.start_date) return;
-            
-            const startDateStr = request.start_date.includes('T')
-                ? request.start_date.split('T')[0]
-                : request.start_date.split(' ')[0];
-            const startDate = new Date(startDateStr + 'T00:00:00');
-            startDate.setHours(0, 0, 0, 0);
-            
-            // Only consider future rentals
-            if (startDate > today) {
-                if (!earliestStart || startDate < earliestStart) {
-                    earliestStart = startDate;
-                }
-            }
-        });
-        
-        // Check active rentals
-        carRentalsForCalendar.forEach(rental => {
-            if (!rental.start_date) return;
-            
-            const startDateStr = rental.start_date.includes('T')
-                ? rental.start_date.split('T')[0]
-                : rental.start_date.split(' ')[0];
-            const startDate = new Date(startDateStr + 'T00:00:00');
-            startDate.setHours(0, 0, 0, 0);
-            
-            // Only consider future rentals
-            if (startDate > today) {
-                if (!earliestStart || startDate < earliestStart) {
-                    earliestStart = startDate;
-                }
-            }
-        });
-        
-        return earliestStart ? formatDateLocal(earliestStart) : null;
-    };
-
-    // Check if date is in an actual approved/executed request (for showing X mark)
-    // Only shows X marks for current/future bookings, not past ones
-    const isDateInActualApprovedRequest = (dateString: string): boolean => {
-        const checkDateStr = dateString.split('T')[0];
-        const checkDate = new Date(checkDateStr + 'T00:00:00');
-        checkDate.setHours(0, 0, 0, 0);
-        
-        // Don't show X marks for past dates - only current/future bookings
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (checkDate < today) {
-            return false;
-        }
-        
-        // Check maintenance periods (12 hours after each rental)
-        // Only for current/future maintenance periods
-        if (isInMaintenancePeriod(checkDate)) {
-            return true;
-        }
-        
-        // Check approved/executed borrow requests
-        if (approvedBorrowRequests.length > 0) {
-            const result = approvedBorrowRequests.some(request => {
-                if (!request.start_date || !request.end_date) return false;
-                
-                const startDateStr = request.start_date.includes('T')
-                    ? request.start_date.split('T')[0]
-                    : request.start_date.split(' ')[0];
-                const startDate = new Date(startDateStr + 'T00:00:00');
-                startDate.setHours(0, 0, 0, 0);
-                
-                const endDateStr = request.end_date.includes('T')
-                    ? request.end_date.split('T')[0]
-                    : request.end_date.split(' ')[0];
-                const endDate = new Date(endDateStr + 'T23:59:59');
-                endDate.setHours(23, 59, 59, 999);
-                
-                // Only show X if the booking is current or future (end date is today or later)
-                const isCurrentOrFuture = endDate >= today;
-                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
-            });
-            
-            if (result) return true;
-        }
-        
-        // Check active rentals (which come from EXECUTED requests)
-        if (carRentalsForCalendar.length > 0) {
-            const result = carRentalsForCalendar.some(rental => {
-                if (!rental.start_date || !rental.end_date) return false;
-                
-                const startDateStr = rental.start_date.includes('T')
-                    ? rental.start_date.split('T')[0]
-                    : rental.start_date.split(' ')[0];
-                const startDate = new Date(startDateStr + 'T00:00:00');
-                startDate.setHours(0, 0, 0, 0);
-                
-                const endDateStr = rental.end_date.includes('T')
-                    ? rental.end_date.split('T')[0]
-                    : rental.end_date.split(' ')[0];
-                const endDate = new Date(endDateStr + 'T23:59:59');
-                endDate.setHours(23, 59, 59, 999);
-                
-                // Only show X if the rental is current or future (end date is today or later)
-                const isCurrentOrFuture = endDate >= today;
-                return isCurrentOrFuture && checkDate >= startDate && checkDate <= endDate;
-            });
-            
-            return result;
-        }
-        
-        return false;
-    };
-
-    // Check if date is blocked by future rental limit (disable but don't show X)
-    const isDateBlockedByFutureRental = (dateString: string): boolean => {
-        const earliestFutureStart = getEarliestFutureRentalStart();
-        return earliestFutureStart !== null && dateString >= earliestFutureStart;
-    };
-
-    // Combined check for blocking (includes both actual requests and future rental limit)
-    const isDateInApprovedRequest = (dateString: string): boolean => {
-        return isDateInActualApprovedRequest(dateString) || isDateBlockedByFutureRental(dateString);
-    };
-
-    // Check if all dates in a month are blocked (have x marks)
-    const isMonthFullyBooked = (monthDate: Date, isReturnCalendar: boolean = false): boolean => {
-        const days = generateCalendarDays(monthDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // Get only dates that belong to the current month (not null)
-        const monthDays = days.filter(day => day !== null) as string[];
-        
-        // Check if all dates in the month are blocked
-        const allBlocked = monthDays.every(dayString => {
-            const todayString = formatDateLocal(today);
-            // Only block dates that are strictly in the past (not today)
-            const isPast = dayString < todayString;
-            // Check if date is before next available date
-            // Only block if nextAvailableDate is today or in the past (car is currently booked)
-            // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
-            const isBeforeAvailable = nextAvailableDate 
-                ? (() => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const nextAvailDate = new Date(nextAvailableDate);
-                    nextAvailDate.setHours(0, 0, 0, 0);
-                    const dayDate = new Date(dayString);
-                    dayDate.setHours(0, 0, 0, 0);
-                    // Only block if nextAvailableDate is today or past, and day is before it
-                    return nextAvailDate <= today && dayDate < nextAvailDate;
-                })()
-                : false;
-            const isInApprovedRequest = isDateInApprovedRequest(dayString);
-            
-            // For return calendar, also check if date is before pickup
-            const isBeforePickup = isReturnCalendar && formData.startDate && dayString <= formData.startDate;
-            
-            return isPast || isBeforeAvailable || isInApprovedRequest || isBeforePickup;
-        });
-        
-        return allBlocked && monthDays.length > 0;
-    };
-
-    // Sync calendar months with selected dates (same as CarDetails)
-    useEffect(() => {
-        if (formData.startDate) setCalendarMonth(prev => ({ ...prev, pickup: new Date(formData.startDate || '') }));
-    }, [formData.startDate]);
-
-    useEffect(() => {
-        if (formData.endDate) {
-            setCalendarMonth(prev => ({ ...prev, return: new Date(formData.endDate || '') }));
-        } else if (formData.startDate) {
-            // Always show the same month as pickup date for return calendar
-            // This ensures the calendar doesn't jump to next month when pickup is selected
-            const pickup = new Date(formData.startDate);
-            setCalendarMonth(prev => ({ ...prev, return: new Date(pickup) }));
-        }
-    }, [formData.endDate, formData.startDate]);
-
-    // Fetch rentals and calculate next available date
-    useEffect(() => {
-        const fetchCarAvailability = async () => {
-            if (!formData.carId) return;
-            
-            try {
-                const { fetchRentals } = await import('../../../../lib/orders');
-                const rentals = await fetchRentals();
-                const now = new Date();
-                
-                const carIdNum = parseInt(formData.carId, 10);
-                
-                // Filter rentals for this car that are active, contract, or current/future
-                const carRentals = rentals.filter(rental => {
-                    const rentalCarId = typeof rental.car_id === 'number' 
-                        ? rental.car_id 
-                        : parseInt(rental.car_id?.toString() || '0', 10);
-                    const rentalStatus = (rental as any).status || rental.rental_status || '';
-                    
-                    // Include ACTIVE, CONTRACT, or any rental that hasn't ended yet
-                    if (rentalCarId !== carIdNum) return false;
-                    
-                    if (rentalStatus === 'ACTIVE' || rentalStatus === 'CONTRACT') {
-                        return true;
-                    }
-                    
-                    // Also include rentals that haven't ended yet (for calendar marking)
-                    if (rental.end_date) {
-                        const endDate = new Date(rental.end_date);
-                        if (rental.end_time) {
-                            const [hours, minutes] = rental.end_time.split(':').map(Number);
-                            endDate.setHours(hours || 17, minutes || 0, 0, 0);
-                        } else {
-                            endDate.setHours(23, 59, 59, 999);
-                        }
-                        return endDate >= now;
-                    }
-                    
-                    return false;
-                });
-                
-                // Store rentals for calendar marking
-                setCarRentalsForCalendar(carRentals);
-            } catch (error) {
-                console.error('Error fetching car availability:', error);
-            }
-        };
-        
-        fetchCarAvailability();
-    }, [formData.carId]);
-
-    // Fetch approved and executed borrow requests for this car
-    useEffect(() => {
-        const fetchApprovedRequests = async () => {
-            if (!formData.carId) return;
-            
-            try {
-                const carIdNum = parseInt(formData.carId, 10);
-                
-                // Query Rentals table for all current/future rentals (not just CONTRACT/ACTIVE)
-                const rentalsResult = await supabaseAdmin
-                    .from('Rentals')
-                    .select('*')
-                    .eq('car_id', carIdNum)
-                    .order('created_at', { ascending: false });
-                
-                // Filter for rentals that are current or future (haven't ended yet)
-                const now = new Date();
-                const rentalsData = (rentalsResult.data || []).filter((rental: any) => {
-                    if (!rental.end_date) return false;
-                    
-                    // Parse end date
-                    const endDateStr = rental.end_date.includes('T')
-                        ? rental.end_date.split('T')[0]
-                        : rental.end_date.split(' ')[0];
-                    const endDate = new Date(endDateStr);
-                    
-                    // Add end time if available
-                    if (rental.end_time) {
-                        const [hours, minutes] = rental.end_time.split(':').map(Number);
-                        endDate.setHours(hours || 17, minutes || 0, 0, 0);
-                    } else {
-                        endDate.setHours(23, 59, 59, 999);
-                    }
-                    
-                    // Include if rental hasn't ended yet
-                    return endDate >= now;
-                });
-                
-                // Query BorrowRequest table for APPROVED requests
-                let approvedData: any[] = [];
-                
-                try {
-                    const approvedResult = await supabaseAdmin
-                        .from('BorrowRequest')
-                        .select('*')
-                        .eq('car_id', carIdNum)
-                        .in('status', ['APPROVED', 'EXECUTED'])
-                        .order('requested_at', { ascending: false });
-                    
-                    if (approvedResult.data && approvedResult.data.length > 0) {
-                        approvedData = approvedResult.data;
-                    }
-                } catch (error) {
-                    // Silently fail if query doesn't work (RLS might still be blocking)
-                }
-                
-                // Convert rentals to borrow request format
-                const rentalRequests = rentalsData.map((rental: any) => ({
-                    id: rental.id.toString(),
-                    user_id: rental.user_id,
-                    car_id: rental.car_id.toString(),
-                    start_date: rental.start_date,
-                    start_time: rental.start_time || '09:00:00',
-                    end_date: rental.end_date,
-                    end_time: rental.end_time || '17:00:00',
-                    status: 'EXECUTED' as const,
-                    created_at: rental.created_at,
-                    updated_at: rental.updated_at,
-                }));
-                
-                // Convert approved borrow requests to same format
-                const approvedRequests = approvedData.map((req: any) => ({
-                    id: req.id.toString(),
-                    user_id: req.user_id,
-                    car_id: req.car_id.toString(),
-                    start_date: req.start_date,
-                    start_time: req.start_time || '09:00:00',
-                    end_date: req.end_date,
-                    end_time: req.end_time || '17:00:00',
-                    status: 'APPROVED' as const,
-                    created_at: req.requested_at || req.created_at,
-                    updated_at: req.updated_at,
-                }));
-                
-                // Combine both types
-                const allRequests = [...rentalRequests, ...approvedRequests];
-                
-                // Filter requests - only filter out ones with missing dates
-                const filteredRequests = allRequests.filter((request: any) => {
-                    return request.start_date && request.end_date;
-                });
-                
-                setApprovedBorrowRequests(filteredRequests);
-                
-                // Calculate nextAvailableDate from combined Rentals + APPROVED requests
-                // Show availability after the first booking if there's a gap of 2+ days before the next booking
-                const currentTime = new Date();
-                let latestReturnDate: Date | null = null;
-                
-                if (filteredRequests.length > 0) {
-                    // Sort all requests (rentals + approved) by start date
-                    const sortedRequests = [...filteredRequests].sort((a, b) => {
-                        const startA = new Date(a.start_date || 0);
-                        const startB = new Date(b.start_date || 0);
-                        return startA.getTime() - startB.getTime();
-                    });
-                    
-                    // Find the first current/future booking
-                    for (let i = 0; i < sortedRequests.length; i++) {
-                        const request = sortedRequests[i];
-                        if (!request.start_date || !request.end_date) continue;
-                        
-                        // Parse start date
-                        const startDateStr = request.start_date.includes('T')
-                            ? request.start_date.split('T')[0]
-                            : request.start_date.split(' ')[0];
-                        const requestStartDate = new Date(startDateStr);
-                        
-                        if (request.start_time) {
-                            const [startHours, startMinutes] = request.start_time.split(':').map(Number);
-                            requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
-                        } else {
-                            requestStartDate.setHours(9, 0, 0, 0);
-                        }
-                        
-                        // Parse end date
-                        const endDateStr = request.end_date.includes('T')
-                            ? request.end_date.split('T')[0]
-                            : request.end_date.split(' ')[0];
-                        const requestEndDate = new Date(endDateStr);
-                        
-                        if (request.end_time) {
-                            const [hours, minutes] = request.end_time.split(':').map(Number);
-                            requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
-                        } else {
-                            requestEndDate.setHours(17, 0, 0, 0);
-                        }
-                        
-                        // Add 12 hours maintenance period after rental ends
-                        requestEndDate.setHours(requestEndDate.getHours() + 12);
-                        
-                        // Check if this is a current/future booking
-                        const isCurrentOrFuture = requestEndDate > currentTime;
-                        
-                        if (isCurrentOrFuture) {
-                            // Check if there's a next booking
-                            if (i < sortedRequests.length - 1) {
-                                const nextRequest = sortedRequests[i + 1];
-                                if (nextRequest.start_date) {
-                                    const nextStartDateStr = nextRequest.start_date.includes('T')
-                                        ? nextRequest.start_date.split('T')[0]
-                                        : nextRequest.start_date.split(' ')[0];
-                                    const nextStartDate = new Date(nextStartDateStr);
-                                    
-                                    if (nextRequest.start_time) {
-                                        const [nextHours, nextMinutes] = nextRequest.start_time.split(':').map(Number);
-                                        nextStartDate.setHours(nextHours || 9, nextMinutes || 0, 0, 0);
-                                    } else {
-                                        nextStartDate.setHours(9, 0, 0, 0);
-                                    }
-                                    
-                                    // Calculate gap between end of current booking and start of next
-                                    const gapMs = nextStartDate.getTime() - requestEndDate.getTime();
-                                    const gapDays = gapMs / (1000 * 60 * 60 * 24);
-                                    
-                                    // Minimum rental is 2 days, so if gap is 2+ days, car is available after first booking
-                                    if (gapDays >= 2) {
-                                        latestReturnDate = requestEndDate;
-                                        break; // Use first booking's end date
-                                    }
-                                    // If gap is less than 2 days, continue to check consecutive bookings
-                                } else {
-                                    // No next booking, use this one's end date
-                                    latestReturnDate = requestEndDate;
-                                    break;
-                                }
-                            } else {
-                                // This is the last booking, use its end date
-                                latestReturnDate = requestEndDate;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // If we didn't find a booking with a gap, find consecutive bookings
-                    if (!latestReturnDate) {
-                        let consecutiveEndDate: Date | null = null;
-                        
-                        for (let i = 0; i < sortedRequests.length; i++) {
-                            const request = sortedRequests[i];
-                            if (!request.end_date) continue;
-                            
-                            const endDateStr = request.end_date.includes('T')
-                                ? request.end_date.split('T')[0]
-                                : request.end_date.split(' ')[0];
-                            const requestEndDate = new Date(endDateStr);
-                            
-                            if (request.end_time) {
-                                const [hours, minutes] = request.end_time.split(':').map(Number);
-                                requestEndDate.setHours(hours || 17, minutes || 0, 0, 0);
-                            } else {
-                                requestEndDate.setHours(17, 0, 0, 0);
-                            }
-                            
-                            requestEndDate.setHours(requestEndDate.getHours() + 12);
-                            
-                            if (i === 0) {
-                                consecutiveEndDate = requestEndDate;
-                            } else {
-                                const prevRequest = sortedRequests[i - 1];
-                                if (prevRequest.end_date) {
-                                    const prevEndDateStr = prevRequest.end_date.includes('T')
-                                        ? prevRequest.end_date.split('T')[0]
-                                        : prevRequest.end_date.split(' ')[0];
-                                    const prevEndDate = new Date(prevEndDateStr);
-                                    
-                                    if (prevRequest.end_time) {
-                                        const [prevHours, prevMinutes] = prevRequest.end_time.split(':').map(Number);
-                                        prevEndDate.setHours(prevHours || 17, prevMinutes || 0, 0, 0);
-                                    } else {
-                                        prevEndDate.setHours(17, 0, 0, 0);
-                                    }
-                                    
-                                    prevEndDate.setHours(prevEndDate.getHours() + 12);
-                                    
-                                    const startDateStr = request.start_date.includes('T')
-                                        ? request.start_date.split('T')[0]
-                                        : request.start_date.split(' ')[0];
-                                    const requestStartDate = new Date(startDateStr);
-                                    
-                                    if (request.start_time) {
-                                        const [startHours, startMinutes] = request.start_time.split(':').map(Number);
-                                        requestStartDate.setHours(startHours || 9, startMinutes || 0, 0, 0);
-                                    } else {
-                                        requestStartDate.setHours(9, 0, 0, 0);
-                                    }
-                                    
-                                    const timeDiff = requestStartDate.getTime() - prevEndDate.getTime();
-                                    const oneDayInMs = 24 * 60 * 60 * 1000;
-                                    
-                                    if (timeDiff >= 0 && timeDiff <= oneDayInMs + (60 * 60 * 1000)) {
-                                        consecutiveEndDate = requestEndDate;
-                                    } else {
-                                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
-                                            latestReturnDate = consecutiveEndDate;
-                                            break;
-                                        }
-                                        consecutiveEndDate = requestEndDate;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (consecutiveEndDate && consecutiveEndDate > currentTime) {
-                            latestReturnDate = consecutiveEndDate;
-                        }
-                    }
-                }
-                
-                setNextAvailableDate(latestReturnDate);
-            } catch (error) {
-                console.error('Error fetching approved borrow requests:', error);
-            }
-        };
-        
-        fetchApprovedRequests();
-    }, [formData.carId]);
-
-    // Auto-advance to next month if current month is fully booked when calendar first opens
-    useEffect(() => {
-        if (showPickupCalendar && !pickupCalendarInitialized) {
-            if (isMonthFullyBooked(calendarMonth.pickup, false)) {
-                const nextMonth = new Date(calendarMonth.pickup);
-                nextMonth.setMonth(nextMonth.getMonth() + 1);
-                setCalendarMonth(prev => ({ ...prev, pickup: nextMonth }));
-            }
-            setPickupCalendarInitialized(true);
-        } else if (!showPickupCalendar) {
-            // Reset when calendar closes so it can auto-advance again on next open
-            setPickupCalendarInitialized(false);
-        }
-    }, [showPickupCalendar, calendarMonth.pickup, nextAvailableDate, approvedBorrowRequests, pickupCalendarInitialized]);
-
-    useEffect(() => {
-        if (showReturnCalendar && !returnCalendarInitialized) {
-            if (isMonthFullyBooked(calendarMonth.return, true)) {
-                const nextMonth = new Date(calendarMonth.return);
-                nextMonth.setMonth(nextMonth.getMonth() + 1);
-                setCalendarMonth(prev => ({ ...prev, return: nextMonth }));
-            }
-            setReturnCalendarInitialized(true);
-        } else if (!showReturnCalendar) {
-            // Reset when calendar closes so it can auto-advance again on next open
-            setReturnCalendarInitialized(false);
-        }
-    }, [showReturnCalendar, calendarMonth.return, nextAvailableDate, approvedBorrowRequests, formData.startDate, returnCalendarInitialized]);
-
-    // Click outside for calendars & time selectors (same as CarDetails)
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-            // Don't close if we're in the middle of a delayed close
-            if (isClosingWithDelay) return;
-            
-            const target = event.target as HTMLElement;
-            // Check if click is on a button that toggles the calendar - if so, don't close
-            const clickedButton = target.closest('button[data-calendar-toggle]');
-            if (clickedButton) {
-                // Don't close if clicking on the toggle button - let the button's onClick handle it
-                return;
-            }
-            
-            // Only close if clicking outside the calendar container and the calendar is open
-            if (showPickupCalendar && pickupCalendarRef.current && !pickupCalendarRef.current.contains(target as Node))
-                setShowPickupCalendar(false);
-            if (showReturnCalendar && returnCalendarRef.current && !returnCalendarRef.current.contains(target as Node))
-                setShowReturnCalendar(false);
-            if (showPickupTime && pickupTimeRef.current && !pickupTimeRef.current.contains(target as Node))
-                setShowPickupTime(false);
-            if (showReturnTime && returnTimeRef.current && !returnTimeRef.current.contains(target as Node))
-                setShowReturnTime(false);
-            if (!target.closest('.country-code-dropdown-container')) {
-                setShowCountryCodeDropdown(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('touchstart', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('touchstart', handleClickOutside);
-        };
-    }, [showPickupCalendar, showReturnCalendar, showPickupTime, showReturnTime, isClosingWithDelay]);
-
-    const calculateAmount = () => {
-        if (!formData.startDate || !formData.endDate || !formData.carId) return 0;
-        const selectedCar = cars.find(c => c.id.toString() === formData.carId);
-        if (!selectedCar) return 0;
-
-        const startDate = new Date(formData.startDate);
-        const endDate = new Date(formData.endDate);
-        const startTime = formData.startTime || '09:00';
-        const endTime = formData.endTime || '17:00';
-
-        const [startHour, startMin] = startTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(startHour, startMin, 0, 0);
-
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(endHour, endMin, 0, 0);
-
-        const diffTime = endDateTime.getTime() - startDateTime.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-        const days = diffDays;
-        const hours = diffHours >= 0 ? diffHours : 0;
-        const rentalDays = days;
-        const totalDays = days + (hours / 24);
-
-        // Get price with car discount applied first
-        const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
-        const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
-        const pricePerDay = carDiscount > 0 
-            ? basePricePerDay * (1 - carDiscount / 100)
-            : basePricePerDay;
-
-        let basePrice = 0;
-        if (rentalDays >= 8) {
-            basePrice = pricePerDay * 0.96 * rentalDays;
-        } else if (rentalDays >= 4) {
-            basePrice = pricePerDay * 0.98 * rentalDays;
+            // Close calendar after 0.3s delay for visual feedback
+            setIsClosingWithDelay(true);
+            setTimeout(() => {
+                setShowStartCalendar(false);
+                setIsClosingWithDelay(false);
+            }, 300);
         } else {
-            basePrice = pricePerDay * rentalDays;
-        }
+            setFormData(prev => ({ ...prev, end_date: dateString }));
 
-        if (hours > 0) {
-            const hoursPrice = (hours / 24) * pricePerDay;
-            basePrice += hoursPrice;
+            // Close calendar after 0.3s delay for visual feedback
+            setIsClosingWithDelay(true);
+            setTimeout(() => {
+                setShowEndCalendar(false);
+                setIsClosingWithDelay(false);
+            }, 300);
         }
-
-        const baseCarPrice = pricePerDay;
-        let additionalCosts = 0;
-
-        if (options.unlimitedKm) {
-            additionalCosts += pricePerDay * rentalDays * 0.5;
-        }
-        if (options.tireInsurance) {
-            additionalCosts += pricePerDay * rentalDays * 0.2;
-        }
-        if (options.personalDriver) {
-            additionalCosts += 800 * rentalDays;
-        }
-        if (options.priorityService) {
-            additionalCosts += 1000 * rentalDays;
-        }
-        if (options.childSeat) {
-            additionalCosts += 100 * rentalDays;
-        }
-        if (options.simCard) {
-            additionalCosts += 100 * rentalDays;
-        }
-        if (options.roadsideAssistance) {
-            additionalCosts += 500 * rentalDays;
-        }
-
-        return Math.round(basePrice + additionalCosts);
     };
 
-    const totalAmount = calculateAmount();
+    const handleInputChange = (field: string, value: any) => {
+        let processedValue = value;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formData.firstName || !formData.lastName || !formData.age || !formData.customerPhone || !formData.carId || !formData.startDate || !formData.endDate) {
-            alert(t('admin.requests.fillRequiredFieldsShort'));
-            return;
+        // Input processing for admin-editable fields only
+        if (field === 'comment') {
+            if (processedValue.length > 1000) {
+                processedValue = processedValue.substring(0, 1000);
+            }
         }
 
-        const customerName = `${formData.firstName} ${formData.lastName}`;
-        const fullPhoneNumber = `${selectedCountryCode.code} ${formData.customerPhone}`.trim();
-
-        onSave({
-            car_id: formData.carId,
-            start_date: formData.startDate,
-            start_time: formData.startTime,
-            end_date: formData.endDate,
-            end_time: formData.endTime,
-            customer_name: customerName,
-            customer_email: formData.customerEmail || undefined,
-            customer_phone: fullPhoneNumber,
-            customer_age: formData.age,
-            comment: formData.comment || undefined,
-            options: options
-        });
+        setFormData(prev => ({ ...prev, [field]: processedValue }));
     };
+
+    const handleSave = async () => {
+        // No validation needed for customer info (read-only)
+        // Admin can only modify dates, amounts, options, and comments
+
+        setIsSaving(true);
+        try {
+            const updatedRequest = {
+                ...request,
+                // Keep original customer information (not modified by admin)
+                customer_first_name: request.customer_first_name,
+                customer_last_name: request.customer_last_name,
+                customer_name: request.customer_name,
+                customer_email: request.customer_email,
+                customer_phone: request.customer_phone,
+                // Update only admin-modifiable fields
+                start_date: formData.start_date,
+                start_time: formData.start_time,
+                end_date: formData.end_date,
+                end_time: formData.end_time,
+                total_amount: formData.total_amount,
+                comment: formData.comment || undefined,
+                options: options,
+            };
+
+            await onSave(updatedRequest);
+            // Don't close automatically - let parent handle the close
+        } catch (error) {
+            console.error('Error saving request:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isOpen) return null;
 
     return createPortal(
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 1 }}
+        <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-            onClick={onClose}
             style={{ zIndex: 10000 }}
+            onClick={onClose}
         >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            <div
                 onClick={(e) => e.stopPropagation()}
+                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
             >
-                <div className="sticky top-0 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
-                    <h2 className="text-xl font-bold text-white">{t('admin.requests.editRequest')}</h2>
+                {/* Header */}
+                <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white">Editează Cererea</h2>
+                        <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                            Modifică detaliile cererii de închiriere
+                        </p>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
                     >
                         <X className="w-5 h-5 text-white" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {/* Customer Information */}
-                    <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h3 className="text-lg font-bold text-white mb-4">Date de contact</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Prenume *</label>
-                                <input
-                                    type="text"
-                                    value={formData.firstName || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value, customerFirstName: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Nume *</label>
-                                <input
-                                    type="text"
-                                    value={formData.lastName || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value, customerLastName: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Vârstă *</label>
-                                <input
-                                    type="number"
-                                    min="18"
-                                    max="100"
-                                    value={formData.age || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value, customerAge: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Telefon *</label>
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-[1] country-code-dropdown-container">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowCountryCodeDropdown(!showCountryCodeDropdown)}
-                                            className="flex items-center gap-1.5 text-gray-300 hover:text-white text-sm font-medium px-2 py-1 rounded hover:bg-white/10 transition-colors"
-                                        >
-                                            <span>{selectedCountryCode.flag}</span>
-                                            <span>{selectedCountryCode.code}</span>
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        {showCountryCodeDropdown && (
-                                            <div className="absolute top-full left-0 mt-1 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto z-[5] min-w-[200px]" style={{ backgroundColor: '#343434' }}>
-                                                {COUNTRY_CODES.map((country) => (
-                                                    <button
-                                                        key={country.code}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setSelectedCountryCode(country);
-                                                            setShowCountryCodeDropdown(false);
-                                                        }}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/20 transition-colors"
-                                                    >
-                                                        <span>{country.flag}</span>
-                                                        <span className="flex-1 text-left">{country.country}</span>
-                                                        <span className="text-gray-400">{country.code}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <input
-                                        type="tel"
-                                        value={formData.customerPhone || ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                                        placeholder="000 00 000"
-                                        className="w-full pl-[120px] pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">E-mail (opțional)</label>
-                                <input
-                                    type="email"
-                                    value={formData.customerEmail || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Rental Dates - Same calendar implementation as CreateRentalModal */}
-                    <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h3 className="text-lg font-bold text-white mb-4">Perioada închirierii</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Pickup Date */}
-                            <div className="relative" ref={pickupCalendarRef}>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Data preluării *</label>
+                {/* Content */}
+                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                    {/* Rental Period */}
+                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="text-sm sm:text-base">Perioada Închirierii</span>
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="relative" ref={startCalendarRef}>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                    Data Început *
+                                </label>
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setShowPickupCalendar(!showPickupCalendar);
-                                        setShowReturnCalendar(false);
-                                        setShowPickupTime(false);
-                                        setShowReturnTime(false);
-                                    }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startDate
-                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
-                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                        }`}
+                                    onClick={() => setShowStartCalendar(!showStartCalendar)}
+                                    className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 flex items-center justify-between hover:bg-white/10 transition-colors"
                                 >
-                                    <Calendar className="w-4 h-4" />
-                                    <span>{formData.startDate ? formatDate(formData.startDate) : 'Data preluării'}</span>
+                                    <span>{formData.start_date ? new Date(formData.start_date).toLocaleDateString('ro-RO') : 'Selectează data'}</span>
+                                    <Calendar className="w-4 h-4 text-gray-400" />
                                 </button>
-                                {showPickupCalendar && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        transition={{ duration: 0.2, ease: "easeOut" }}
-                                        className="absolute z-50 top-full left-0 mt-2 bg-[#343434] border border-white/20 rounded-lg shadow-lg p-3 min-w-[280px]"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
+
+                                {/* Start Date Calendar Dropdown */}
+                                {showStartCalendar && (
+                                    <div className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-full min-w-[280px]">
+                                        {/* Month Navigation */}
                                         <div className="flex items-center justify-between mb-3">
                                             <button
-                                                type="button"
                                                 onClick={() => {
-                                                    const newDate = new Date(calendarMonth.pickup);
+                                                    const newDate = new Date(calendarMonth.start);
                                                     newDate.setMonth(newDate.getMonth() - 1);
-                                                    setCalendarMonth(prev => ({ ...prev, pickup: newDate }));
+                                                    setCalendarMonth(prev => ({ ...prev, start: newDate }));
                                                 }}
-                                                className="p-1 hover:bg-white/10 rounded transition-colors"
+                                                className="p-1 hover:bg-gray-100 rounded transition-colors"
                                             >
-                                                <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                                </svg>
+                                                <ChevronLeft className="w-4 h-4 text-gray-600" />
                                             </button>
-                                            <div className="text-sm font-medium text-white">
-                                                {calendarMonth.pickup.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
+                                            <div className="text-sm font-medium text-gray-700">
+                                                {calendarMonth.start.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                                             </div>
                                             <button
-                                                type="button"
                                                 onClick={() => {
-                                                    const newDate = new Date(calendarMonth.pickup);
+                                                    const newDate = new Date(calendarMonth.start);
                                                     newDate.setMonth(newDate.getMonth() + 1);
-                                                    setCalendarMonth(prev => ({ ...prev, pickup: newDate }));
+                                                    setCalendarMonth(prev => ({ ...prev, start: newDate }));
                                                 }}
-                                                className="p-1 hover:bg-white/10 rounded transition-colors"
+                                                className="p-1 hover:bg-gray-100 rounded transition-colors"
                                             >
-                                                <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
+                                                <ChevronRight className="w-4 h-4 text-gray-600" />
                                             </button>
                                         </div>
+
+                                        {/* Instruction Message */}
+                                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                                            <p className="text-xs text-gray-600">
+                                                {!formData.start_date
+                                                    ? 'Selectează data de început'
+                                                    : 'Clic pentru a schimba data de început'}
+                                            </p>
+                                        </div>
+
+                                        {/* Days of Week */}
                                         <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
                                             {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
-                                                <div key={day} className="text-gray-400 font-medium">{day}</div>
+                                                <div key={day} className="text-gray-500 font-medium">{day}</div>
                                             ))}
                                         </div>
+
+                                        {/* Calendar Days */}
                                         <div className="grid grid-cols-7 gap-1">
-                                            {generateCalendarDays(calendarMonth.pickup).map((day, index) => {
+                                            {generateCalendarDays(calendarMonth.start).map((day, index) => {
                                                 if (!day) return <div key={index}></div>;
 
                                                 const dayDate = new Date(day);
-                                                const dayString = day;
-                                                const today = new Date();
-                                                today.setHours(0, 0, 0, 0);
-                                                const todayString = formatDateLocal(today);
-                                                // Only block dates that are strictly in the past (not today)
-                                                const isPast = dayString < todayString;
-                                                
-                                                // Check if date is before next available date
-                                                // Only block if nextAvailableDate is today or in the past (car is currently booked)
-                                                // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
-                                                const isBeforeAvailable = nextAvailableDate 
-                                                    ? (() => {
-                                                        const today = new Date();
-                                                        today.setHours(0, 0, 0, 0);
-                                                        const nextAvailDate = new Date(nextAvailableDate);
-                                                        nextAvailDate.setHours(0, 0, 0, 0);
-                                                        const dayDate = new Date(dayString);
-                                                        dayDate.setHours(0, 0, 0, 0);
-                                                        // Only block if nextAvailableDate is today or past, and day is before it
-                                                        return nextAvailDate <= today && dayDate < nextAvailDate;
-                                                    })()
-                                                    : false;
-                                                const isInActualRequest = isDateInActualApprovedRequest(dayString);
-                                                // For pickup date, don't block by future rentals - allow selecting any future date
-                                                const isBlocked = isPast || isBeforeAvailable || isInActualRequest;
-                                                const isSelected = dayString === formData.startDate;
-                                                // Check if this is the return date (visible in pickup calendar)
-                                                const isReturnDate = formData.endDate && dayString === formData.endDate;
-                                                // Check if date is in range between pickup and return (only if return date is selected)
-                                                const isInRange = formData.startDate && formData.endDate && 
-                                                    dayString > formData.startDate && 
-                                                    dayString < formData.endDate;
-
-                                                // Get message for blocked dates
-                                                const getBlockedMessage = () => {
-                                                    return 'Această dată nu este disponibilă.';
-                                                };
+                                                const isSelected = day === formData.start_date;
+                                                const isEndDate = day === formData.end_date;
+                                                // Check if date is in range between start and end
+                                                const isInRange = formData.start_date && formData.end_date &&
+                                                    day > formData.start_date &&
+                                                    day < formData.end_date;
 
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
-                                                            isBlocked 
-                                                                ? 'text-gray-300 cursor-not-allowed' 
-                                                                : 'text-white cursor-pointer'
-                                                        } ${isSelected
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors cursor-pointer relative ${isSelected
                                                             ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
-                                                            : isReturnDate
+                                                            : isEndDate
                                                                 ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
                                                                 : isInRange
-                                                                    ? 'bg-white/20 text-white hover:bg-white/30'
-                                                                    : !isBlocked
-                                                                        ? 'hover:bg-white/20'
-                                                                        : ''
-                                                        }`}
-                                                        onClick={() => {
-                                                            if (!isBlocked) {
-                                                                // Check if pickup date is being changed (different from current selection)
-                                                                const isChangingPickupDate = formData.startDate && formData.startDate !== day;
-                                                                
-                                                                // If user is reselecting/changing the pickup date, clear all other inputs first
-                                                                if (isChangingPickupDate) {
-                                                                    setFormData(prev => ({ ...prev, endDate: '', startTime: '', endTime: '' }));
-                                                                }
-                                                                
-                                                                setFormData(prev => ({ ...prev, startDate: day }));
-                                                                
-                                                                // If not changing, only clear return date if it's invalid (before pickup or less than 2 days)
-                                                                if (!isChangingPickupDate && formData.endDate && day >= formData.endDate) {
-                                                                    const returnDay = new Date(formData.endDate);
-                                                                    const pickupDay = new Date(day);
-                                                                    const diffTime = returnDay.getTime() - pickupDay.getTime();
-                                                                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                                                    // Clear return date if less than 2 days
-                                                                    if (diffDays < 2) {
-                                                                        setFormData(prev => ({ ...prev, endDate: '' }));
-                                                                    }
-                                                                }
-                                                                // Close calendar after 0.3s delay so user can see what they clicked
-                                                                setIsClosingWithDelay(true);
-                                                                setTimeout(() => {
-                                                                    setShowPickupCalendar(false);
-                                                                    setIsClosingWithDelay(false);
-                                                                    if (!formData.startTime) {
-                                                                        setShowPickupTime(true);
-                                                                    }
-                                                                }, 300);
-                                                            } else {
-                                                                // Show message for blocked dates
-                                                                alert(getBlockedMessage());
-                                                            }
-                                                        }}
-                                                        title={isBlocked ? getBlockedMessage() : ''}
-                                                    >
-                                                        <span className="relative z-0">{dayDate.getDate()}</span>
-                                                        {isInActualRequest && (
-                                                            <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
-                                                                ✕
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </div>
-
-                            {/* Pickup Time */}
-                            <div className="relative" ref={pickupTimeRef}>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Ora preluării *</label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowPickupTime(!showPickupTime);
-                                        setShowReturnTime(false);
-                                        setShowPickupCalendar(false);
-                                        setShowReturnCalendar(false);
-                                    }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.startTime
-                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
-                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                        }`}
-                                >
-                                    <Clock className="w-4 h-4" />
-                                    <span>{formData.startTime || '__ : __'}</span>
-                                </button>
-                                {showPickupTime && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        transition={{ duration: 0.2, ease: "easeOut" }}
-                                        className="absolute z-50 top-full left-0 mt-2 bg-[#343434] border border-white/20 rounded-lg shadow-lg p-3 max-h-[200px] overflow-y-auto min-w-[120px]"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="flex flex-col gap-1">
-                                            {(() => {
-                                                // Calculate minimum hour if nextAvailableDate is set and matches selected date
-                                                let minHour: number | undefined = undefined;
-                                                
-                                                // Check if selected date is today - if so, start from 2 hours from now
-                                                if (formData.startDate) {
-                                                    const today = new Date();
-                                                    today.setHours(0, 0, 0, 0);
-                                                    const todayString = formatDateLocal(today);
-                                                    
-                                                    if (formData.startDate === todayString) {
-                                                        // Selected date is today - start from 2 hours from now
-                                                        const now = new Date();
-                                                        const currentHour = now.getHours();
-                                                        // Calculate hour 2 hours from now
-                                                        let targetHour = currentHour + 2;
-                                                        // If current time + 2 hours exceeds 24, cap at 23
-                                                        if (targetHour >= 24) {
-                                                            targetHour = 23;
-                                                        }
-                                                        minHour = targetHour;
-                                                    } else if (nextAvailableDate) {
-                                                        // Check if nextAvailableDate matches selected date
-                                                        const nextAvailableDateStr = nextAvailableDate.toISOString().split('T')[0];
-                                                        if (formData.startDate === nextAvailableDateStr) {
-                                                            // Car becomes free on this date, only show hours from that time onwards
-                                                            const availableHour = nextAvailableDate.getHours();
-                                                            const availableMinutes = nextAvailableDate.getMinutes();
-                                                            // If there are minutes (e.g., 18:30), show from next hour (19:00)
-                                                            // If it's exactly on the hour (e.g., 18:00), show from that hour
-                                                            minHour = availableMinutes > 0 ? availableHour + 1 : availableHour;
-                                                        }
-                                                    }
-                                                }
-                                                
-                                                // Filter out hours that are in maintenance periods
-                                                const availableHours = generateHours(minHour).filter((hour) => {
-                                                    if (!formData.startDate) return true;
-                                                    const checkDate = new Date(formData.startDate);
-                                                    return !isInMaintenancePeriod(checkDate, hour);
-                                                });
-                                                
-                                                return availableHours.map((hour) => (
-                                                    <button
-                                                        key={hour}
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setFormData(prev => ({ ...prev, startTime: hour }));
-                                                            // Close time picker after 0.3s delay so user can see what they clicked
-                                                            setIsClosingWithDelay(true);
-                                                            setTimeout(() => {
-                                                                setShowPickupTime(false);
-                                                                setIsClosingWithDelay(false);
-                                                                if (!formData.endDate) {
-                                                                    setShowReturnCalendar(true);
-                                                                }
-                                                            }, 300);
-                                                        }}
-                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                        className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${formData.startTime === hour
-                                                            ? 'bg-red-500 text-white font-medium'
-                                                            : 'text-white hover:bg-white/20'
+                                                                    ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                                                    : 'text-gray-700 hover:bg-gray-100'
                                                             }`}
-                                                    >
-                                                        {hour}
-                                                    </button>
-                                                ));
-                                            })()}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </div>
-
-                            {/* Return Date */}
-                            <div className="relative" ref={returnCalendarRef}>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Data returnării *</label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowReturnCalendar(!showReturnCalendar);
-                                        setShowPickupCalendar(false);
-                                        setShowPickupTime(false);
-                                        setShowReturnTime(false);
-                                    }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endDate
-                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
-                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                        }`}
-                                >
-                                    <Calendar className="w-4 h-4" />
-                                    <span>{formData.endDate ? formatDate(formData.endDate) : 'Data returnării'}</span>
-                                </button>
-                                {showReturnCalendar && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        transition={{ duration: 0.2, ease: "easeOut" }}
-                                        className="absolute z-50 top-full left-0 mt-2 bg-[#343434] border border-white/20 rounded-lg shadow-lg p-3 min-w-[280px]"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const newDate = new Date(calendarMonth.return);
-                                                    newDate.setMonth(newDate.getMonth() - 1);
-                                                    setCalendarMonth(prev => ({ ...prev, return: newDate }));
-                                                }}
-                                                className="p-1 hover:bg-white/10 rounded transition-colors"
-                                            >
-                                                <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                                </svg>
-                                            </button>
-                                            <div className="text-sm font-medium text-white">
-                                                {calendarMonth.return.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const newDate = new Date(calendarMonth.return);
-                                                    newDate.setMonth(newDate.getMonth() + 1);
-                                                    setCalendarMonth(prev => ({ ...prev, return: newDate }));
-                                                }}
-                                                className="p-1 hover:bg-white/10 rounded transition-colors"
-                                            >
-                                                <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                                            {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
-                                                <div key={day} className="text-gray-400 font-medium">{day}</div>
-                                            ))}
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-1">
-                                            {generateCalendarDays(calendarMonth.return).map((day, index) => {
-                                                if (!day) return <div key={index}></div>;
-
-                                                const dayDate = new Date(day);
-                                                const dayString = day;
-                                                const today = new Date();
-                                                today.setHours(0, 0, 0, 0);
-                                                const todayString = formatDateLocal(today);
-                                                // Only block dates that are strictly in the past (not today)
-                                                const isPast = dayString < todayString;
-                                                
-                                                // Check if date is before next available date
-                                                // Only block if nextAvailableDate is today or in the past (car is currently booked)
-                                                // If nextAvailableDate is in the future, don't block dates before it (there's a gap)
-                                                const isBeforeAvailable = nextAvailableDate 
-                                                    ? (() => {
-                                                        const today = new Date();
-                                                        today.setHours(0, 0, 0, 0);
-                                                        const nextAvailDate = new Date(nextAvailableDate);
-                                                        nextAvailDate.setHours(0, 0, 0, 0);
-                                                        const dayDate = new Date(dayString);
-                                                        dayDate.setHours(0, 0, 0, 0);
-                                                        // Only block if nextAvailableDate is today or past, and day is before it
-                                                        return nextAvailDate <= today && dayDate < nextAvailDate;
-                                                    })()
-                                                    : false;
-                                                const isBeforePickup = formData.startDate && dayString <= formData.startDate;
-                                                // Minimum rental is 2 days - block dates that are less than 2 days after pickup
-                                                const isLessThanMinDays = formData.startDate && (() => {
-                                                    const pickup = new Date(formData.startDate);
-                                                    const returnDay = new Date(dayString);
-                                                    const diffTime = returnDay.getTime() - pickup.getTime();
-                                                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                                    return diffDays < 2;
-                                                })();
-                                                const isInActualRequest = isDateInActualApprovedRequest(dayString);
-                                                // Only block by future rental if pickup date is before the future rental start
-                                                // If pickup is after future rental, allow return dates after it too
-                                                const isBlockedByFuture = formData.startDate ? (() => {
-                                                    const earliestStart = getEarliestFutureRentalStart();
-                                                    if (!earliestStart) return false;
-                                                    
-                                                    const pickupDateObj = new Date(formData.startDate);
-                                                    pickupDateObj.setHours(0, 0, 0, 0);
-                                                    const earliestStartDate = new Date(earliestStart);
-                                                    earliestStartDate.setHours(0, 0, 0, 0);
-                                                    const returnDateObj = new Date(dayString);
-                                                    returnDateObj.setHours(0, 0, 0, 0);
-                                                    
-                                                    // If pickup is after or equal to future rental start, don't block return dates
-                                                    if (pickupDateObj >= earliestStartDate) {
-                                                        return false;
-                                                    }
-                                                    
-                                                    // If pickup is before future rental start, block return dates on/after future rental start
-                                                    return returnDateObj >= earliestStartDate;
-                                                })() : isDateBlockedByFutureRental(dayString);
-                                                const isBlocked = isPast || isBeforeAvailable || isBeforePickup || isInActualRequest || isBlockedByFuture;
-                                                const isSelected = dayString === formData.endDate;
-                                                // Check if this is the pickup date (visible in return calendar)
-                                                const isPickupDate = formData.startDate && dayString === formData.startDate;
-                                                // Check if date is in range between pickup and return
-                                                const isInRange = formData.startDate && formData.endDate && 
-                                                    dayString > formData.startDate && 
-                                                    dayString < formData.endDate;
-
-                                                // Get message for blocked dates
-                                                const getBlockedMessage = () => {
-                                                    if (isBlockedByFuture) {
-                                                        const earliestStart = getEarliestFutureRentalStart();
-                                                        if (earliestStart) {
-                                                            const date = new Date(earliestStart);
-                                                            const formattedDate = date.toLocaleDateString('ro-RO', { 
-                                                                day: 'numeric', 
-                                                                month: 'long', 
-                                                                year: 'numeric' 
-                                                            });
-                                                            return `Nu puteți selecta această dată. Mașina este deja rezervată începând cu ${formattedDate}.`;
-                                                        }
-                                                    }
-                                                    return 'Această dată nu este disponibilă.';
-                                                };
-
-                                                return (
-                                                    <div
-                                                        key={index}
-                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${
-                                                            isLessThanMinDays
-                                                                ? 'text-black opacity-50 cursor-not-allowed' 
-                                                                : isBlocked 
-                                                                    ? 'text-gray-300 cursor-not-allowed' 
-                                                                    : 'text-white cursor-pointer'
-                                                        } ${isSelected
-                                                            ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
-                                                            : isPickupDate
-                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium'
-                                                                : isInRange
-                                                                    ? 'bg-white/20 text-white hover:bg-white/30'
-                                                                    : !isBlocked && !isLessThanMinDays
-                                                                        ? 'hover:bg-white/20'
-                                                                        : ''
-                                                        }`}
-                                                        onClick={() => {
-                                                            if (isLessThanMinDays) {
-                                                                setMinDaysMessage('Perioada minimă de închiriere este de 2 zile');
-                                                                setTimeout(() => setMinDaysMessage(''), 3000);
-                                                                return;
-                                                            }
-                                                            if (!isBlocked) {
-                                                                setFormData(prev => ({ ...prev, endDate: day }));
-                                                                // Close calendar after 0.3s delay so user can see what they clicked
-                                                                setIsClosingWithDelay(true);
-                                                                setTimeout(() => {
-                                                                    setShowReturnCalendar(false);
-                                                                    setIsClosingWithDelay(false);
-                                                                    if (!formData.endTime) {
-                                                                        setShowReturnTime(true);
-                                                                    }
-                                                                }, 300);
-                                                            } else {
-                                                                // Show message for blocked dates
-                                                                alert(getBlockedMessage());
-                                                            }
-                                                        }}
-                                                        title={isBlocked ? getBlockedMessage() : ''}
+                                                        onClick={() => handleDateSelect(day, true)}
                                                     >
                                                         <span className="relative z-0">{dayDate.getDate()}</span>
-                                                        {isInActualRequest && (
-                                                            <span className="absolute inset-0 flex items-center justify-center text-red-600 font-bold text-base z-10 pointer-events-none" style={{ fontSize: '14px' }}>
-                                                                ✕
-                                                            </span>
-                                                        )}
                                                     </div>
                                                 );
                                             })}
                                         </div>
-                                        {minDaysMessage && (
-                                            <div className="mt-3 px-2 py-1.5 bg-blue-50 rounded-xl border border-blue-100">
-                                                <p className="text-xs text-blue-700">
-                                                    {minDaysMessage}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </motion.div>
+                                    </div>
                                 )}
                             </div>
-
-                            {/* Return Time */}
-                            <div className="relative" ref={returnTimeRef}>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Ora returnării *</label>
+                            <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                    Ora Început
+                                </label>
+                                <input
+                                    type="time"
+                                    value={formData.start_time} // must be "HH:mm"
+                                    onChange={(e) => handleInputChange('start_time', e.target.value)}
+                                    className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                />
+                            </div>
+                            <div className="relative" ref={endCalendarRef}>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                    Data Sfârșit *
+                                </label>
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setShowReturnTime(!showReturnTime);
-                                        setShowPickupTime(false);
-                                        setShowPickupCalendar(false);
-                                        setShowReturnCalendar(false);
-                                    }}
-                                    className={`w-full flex items-center justify-start gap-2 border rounded-xl py-3 px-3 transition-colors text-sm font-medium ${formData.endTime
-                                        ? 'border-white/30 text-white hover:border-white/50 bg-white/5'
-                                        : 'border-white/20 text-gray-400 hover:border-white/30 bg-white/5'
-                                        }`}
+                                    onClick={() => setShowEndCalendar(!showEndCalendar)}
+                                    className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 flex items-center justify-between hover:bg-white/10 transition-colors"
                                 >
-                                    <Clock className="w-4 h-4" />
-                                    <span>{formData.endTime || '__ : __'}</span>
+                                    <span>{formData.end_date ? new Date(formData.end_date).toLocaleDateString('ro-RO') : 'Selectează data'}</span>
+                                    <Calendar className="w-4 h-4 text-gray-400" />
                                 </button>
-                                {showReturnTime && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                        transition={{ duration: 0.2, ease: "easeOut" }}
-                                        className="absolute z-50 top-full left-0 mt-2 bg-[#343434] border border-white/20 rounded-lg shadow-lg p-3 max-h-[200px] overflow-y-auto min-w-[120px]"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="flex flex-col gap-1">
-                                            {generateHours().map((hour) => (
-                                                <button
-                                                    key={hour}
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setFormData(prev => ({ ...prev, endTime: hour }));
-                                                        // Close time picker after 0.3s delay so user can see what they clicked
-                                                        setIsClosingWithDelay(true);
-                                                        setTimeout(() => {
-                                                            setShowReturnTime(false);
-                                                            setIsClosingWithDelay(false);
-                                                        }, 300);
-                                                    }}
-                                                    onMouseDown={(e) => e.stopPropagation()}
-                                                    className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${formData.endTime === hour
-                                                        ? 'bg-red-500 text-white font-medium'
-                                                        : 'text-white hover:bg-white/20'
-                                                        }`}
-                                                >
-                                                    {hour}
-                                                </button>
+
+                                {/* End Date Calendar Dropdown */}
+                                {showEndCalendar && (
+                                    <div className="absolute z-50 top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-full min-w-[280px]">
+                                        {/* Month Navigation */}
+                                        <div className="flex items-center justify-between mb-3">
+                                            <button
+                                                onClick={() => {
+                                                    const newDate = new Date(calendarMonth.end);
+                                                    newDate.setMonth(newDate.getMonth() - 1);
+                                                    setCalendarMonth(prev => ({ ...prev, end: newDate }));
+                                                }}
+                                                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                                            >
+                                                <ChevronLeft className="w-4 h-4 text-gray-600" />
+                                            </button>
+                                            <div className="text-sm font-medium text-gray-700">
+                                                {calendarMonth.end.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const newDate = new Date(calendarMonth.end);
+                                                    newDate.setMonth(newDate.getMonth() + 1);
+                                                    setCalendarMonth(prev => ({ ...prev, end: newDate }));
+                                                }}
+                                                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                                            >
+                                                <ChevronRight className="w-4 h-4 text-gray-600" />
+                                            </button>
+                                        </div>
+
+                                        {/* Instruction Message */}
+                                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                                            <p className="text-xs text-gray-600">
+                                                {!formData.end_date
+                                                    ? 'Selectează data de sfârșit'
+                                                    : 'Clic pentru a schimba data de sfârșit'}
+                                            </p>
+                                        </div>
+
+                                        {/* Days of Week */}
+                                        <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
+                                            {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
+                                                <div key={day} className="text-gray-500 font-medium">{day}</div>
                                             ))}
                                         </div>
-                                    </motion.div>
+
+                                        {/* Calendar Days */}
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {generateCalendarDays(calendarMonth.end).map((day, index) => {
+                                                if (!day) return <div key={index}></div>;
+
+                                                const dayDate = new Date(day);
+                                                const isSelected = day === formData.end_date;
+                                                const isStartDate = day === formData.start_date;
+                                                const isBeforeStart = formData.start_date && day < formData.start_date;
+                                                // Check if date is in range between start and end
+                                                const isInRange = formData.start_date && formData.end_date &&
+                                                    day > formData.start_date &&
+                                                    day < formData.end_date;
+
+                                                return (
+                                                    <div
+                                                        key={index}
+                                                        className={`w-8 h-8 flex items-center justify-center text-xs rounded transition-colors relative ${isBeforeStart
+                                                            ? 'text-gray-300 cursor-not-allowed'
+                                                            : isSelected
+                                                                ? 'bg-red-500 text-white hover:bg-red-600 font-medium cursor-pointer'
+                                                                : isStartDate
+                                                                    ? 'bg-red-500 text-white hover:bg-red-600 font-medium cursor-pointer'
+                                                                    : isInRange
+                                                                        ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 cursor-pointer'
+                                                                        : 'text-gray-700 hover:bg-gray-100 cursor-pointer'
+                                                            }`}
+                                                        onClick={() => !isBeforeStart && handleDateSelect(day, false)}
+                                                    >
+                                                        <span className="relative z-0">{dayDate.getDate()}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 )}
+                            </div>
+                            <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                    Ora Sfârșit
+                                </label>
+                                <input
+                                    type='time'
+                                    value={formData.end_time}
+                                    onChange={(e) => handleInputChange('end_time', e.target.value)}
+                                    className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                />
                             </div>
                         </div>
                     </div>
 
-                    {/* Car Selection */}
-                    <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h3 className="text-lg font-bold text-white mb-4">Selectare automobil</h3>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Automobil *</label>
-                        <select
-                            value={formData.carId || ''}
-                            onChange={(e) => {
-                                const selectedCar = cars.find(c => c.id.toString() === e.target.value);
-                                setFormData(prev => ({
-                                    ...prev,
-                                    carId: e.target.value,
-                                    carName: selectedCar ? ((selectedCar as any).name || `${selectedCar.make} ${selectedCar.model}`) : ''
-                                }));
-                            }}
-                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 12px center',
-                                backgroundSize: '12px',
-                                paddingRight: '40px'
-                            }}
-                            required
-                        >
-                            <option value="">Selectează automobil</option>
-                            {cars.map((car) => (
-                                <option key={car.id} value={car.id.toString()}>
-                                    {(car as any).name || `${car.make} ${car.model}`}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Rental Options - Same as CreateRentalModal */}
-                    <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h3 className="text-lg font-bold text-white mb-4">Opțiuni de închiriere</h3>
-
-                        {/* Pickup and Return */}
-                        <div className="space-y-2 mb-5">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-3">Preluarea și returnarea automobilului</h4>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.pickupAtAddress}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, pickupAtAddress: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.pickupAtAddress
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.pickupAtAddress && <Check className="w-3 h-3 text-white" />}
-                                    </div>
-                                    <div>
-                                        <div className="font-medium text-white text-sm">Preluarea la adresă</div>
-                                        <div className="text-xs text-gray-400 mt-0.5">Cost separat</div>
-                                    </div>
-                                </div>
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.returnAtAddress}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, returnAtAddress: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.returnAtAddress
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.returnAtAddress && <Check className="w-3 h-3 text-white" />}
-                                    </div>
-                                    <div>
-                                        <div className="font-medium text-white text-sm">Returnarea la adresă</div>
-                                        <div className="text-xs text-gray-400 mt-0.5">Cost separat</div>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        {/* Limits */}
-                        <div className="space-y-2 mb-5">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-3">Limite</h4>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.unlimitedKm}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, unlimitedKm: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.unlimitedKm
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.unlimitedKm && <Check className="w-3 h-3 text-white" />}
-                                    </div>
-                                    <span className="font-medium text-white text-sm">Kilometraj nelimitat</span>
-                                </div>
-                                <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">+50%</span>
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.speedLimitIncrease}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, speedLimitIncrease: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.speedLimitIncrease
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.speedLimitIncrease && <Check className="w-3 h-3 text-white" />}
-                                    </div>
-                                    <span className="font-medium text-white text-sm">Creșterea limitei de viteză</span>
-                                </div>
-                                <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">+20%</span>
-                            </label>
-                        </div>
-
-                        {/* VIP Services */}
-                        <div className="space-y-2 mb-5">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-3">Servicii VIP</h4>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.personalDriver}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, personalDriver: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.personalDriver
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.personalDriver && <Check className="w-3 h-3 text-white" />}
-                                    </div>
-                                    <span className="font-medium text-white text-sm">Șofer personal</span>
-                                </div>
-                                <span className="text-xs font-medium text-gray-300">800 MDL/zi</span>
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.priorityService}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, priorityService: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.priorityService
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.priorityService && <Check className="w-3 h-3 text-white" />}
-                                    </div>
-                                    <span className="font-medium text-white text-sm">Priority Service</span>
-                                </div>
-                                <span className="text-xs font-medium text-gray-300">1 000 MDL/zi</span>
-                            </label>
-                        </div>
-
-                        {/* Insurance */}
-                        <div className="space-y-2 mb-5">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-3">Asigurare</h4>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.tireInsurance}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, tireInsurance: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.tireInsurance
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.tireInsurance && <Check className="w-3 h-3 text-white" />}
-                                    </div>
-                                    <span className="font-medium text-white text-sm">Asigurare anvelope & parbriz</span>
-                                </div>
-                                <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">+20%</span>
-                            </label>
-                        </div>
-
-                        {/* Additional */}
+                    {/* Additional Services/Options */}
+                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                            <span className="text-sm sm:text-base">Servicii Adiționale</span>
+                        </h3>
                         <div className="space-y-2">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-3">Suplimentar</h4>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
+                            {/* Unlimited Km */}
+                            <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
                                 <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.childSeat}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, childSeat: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.childSeat
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.childSeat && <Check className="w-3 h-3 text-white" />}
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.unlimitedKm}
+                                            onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
                                     </div>
-                                    <span className="font-medium text-white text-sm">Scaun auto pentru copii</span>
+                                    <span className="text-white text-xs sm:text-sm">Kilometraj nelimitat</span>
                                 </div>
-                                <span className="text-xs font-medium text-gray-300">100 MDL/zi</span>
+                                <span className="text-xs sm:text-sm font-semibold text-emerald-400">+50%</span>
                             </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
+
+                            {/* Personal Driver */}
+                            <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
                                 <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.simCard}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, simCard: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.simCard
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.simCard && <Check className="w-3 h-3 text-white" />}
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.personalDriver}
+                                            onChange={(e) => handleOptionChange('personalDriver', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.personalDriver
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.personalDriver ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
                                     </div>
-                                    <span className="font-medium text-white text-sm">Cartelă SIM cu internet</span>
+                                    <span className="text-white text-xs sm:text-sm">Șofer personal</span>
                                 </div>
-                                <span className="text-xs font-medium text-gray-300">100 MDL/zi</span>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-300">800 MDL/zi</span>
                             </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-transparent border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
+
+                            {/* Priority Service */}
+                            <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
                                 <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={options.roadsideAssistance}
-                                        onChange={(e) => setOptions((prev: any) => ({ ...prev, roadsideAssistance: e.target.checked }))}
-                                        className="sr-only"
-                                    />
-                                    <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.roadsideAssistance
-                                        ? 'bg-red-500 border-red-500'
-                                        : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                        }`}>
-                                        {options.roadsideAssistance && <Check className="w-3 h-3 text-white" />}
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.priorityService}
+                                            onChange={(e) => handleOptionChange('priorityService', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.priorityService
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.priorityService ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
                                     </div>
-                                    <span className="font-medium text-white text-sm">Asistență rutieră</span>
+                                    <span className="text-white text-xs sm:text-sm">Priority Service</span>
                                 </div>
-                                <span className="text-xs font-medium text-gray-300">500 MDL/zi</span>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-300">1000 MDL/zi</span>
+                            </label>
+
+                            {/* Child Seat */}
+                            <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.childSeat}
+                                            onChange={(e) => handleOptionChange('childSeat', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.childSeat
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.childSeat ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <span className="text-white text-xs sm:text-sm">Scaun auto pentru copii</span>
+                                </div>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-300">100 MDL/zi</span>
+                            </label>
+
+                            {/* SIM Card */}
+                            <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.simCard}
+                                            onChange={(e) => handleOptionChange('simCard', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.simCard
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.simCard ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <span className="text-white text-xs sm:text-sm">Cartelă SIM cu internet</span>
+                                </div>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-300">100 MDL/zi</span>
+                            </label>
+
+                            {/* Roadside Assistance */}
+                            <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={options.roadsideAssistance}
+                                            onChange={(e) => handleOptionChange('roadsideAssistance', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.roadsideAssistance
+                                            ? 'bg-red-500 border-red-500'
+                                            : 'border-white/30 bg-white/5 hover:border-red-400'
+                                            }`}>
+                                            <svg
+                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.roadsideAssistance ? 'opacity-100' : 'opacity-0'
+                                                    }`}
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <span className="text-white text-xs sm:text-sm">Asistență rutieră 24/7</span>
+                                </div>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-300">500 MDL/zi</span>
                             </label>
                         </div>
                     </div>
 
-                    {/* Comment */}
-                    <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h3 className="text-lg font-bold text-white mb-4">Comentariu (opțional)</h3>
-                        <textarea
-                            value={formData.comment || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
-                            rows={4}
-                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 resize-none"
-                            placeholder="Adăugați un comentariu (opțional)"
-                        />
+                    {/* Comments */}
+                    <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                        <div className="space-y-3 sm:space-y-4">
+                            <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-2">
+                                    Comentariu
+                                </label>
+                                <textarea
+                                    value={formData.comment}
+                                    onChange={(e) => handleInputChange('comment', e.target.value)}
+                                    className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
+                                    placeholder="Comentariu suplimentar..."
+                                    rows={3}
+                                    maxLength={1000}
+                                />
+                                <p className="mt-1 text-[10px] sm:text-xs text-gray-400">
+                                    {formData.comment.length}/1000 caractere
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Price Summary */}
-                    <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h3 className="text-lg font-bold text-white mb-4">Detalii preț</h3>
-                        <div className="space-y-3">
-                            {formData.carId && (() => {
-                                const selectedCar = cars.find(c => c.id.toString() === formData.carId);
-                                if (!selectedCar) return null;
+                    {/* Price Details */}
+                    {priceSummary && (
+                        <div className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10">
+                            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-sm sm:text-base">Detalii Preț</span>
+                            </h3>
+                            <div className="space-y-3">
+                                {/* Price per day and duration */}
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300 text-xs sm:text-sm">Preț pe zi</span>
+                                    <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.pricePerDay)} MDL</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300 text-xs sm:text-sm">Durată închiriere</span>
+                                    <span className="text-white font-semibold text-sm sm:text-base">
+                                        {priceSummary.rentalDays} zile{priceSummary.rentalHours > 0 ? `, ${priceSummary.rentalHours} ore` : ''}
+                                    </span>
+                                </div>
 
-                                // Get price with car discount applied first
-                                const basePricePerDay = (selectedCar as any).pricePerDay || selectedCar.price_per_day || 0;
-                                const carDiscount = (selectedCar as any).discount_percentage || selectedCar.discount_percentage || 0;
-                                const pricePerDay = carDiscount > 0 
-                                    ? basePricePerDay * (1 - carDiscount / 100)
-                                    : basePricePerDay;
+                                {/* Base price */}
+                                <div className="pt-2 border-t border-white/10">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-white font-medium text-sm sm:text-base">Preț de bază</span>
+                                        <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.basePrice).toLocaleString()} MDL</span>
+                                    </div>
+                                </div>
 
-                                const startDate = new Date(formData.startDate || '');
-                                const endDate = new Date(formData.endDate || '');
-                                const startTime = formData.startTime || '09:00';
-                                const endTime = formData.endTime || '17:00';
-
-                                const [startHour, startMin] = startTime.split(':').map(Number);
-                                const [endHour, endMin] = endTime.split(':').map(Number);
-
-                                const startDateTime = new Date(startDate);
-                                startDateTime.setHours(startHour, startMin, 0, 0);
-
-                                const endDateTime = new Date(endDate);
-                                endDateTime.setHours(endHour, endMin, 0, 0);
-
-                                const diffTime = endDateTime.getTime() - startDateTime.getTime();
-                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-                                const days = diffDays;
-                                const hours = diffHours >= 0 ? diffHours : 0;
-                                const rentalDays = days;
-                                const totalDays = days + (hours / 24);
-
-                                // Calculate base price using price ranges (no period discounts)
-                                basePrice = pricePerDay * rentalDays;
-
-                                if (hours > 0) {
-                                    const hoursPrice = (hours / 24) * pricePerDay;
-                                    basePrice += hoursPrice;
-                                }
-
-                                let additionalCosts = 0;
-
-                                if (options.unlimitedKm) {
-                                    additionalCosts += baseCarPrice * totalDays * 0.5;
-                                }
-                                if (options.speedLimitIncrease) {
-                                    additionalCosts += baseCarPrice * totalDays * 0.2;
-                                }
-                                if (options.tireInsurance) {
-                                    additionalCosts += baseCarPrice * totalDays * 0.2;
-                                }
-                                if (options.personalDriver) {
-                                    additionalCosts += 800 * rentalDays;
-                                }
-                                if (options.priorityService) {
-                                    additionalCosts += 1000 * rentalDays;
-                                }
-                                if (options.childSeat) {
-                                    additionalCosts += 100 * rentalDays;
-                                }
-                                if (options.simCard) {
-                                    additionalCosts += 100 * rentalDays;
-                                }
-                                if (options.roadsideAssistance) {
-                                    additionalCosts += 500 * rentalDays;
-                                }
-
-                                const totalPrice = basePrice + additionalCosts;
-
-                                return (
-                                    <>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-300">Preț pe zi</span>
-                                            <div className="flex flex-col items-end gap-0.5">
-                                                <span className="text-white font-medium">{pricePerDay.toFixed(0)} MDL</span>
-                                                {carDiscount > 0 && (
-                                                    <span className="text-gray-400 text-xs line-through">{basePricePerDay.toFixed(0)} MDL</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {carDiscount > 0 && (
-                                            <div className="flex items-center justify-between text-sm text-emerald-400">
-                                                <span>Reducere mașină</span>
-                                                <span className="font-medium">-{carDiscount}%</span>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-300">Durată</span>
-                                            <span className="text-white font-medium">
-                                                {rentalDays} {rentalDays === 1 ? 'zi' : 'zile'}{hours > 0 ? `, ${hours} ${hours === 1 ? 'oră' : 'ore'}` : ''}
-                                            </span>
-                                        </div>
-                                        <div className="pt-2 border-t border-white/10">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-white font-medium">Preț de bază</span>
-                                                <span className="text-white font-medium">{Math.round(basePrice).toLocaleString()} MDL</span>
-                                            </div>
-                                        </div>
-
-                                        {additionalCosts > 0 && (
-                                            <>
-                                                <div className="pt-3 border-t border-white/10">
-                                                    <h4 className="text-sm font-bold text-white mb-3">Servicii suplimentare</h4>
-                                                    <div className="space-y-2 text-sm">
-                                                        {options.unlimitedKm && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Kilometraj nelimitat</span>
-                                                                <span className="text-white font-medium">
-                                                                    {Math.round(baseCarPrice * totalDays * 0.5).toLocaleString()} MDL
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {options.speedLimitIncrease && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Creșterea limitei de viteză</span>
-                                                                <span className="text-white font-medium">
-                                                                    {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {options.tireInsurance && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Asigurare anvelope & parbriz</span>
-                                                                <span className="text-white font-medium">
-                                                                    {Math.round(baseCarPrice * totalDays * 0.2).toLocaleString()} MDL
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {options.personalDriver && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Șofer personal</span>
-                                                                <span className="text-white font-medium">{800 * rentalDays} MDL</span>
-                                                            </div>
-                                                        )}
-                                                        {options.priorityService && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Serviciu prioritar</span>
-                                                                <span className="text-white font-medium">{1000 * rentalDays} MDL</span>
-                                                            </div>
-                                                        )}
-                                                        {options.childSeat && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Scaun auto pentru copii</span>
-                                                                <span className="text-white font-medium">{100 * rentalDays} MDL</span>
-                                                            </div>
-                                                        )}
-                                                        {options.simCard && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Cartelă SIM cu internet</span>
-                                                                <span className="text-white font-medium">{100 * rentalDays} MDL</span>
-                                                            </div>
-                                                        )}
-                                                        {options.roadsideAssistance && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-300">Asistență rutieră</span>
-                                                                <span className="text-white font-medium">{500 * rentalDays} MDL</span>
-                                                            </div>
-                                                        )}
-                                                        <div className="pt-2 border-t border-white/10">
-                                                            <div className="flex justify-between font-medium">
-                                                                <span className="text-white">Total servicii</span>
-                                                                <span className="text-white">{Math.round(additionalCosts).toLocaleString()} MDL</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                {/* Additional services */}
+                                {priceSummary.additionalCosts > 0 && (
+                                    <div className="pt-3 border-t border-white/10">
+                                        <h4 className="text-sm font-bold text-white mb-3">Servicii Adiționale</h4>
+                                        <div className="space-y-2 text-sm">
+                                            {options.unlimitedKm && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Kilometraj nelimitat</span>
+                                                    <span className="text-white font-medium">
+                                                        {Math.round(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5).toLocaleString()} MDL
+                                                    </span>
                                                 </div>
-                                            </>
-                                        )}
-
-                                        <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                                            <span className="text-white font-bold text-lg">Total</span>
-                                            <span className="text-white font-bold text-xl">{Math.round(totalPrice).toLocaleString()} MDL</span>
+                                            )}
+                                            {options.personalDriver && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Șofer personal</span>
+                                                    <span className="text-white font-medium">
+                                                        {Math.round(800 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {options.priorityService && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Priority Service</span>
+                                                    <span className="text-white font-medium">
+                                                        {Math.round(1000 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {options.childSeat && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Scaun auto pentru copii</span>
+                                                    <span className="text-white font-medium">
+                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {options.simCard && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Cartelă SIM cu internet</span>
+                                                    <span className="text-white font-medium">
+                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {options.roadsideAssistance && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-300">Asistență rutieră 24/7</span>
+                                                    <span className="text-white font-medium">
+                                                        {Math.round(500 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between pt-2 border-t border-white/10">
+                                                <span className="text-white font-medium">Costuri suplimentare</span>
+                                                <span className="text-white font-semibold">{Math.round(priceSummary.additionalCosts).toLocaleString()} MDL</span>
+                                            </div>
                                         </div>
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    </div>
+                                    </div>
+                                )}
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
-                        >
-                            {t('admin.common.cancel')}
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
-                        >
-                            <Save className="w-4 h-4" />
-                            {t('admin.common.save')}
-                        </button>
-                    </div>
-                </form>
-            </motion.div>
-        </motion.div>,
+                                {/* Total */}
+                                <div className="pt-3 border-t border-white/20">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-white font-bold text-base">Total</span>
+                                        <span className="text-emerald-400 font-bold text-lg">{Math.round(priceSummary.totalPrice).toLocaleString()} MDL</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="border-t border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 bg-white/5 backdrop-blur-sm" style={{ backgroundColor: '#1C1C1C' }}>
+                    <button
+                        onClick={onClose}
+                        disabled={isSaving}
+                        className="px-3 sm:px-4 md:px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all font-semibold text-xs sm:text-sm disabled:opacity-50"
+                    >
+                        Anulează
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-3 sm:px-4 md:px-6 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-lg transition-all font-semibold flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm disabled:opacity-50"
+                    >
+                        {isSaving ? (
+                            <>
+                                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                                <span>Se salvează...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span>Salvează Modificările</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>,
         document.body
     );
 };

@@ -2,10 +2,12 @@ import { useTranslation } from "react-i18next"
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowRight, Car, Check, Truck } from 'lucide-react';
-import { OrderDetailsModal } from "../../../../components/modals/OrderDetailsModal";
+import { RentalDetailsModal } from "../../../../components/modals/OrderDetailsModal";
 import { getUserRentals as fetchUsersRentals } from "../../../../lib/db/rentals/rentals";
-import { Rental } from "../../../../types";
+import { Rental, Car as CarType } from "../../../../types";
 import { formatDateLocal } from "../../../../utils/date";
+import { fetchCars } from "../../../../lib/cars";
+import { fetchImagesByCarName } from "../../../../lib/db/cars/cars";
 
 export const UserOrdersSection: React.FC = () => {
 
@@ -15,6 +17,7 @@ export const UserOrdersSection: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Rental | null>(null);
     const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [cars, setCars] = useState<CarType[]>([]);
 
     useEffect(() => {
         async function loadRentals() {
@@ -22,6 +25,34 @@ export const UserOrdersSection: React.FC = () => {
             setRentals(orders);
         }
         loadRentals();
+    }, []);
+
+    // Load cars for pricing calculation
+    useEffect(() => {
+        const loadCars = async () => {
+            try {
+                const fetchedCars = await fetchCars();
+                // Fetch images from storage for each car
+                const carsWithImages = await Promise.all(
+                    fetchedCars.map(async (car) => {
+                        let carName = (car as any).name;
+                        if (!carName || carName.trim() === '') {
+                            carName = `${car.make} ${car.model}`;
+                        }
+                        const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
+                        return {
+                            ...car,
+                            image_url: mainImage || car.image_url,
+                            photo_gallery: photoGallery.length > 0 ? photoGallery : car.photo_gallery,
+                        };
+                    })
+                );
+                setCars(carsWithImages);
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        };
+        loadCars();
     }, []);
 
     return (
@@ -34,11 +65,63 @@ export const UserOrdersSection: React.FC = () => {
             <div className="mt-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Current Active Rental or No Current Rentals State */}
-                    {rentals && rentals.filter(r => r.rental_status === 'ACTIVE' || r.rental_status === 'CONTRACT').length > 0 ? (
-                        // Show active rental
+                    {rentals && rentals.filter(r => {
+                        if (r.rental_status !== 'ACTIVE' && r.rental_status !== 'CONTRACT') return false;
+
+                        // Check if end date hasn't passed
+                        const now = new Date();
+                        const endDateTime = new Date(r.end_date);
+
+                        if (r.end_time) {
+                            const [hours, minutes] = r.end_time.split(':').map(Number);
+                            endDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                        } else {
+                            endDateTime.setHours(23, 59, 59, 999); // End of day
+                        }
+
+                        return now <= endDateTime;
+                    }).length > 0 ? (
+                        // Show active rental that hasn't ended yet
                         (() => {
-                            const activeRental = rentals.filter(r => r.rental_status === 'ACTIVE' || r.rental_status === 'CONTRACT')[0];
+                            const activeRentals = rentals.filter(r => {
+                                if (r.rental_status !== 'ACTIVE' && r.rental_status !== 'CONTRACT') return false;
+
+                                // Check if end date hasn't passed
+                                const now = new Date();
+                                const endDateTime = new Date(r.end_date);
+
+                                if (r.end_time) {
+                                    const [hours, minutes] = r.end_time.split(':').map(Number);
+                                    endDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                                } else {
+                                    endDateTime.setHours(23, 59, 59, 999); // End of day
+                                }
+
+                                return now <= endDateTime;
+                            });
+                            const activeRental = activeRentals[0];
                             const isActive = activeRental.rental_status === 'ACTIVE';
+
+                            // Check if current date/time is between start and end date/time
+                            const now = new Date();
+
+                            const rentalStartDateTime = new Date(activeRental.start_date);
+                            if (activeRental.start_time) {
+                                const [hours, minutes] = activeRental.start_time.split(':').map(Number);
+                                rentalStartDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+                            } else {
+                                rentalStartDateTime.setHours(0, 0, 0, 0); // Start of day if no time
+                            }
+
+                            const rentalEndDateTime = new Date(activeRental.end_date);
+                            if (activeRental.end_time) {
+                                const [hours, minutes] = activeRental.end_time.split(':').map(Number);
+                                rentalEndDateTime.setHours(hours || 23, minutes || 59, 59, 999);
+                            } else {
+                                rentalEndDateTime.setHours(23, 59, 59, 999); // End of day if no time
+                            }
+
+                            const isStarted = now >= rentalStartDateTime && now <= rentalEndDateTime;
                             return (
                                 <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-md border border-blue-500/30 hover:border-blue-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl">
                                     {/* Background Pattern */}
@@ -65,7 +148,7 @@ export const UserOrdersSection: React.FC = () => {
                                                 {activeRental.car?.make} {activeRental.car?.model}
                                             </h3>
                                             <p className="text-white/80 text-xs">
-                                                {formatDateLocal(activeRental.start_date)} - {formatDateLocal(activeRental.end_date)}
+                                                {formatDateLocal(activeRental.start_date)} {activeRental.start_time ? `la ${activeRental.start_time.slice(0, 5)}` : ''} - {formatDateLocal(activeRental.end_date)} {activeRental.end_time ? `la ${activeRental.end_time.slice(0, 5)}` : ''}
                                             </p>
                                         </div>
 
@@ -73,7 +156,10 @@ export const UserOrdersSection: React.FC = () => {
                                         <div className="absolute top-3 right-3">
                                             <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/90 text-white border border-blue-400/50 backdrop-blur-sm">
                                                 <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
-                                                <span>{isActive ? 'Activă' : 'Contract'}</span>
+                                                <span>
+                                                    {isActive && isStarted ? 'Început' :
+                                                        isActive ? 'Activă' : 'Contract'}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -183,7 +269,7 @@ export const UserOrdersSection: React.FC = () => {
                                             {rental.car?.make} {rental.car?.model}
                                         </h3>
                                         <p className="text-white/80 text-xs">
-                                            {formatDateLocal(rental.start_date)} - {formatDateLocal(rental.end_date)}
+                                            {formatDateLocal(rental.start_date)} {rental.start_time ? `la ${rental.start_time.slice(0, 5)}` : ''} - {formatDateLocal(rental.end_date)} {rental.end_time ? `la ${rental.end_time.slice(0, 5)}` : ''}
                                         </p>
                                     </div>
 
@@ -230,7 +316,7 @@ export const UserOrdersSection: React.FC = () => {
             </div>
 
             {/* Order Details Modal */}
-            <OrderDetailsModal
+            <RentalDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
@@ -239,6 +325,7 @@ export const UserOrdersSection: React.FC = () => {
                 }}
                 order={selectedOrder}
                 showOrderNumber={false}
+                cars={cars}
             />
 
         </div>

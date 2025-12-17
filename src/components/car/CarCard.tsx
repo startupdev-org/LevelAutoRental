@@ -12,6 +12,7 @@ import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { supabase } from '../../lib/supabase';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { formatDateLocal } from '../../utils/date';
+import { NoImagePlaceholder } from './NoImage';
 
 
 interface CarCardProps {
@@ -41,7 +42,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
 
     const [isFavorite, setIsFavorite] = useState(() => {
         const favorites = getFavorites();
-        return favorites.includes(Number(carWithImages.id));
+        return favorites.includes(carWithImages.id);
     });
 
     // Save favorites to localStorage
@@ -64,7 +65,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     const handleFavoriteToggle = () => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
-        saveFavorite(Number(carWithImages.id), newFavoriteState);
+        saveFavorite(carWithImages.id, newFavoriteState);
     };
 
     // Fetch car images from storage
@@ -149,7 +150,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                         .from('BorrowRequest')
                         .select('*')
                         .eq('car_id', carIdNum)
-                        .in('status', ['APPROVED', 'EXECUTED'])
+                        .in('status', ['APPROVED'])
                         .order('requested_at', { ascending: false });
 
                     if (approvedResult.data && approvedResult.data.length > 0) {
@@ -168,7 +169,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                     start_time: rental.start_time || '09:00:00',
                     end_date: rental.end_date,
                     end_time: rental.end_time || '17:00:00',
-                    status: 'EXECUTED' as const,
+                    status: 'APPROVED' as const,
                     created_at: rental.created_at,
                     updated_at: rental.updated_at,
                 }));
@@ -311,10 +312,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
 
     // ───── HELPER FUNCTIONS ─────
     const convertPrice = (price: number): number => {
-        if (selectedCurrency === 'MDL') return price;
+        if (selectedCurrency === 'MDL') return Math.round(price);
         if (selectedCurrency === 'EUR') return Math.round(price / eurRate);
         if (selectedCurrency === 'USD') return Math.round(price / usdRate);
-        return price;
+        return Math.round(price);
     };
 
     const getCurrencySymbol = (currency: string): string => {
@@ -355,18 +356,6 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
 
     // Check if car has any images
     const hasImages = carWithImages.image_url || (carWithImages.photo_gallery && carWithImages.photo_gallery.length > 0);
-
-    // No image placeholder component
-    const NoImagePlaceholder = () => (
-        <div className="w-full h-56 bg-gray-50 flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-3 shadow-sm border border-gray-100">
-                <Image className="w-8 h-8 text-gray-300" />
-            </div>
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                {t('car.noImage')}
-            </span>
-        </div>
-    );
 
     return (
         <div>
@@ -425,38 +414,38 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                             style={{ minWidth: '100%' }}
                                             onClick={shouldBeClickable ? () => navigate(`/cars/${carWithImages.id}`) : undefined}
                                         >
-                                        <img
-                                            src={photo}
-                                            alt={`${carWithImages.make} ${carWithImages.model} - Photo ${index + 1}`}
-                                            className="w-full h-56 object-cover object-center bg-gray-100"
-                                            onError={() => {
-                                                // Handle individual gallery image errors
-                                                // Could implement more sophisticated error handling here
-                                            }}
-                                        />
-                                        {(() => {
-                                            if (isLastVisiblePhoto && remainingPhotos > 0) {
-                                                return (
-                                                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
-                                                        <Image className="w-8 h-8 mb-2" />
-                                                        <span className="text-lg font-semibold">
-                                                            {t('car.seeMorePhotos', { count: remainingPhotos })}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            }
+                                            <img
+                                                src={photo}
+                                                alt={`${carWithImages.make} ${carWithImages.model} - Photo ${index + 1}`}
+                                                className="w-full h-56 object-cover object-center bg-gray-100"
+                                                onError={() => {
+                                                    // Handle individual gallery image errors
+                                                    // Could implement more sophisticated error handling here
+                                                }}
+                                            />
+                                            {(() => {
+                                                if (isLastVisiblePhoto && remainingPhotos > 0) {
+                                                    return (
+                                                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                                                            <Image className="w-8 h-8 mb-2" />
+                                                            <span className="text-lg font-semibold">
+                                                                {t('car.seeMorePhotos', { count: remainingPhotos })}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                }
 
-                                            if (isLastVisiblePhoto && remainingPhotos === 0) {
-                                                return (
-                                                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
-                                                        <Image className="w-8 h-8 mb-2" />
-                                                        <span className="text-lg font-semibold">{t('car.seeCar')}</span>
-                                                    </div>
-                                                );
-                                            }
+                                                if (isLastVisiblePhoto && remainingPhotos === 0) {
+                                                    return (
+                                                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                                                            <Image className="w-8 h-8 mb-2" />
+                                                            <span className="text-lg font-semibold">{t('car.seeCar')}</span>
+                                                        </div>
+                                                    );
+                                                }
 
-                                            return null;
-                                        })()}
+                                                return null;
+                                            })()}
                                         </div>
                                     );
                                 });
@@ -576,7 +565,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                 if (result) return true;
                             }
 
-                            // Check active rentals (which come from EXECUTED requests)
+                            // Check active rentals (which come from APPROVED requests)
                             if (carRentalsForCalendar.length > 0) {
                                 const result = carRentalsForCalendar.some(rental => {
                                     if (!rental.start_date || !rental.end_date) return false;
@@ -754,7 +743,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             <span className="text-sm font-medium">
                                 {carWithImages.fuel_type === 'gasoline' ? t('car.fuel.gasoline') :
                                     carWithImages.fuel_type === 'diesel' ? t('car.fuel.diesel') :
-                                        carWithImages.fuel_type === 'petrol' ? t('car.fuel.petrol') :
+                                        carWithImages.fuel_type === 'petrol' ? t('car.fuel.benzina') :
                                             carWithImages.fuel_type === 'hybrid' ? t('car.fuel.hybrid') :
                                                 carWithImages.fuel_type === 'electric' ? t('car.fuel.electric') : carWithImages.fuel_type}
                             </span>
@@ -775,7 +764,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             const basePrice = carWithImages.price_over_30_days || 0;
                             const discount = (carWithImages as any).discount_percentage || carWithImages.discount_percentage || 0;
                             const finalPrice = discount > 0
-                                ? basePrice * (1 - discount / 100)
+                                ? Math.round(basePrice * (1 - discount / 100))
                                 : basePrice;
 
                             return (
