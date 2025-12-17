@@ -470,13 +470,13 @@
     
     // Function to get current language
     function getCurrentLanguage() {
-      return localStorage.getItem('selectedLanguage') || 'en';
+      return localStorage.getItem('selectedLanguage') || 'ro';
     }
     
-    // Set English as default language on page load
+    // Set Romanian as default language on page load
     document.addEventListener('DOMContentLoaded', function() {
       if (!localStorage.getItem('selectedLanguage')) {
-        localStorage.setItem('selectedLanguage', 'en');
+        localStorage.setItem('selectedLanguage', 'ro');
       }
     });
   </script>
