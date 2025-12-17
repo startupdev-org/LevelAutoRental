@@ -139,7 +139,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                     table: 'BorrowRequest'
                 },
                 (payload) => {
-                    console.log('Borrow request updated:', payload);
+                    
                     // Refresh borrow request data when any borrow request is updated
                     handleFetchUserBorrowRequests();
                 }

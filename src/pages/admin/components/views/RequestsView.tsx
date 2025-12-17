@@ -128,7 +128,6 @@ export const RequestsView: React.FC = () => {
     };
 
     function handleSelectRequest(request: BorrowRequestDTO) {
-        console.log('should select this request: ', request)
         // Navigate to request details view
         const requestId = request.id || '';
         setSearchParams({ section: 'requests', requestId: requestId.toString() });
@@ -606,7 +605,7 @@ export const RequestsView: React.FC = () => {
                                             if (updateRentalError) {
                                                 console.warn('Failed to update associated rental total_amount:', updateRentalError);
                                             } else {
-                                                console.log('Updated associated rental total_amount successfully');
+                                                
                                             }
                                         }
                                     } catch (rentalUpdateError) {

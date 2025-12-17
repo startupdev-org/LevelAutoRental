@@ -24,7 +24,7 @@ export interface Car {
   status?: string; // optional
   mileage?: number;
   fuel_consumption?: number;
-  drivetrain?: string; // FWD, RWD, 4WD, AWD
+  drivetrain?: string; // FWD, RWD, AWD
   time?: string;
   power?: string; // e.g., "300 HP"
   acceleration?: string; // e.g., "5.2s"

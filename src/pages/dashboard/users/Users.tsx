@@ -192,7 +192,7 @@ export const UsersPage: React.FC = () => {
 
     // Debug selectedUser changes
     useEffect(() => {
-        console.log('selectedUser changed:', selectedUser);
+        
     }, [selectedUser]);
 
     // Get user orders for selected user
@@ -513,10 +513,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
     const { t } = useTranslation();
     const navigate = useNavigate();
 
-    console.log('UserDetailsModal render:', { isOpen, user: !!user, userOrdersLength: userOrders.length });
+    
 
     if (!isOpen || !user) {
-        console.log('UserDetailsModal returning null:', { isOpen, user: !!user });
+        
         return null;
     }
 
@@ -538,16 +538,16 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
     };
 
 
-    console.log('UserDetailsModal about to render portal');
+    
 
-    console.log('UserDetailsModal rendering modal with isOpen:', isOpen, 'user:', !!user);
+    
 
     return createPortal(
         isOpen ? (
             <div
                 className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
                 onClick={(e) => {
-                    console.log('Backdrop clicked, closing modal', e.target, e.currentTarget);
+                    
                     // Only close if clicking directly on backdrop, not on modal content
                     if (e.target === e.currentTarget) {
                         onClose();

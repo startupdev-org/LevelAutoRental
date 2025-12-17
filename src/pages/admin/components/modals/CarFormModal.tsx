@@ -53,6 +53,21 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
     const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
     const { showSuccess, showError } = useNotification();
 
+    // Prevent page refresh when modal is open
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = ''; // Chrome requires returnValue to be set
+            return ''; // Some browsers show this message
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -65,6 +80,23 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                     : [];
             if (categories.length === 0) {
                 showError(t('admin.cars.categoryRequired') || 'Please select at least one category');
+                setLoading(false);
+                return;
+            }
+
+            // Validate required technical specifications
+            if (!(formData as any).transmission) {
+                showError('Te rugăm să selectezi transmisia');
+                setLoading(false);
+                return;
+            }
+            if (!((formData as any).fuelType || (formData as any).fuel_type)) {
+                showError('Te rugăm să selectezi tipul de combustibil');
+                setLoading(false);
+                return;
+            }
+            if (!(formData as any).drivetrain) {
+                showError('Te rugăm să selectezi tracțiunea');
                 setLoading(false);
                 return;
             }
@@ -141,7 +173,6 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
         // For existing cars, upload immediately
         if (!car) {
             setPendingImageFile(file);
-            showSuccess(t('admin.cars.imageSelected'));
         } else {
             // Existing car - upload immediately (same as CarDetailsEditView)
             setUploadingMainImage(true);
@@ -269,6 +300,13 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                 console.error('Error updating car with image URL:', updateError);
             }
 
+            // Update form data to display the thumbnail
+            setFormData(prev => ({
+                ...prev,
+                image: publicUrl,
+                image_url: publicUrl
+            }));
+
             showSuccess(t('admin.cars.imageUploaded'));
         } catch (error) {
             console.error('Error uploading pending image:', error);
@@ -279,10 +317,16 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
         }
     };
 
+    const handleBackdropClick = () => {
+        if (window.confirm('Ești sigur că vrei să închizi modalul? Modificările nesalvate vor fi pierdute.')) {
+            onClose();
+        }
+    };
+
     return createPortal(
         <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-            onClick={onClose}
+            onClick={handleBackdropClick}
             style={{ zIndex: 10000 }}
         >
             <div
@@ -292,10 +336,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                 {/* Header */}
                 <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                     <div>
-                        <h2 className="text-2xl font-bold text-white">{t('admin.cars.addNew')}</h2>
-                        <p className="text-gray-400 text-sm mt-1">
-                            {t('admin.cars.addNewDescription')}
-                        </p>
+                        <h2 className="text-lg sm:text-2xl font-bold text-white">{t('admin.cars.addNew')}</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -382,7 +423,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')} *</label>
-                                    <div className="flex flex-col md:flex-row md:gap-4 gap-2">
+                                    <div className="flex flex-row gap-4">
                                         {['suv', 'sports', 'luxury'].map((cat) => {
                                             const categories = Array.isArray(formData.category) 
                                                 ? formData.category 
@@ -469,16 +510,15 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                     />
                                 </div>
 
-                                {/* Price Ranges */}
+                                {/* Technical Specifications */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">2-4 zile *</label>
-                                        <input
-                                            type="number"
-                                            value={(formData as any).price_2_4_days || formData.price_2_4_days || ''}
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.transmission')} *</label>
+                                        <select
+                                            value={(formData as any).transmission || formData.transmission || ''}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
-                                                price_2_4_days: parseFloat(e.target.value) || 0
+                                                transmission: e.target.value as 'Automatic' | 'Manual' || null
                                             }))}
                                             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                                             style={{
@@ -489,17 +529,20 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                                 paddingRight: '40px'
                                             }}
                                             required
-                                        />
-                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                                        >
+                                            <option value="">Selectează transmisie</option>
+                                            <option value="Automatic">Automatic</option>
+                                            <option value="Manual">Manual</option>
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">5-15 zile *</label>
-                                        <input
-                                            type="number"
-                                            value={(formData as any).price_5_15_days || formData.price_5_15_days || ''}
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.fuelType')} *</label>
+                                        <select
+                                            value={(formData as any).fuelType || formData.fuel_type || ''}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
-                                                price_5_15_days: parseFloat(e.target.value) || 0
+                                                fuelType: e.target.value as any || undefined,
+                                                fuel_type: e.target.value as any || undefined
                                             }))}
                                             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                                             style={{
@@ -510,17 +553,21 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                                 paddingRight: '40px'
                                             }}
                                             required
-                                        />
-                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                                        >
+                                            <option value="">Selectează combustibil</option>
+                                            <option value="petrol">Benzina</option>
+                                            <option value="diesel">Diesel</option>
+                                            <option value="hybrid">Hybrid</option>
+                                            <option value="electric">Electric</option>
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">16-30 zile *</label>
-                                        <input
-                                            type="number"
-                                            value={(formData as any).price_16_30_days || formData.price_16_30_days || ''}
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.drivetrain')} *</label>
+                                        <select
+                                            value={formData.drivetrain || ''}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
-                                                price_16_30_days: parseFloat(e.target.value) || 0
+                                                drivetrain: e.target.value || undefined
                                             }))}
                                             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                                             style={{
@@ -531,59 +578,15 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                                 paddingRight: '40px'
                                             }}
                                             required
-                                        />
-                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Peste 30 zile *</label>
-                                        <input
-                                            type="number"
-                                            value={(formData as any).price_over_30_days || formData.price_over_30_days || ''}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                price_over_30_days: parseFloat(e.target.value) || 0
-                                            }))}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                            style={{
-                                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                                backgroundRepeat: 'no-repeat',
-                                                backgroundPosition: 'right 12px center',
-                                                backgroundSize: '12px',
-                                                paddingRight: '40px'
-                                            }}
-                                            required
-                                        />
-                                        <p className="text-xs text-gray-400 mt-1">MDL pe zi</p>
+                                        >
+                                            <option value="">Selectează tracțiune</option>
+                                            <option value="FWD">FWD</option>
+                                            <option value="RWD">RWD</option>
+                                            <option value="AWD">AWD</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.discountPercentage')}</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
-                                        value={(formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : (formData.discount_percentage !== undefined ? formData.discount_percentage : '')}
-                                        onChange={(e) => {
-                                            const discountValue = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                discountPercentage: discountValue,
-                                                discount_percentage: discountValue
-                                            } as any));
-                                        }}
-                                        placeholder="0"
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
-                                    />
-                                    <p className="text-xs text-gray-400 mt-1">{t('admin.cars.discountPercentageHint')}</p>
-                                </div>
+
                             </div>
                         </div>
 
@@ -608,16 +611,24 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                         disabled={uploadingMainImage}
                                     />
                                 </label>
+
+                                {/* Upload Instructions - Only show if no image is uploaded */}
+                                {!(pendingImageFile || (formData as any).image || formData.image_url) && (
+                                    <div className="text-xs text-gray-400 mb-3 space-y-1">
+                                        <p>• Dimensiunea maximă: 5MB</p>
+                                        <p>• Formate acceptate: PNG, JPG, WEBP</p>
+                                    </div>
+                                )}
+
                                 {uploadingMainImage && (
                                     <p className="text-xs text-gray-400 mb-2">{t('admin.cars.uploadingImage')}</p>
                                 )}
                                 {pendingImageFile && !uploadingMainImage && (
-                                    <p className="text-xs text-green-400 mb-2 flex items-center gap-1">
-                                        <Check className="w-3 h-3" />
-                                        {t('admin.cars.imageSelectedWillUpload')}
-                                    </p>
+                                    <div className="mt-2 inline-block">
+                                        <img src={URL.createObjectURL(pendingImageFile)} alt="Preview" className="h-20 object-contain rounded-lg border border-white/10" />
+                                    </div>
                                 )}
-                                {((formData as any).image || formData.image_url) && (
+                                {((formData as any).image || formData.image_url) && !pendingImageFile && (
                                     <div className="mt-2 inline-block">
                                         <img src={(formData as any).image || formData.image_url || ''} alt="Preview" className="h-20 object-contain rounded-lg border border-white/10" />
                                     </div>
@@ -626,18 +637,18 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
+                        <div className="flex flex-col sm:flex-row gap-4 sm:justify-end pt-4 border-t border-white/10">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
+                                className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all text-center"
                             >
                                 {t('admin.cars.cancel')}
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
                                     <>

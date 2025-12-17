@@ -100,16 +100,16 @@ export const CarsView: React.FC = () => {
     };
 
     function handleOpenModal(car: CarType) {
-        console.log('[UserCarPage] handleOpenModal called with car:', car?.id, car);
-        console.log('[UserCarPage] Setting selectedCarForRental to:', car);
+        
+        
         setSelectedCarForRental(car);
-        console.log('[UserCarPage] Setting isRentalModalOpen to true');
+        
         setIsRentalModalOpen(true);
-        console.log('[UserCarPage] Modal should now be open');
+        
     };
 
     function handleCloseRentalModal() {
-        console.log('[UserCarPage] handleCloseRentalModal called - closing modal');
+        
         setIsRentalModalOpen(false);
         setSelectedCarForRental(null);
     }
@@ -771,7 +771,7 @@ export const CarsView: React.FC = () => {
                             <span className="text-sm font-medium">
                                 {carWithImages.fuel_type === 'gasoline' ? 'Benzină' :
                                     carWithImages.fuel_type === 'diesel' ? 'Diesel' :
-                                        carWithImages.fuel_type === 'petrol' ? 'Benzină' :
+                                        carWithImages.fuel_type === 'petrol' ? t('car.fuel.benzina') :
                                             carWithImages.fuel_type === 'hybrid' ? 'Hibrid' :
                                                 carWithImages.fuel_type === 'electric' ? 'Electric' : carWithImages.fuel_type}
                             </span>

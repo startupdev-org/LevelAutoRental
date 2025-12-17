@@ -769,7 +769,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                         </div>
 
                                         {/* Registration Card - Only show if user is logged out */}
-                                        {!user && (
+                                        {/* Temporarily hidden */}
+                                        {false && !user && (
                                             <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 md:p-8">
                                                 <div className="flex items-start gap-4">
                                                     <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600 flex-shrink-0">

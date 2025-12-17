@@ -844,8 +844,7 @@ export const OrdersViewSection: React.FC = () => {
             <RentalDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
-                    console.log('Modal onClose called, closing modal')
-                    setIsModalOpen(false);
+                    
                     setSelectedOrder(null);
                     setOrderNumber(undefined);
                     setIsModalOpening(false);

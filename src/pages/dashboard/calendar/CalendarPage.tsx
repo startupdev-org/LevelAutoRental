@@ -85,9 +85,9 @@ export const CalendarPage: React.FC<Props> = () => {
     }, [showFilters]);
 
     useEffect(() => {
-        console.log('fetching borrow requests');
+        
         if (selectedCar) {
-            console.log('fetching borrow requests for car:', selectedCar);
+            
         }
         const loadOrders = async () => {
             try {
@@ -363,7 +363,7 @@ export const CalendarPage: React.FC<Props> = () => {
     const handleClearSort = () => {
         setFilters(defaultFilters);
         setSelectedCar(null)
-        console.log("Sort cleared");
+        
     };
 
 

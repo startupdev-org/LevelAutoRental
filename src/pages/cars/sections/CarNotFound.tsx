@@ -16,7 +16,7 @@ export const CarNotFound: React.FC = () => {
         try {
             const fetchedCars = await fetchCarsWithPhotos(NUMBER_OF_CARS);
             setCars(fetchedCars);
-            // console.log('fetched cars are: ', fetchedCars)
+            //
         } catch (error) {
             console.error('Error fetching cars:', error);
         }

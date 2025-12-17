@@ -25,7 +25,6 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   // page where the sidebar will always be on scroll
   const shouldHeaderBeActive = () => {
     if (location.pathname === '/booking') {
-      console.log('The header should be scrolled')
       return true;
     }
     return false;
@@ -142,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   }, [showLanguageDropdown, showUserDropdown]);
 
   const handleLogout = (e?: React.MouseEvent) => {
-    console.log('=== LOGOUT BUTTON CLICKED ===');
+    
     
     if (e) {
       e.preventDefault();
@@ -154,35 +153,35 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
     setIsMenuOpen(false);
     
     // Clear storage immediately
-    console.log('Clearing storage...');
+    
     localStorage.clear();
     sessionStorage.clear();
-    console.log('Storage cleared');
+    
     
     // Try to sign out, but don't wait for it - use timeout
-    console.log('Calling signOut with timeout...');
+    
     const signOutPromise = signOut();
     const timeoutPromise = new Promise((resolve) => {
       setTimeout(() => {
-        console.log('SignOut timeout - proceeding with logout anyway');
+        
         resolve({ error: null });
       }, 1000); // 1 second timeout
     });
     
     Promise.race([signOutPromise, timeoutPromise])
       .then((result: any) => {
-        console.log('SignOut completed or timed out:', result);
+        
         if (result?.error) {
           console.error('Logout error:', result.error);
         } else {
-          console.log('Logout successful (or timed out)');
+          
         }
       })
       .catch((err) => {
         console.error('Logout promise rejected:', err);
       })
       .finally(() => {
-        console.log('Reloading page...');
+        
         // Force reload regardless of signOut result
         window.location.replace('/');
       });
@@ -358,7 +357,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                       <div className="border-t border-gray-100 py-2">
                         <button
                           onClick={(e) => {
-                            console.log('Desktop logout button clicked');
+                            
                             e.preventDefault();
                             e.stopPropagation();
                             handleLogout(e);
@@ -435,7 +434,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                         <div className="border-t border-gray-100 py-2">
                           <button
                             onClick={(e) => {
-                              console.log('Desktop logout button clicked');
+                              
                               e.preventDefault();
                               e.stopPropagation();
                               handleLogout(e);
@@ -455,31 +454,19 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
               </div>
             ) : null}
 
-            {/* Language Selector */}
+            {/* Desktop Language Selector */}
             <div className="relative language-dropdown-container">
               <button
-                onClick={() => {
-                  setShowLanguageDropdown(!showLanguageDropdown)
-                  // console.log('Current language after the variable: ', currentLanguage)
-                  // console.log('Current language after the frameword: ', i18n.language)
-                }}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-gray-50 ${shouldShowWhiteText ? 'text-white hover:bg-white/20' : 'text-gray-700 hover:text-theme-500'}`}
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                className={`p-2 rounded-lg transition-all duration-200 ${shouldShowWhiteText
+                  ? 'text-white hover:text-theme-300 hover:bg-white/20'
+                  : 'text-gray-700 hover:text-theme-500 hover:bg-gray-100'
+                  }`}
               >
-                <span
-                  className={`fi ${currentLanguage === 'en'
-                    ? 'fi-gb'
-                    : currentLanguage === 'ru'
-                      ? 'fi-ru'
-                      : 'fi-ro'
-                    } w-6 h-4 rounded-sm`}
-                ></span>
-
-                <svg className={`w-4 h-4 transition-colors duration-300 ${shouldShowWhiteText ? 'text-white' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <Globe className="w-5 h-5" />
               </button>
 
-              {/* Language Dropdown */}
+              {/* Desktop Language Dropdown */}
               <AnimatePresence>
                 {showLanguageDropdown && (
                   <motion.div
@@ -487,28 +474,26 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className={`absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg ${forceRender ? 'z-[99999999]' : 'z-50'} min-w-[160px]`}
+                    className={`absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]`}
                   >
                     {LANGUAGES.map(({ code, iconClass }) => (
                       <button
                         key={code}
                         onClick={() => {
-                          i18n.changeLanguage(code); // switch language
-                          setCurrentLanguage(code);  // update your local state
-                          setShowLanguageDropdown(false); // close dropdown
-                          localStorage.setItem("selectedLanguage", code); // persist selection
+                          i18n.changeLanguage(code);
+                          setCurrentLanguage(code);
+                          setShowLanguageDropdown(false);
+                          localStorage.setItem("selectedLanguage", code);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
                       >
                         <span className={iconClass}></span>
                         <span>{t(`languages.${code}`)}</span>
                       </button>
                     ))}
-
                   </motion.div>
                 )}
               </AnimatePresence>
-
             </div>
           </div>
 

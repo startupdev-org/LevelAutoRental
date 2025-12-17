@@ -48,7 +48,7 @@ export const ContractSection: React.FC<ContractSectionProps> = ({ transparent = 
                             <User className="w-6 h-6 text-white" />
                         </div>
                         <div className={`text-xs font-semibold uppercase tracking-wide mb-2 ${transparent ? 'text-gray-300' : 'text-gray-500'}`}>{t('contract.age.label')}</div>
-                        <div className={`text-base font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.age.value')}</div>
+                        <div className={`text-xs sm:text-sm font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.age.value')}</div>
                     </div>
 
                     <div className={`text-center rounded-xl border p-5 hover:shadow-lg transition-all ${transparent ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-white border-gray-300'}`}>
@@ -56,7 +56,7 @@ export const ContractSection: React.FC<ContractSectionProps> = ({ transparent = 
                             <IdCard className="w-6 h-6 text-white" />
                         </div>
                         <div className={`text-xs font-semibold uppercase tracking-wide mb-2 ${transparent ? 'text-gray-300' : 'text-gray-500'}`}>{t('contract.license.label')}</div>
-                        <div className={`text-base font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.license.value')}</div>
+                        <div className={`text-xs sm:text-sm font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.license.value')}</div>
                     </div>
 
                     <div className={`text-center rounded-xl border p-5 hover:shadow-lg transition-all ${transparent ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-white border-gray-300'}`}>
@@ -64,7 +64,7 @@ export const ContractSection: React.FC<ContractSectionProps> = ({ transparent = 
                             <Calendar className="w-6 h-6 text-white" />
                         </div>
                         <div className={`text-xs font-semibold uppercase tracking-wide mb-2 ${transparent ? 'text-gray-300' : 'text-gray-500'}`}>{t('contract.experience.label')}</div>
-                        <div className={`text-base font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.experience.value')}</div>
+                        <div className={`text-xs sm:text-sm font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.experience.value')}</div>
                     </div>
 
                     <div className={`text-center rounded-xl border p-5 hover:shadow-lg transition-all ${transparent ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-white border-gray-300'}`}>
@@ -72,7 +72,7 @@ export const ContractSection: React.FC<ContractSectionProps> = ({ transparent = 
                             <Gauge className="w-6 h-6 text-white" />
                         </div>
                         <div className={`text-xs font-semibold uppercase tracking-wide mb-2 ${transparent ? 'text-gray-300' : 'text-gray-500'}`}>{t('contract.mileage.label')}</div>
-                        <div className={`text-base font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.mileage.value')}</div>
+                        <div className={`text-xs sm:text-sm font-bold ${transparent ? 'text-white' : 'text-gray-800'}`}>{t('contract.mileage.value')}</div>
                     </div>
                 </div>
 

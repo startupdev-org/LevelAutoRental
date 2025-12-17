@@ -564,6 +564,13 @@
         }
     },
     "car": {
+        "specifications": "Specifications",
+        "characteristics": "Vehicle Characteristics",
+        "technicalSpecs": "Technical Specifications",
+        "seats": "Seats",
+        "transmissionLabel": "Transmission",
+        "fuelLabel": "Fuel",
+        "bodyType": "Body Type",
         "mileageLimit": "200km/day",
         "seeCar": "See car",
         "seeMorePhotos": "See {{count}} more photos",
@@ -575,11 +582,22 @@
         "fuel": {
             "gasoline": "Gasoline",
             "diesel": "Diesel",
-            "petrol": "Petrol",
+            "benzina": "Petrol",
             "hybrid": "Hybrid",
             "electric": "Electric"
         },
-        "perDay": "per day"
+        "perDay": "per day",
+        "available": "Available",
+        "chooseDates": "Choose dates",
+        "rentalCost": "Rental Cost",
+        "rental": "Rental",
+        "year": "year",
+        "writeOnTelegram": "Write on Telegram",
+        "contactHelpText": "You can write or call us, we will help you",
+        "discount": "DISCOUNT",
+        "days": "DAYS",
+        "equipment": "Equipment",
+        "equipmentIncluded": "Equipment Included"
     },
     "carsPage": {
         "title": "Rent Your Ideal Car",
@@ -619,7 +637,7 @@
         "fuel": {
             "label": "Fuel",
             "any": "Any",
-            "petrol": "Petrol",
+            "benzina": "Petrol",
             "gasoline": "Gasoline",
             "diesel": "Diesel",
             "hybrid": "Hybrid",

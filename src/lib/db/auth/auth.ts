@@ -5,7 +5,6 @@ import { getLoggedUser } from '../user/profile';
 
 const redirectUrl = `${import.meta.env.VITE_BASE_URL}/update-password`;
 
-console.log("Redirect URL:", redirectUrl);
 
 
 /**
@@ -13,7 +12,6 @@ console.log("Redirect URL:", redirectUrl);
  * Method work with supabaseAdmin client !!!
  */
 export async function createUser(user: User) {
-    console.log('creating a user after sign up');
     try {
 
         const { id, first_name, last_name, email, phone_number, role } = user;
@@ -24,9 +22,7 @@ export async function createUser(user: User) {
             .select();
 
 
-        console.log('created user is: ', data)
 
-        console.log('error: ', error)
 
         return { data, error };
 
@@ -45,7 +41,6 @@ export async function createUser(user: User) {
  * Change the current logged-in user's password
  */
 export async function changeUserPassword(newPassword: string) {
-    console.log("chaning user's password ")
     const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
     });

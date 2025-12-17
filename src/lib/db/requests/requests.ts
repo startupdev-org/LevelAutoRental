@@ -32,7 +32,7 @@ export async function saveBorrowRequest(borrowRequest: any) {
             throw error;
         }
 
-        console.log('Borrow request saved successfully:', data);
+        
         return data;
     } catch (err) {
         console.error('Unexpected error saving borrow request:', err);
@@ -137,7 +137,6 @@ export async function fetchBorrowRequestsForDisplay(
     filters?: BorrowRequestFilters
 ): Promise<{ data: BorrowRequestDTO[]; total: number }> {
     try {
-        // console.log('fetching requests with filters: ', filters)
         const from = (page - 1) * limit
         const to = from + limit - 1
 
@@ -183,7 +182,6 @@ export async function fetchBorrowRequestsForDisplay(
             return { data: [], total: 0 }
         }
 
-        // console.log('the requests are: ', allRequests)
 
         const borrowRequestDTOs = await Promise.all(
             allRequests.map(async (request) => {
@@ -416,7 +414,6 @@ export async function createUserBorrowRequest(
 ): Promise<{ success: boolean; requestId?: string; error?: string }> {
     try {
 
-        console.log('the total amount: ', request.total_amount)
 
         // Application-level security for guest users (since RLS is disabled)
         if (!request.customer_email || !request.customer_first_name || !request.customer_last_name) {
@@ -514,15 +511,23 @@ export async function createUserBorrowRequest(
             if (user !== null)
                 finalUserId = user.id
         } catch {
-            console.log('the user is not logged in')
-            console.log('using null values for the user id')
+            // User not logged in, continue with null userId
         }
 
-        const rentalDays = getDateDiffInDays(request.start_date, request.end_date)
-
+        // Fetch the car to calculate pricing
         const car = await fetchCarById(request.car_id);
+        if (!car) {
+            throw new Error('Car not found!');
+        }
 
-        if (car === null) throw Error('Car not found!')
+        // Calculate rental duration to determine correct price tier
+        const duration = calculateRentalDuration(
+            request.start_date,
+            request.start_time || '09:00',
+            request.end_date,
+            request.end_time || '17:00'
+        );
+        const rentalDays = duration.days;
 
         const price_per_day_str = getCarPrice(rentalDays, car)
         const price_per_day = parseFloat(price_per_day_str);
@@ -548,7 +553,8 @@ export async function createUserBorrowRequest(
             options: request.options
         };
 
-        const { data, error } = await supabase
+        try {
+            const { data, error } = await supabase
             .from('BorrowRequest')
             .insert(insertData)
             .select()
@@ -562,6 +568,10 @@ export async function createUserBorrowRequest(
         return { success: true, requestId: data.id.toString() };
     } catch (error) {
         console.error('Error creating user borrow request:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+    } catch (error) {
+        console.error('Error in createUserBorrowRequest:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
@@ -612,7 +622,7 @@ export async function createRentalManually(
         const pricePerDayStr = getCarPrice(rentalDays, car);
         const pricePerDay = parseFloat(pricePerDayStr) || 0;
 
-        console.log('createRentalManually: Calculated price per day:', pricePerDay, 'for', rentalDays, 'days using car:', car);
+        
 
         // Calculate subtotal if not provided
         const subtotal = options?.subtotal || (pricePerDay * rentalDays);
@@ -685,15 +695,7 @@ export async function isDateInActualApprovedRequest(
     date: string,
     carId: string
 ): Promise<boolean> {
-    console.log(`checking if the car with id: ${carId} is available on: ${date}`)
-
-    const { data, error } = await supabase
-        .from('Rentals')
-        .select('id')
-        .eq('car_id', carId)
-        .eq('rental_status', 'ACTIVE')
-        .lte('start_date', date)
-        .gte('end_date', date);
+    
 
     if (error) {
         console.error('Error checking date in rental:', error.message);
@@ -819,11 +821,7 @@ export async function fetchBorrowRequestForCalendarPage(
     const user = await getLoggedUser();
     if (!user) return [];
 
-    console.log('making the query')
-
-    let query = supabase
-        .from("BorrowRequest")
-        .select("*");
+    
 
     // Filter by month (expects "YYYY-MM")
     if (month) {
@@ -854,7 +852,6 @@ export async function fetchBorrowRequestForCalendarPage(
         query = query.eq("status", status);
     }
 
-    console.log('fetching info')
 
     const { data, error } = await query;
 
