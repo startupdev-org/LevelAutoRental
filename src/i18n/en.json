@@ -8,6 +8,7 @@
         "contact": "Contact",
         "auth": "Login",
         "language": "Language",
+        "currency": "Currency",
         "dashboard": "Dashboard",
         "profile": "Profile",
         "settings": "Settings",
@@ -826,5 +827,24 @@
     },
     "config": {
         "date": "en-GB"
+    },
+    "languageCurrencyModal": {
+        "title": "Welcome!",
+        "subtitle": "Select your preferred language and currency",
+        "language": "Language",
+        "currency": "Currency",
+        "confirm": "Confirm"
+    },
+    "admin": {
+        "requests": {
+            "pickupDate": "Pickup Date"
+        },
+        "calendar": {
+            "noBookings": "No bookings for this day",
+            "filters": "Filters",
+            "make": "Make",
+            "model": "Model",
+            "applyFilters": "Apply Filters"
+        }
     }
 }

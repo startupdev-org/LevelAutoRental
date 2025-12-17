@@ -329,7 +329,12 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             <div className="text-white font-semibold">{request.customer_name}</div>
                             <div className="text-gray-300 text-sm">{request.customer_email}</div>
                             {request.customer_phone && (
-                                <div className="text-gray-300 text-sm mt-1">{request.customer_phone}</div>
+                                <a
+                                    href={`tel:${request.customer_phone.replace(/\s/g, '')}`}
+                                    className="text-blue-400 hover:text-blue-300 transition-colors text-sm mt-1 inline-block underline decoration-blue-400/50 hover:decoration-blue-300"
+                                >
+                                    {request.customer_phone}
+                                </a>
                             )}
                         </div>
                     </div>

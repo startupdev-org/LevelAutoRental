@@ -21,6 +21,7 @@ import { UserDashboard } from '../pages/dashboard/UserDashboard';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdminProtectedRoute } from './AdminProtectedRoute';
 import { UpdatePassword } from '../pages/auth/UpdatePassword.tsx';
+import { PorscheLogoTest } from '../components/test/PorscheLogoTest';
 
 const RouterWrapper = () => {
   return (
@@ -47,6 +48,7 @@ const RouterWrapper = () => {
         <Route path="/auth/signup" element={<SignUp />} />
         <Route path="/auth/forgot" element={<ForgotPassword />} />
         <Route path="/update-password" element={<UpdatePassword />} />
+        <Route path="/test/porsche-logo" element={<PorscheLogoTest />} />
 
         <Route
           path="/dashboard"

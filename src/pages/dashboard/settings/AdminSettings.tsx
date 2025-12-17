@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { User, Save } from "lucide-react";
+import { User, Save, Home, LogOut, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { supabase } from "../../../lib/supabase";
 import { useTranslation } from "react-i18next";
@@ -18,9 +18,15 @@ function TabPanel({
     return value === index ? <div className="mt-6">{children}</div> : null;
 }
 
-export const Settings: React.FC = () => {
+interface SettingsProps {
+    onBackToSite?: () => void;
+    onLogout?: () => void;
+}
+
+export const Settings: React.FC<SettingsProps> = ({ onBackToSite, onLogout }) => {
     const { t } = useTranslation();
     const { userProfile, user } = useAuth();
+    const [showProfileSettings, setShowProfileSettings] = useState(false);
     const [tab, setTab] = useState<TabKey>("profile");
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -135,8 +141,53 @@ export const Settings: React.FC = () => {
     };
 
 
+    // Main menu view
+    if (!showProfileSettings) {
+        return (
+            <div className="space-y-4">
+                <button
+                    onClick={() => setShowProfileSettings(true)}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white/5 border border-white/10 text-gray-200 text-sm font-medium rounded-lg hover:bg-white/10 hover:border-white/20 hover:text-white transition-all duration-200"
+                >
+                    <User className="w-4 h-4" />
+                    <span>{t('admin.settings.profile')}</span>
+                </button>
+
+                {onBackToSite && (
+                    <button
+                        onClick={onBackToSite}
+                        className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white/5 border border-white/10 text-gray-200 text-sm font-medium rounded-lg hover:bg-white/10 hover:border-white/20 hover:text-white transition-all duration-200"
+                    >
+                        <Home className="w-4 h-4" />
+                        <span>{t('admin.common.backToSite')}</span>
+                    </button>
+                )}
+
+                {onLogout && (
+                    <button
+                        onClick={onLogout}
+                        className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/20 border border-red-500/50 text-red-300 text-sm font-medium rounded-lg hover:bg-red-500/30 hover:border-red-500/60 hover:text-red-200 transition-all duration-200"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span>{t('admin.common.signOut')}</span>
+                    </button>
+                )}
+            </div>
+        );
+    }
+
+    // Profile settings view
     return (
         <div className="space-y-6">
+            {/* Back Button */}
+            <button
+                onClick={() => setShowProfileSettings(false)}
+                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-4"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Înapoi</span>
+            </button>
+
             {/* Tabs */}
             <div className="flex flex-wrap gap-2">
                 {tabs.map((t) => (
@@ -213,12 +264,12 @@ export const Settings: React.FC = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-white/10">
                     <button
                         type="button"
                         onClick={onSaveProfile}
                         disabled={isSaving}
-                        className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
                         {isSaving ? t('admin.settings.saving') : t('admin.settings.saveChanges')}

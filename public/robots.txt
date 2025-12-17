@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://levelautorental.com/sitemap.xml
+Sitemap: https://levelauto.md/sitemap.xml

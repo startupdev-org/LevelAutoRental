@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { sparkData } from '../../../data/index';
 import { fetchCars } from '../../../lib/cars';
@@ -10,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { CardStats } from '../../../components/dashboard/CardStats';
 import { Car as CarType } from '../../../types';
 import { useTranslation } from 'react-i18next';
-import { OrderDisplay } from '../../../lib/orders';
+import { OrderDisplay } from '../../../types';
 import {
     cancelRentalOrder,
     redoRentalOrder,
@@ -18,14 +17,15 @@ import {
 } from '../../../lib/orders';
 import { useNotification } from '../../../components/ui/NotificationToaster';
 import { RentalDetailsModal } from '../../../components/modals/OrderDetailsModal';
+import { fetchBorrowRequests } from '../../../lib/db/requests/requests';
 
 // Dashboard View Component
 export const DashboardView: React.FC = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     const { showSuccess, showError } = useNotification();
     const [cars, setCars] = useState<CarType[]>([]);
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
+    const [borrowRequests, setBorrowRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
@@ -60,6 +60,13 @@ export const DashboardView: React.FC = () => {
                     const fetchedOrders = await fetchAllOrders(carsWithImages);
                     setOrders(fetchedOrders);
                 }
+
+                // Fetch borrow requests with APPROVED and PROCESSED status
+                const allBorrowRequests = await fetchBorrowRequests();
+                const approvedOrProcessedRequests = allBorrowRequests.filter(
+                    request => request.status === 'APPROVED' || request.status === 'PROCESSED'
+                );
+                setBorrowRequests(approvedOrProcessedRequests);
             } catch (error) {
                 console.error('Error loading data:', error);
             } finally {
@@ -69,11 +76,8 @@ export const DashboardView: React.FC = () => {
         loadData();
     }, []);
 
-    // Calculate car rental status (based on database status field)
+    // Calculate car rental status (based on database status field and borrow requests)
     const getCarRentalStatus = () => {
-        // Log all car statuses for debugging
-        
-
         const freeCars = cars.filter(car => {
             // Normalize status: handle null, empty string, and different cases
             const rawStatus = car.status?.trim() || '';
@@ -85,27 +89,39 @@ export const DashboardView: React.FC = () => {
                 (order.status === 'ACTIVE' || order.type === 'rental')
             );
 
+            // Check if car has APPROVED or PROCESSED borrow requests
+            const hasApprovedOrProcessedRequest = borrowRequests.some(request => {
+                const requestCarId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id, 10);
+                return requestCarId === parseInt(car.id, 10);
+            });
+
             // Consider available if status is null, empty, 'available', or not explicitly 'ascuns'/'hidden'/'maintenance'/rented
             const isAvailableStatus = carStatus === '' || carStatus === 'available' ||
                 (carStatus !== 'ascuns' && carStatus !== 'hidden' && carStatus !== 'maintenance' &&
                     carStatus !== 'deleted' && carStatus !== 'închiriat' && carStatus !== 'rented' && carStatus !== 'borrowed');
 
-            // Car is free only if it has available status AND no active orders
-            return isAvailableStatus && !hasActiveOrder;
+            // Car is free only if it has available status AND no active orders AND no approved/processed requests
+            return isAvailableStatus && !hasActiveOrder && !hasApprovedOrProcessedRequest;
         });
 
         const rentedCars = cars.filter(car => {
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
-            // Check if car has active rental orders OR status indicates it's rented
+            
+            // Check if car has active rental orders
             const hasActiveOrder = orders.some(order =>
                 parseInt(order.carId) === parseInt(car.id, 10) &&
                 (order.status === 'ACTIVE' || order.type === 'rental')
             );
-            return hasActiveOrder || carStatus === 'închiriat' || carStatus === 'rented' || carStatus === 'borrowed';
-        });
 
-        
+            // Check if car has APPROVED or PROCESSED borrow requests
+            const hasApprovedOrProcessedRequest = borrowRequests.some(request => {
+                const requestCarId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id, 10);
+                return requestCarId === parseInt(car.id, 10);
+            });
+
+            return hasActiveOrder || hasApprovedOrProcessedRequest || carStatus === 'închiriat' || carStatus === 'rented' || carStatus === 'borrowed';
+        });
 
         return { freeCars, rentedCars };
     };
@@ -410,13 +426,8 @@ export const DashboardView: React.FC = () => {
                 transition={{ duration: 0.4, delay: 0.15 }}
                 className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg overflow-hidden"
             >
-                <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                <div className="px-6 py-4 border-b border-white/10">
                     <h3 className="text-lg font-semibold text-white">{t('admin.dashboard.fleetStatus')}</h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-300">
-                        <span><span className="font-semibold text-emerald-400">{freeCars.length}</span> {t('admin.dashboard.available')}</span>
-                        <span className="text-gray-500">•</span>
-                        <span><span className="font-semibold text-red-400">{rentedCars.length}</span> {t('admin.dashboard.rented')}</span>
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
@@ -438,7 +449,7 @@ export const DashboardView: React.FC = () => {
                                         <p className="text-sm font-medium text-white truncate flex-1">{(car as any).name || `${car.make} ${car.model}`}</p>
                                         <button
                                             onClick={() => {
-                                                navigate(`/admin?section=requests&carId=${car.id}`);
+                                                window.open(`/cars/${car.id}`, '_blank');
                                             }}
                                             className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 text-xs font-semibold rounded-lg transition-all flex-shrink-0"
                                         >
@@ -459,9 +470,14 @@ export const DashboardView: React.FC = () => {
                             {rentedCars.length > 0 ? (
                                 rentedCars.map((car) => {
                                     const carOrder = orders.find(order =>
-                                        parseInt(order.carId) === car.id &&
+                                        parseInt(order.carId) === parseInt(car.id, 10) &&
                                         (order.status === 'ACTIVE' || order.type === 'rental')
                                     );
+                                    // Find associated borrow request for this car
+                                    const carRequest = borrowRequests.find(request => {
+                                        const requestCarId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id, 10);
+                                        return requestCarId === parseInt(car.id, 10);
+                                    });
                                     return (
                                         <div
                                             key={car.id}
@@ -475,19 +491,40 @@ export const DashboardView: React.FC = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-white truncate">{(car as any).name || `${car.make} ${car.model}`}</p>
                                                 <p className="text-xs text-gray-400 truncate">
-                                                    {carOrder?.returnDate ? (() => {
-                                                        try {
-                                                            const returnDate = new Date(carOrder.returnDate);
-                                                            // Extract time from ISO string if returnTime is not available
-                                                            let returnTime = carOrder.returnTime;
-                                                            if (!returnTime && carOrder.returnDate.includes('T')) {
-                                                                const timeMatch = carOrder.returnDate.match(/T(\d{2}:\d{2})/);
-                                                                if (timeMatch) {
-                                                                    returnTime = timeMatch[1];
+                                                    {(() => {
+                                                        // Try to get return date from order first
+                                                        let returnDate: Date | null = null;
+                                                        let returnTime: string | null = null;
+                                                        
+                                                        if (carOrder?.returnDate) {
+                                                            try {
+                                                                returnDate = new Date(carOrder.returnDate);
+                                                                returnTime = carOrder.returnTime;
+                                                                if (!returnTime && carOrder.returnDate.includes('T')) {
+                                                                    const timeMatch = carOrder.returnDate.match(/T(\d{2}:\d{2})/);
+                                                                    if (timeMatch) {
+                                                                        returnTime = timeMatch[1];
+                                                                    }
                                                                 }
+                                                                returnTime = returnTime || '17:00';
+                                                            } catch (e) {
+                                                                returnDate = null;
                                                             }
-                                                            returnTime = returnTime || '17:00';
-
+                                                        }
+                                                        
+                                                        // If no order date, try to get from borrow request
+                                                        if (!returnDate && carRequest) {
+                                                            try {
+                                                                if (carRequest.end_date) {
+                                                                    returnDate = new Date(carRequest.end_date);
+                                                                    returnTime = carRequest.end_time || '17:00';
+                                                                }
+                                                            } catch (e) {
+                                                                // Ignore error
+                                                            }
+                                                        }
+                                                        
+                                                        if (returnDate) {
                                                             // Format date in Romanian format (e.g., "19 nov. 2025")
                                                             const formattedDate = returnDate.toLocaleDateString(t('config.date'), {
                                                                 day: 'numeric',
@@ -495,29 +532,14 @@ export const DashboardView: React.FC = () => {
                                                                 year: 'numeric'
                                                             });
 
-                                                            // Format time (HH:MM)
-                                                            const formattedTime = returnTime.includes(':')
-                                                                ? returnTime.split(':').slice(0, 2).join(':')
-                                                                : returnTime;
-
-                                                            return `${t('admin.dashboard.until')} ${formattedDate}, ${formattedTime}`;
-                                                        } catch (e) {
-                                                            return `${t('admin.dashboard.until')} ${carOrder.returnDate}`;
+                                                            return `Până pe ${formattedDate}`;
                                                         }
-                                                    })() : t('admin.dashboard.rented')}
+                                                        
+                                                        // Fallback to "Închiriate" if no date available
+                                                        return t('admin.dashboard.rented');
+                                                    })()}
                                                 </p>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    if (carOrder) {
-                                                        setSelectedOrder(carOrder);
-                                                        setShowOrderDetailsModal(true);
-                                                    }
-                                                }}
-                                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg transition-all flex-shrink-0"
-                                            >
-                                                {t('admin.dashboard.view')}
-                                            </button>
                                         </div>
                                     );
                                 })

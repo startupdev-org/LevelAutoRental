@@ -34,8 +34,8 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({
 
     const car = request.car as Car;
 
-    const startDate = formatDateLocal(request.start_date)
-    const endDate = formatDateLocal(request.end_date)
+    const startDate = formatDateLocal(request.start_date, t('config.date'))
+    const endDate = formatDateLocal(request.end_date, t('config.date'))
     const pickupTime = formatTime(request.start_time);
     const returnTime = formatTime(request.end_time);
 
@@ -107,12 +107,12 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({
                             <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-white/10">
                                 <div>
                                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.requestDetails.pickupDate')}</p>
-                                    <p className="text-white font-semibold text-sm md:text-base">{formatDateLocal(request.start_date)}</p>
+                                    <p className="text-white font-semibold text-sm md:text-base">{formatDateLocal(request.start_date, t('config.date'))}</p>
                                     <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.start_time)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{t('admin.requestDetails.returnDate')}</p>
-                                    <p className="text-white font-semibold text-sm md:text-base">{formatDateLocal(request.end_date)}</p>
+                                    <p className="text-white font-semibold text-sm md:text-base">{formatDateLocal(request.end_date, t('config.date'))}</p>
                                     <p className="text-gray-400 text-xs md:text-sm">{t('admin.requestDetails.atTime')} {formatTime(request.end_time)}</p>
                                 </div>
                             </div>

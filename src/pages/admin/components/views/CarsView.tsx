@@ -8,6 +8,8 @@ import {
     ArrowUp,
     ArrowDown,
     Loader2,
+    ChevronDown,
+    ChevronRight,
 } from 'lucide-react';
 import { LuPencil } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
@@ -41,11 +43,12 @@ export const CarsView: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | null>(null);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | 'lastEdited'>('lastEdited');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingCar, setEditingCar] = useState<CarType | null>(null);
     const [localCars, setLocalCars] = useState<CarType[]>([]);
+    const [openPriceDrawers, setOpenPriceDrawers] = useState<Set<number>>(new Set());
     const [loading, setLoading] = useState(true);
     const [togglingCarId, setTogglingCarId] = useState<number | null>(null);
     const [pendingStatus, setPendingStatus] = useState<Map<number, string>>(new Map());
@@ -178,25 +181,31 @@ export const CarsView: React.FC = () => {
                 const statusB = getCarStatus(b);
                 const diff = statusA - statusB;
                 return sortOrder === 'asc' ? diff : -diff;
+            } else if (sortBy === 'lastEdited') {
+                // Sort by last edited (updated_at)
+                const aDate = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+                const bDate = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+                const diff = aDate - bDate;
+                return sortOrder === 'asc' ? diff : -diff; // desc = most recent first
             } else {
-                // Default: sort by availability first (available cars first)
-                const statusA = getCarStatus(a);
-                const statusB = getCarStatus(b);
-                return statusA - statusB; // Available (0) comes before Reserved (1) and Rented (2)
+                // Fallback: sort by last edited
+                const aDate = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+                const bDate = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+                return bDate - aDate; // Most recent first
             }
         });
 
         return filtered;
     }, [localCars, searchQuery, sortBy, sortOrder]);
 
-    const handleSort = (field: 'price' | 'year' | 'status') => {
+    const handleSort = (field: 'price' | 'year' | 'status' | 'lastEdited') => {
         if (sortBy === field) {
             // Toggle sort order if clicking the same field
             setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
         } else {
-            // Set new sort field with ascending order
+            // Set new sort field with ascending order (except lastEdited defaults to desc)
             setSortBy(field);
-            setSortOrder('asc');
+            setSortOrder(field === 'lastEdited' ? 'desc' : 'asc');
         }
     };
 
@@ -665,17 +674,41 @@ export const CarsView: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Price Ranges */}
-                                        <div className="mb-3">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-gray-400 text-xs font-medium">{t('admin.cars.priceRanges')}</p>
+                                        {/* Price Ranges - Collapsible Drawer for Mobile */}
+                                        <div className="mb-3 md:mb-3">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const carIdNum = parseInt(car.id, 10);
+                                                    setOpenPriceDrawers(prev => {
+                                                        const newSet = new Set(prev);
+                                                        if (newSet.has(carIdNum)) {
+                                                            newSet.delete(carIdNum);
+                                                        } else {
+                                                            newSet.add(carIdNum);
+                                                        }
+                                                        return newSet;
+                                                    });
+                                                }}
+                                                className="w-full flex items-center justify-between mb-2 md:mb-2 hover:bg-white/5 rounded-lg p-2 -ml-2 md:ml-0 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    {openPriceDrawers.has(parseInt(car.id, 10)) ? (
+                                                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                                                    ) : (
+                                                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                                                    )}
+                                                    <p className="text-gray-400 text-xs font-medium">{t('admin.cars.priceRanges')}</p>
+                                                </div>
                                                 {car.discount_percentage && car.discount_percentage > 0 && (
                                                     <span className="px-2 py-0.5 text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30 rounded-full">
                                                         -{car.discount_percentage}% OFF
                                                     </span>
                                                 )}
-                                            </div>
-                                            <div className="space-y-1">
+                                            </button>
+                                            <div className={`space-y-1 overflow-hidden transition-all duration-300 md:block ${
+                                                openPriceDrawers.has(parseInt(car.id, 10)) ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 md:max-h-[500px] md:opacity-100'
+                                            }`}>
                                                     {(car.price_2_4_days || 0) > 0 && (
                                                     <div className="bg-white/5 border border-white/10 rounded p-1.5">
                                                         <div className="flex items-center justify-between">
@@ -760,7 +793,7 @@ export const CarsView: React.FC = () => {
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="flex items-center justify-end gap-1 pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-start gap-1 pt-2" onClick={(e) => e.stopPropagation()}>
                                                 <button
                                                     onClick={() => handleEditCar(car)}
                                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white hover:text-gray-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors"

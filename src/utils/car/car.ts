@@ -73,6 +73,10 @@ export const getMakeLogo = (make: string): string | null => {
         'audi': '/logos/audi.png',
         'hyundai': '/logos/hyundai.png',
         'maserati': '/logos/maserati.png',
+        'volkswagen': '/logos/volkswagen-1-logo-black-and-white.png',
+        'vw': '/logos/volkswagen-1-logo-black-and-white.png',
+        'lincoln': '/logos/lincoln.png',
+        'porsche': '/logos/porsche.png',
     };
     return logoMap[makeLower] || null;
 };
