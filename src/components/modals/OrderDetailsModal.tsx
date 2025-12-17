@@ -5,7 +5,7 @@ import { Rental, OrderDisplay } from '../../types';
 import { generateContractFromOrder } from '../../lib/contract';
 import { Car } from '../../types';
 import { useTranslation } from 'react-i18next';
-import { calculatePriceSummary, PriceSummaryResult } from '../../utils/car/pricing';
+import { calculatePriceSummary, PriceSummaryResult, getCarPrice } from '../../utils/car/pricing';
 import { calculateRentalDuration } from '../../utils/date';
 import { formatAmount } from '../../utils/currency';
 import { fetchCars } from '../../lib/cars';
@@ -617,11 +617,15 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                         // Use attached car if no car found in array
                                         const carToUse = car || (order as any).car;
                                         
-                        if (carToUse && storedPricePerDay > 0) {
-                            // Create a car object with the correct price for calculatePriceSummary
-                            const carWithPrice = { ...carToUse, price_per_day: storedPricePerDay };
+                        if (carToUse) {
+                            // Ensure discount_percentage is set (map from discount if needed)
+                            // Don't override price_per_day - let calculatePriceSummary use pricing tiers
+                            const carWithDiscount = { 
+                                ...carToUse, 
+                                discount_percentage: carToUse.discount_percentage || (carToUse as any).discount || undefined
+                            };
                             priceSummary = calculatePriceSummary(
-                                carWithPrice,
+                                carWithDiscount,
                                 {
                                     ...order,
                                     start_date: (order as any).start_date,
@@ -640,13 +644,31 @@ export const RentalDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
                                         if (!priceSummary) {
                                             // Use the stored price per day (from rental or car)
-                                            const baseCarPrice = storedPricePerDay;
-                                            manualPricePerDay = baseCarPrice;
+                                            // Apply discount if exists
+                                            const carToUse = car || (order as any).car;
+                                            const carDiscount = carToUse?.discount_percentage || (carToUse as any)?.discount || 0;
+                                            let baseCarPrice = storedPricePerDay;
+                                            
+                                            // Try to get the correct base price from pricing tiers
+                                            if (carToUse) {
+                                                const pricePerDayStr = getCarPrice(days, carToUse);
+                                                const tierPrice = parseFloat(pricePerDayStr);
+                                                if (tierPrice > 0) {
+                                                    baseCarPrice = tierPrice;
+                                                }
+                                            }
+                                            
+                                            // Apply discount if exists
+                                            if (carDiscount > 0) {
+                                                manualPricePerDay = baseCarPrice * (1 - carDiscount / 100);
+                                            } else {
+                                                manualPricePerDay = baseCarPrice;
+                                            }
 
-                                            // Calculate base price
-                                            manualBasePrice = baseCarPrice * days;
+                                            // Calculate base price using discounted price per day
+                                            manualBasePrice = manualPricePerDay * days;
                                             if (hours > 0) {
-                                                manualBasePrice += (hours / 24) * baseCarPrice;
+                                                manualBasePrice += (hours / 24) * manualPricePerDay;
                                             }
 
                                             // Calculate additional costs

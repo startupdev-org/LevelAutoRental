@@ -72,12 +72,7 @@ export const DashboardView: React.FC = () => {
     // Calculate car rental status (based on database status field)
     const getCarRentalStatus = () => {
         // Log all car statuses for debugging
-        console.log('[Dashboard] Car statuses:', cars.map(car => ({
-            id: car.id,
-            name: (car as any).name || `${car.make} ${car.model}`,
-            status: car.status,
-            statusLower: car.status?.toLowerCase()
-        })));
+        
 
         const freeCars = cars.filter(car => {
             // Normalize status: handle null, empty string, and different cases
@@ -110,7 +105,7 @@ export const DashboardView: React.FC = () => {
             return hasActiveOrder || carStatus === 'închiriat' || carStatus === 'rented' || carStatus === 'borrowed';
         });
 
-        console.log(`[Dashboard] Free cars: ${freeCars.length}, Rented cars: ${rentedCars.length}`);
+        
 
         return { freeCars, rentedCars };
     };

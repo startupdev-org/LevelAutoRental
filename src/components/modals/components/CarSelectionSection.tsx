@@ -125,7 +125,7 @@ const CarCard: React.FC<{
                         <span className="text-sm font-medium">
                             {car.fuel_type === 'gasoline' ? 'Benzină' :
                                 car.fuel_type === 'diesel' ? 'Diesel' :
-                                    car.fuel_type === 'petrol' ? 'Benzină' :
+                                    car.fuel_type === 'petrol' ? t('car.fuel.benzina') :
                                         car.fuel_type === 'hybrid' ? 'Hibrid' :
                                             car.fuel_type === 'electric' ? 'Electric' : car.fuel_type}
                         </span>

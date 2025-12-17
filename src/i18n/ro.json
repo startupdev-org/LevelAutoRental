@@ -549,6 +549,13 @@
         }
     },
     "car": {
+        "specifications": "Specificații",
+        "characteristics": "Caracteristici vehicul",
+        "technicalSpecs": "Specificații tehnice",
+        "seats": "Locuri",
+        "transmissionLabel": "Transmisie",
+        "fuelLabel": "Combustibil",
+        "bodyType": "Caroserie",
         "mileageLimit": "200km/zi",
         "seeCar": "Vezi mașina",
         "seeMorePhotos": "Vezi încă {{count}} fotografii",
@@ -563,11 +570,22 @@
         "fuel": {
             "gasoline": "Benzină",
             "diesel": "Diesel",
-            "petrol": "Benzină",
+            "benzina": "Benzină",
             "hybrid": "Hibrid",
             "electric": "Electric"
         },
-        "perDay": "pe zi"
+        "perDay": "pe zi",
+        "available": "Disponibil",
+        "chooseDates": "Alegeți datele",
+        "rentalCost": "Costul închirierii",
+        "rental": "Închiriere",
+        "year": "an",
+        "writeOnTelegram": "Scrie-ne pe Telegram",
+        "contactHelpText": "Ne puteți scrie sau apela, vă vom ajuta",
+        "discount": "REDUCERE",
+        "days": "ZILE",
+        "equipment": "Echipament",
+        "equipmentIncluded": "Echipament inclus"
     },
     "filters": {
         "title": "Filtre",
@@ -597,7 +615,7 @@
         "fuel": {
             "label": "Combustibil",
             "any": "Oricare",
-            "petrol": "Benzină",
+            "benzina": "Benzină",
             "gasoline": "Benzină",
             "diesel": "Diesel",
             "hybrid": "Hibrid",
@@ -930,7 +948,6 @@
             "rejected": "Respins",
             "search": "Caută cereri...",
             "sortBy": "Sortează după:",
-            "pickupDate": "Data Preluării",
             "amount": "Sumă",
             "status": "Status",
             "clearSort": "Șterge Sortarea",
@@ -1096,7 +1113,7 @@
             "delete": "Șterge",
             "addCar": "Adaugă Mașină",
             "noCars": "Nicio mașină găsită",
-            "seats": "locuri",
+            "seats": "Locuri",
             "basicInfo": "Informații de Bază",
             "carName": "Nume Mașină",
             "bodyType": "Tip Caroserie",
@@ -1122,7 +1139,7 @@
             "gallery": "Galerie",
             "addNewDescription": "Creează o nouă intrare de vehicul în flotă",
             "discountPercentage": "Reducere Preț (%)",
-            "discountPercentageHint": "Introduceți procentajul de reducere (0-100)",
+            "discountPercentageHint": "Procent reducere (0-100)",
             "discountedPrice": "Preț cu reducere",
             "saving": "Se salvează...",
             "categorySuv": "SUV",
@@ -1146,7 +1163,12 @@
             "imageUploaded": "Imagine încărcată cu succes!",
             "galleryImageUploaded": "Imagine din galerie încărcată cu succes!",
             "imageUploadError": "Eroare la încărcarea imaginii. Te rugăm să încerci din nou.",
-            "confirmDeleteCar": "Ești sigur că vrei să ștergi această mașină?"
+            "confirmDeleteCar": "Ești sigur că vrei să ștergi această mașină?",
+            "imageInstructions": {
+                "size": "Dimensiunea maximă: {{size}}",
+                "formats": "Formate acceptate: PNG, JPG, JPEG, WEBP",
+                "recommendation": "Recomandare: Imagine clară, de înaltă calitate (minimum 800x600 pixeli)"
+            }
         },
         "calendar": {
             "title": "Vezi și gestionează calendarul rezervărilor",
@@ -1218,8 +1240,6 @@
             "contactInformation": "Date de contact",
             "rentalOptions": "Opțiuni de închiriere",
             "priceDetails": "Detalii preț",
-            "pickupDate": "Data preluării",
-            "returnDate": "Data returnării",
             "pricePerDay": "Preț pe zi",
             "numberOfDays": "Număr zile",
             "basePrice": "Preț de bază",

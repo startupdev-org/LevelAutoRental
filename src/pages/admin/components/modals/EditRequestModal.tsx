@@ -53,7 +53,6 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
     });
 
 
-    console.log('form data is: ', formData)
 
     // Fixed time options for business hours
     const timeOptions = [

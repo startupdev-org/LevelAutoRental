@@ -73,20 +73,14 @@ export async function updateProfile(user: Partial<User>) {
         if (user.last_name) updateData.last_name = user.last_name;
         if (user.phone_number) updateData.phone_number = user.phone_number;
 
-        // console.log('The data to update: ', updateData)
-
-        const { data, error } = await supabase
-            .from('Profiles')
-            .update(updateData)
-            .eq('id', user.id)
-            .select();
+        // 
 
         if (error) {
             console.error('Error updating profile:', error);
             return { success: false, error: error.message };
         }
 
-        console.log('Updated user profile:', data);
+        
         return { success: true, data };
     } catch (err) {
         console.error('Unexpected error updating user profile:', err);

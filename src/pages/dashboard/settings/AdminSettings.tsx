@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { User, Lock, Save } from "lucide-react";
+import { User, Save } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { supabase } from "../../../lib/supabase";
 import { useTranslation } from "react-i18next";
 
-type TabKey =
-    | "profile"
-    | "password";
+type TabKey = "profile";
 
 function TabPanel({
     children,
@@ -75,14 +73,9 @@ export const Settings: React.FC = () => {
         }
     }, []);
 
-    // password
-    const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
 
     const tabs: { key: TabKey; label: string }[] = [
         { key: "profile", label: t('admin.settings.profile') },
-        { key: "password", label: t('admin.settings.password') },
     ];
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,13 +134,6 @@ export const Settings: React.FC = () => {
         }
     };
 
-    const onUpdatePassword = () => {
-        if (newPassword !== confirmPassword) {
-            alert(t('admin.settings.passwordsDoNotMatch'));
-            return;
-        }
-        console.log("update password", { currentPassword, newPassword });
-    };
 
     return (
         <div className="space-y-6">
@@ -240,61 +226,6 @@ export const Settings: React.FC = () => {
                 </div>
             </TabPanel>
 
-            {/* Password Tab */}
-            <TabPanel value={tab} index="password">
-                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <Lock className="w-5 h-5" />
-                        {t('admin.settings.changePassword')}
-                    </h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.currentPassword')}</label>
-                            <input
-                                type="password"
-                                value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.newPassword')}</label>
-                            <input
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                                {t('admin.settings.passwordRequirement')}
-                            </p>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.settings.confirmNewPassword')}</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
-                    <button
-                        type="button"
-                        onClick={onUpdatePassword}
-                        className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 hover:text-red-200 font-semibold rounded-lg transition-all backdrop-blur-xl flex items-center gap-2"
-                    >
-                        <Save className="w-4 h-4" />
-                        {t('admin.settings.updatePassword')}
-                    </button>
-                </div>
-            </TabPanel>
         </div>
     );
 };

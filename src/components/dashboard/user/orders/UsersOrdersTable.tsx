@@ -51,8 +51,7 @@ export const UserOrdersTable: React.FC<OrdersTableProps> = ({ title, onOrderClic
 
     async function handleFetchOrdersHistory() {
         setLoading(true);
-        // console.log('Making a request for this filters: ', { page, pageSize, sortBy, sortOrder, debouncedSearchQuery })
-        const { rentals, total } = await fetchRentalsHistory(page, pageSize, sortBy, sortOrder, debouncedSearchQuery);
+        // 
 
         setOrders(rentals);
         setTotal(total);

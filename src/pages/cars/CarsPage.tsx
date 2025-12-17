@@ -76,8 +76,13 @@ export const Cars: React.FC = () => {
     setLoading(true);
     try {
       const fetchedCars = await fetchCars();
-      setCars(fetchedCars);
-      setAllCars(fetchedCars); // Store full dataset for model lookups
+      // Map discount field to discount_percentage for compatibility
+      const carsWithDiscount = fetchedCars.map(car => ({
+        ...car,
+        discount_percentage: car.discount
+      }));
+      setCars(carsWithDiscount);
+      setAllCars(carsWithDiscount); // Store full dataset for model lookups
       
       // Extract unique makes (same logic as hero searchbar)
       const makes = fetchedCars.map(car => {
@@ -128,7 +133,12 @@ export const Cars: React.FC = () => {
     setLoading(true);
     try {
       const fetchedCars = await fetchCars();
-      setCars(fetchedCars);
+      // Map discount field to discount_percentage for compatibility
+      const carsWithDiscount = fetchedCars.map(car => ({
+        ...car,
+        discount_percentage: car.discount
+      }));
+      setCars(carsWithDiscount);
     } catch (error) {
       console.error('Error fetching cars:', error);
     } finally {
@@ -981,8 +991,7 @@ export const Cars: React.FC = () => {
                       <div className="flex flex-wrap gap-2">
                         {[
                           { key: 'Any', label: t('filters.fuel.any'), value: undefined },
-                          { key: 'Petrol', label: t('filters.fuel.petrol'), value: 'petrol' },
-                          { key: 'Gasoline', label: t('filters.fuel.gasoline'), value: 'gasoline' },
+                          { key: 'Benzina', label: t('filters.fuel.benzina'), value: 'petrol' },
                           { key: 'Diesel', label: t('filters.fuel.diesel'), value: 'diesel' },
                           { key: 'Hybrid', label: t('filters.fuel.hybrid'), value: 'hybrid' },
                           { key: 'Electric', label: t('filters.fuel.electric'), value: 'electric' }

@@ -666,16 +666,16 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
             // Fetch fresh car data to ensure we have correct price information
             const { fetchCarById } = await import('../../../../lib/db/cars/cars');
-            console.log('handleStartRental: Fetching car data for car_id:', request.car_id, 'type:', typeof request.car_id);
+            
             const freshCarData = await fetchCarById(request.car_id.toString());
 
-            console.log('handleStartRental: Fresh car data:', freshCarData);
+            
 
             if (!freshCarData) {
                 throw new Error('Car data not found');
             }
 
-            console.log('handleStartRental: Car price_per_day:', freshCarData.price_per_day, 'price_over_30_days:', freshCarData.price_over_30_days);
+            
 
             // Create a rental record from the approved request
             const rentalResult = await createRentalManually(
@@ -923,7 +923,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                             if (updateRentalError) {
                                 console.warn('Failed to update associated rental total_amount:', updateRentalError);
                             } else {
-                                console.log('Updated associated rental total_amount successfully');
+                                
                             }
                         }
                     } catch (rentalUpdateError) {
@@ -1067,7 +1067,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     } as any}
                     car={request?.car}
                     onContractCreated={async (contractUrl?: string | null) => {
-                        console.log('Contract created, URL:', contractUrl);
+                        
 
                         if (contractUrl) {
                             // Update the request's contract_url field

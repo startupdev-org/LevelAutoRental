@@ -89,7 +89,7 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
                         if (result.mainImage) {
                             mainImage = result.mainImage;
                             photoGallery = result.photoGallery;
-                            console.log('✅ Found images for car:', carName, '->', mainImage);
+                            
                             break;
                         }
                     } catch (e) {
@@ -227,7 +227,7 @@ export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
                         if (result.mainImage) {
                             mainImage = result.mainImage;
                             photoGallery = result.photoGallery;
-                            console.log('✅ Found images for car:', carName, '->', mainImage);
+                            
                             break;
                         }
                     } catch (e) {
@@ -281,18 +281,13 @@ export async function fetchFavoriteCar(): Promise<FavoriteCar> {
         return { car: null, lastRental: null, borrowCount: null };
     }
 
-    // console.log('data from favorite car: ', data)
 
     // if (!data || data.length === 0) return null;
 
     const favoriteCarId = data[0].car_id;
     const lastRental = data[0].last_rental;
     const borrowCount = data[0].rental_count;
-    // console.log('car id: ', favoriteCarId)
-    // console.log('lastRental: ', lastRental)
-    // console.log('borrowcount: ', borrowCount)
-
-    const car = await fetchCarWithImagesById(favoriteCarId);
+    // 
 
     return {
         car,

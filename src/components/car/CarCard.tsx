@@ -312,10 +312,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
 
     // ───── HELPER FUNCTIONS ─────
     const convertPrice = (price: number): number => {
-        if (selectedCurrency === 'MDL') return price;
+        if (selectedCurrency === 'MDL') return Math.round(price);
         if (selectedCurrency === 'EUR') return Math.round(price / eurRate);
         if (selectedCurrency === 'USD') return Math.round(price / usdRate);
-        return price;
+        return Math.round(price);
     };
 
     const getCurrencySymbol = (currency: string): string => {
@@ -743,7 +743,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             <span className="text-sm font-medium">
                                 {carWithImages.fuel_type === 'gasoline' ? t('car.fuel.gasoline') :
                                     carWithImages.fuel_type === 'diesel' ? t('car.fuel.diesel') :
-                                        carWithImages.fuel_type === 'petrol' ? t('car.fuel.petrol') :
+                                        carWithImages.fuel_type === 'petrol' ? t('car.fuel.benzina') :
                                             carWithImages.fuel_type === 'hybrid' ? t('car.fuel.hybrid') :
                                                 carWithImages.fuel_type === 'electric' ? t('car.fuel.electric') : carWithImages.fuel_type}
                             </span>
@@ -764,7 +764,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             const basePrice = carWithImages.price_over_30_days || 0;
                             const discount = (carWithImages as any).discount_percentage || carWithImages.discount_percentage || 0;
                             const finalPrice = discount > 0
-                                ? basePrice * (1 - discount / 100)
+                                ? Math.round(basePrice * (1 - discount / 100))
                                 : basePrice;
 
                             return (

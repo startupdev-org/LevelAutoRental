@@ -65,7 +65,7 @@ export const Booking: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    console.log('Booking submitted:', bookingData);
+    
     // Handle booking submission
   };
 

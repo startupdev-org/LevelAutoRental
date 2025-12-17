@@ -42,11 +42,7 @@ export const CalendarPage: React.FC = () => {
             month,
         );
         setOrders(orders)
-        // console.log('the orders for the calendar page are: ', orders)
-    }
-
-    function handleSetCar(car: Car | null) {
-        setCar(car); // update the selected car state
+        //  // update the selected car state
         setFilters(prev => ({
             ...prev,
             carId: car?.id || "" // sync the filter

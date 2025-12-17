@@ -16,8 +16,7 @@ export const LANGUAGES = [
 
 // Maps UI strings to database types
 export const FUEL_TYPE_MAP = {
-    'Petrol': 'petrol',
-    'Gasoline': 'gasoline',
+    'Benzina': 'petrol',
     'Diesel': 'diesel',
     'Electric': 'electric',
     'Hybrid': 'hybrid',

@@ -563,6 +563,13 @@
         }
     },
     "car": {
+        "specifications": "Характеристики",
+        "characteristics": "Характеристики автомобиля",
+        "technicalSpecs": "Технические характеристики",
+        "seats": "Места",
+        "transmissionLabel": "Трансмиссия",
+        "fuelLabel": "Топливо",
+        "bodyType": "Кузов",
         "mileageLimit": "200км/день",
         "seeCar": "Посмотреть автомобиль",
         "seeMorePhotos": "Посмотреть еще {{count}} фотографий",
@@ -574,11 +581,22 @@
         "fuel": {
             "gasoline": "Бензин",
             "diesel": "Дизель",
-            "petrol": "Бензин",
+            "benzina": "Бензин",
             "hybrid": "Гибрид",
             "electric": "Электрический"
         },
-        "perDay": "в день"
+        "perDay": "в день",
+        "available": "Доступен",
+        "chooseDates": "Выберите даты",
+        "rentalCost": "Стоимость аренды",
+        "rental": "Аренда",
+        "year": "год",
+        "writeOnTelegram": "Написать в Telegram",
+        "contactHelpText": "Вы можете написать или позвонить нам, мы поможем",
+        "discount": "СКИДКА",
+        "days": "ДНИ",
+        "equipment": "Оборудование",
+        "equipmentIncluded": "Включенное оборудование"
     },
     "carsPage": {
         "title": "Арендуйте Ваш Идеальный Автомобиль",
@@ -618,7 +636,7 @@
         "fuel": {
             "label": "Топливо",
             "any": "Любое",
-            "petrol": "Бензин",
+            "benzina": "Бензин",
             "gasoline": "Бензин",
             "diesel": "Дизель",
             "hybrid": "Гибрид",

@@ -65,7 +65,7 @@ const mapCarRowToCar = (row: CarRow): Car & { name?: string; color?: string; lic
     price_5_15_days: row.price_5_15_days || undefined,
     price_16_30_days: row.price_16_30_days || undefined,
     price_over_30_days: row.price_over_30_days || undefined,
-    discount_percentage: row.discount_percentage || undefined,
+    discount_percentage: row.discount || undefined,
     category: category,
     image_url: row.image_url || undefined,
     photo_gallery: row.photo_gallery || undefined,
@@ -158,7 +158,7 @@ export const createCar = async (carData: Partial<Car>): Promise<Car | null> => {
       price_5_15_days: (carData as any).price_5_15_days || null,
       price_16_30_days: (carData as any).price_16_30_days || null,
       price_over_30_days: (carData as any).price_over_30_days || null,
-      discount_percentage: carData.discount_percentage !== undefined ? carData.discount_percentage : null,
+      discount: carData.discount_percentage !== undefined ? carData.discount_percentage : null,
       status: carData.status || 'available',
       body: carData.body || null,
       transmission: carData.transmission || null,
@@ -201,7 +201,6 @@ export const updateCar = async (id: number, carData: Partial<Car>): Promise<Car 
   try {
     const updateData: any = {};
 
-    console.log('updateCar called with data:', carData);
 
     if (carData.make !== undefined) updateData.make = carData.make;
     if (carData.model !== undefined) updateData.model = carData.model;
@@ -212,8 +211,7 @@ export const updateCar = async (id: number, carData: Partial<Car>): Promise<Car 
     if ((carData as any).price_16_30_days !== undefined) updateData.price_16_30_days = (carData as any).price_16_30_days;
     if ((carData as any).price_over_30_days !== undefined) updateData.price_over_30_days = (carData as any).price_over_30_days;
 
-    console.log('updateData prepared:', updateData);
-    if (carData.discount_percentage !== undefined) updateData.discount_percentage = carData.discount_percentage;
+    if (carData.discount_percentage !== undefined) updateData.discount = carData.discount_percentage;
     if (carData.status !== undefined) updateData.status = carData.status;
     if (carData.body !== undefined) updateData.body = carData.body;
     if (carData.transmission !== undefined) updateData.transmission = carData.transmission;

@@ -29,6 +29,8 @@ import { Car } from '../../../types';
 import { fetchCarById } from '../../../lib/cars';
 import { fetchImagesByCarName } from '../../../lib/db/cars/cars';
 import { fetchRentals } from '../../../lib/orders';
+import { CarCard } from '../../../components/car/CarCard';
+import { fetchFilteredCarsWithPhotos } from '../../../lib/db/cars/cars-page/cars';
 import { supabase } from '../../../lib/supabase';
 import { RentalOptionsSection } from '../sections/RentalOptionsSection';
 import { useExchangeRates } from '../../../hooks/useExchangeRates';
@@ -43,8 +45,38 @@ export const CarDetails: React.FC = () => {
 
     const { t, i18n } = useTranslation()
 
+    // Track current language for re-rendering
+    const [currentLang, setCurrentLang] = useState(i18n.language);
+
+    // Get translated date labels
+    const getPickupDateLabel = () => {
+        if (currentLang === 'ru') return 'Дата получения';
+        if (currentLang === 'en') return 'Pickup Date';
+        return 'Data preluării'; // Romanian default
+    };
+
+    const getReturnDateLabel = () => {
+        if (currentLang === 'ru') return 'Дата возврата';
+        if (currentLang === 'en') return 'Return Date';
+        return 'Data returnării'; // Romanian default
+    };
+
+    // Update language state when i18n language changes
+    useEffect(() => {
+        const handleLanguageChange = (lng: string) => {
+            setCurrentLang(lng);
+        };
+
+        i18n.on('languageChanged', handleLanguageChange);
+
+        return () => {
+            i18n.off('languageChanged', handleLanguageChange);
+        };
+    }, [i18n]);
+
     // ───── CONSTANTS ─────
     const SHOW_DATE_INPUTS = true; // Temporarily hide date inputs
+
 
     // ───── STATE ─────
     const [car, setCar] = useState<Car | null>(null);
@@ -90,13 +122,17 @@ export const CarDetails: React.FC = () => {
     const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
     const [pickupCalendarInitialized, setPickupCalendarInitialized] = useState(false);
     const [returnCalendarInitialized, setReturnCalendarInitialized] = useState(false);
+    const [recommendedCars, setRecommendedCars] = useState<Car[]>([]);
+    const [recommendedLoading, setRecommendedLoading] = useState(false);
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [isAutoSlidingPaused, setIsAutoSlidingPaused] = useState(false);
 
     // ───── HELPER FUNCTIONS ─────
     const convertPrice = (price: number): number => {
-        if (selectedCurrency === 'MDL') return price;
+        if (selectedCurrency === 'MDL') return Math.round(price);
         if (selectedCurrency === 'EUR') return Math.round(price / eurRate);
         if (selectedCurrency === 'USD') return Math.round(price / usdRate);
-        return price;
+        return Math.round(price);
     };
 
     const getCurrencySymbol = (currency: string): string => {
@@ -114,6 +150,8 @@ export const CarDetails: React.FC = () => {
     const pickupTimeRef = useRef<HTMLDivElement>(null);
     const returnTimeRef = useRef<HTMLDivElement>(null);
     const imageSliderRef = useRef<Slider>(null);
+    const recommendedSliderRef = useRef<HTMLDivElement>(null);
+    const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // ───── HELPERS ─────
     const getFavorites = (): number[] => {
@@ -141,6 +179,22 @@ export const CarDetails: React.FC = () => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
         saveFavorite(Number(car.id), newFavoriteState);
+    };
+
+    // Pause auto-sliding for 5 seconds when user interacts
+    const pauseAutoSliding = () => {
+        setIsAutoSlidingPaused(true);
+
+        // Clear any existing timeout
+        if (pauseTimeoutRef.current) {
+            clearTimeout(pauseTimeoutRef.current);
+        }
+
+        // Set new timeout
+        pauseTimeoutRef.current = setTimeout(() => {
+            setIsAutoSlidingPaused(false);
+            pauseTimeoutRef.current = null;
+        }, 5000); // Resume after 5 seconds
     };
 
     const formatDate = (dateString: string): string => {
@@ -750,6 +804,118 @@ export const CarDetails: React.FC = () => {
         fetchApprovedRequests();
     }, [car, carId]);
 
+    // Fetch recommended cars
+    useEffect(() => {
+        const fetchRecommendedCars = async () => {
+            if (!car) return;
+
+            setRecommendedLoading(true);
+            try {
+                // Fetch cars of the same make, excluding the current car
+                const filters = {
+                    make: car.make,
+                    limit: 6
+                };
+
+                const cars = await fetchFilteredCarsWithPhotos(filters);
+
+                // Filter out the current car and get cars of the same make
+                const sameMakeCars = cars
+                    .filter(c => c.id !== car.id);
+
+                // If we don't have enough cars of the same make, fetch some general available cars
+                let allAvailableCars = [...sameMakeCars];
+                if (sameMakeCars.length < 5) {
+                    const generalFilters = { limit: 15 }; // Get more to have variety for randomization
+                    const generalCars = await fetchFilteredCarsWithPhotos(generalFilters);
+                    const additionalCars = generalCars
+                        .filter(c => c.id !== car.id && !sameMakeCars.some(rc => rc.id === c.id));
+
+                    allAvailableCars = [...sameMakeCars, ...additionalCars];
+                }
+
+                // Shuffle/randomize the array and take first 5
+                const shuffled = allAvailableCars.sort(() => Math.random() - 0.5);
+                const recommended = shuffled.slice(0, 5);
+
+                setRecommendedCars(recommended);
+            } catch (error) {
+                console.error('Error fetching recommended cars:', error);
+            } finally {
+                setRecommendedLoading(false);
+            }
+        };
+
+        fetchRecommendedCars();
+    }, [car]);
+
+    // Cleanup timeout on unmount or car change
+    useEffect(() => {
+        return () => {
+            if (pauseTimeoutRef.current) {
+                clearTimeout(pauseTimeoutRef.current);
+                pauseTimeoutRef.current = null;
+            }
+        };
+    }, [car]);
+
+    // Auto-slide recommended cars
+    useEffect(() => {
+        if (recommendedCars.length <= 1 || isAutoSlidingPaused) return;
+
+        const interval = setInterval(() => {
+            setCurrentSlide(prev => {
+                const next = (prev + 1) % Math.ceil(recommendedCars.length / 1); // Show 1 car at a time on mobile
+                return next;
+            });
+        }, 4000); // Change slide every 4 seconds
+
+        return () => clearInterval(interval);
+    }, [recommendedCars.length, isAutoSlidingPaused]);
+
+    // Scroll to the current slide
+    useEffect(() => {
+        if (recommendedSliderRef.current) {
+            const cardWidth = 336; // w-80 = 320px + gap 16px = 336px
+            const scrollLeft = currentSlide * cardWidth;
+            recommendedSliderRef.current.scrollTo({
+                left: scrollLeft,
+                behavior: 'smooth'
+            });
+        }
+    }, [currentSlide]);
+
+    // Handle manual scrolling to pause auto-sliding
+    useEffect(() => {
+        const handleScroll = () => {
+            // Clear any existing timeout
+            if (pauseTimeoutRef.current) {
+                clearTimeout(pauseTimeoutRef.current);
+            }
+
+            // Pause auto-sliding
+            setIsAutoSlidingPaused(true);
+
+            // Resume after 5 seconds
+            pauseTimeoutRef.current = setTimeout(() => {
+                setIsAutoSlidingPaused(false);
+                pauseTimeoutRef.current = null;
+            }, 5000);
+        };
+
+        const sliderElement = recommendedSliderRef.current;
+        if (sliderElement) {
+            sliderElement.addEventListener('scroll', handleScroll, { passive: true });
+            return () => {
+                sliderElement.removeEventListener('scroll', handleScroll);
+                if (pauseTimeoutRef.current) {
+                    clearTimeout(pauseTimeoutRef.current);
+                    pauseTimeoutRef.current = null;
+                }
+            };
+        }
+    }, [recommendedCars.length]); // Depend on recommendedCars.length to re-attach when cars change
+
     // Scroll to top on car change
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -960,7 +1126,7 @@ export const CarDetails: React.FC = () => {
         }
 
         const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
-        const pricePerDay = carDiscount > 0 ? basePricePerDay * (1 - carDiscount / 100) : basePricePerDay;
+        const pricePerDay = carDiscount > 0 ? Math.round(basePricePerDay * (1 - carDiscount / 100)) : basePricePerDay;
 
         // Calculate base price using the determined price per day
         let basePrice = pricePerDay * rentalDays;
@@ -1182,9 +1348,9 @@ export const CarDetails: React.FC = () => {
 
                                         const availabilityText = firstAvailableDate
                                             ? (isAvailableToday
-                                                ? 'Disponibil'
+                                                ? t('car.available')
                                                 : formatDateForDisplay(firstAvailableDate))
-                                            : (car.status === 'available' || car.status === 'Available' ? 'Disponibil' : car.status || '');
+                                            : (car.status === 'available' || car.status === 'Available' ? t('car.available') : car.status || '');
 
                                         if (!availabilityText) return null;
 
@@ -1253,7 +1419,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="text-4xl font-bold text-gray-900">
                                                         {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
                                                         {/* {/* {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString(t('config.date'), { minimumFractionDigits: 0, maximumFractionDigits: 0 })}  */}
-                                                        <span className="text-lg font-normal text-gray-600"> pe zi</span>
+                                                        <span className="text-lg font-normal text-gray-600"> {t('car.perDay')}</span>
                                                     </div>
                                                     {/* Currency Dropdown */}
                                                     <div className="relative ml-4">
@@ -1300,12 +1466,12 @@ export const CarDetails: React.FC = () => {
                                     className="flex items-center justify-center gap-3 w-full border-2 border-gray-300 hover:border-gray-400 text-gray-900 font-medium py-3.5 px-6 rounded-xl mb-3 transition-colors"
                                 >
                                     <Send className="w-5 h-5" />
-                                    <span>Scrie-ne pe Telegram</span>
+                                    <span>{t('car.writeOnTelegram')}</span>
                                 </a>
 
                                 {/* Help Text */}
                                 <p className="text-center text-base text-gray-500 mb-4">
-                                    Ne puteți scrie sau apela, vă vom ajuta
+                                    {t('car.contactHelpText')}
                                 </p>
 
                                 {/* Date Inputs */}
@@ -1586,11 +1752,26 @@ export const CarDetails: React.FC = () => {
                                                                         }
                                                                     }
 
-                                                                    // Filter out hours that are in maintenance periods
+                                                                    // Filter out hours that are in maintenance periods and would result in < 2 days rental
                                                                     const availableHours = generateHours(minHour).filter((hour) => {
-                                                                        if (!pickupDate) return true;
-                                                                        const checkDate = new Date(pickupDate);
-                                                                        return !isInMaintenancePeriod(checkDate, hour);
+                                                                        // Check for pickup date maintenance periods
+                                                                        if (pickupDate) {
+                                                                            const checkDate = new Date(pickupDate);
+                                                                            if (isInMaintenancePeriod(checkDate, pickupTime || '09:00')) return false;
+                                                                        }
+
+                                                                        // For unauthenticated users, prevent selections that would result in < 2 days rental
+                                                                        if (pickupDate && pickupTime && returnDate) {
+                                                                            const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+                                                                            const returnDateTime = new Date(`${returnDate}T${hour}`);
+
+                                                                            const diffMs = returnDateTime.getTime() - pickupDateTime.getTime();
+                                                                            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                                                            const days = Math.floor(diffHours / 24);
+                                                                            if (days < 2) return false;
+                                                                        }
+
+                                                                        return true;
                                                                     });
 
                                                                     return availableHours.map((hour) => (
@@ -1654,7 +1835,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Calendar className="w-4 h-4" />
-                                                    <span>{returnDate ? formatDate(returnDate) : 'Data returnării'}</span>
+                                                    <span>{returnDate ? formatDate(returnDate) : getReturnDateLabel()}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showReturnCalendar && (
@@ -1909,12 +2090,36 @@ export const CarDetails: React.FC = () => {
                                                             onTouchStart={(e) => e.stopPropagation()}
                                                         >
                                                             <div className="flex flex-col gap-1">
-                                                                {generateHours().map((hour) => (
-                                                                    <button
-                                                                        key={hour}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setReturnTime(hour);
+                                                                {(() => {
+                                                                    // Filter out hours that would result in < 48 hours rental for unauthenticated users
+                                                                    let availableHours = generateHours();
+
+                                                                    if (pickupDate && pickupTime && returnDate) {
+                                                                        const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+                                                                        // Calculate minimum return time for 48 hours rental
+                                                                        const minReturnDateTime = new Date(pickupDateTime.getTime() + (48 * 60 * 60 * 1000));
+
+                                                                        // Get the date part of minimum return time
+                                                                        const minReturnDate = minReturnDateTime.toISOString().split('T')[0];
+                                                                        const minReturnHour = minReturnDateTime.getHours();
+
+                                                                        // If minimum return date is the same as selected return date, filter hours
+                                                                        if (minReturnDate === returnDate) {
+                                                                            availableHours = availableHours.filter(hour => {
+                                                                                const hourNum = parseInt(hour.split(':')[0]);
+                                                                                return hourNum >= minReturnHour;
+                                                                            });
+                                                                        }
+                                                                        // If minimum return date is before selected return date, show all hours
+                                                                        // If minimum return date is after selected return date, no hours should be available (but that's handled in date selection)
+                                                                    }
+
+                                                                    return availableHours.map((hour) => (
+                                                                        <button
+                                                                            key={hour}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setReturnTime(hour);
                                                                             // Close time picker after 0.3s delay so user can see what they clicked
                                                                             setIsClosingWithDelay(true);
                                                                             setTimeout(() => {
@@ -1930,7 +2135,8 @@ export const CarDetails: React.FC = () => {
                                                                     >
                                                                         {hour}
                                                                     </button>
-                                                                ))}
+                                                                    ));
+                                                                })()}
                                                             </div>
                                                         </motion.div>
                                                     )}
@@ -1955,7 +2161,7 @@ export const CarDetails: React.FC = () => {
                                                 disabled
                                                 className="w-full font-semibold py-3 px-4 rounded-xl transition-colors bg-gray-200 text-gray-400 cursor-not-allowed text-sm"
                                             >
-                                                Alegeți datele
+                                                {t('car.chooseDates')}
                                             </button>
                                         )}
                                     </div>
@@ -1964,10 +2170,10 @@ export const CarDetails: React.FC = () => {
                                 {/* Pricing Tiers */}
                                 <div className="border-t border-gray-200 pt-6">
                                     <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-lg md:text-2xl font-bold text-gray-900">Costul închirierii</h3>
+                                        <h3 className="text-lg md:text-2xl font-bold text-gray-900">{t('car.rentalCost')}</h3>
                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                             <div className="px-2 py-1 md:px-3 md:py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full text-xs font-semibold shadow-sm md:shadow-md">
-                                                {car.discount_percentage}% REDUCERE
+                                                {car.discount_percentage}% {t('car.discount')}
                                             </div>
                                         )}
                                     </div>
@@ -1981,18 +2187,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">2-4</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_2_4_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_2_4_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_2_4_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2006,18 +2224,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">5-15</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_5_15_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_5_15_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_5_15_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2031,18 +2261,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">16-30</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_16_30_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_16_30_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_16_30_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2056,18 +2298,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">30+</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_over_30_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_over_30_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_over_30_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2082,10 +2336,10 @@ export const CarDetails: React.FC = () => {
                             {/* Section Header */}
                             <div className="mb-8">
                                 <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
-                                    Specificații
+                                    {t('car.specifications')}
                                 </span>
                                 <h2 className="mt-3 text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
-                                    Caracteristici vehicul
+                                    {t('car.characteristics')}
                                 </h2>
                             </div>
 
@@ -2096,7 +2350,7 @@ export const CarDetails: React.FC = () => {
                                         <Users className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Locuri</div>
+                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.seats')}</div>
                                         <div className="text-sm font-bold text-gray-800">{car.seats}</div>
                                     </div>
                                 </div>
@@ -2111,17 +2365,17 @@ export const CarDetails: React.FC = () => {
                                         })()}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Transmisie</div>
+                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.transmissionLabel')}</div>
                                         <div className="text-sm font-bold text-gray-800">
                                             {(() => {
                                                 const trans = car.transmission?.trim() || '';
                                                 if (trans.toLowerCase() === 'automatic' || trans === 'Automatic') {
-                                                    return 'Automată';
+                                                    return t('car.transmission.automatic');
                                                 }
                                                 if (trans.toLowerCase() === 'manual' || trans === 'Manual') {
-                                                    return 'Manuală';
+                                                    return t('car.transmission.manual');
                                                 }
-                                                return trans || 'Automată';
+                                                return trans || t('car.transmission.automatic');
                                             })()}
                                         </div>
                                     </div>
@@ -2132,13 +2386,13 @@ export const CarDetails: React.FC = () => {
                                         {React.createElement(RiGasStationLine as any, { className: "w-5 h-5 text-white" })}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Combustibil</div>
+                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.fuelLabel')}</div>
                                         <div className="text-sm font-bold text-gray-800">
-                                            {car.fuel_type === 'gasoline' ? 'Benzină' :
-                                                car.fuel_type === 'diesel' ? 'Diesel' :
-                                                    car.fuel_type === 'petrol' ? 'Benzină' :
-                                                        car.fuel_type === 'hybrid' ? 'Hibrid' :
-                                                            car.fuel_type === 'electric' ? 'Electric' : car.fuel_type}
+                                            {car.fuel_type === 'gasoline' ? t('car.fuel.gasoline') :
+                                                car.fuel_type === 'diesel' ? t('car.fuel.diesel') :
+                                                    car.fuel_type === 'petrol' ? t('car.fuel.benzina') :
+                                                        car.fuel_type === 'hybrid' ? t('car.fuel.hybrid') :
+                                                            car.fuel_type === 'electric' ? t('car.fuel.electric') : car.fuel_type}
                                         </div>
                                     </div>
                                 </div>
@@ -2148,7 +2402,7 @@ export const CarDetails: React.FC = () => {
                                         {React.createElement(LiaCarSideSolid as any, { className: "w-5 h-5 text-white" })}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Caroserie</div>
+                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.bodyType')}</div>
                                         <div className="text-sm font-bold text-gray-800">{car.body}</div>
                                     </div>
                                 </div>
@@ -2159,7 +2413,7 @@ export const CarDetails: React.FC = () => {
                                 <div className="mt-6 pt-6 border-t border-gray-200">
                                     <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
                                         <Gauge className="w-4 h-4 text-gray-500" />
-                                        Specificații tehnice
+                                        {t('car.technicalSpecs')}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {car.power && (
@@ -2199,10 +2453,10 @@ export const CarDetails: React.FC = () => {
                             <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 md:p-8 mb-6">
                                 <div className="mb-6">
                                     <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
-                                        Echipament
+                                        {t('car.equipment')}
                                     </span>
                                     <h2 className="mt-3 text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
-                                        Echipament inclus
+                                        {t('car.equipmentIncluded')}
                                     </h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -2225,7 +2479,6 @@ export const CarDetails: React.FC = () => {
 
                         {/* Contract Section */}
                         <ContractSection />
-
                     </div>
 
                     {/* RIGHT: Booking Widget */}
@@ -2251,7 +2504,7 @@ export const CarDetails: React.FC = () => {
                                                     <div className="text-4xl font-bold text-gray-900">
                                                         {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
                                                         {/* {/* {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}  */}
-                                                        <span className="text-lg font-normal text-gray-600"> pe zi</span>
+                                                        <span className="text-lg font-normal text-gray-600"> {t('car.perDay')}</span>
                                                     </div>
                                                     {/* Currency Dropdown */}
                                                     <div className="relative ml-4">
@@ -2283,7 +2536,7 @@ export const CarDetails: React.FC = () => {
 
                                 {/* Title */}
                                 <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                                    Închiriere {car.make} {car.model}, {car.year} an
+                                    {t('car.rental')} {car.make} {car.model}, {car.year} {t('car.year')}
                                 </h2>
 
                                 {/* Phone Button */}
@@ -2303,12 +2556,12 @@ export const CarDetails: React.FC = () => {
                                     className="flex items-center justify-center gap-3 w-full border-2 border-gray-300 hover:border-gray-400 text-gray-900 font-medium py-3.5 px-6 rounded-xl mb-3 transition-colors"
                                 >
                                     <Send className="w-5 h-5" />
-                                    <span>Scrie-ne pe Telegram</span>
+                                    <span>{t('car.writeOnTelegram')}</span>
                                 </a>
 
                                 {/* Help Text */}
                                 <p className="text-center text-base text-gray-500 mb-6">
-                                    Ne puteți scrie sau apela, vă vom ajuta
+                                    {t('car.contactHelpText')}
                                 </p>
 
                                 {/* Date Inputs */}
@@ -2337,7 +2590,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Calendar className="w-4 h-4" />
-                                                    <span>{pickupDate ? formatDate(pickupDate) : 'Data primirii'}</span>
+                                                    <span>{pickupDate ? formatDate(pickupDate) : getPickupDateLabel()}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showPickupCalendar && (
@@ -2580,11 +2833,26 @@ export const CarDetails: React.FC = () => {
                                                                         }
                                                                     }
 
-                                                                    // Filter out hours that are in maintenance periods
+                                                                    // Filter out hours that are in maintenance periods and would result in < 2 days rental
                                                                     const availableHours = generateHours(minHour).filter((hour) => {
-                                                                        if (!pickupDate) return true;
-                                                                        const checkDate = new Date(pickupDate);
-                                                                        return !isInMaintenancePeriod(checkDate, hour);
+                                                                        // Check for pickup date maintenance periods
+                                                                        if (pickupDate) {
+                                                                            const checkDate = new Date(pickupDate);
+                                                                            if (isInMaintenancePeriod(checkDate, pickupTime || '09:00')) return false;
+                                                                        }
+
+                                                                        // For unauthenticated users, prevent selections that would result in < 2 days rental
+                                                                        if (pickupDate && pickupTime && returnDate) {
+                                                                            const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+                                                                            const returnDateTime = new Date(`${returnDate}T${hour}`);
+
+                                                                            const diffMs = returnDateTime.getTime() - pickupDateTime.getTime();
+                                                                            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                                                            const days = Math.floor(diffHours / 24);
+                                                                            if (days < 2) return false;
+                                                                        }
+
+                                                                        return true;
                                                                     });
 
                                                                     return availableHours.map((hour) => (
@@ -2643,7 +2911,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Calendar className="w-4 h-4" />
-                                                    <span>{returnDate ? formatDate(returnDate) : 'Data returnării'}</span>
+                                                    <span>{returnDate ? formatDate(returnDate) : getReturnDateLabel()}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showReturnCalendar && (
@@ -2898,12 +3166,36 @@ export const CarDetails: React.FC = () => {
                                                             onTouchStart={(e) => e.stopPropagation()}
                                                         >
                                                             <div className="flex flex-col gap-1">
-                                                                {generateHours().map((hour) => (
-                                                                    <button
-                                                                        key={hour}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setReturnTime(hour);
+                                                                {(() => {
+                                                                    // Filter out hours that would result in < 48 hours rental for unauthenticated users
+                                                                    let availableHours = generateHours();
+
+                                                                    if (pickupDate && pickupTime && returnDate) {
+                                                                        const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+                                                                        // Calculate minimum return time for 48 hours rental
+                                                                        const minReturnDateTime = new Date(pickupDateTime.getTime() + (48 * 60 * 60 * 1000));
+
+                                                                        // Get the date part of minimum return time
+                                                                        const minReturnDate = minReturnDateTime.toISOString().split('T')[0];
+                                                                        const minReturnHour = minReturnDateTime.getHours();
+
+                                                                        // If minimum return date is the same as selected return date, filter hours
+                                                                        if (minReturnDate === returnDate) {
+                                                                            availableHours = availableHours.filter(hour => {
+                                                                                const hourNum = parseInt(hour.split(':')[0]);
+                                                                                return hourNum >= minReturnHour;
+                                                                            });
+                                                                        }
+                                                                        // If minimum return date is before selected return date, show all hours
+                                                                        // If minimum return date is after selected return date, no hours should be available (but that's handled in date selection)
+                                                                    }
+
+                                                                    return availableHours.map((hour) => (
+                                                                        <button
+                                                                            key={hour}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setReturnTime(hour);
                                                                             // Close time picker after 0.3s delay so user can see what they clicked
                                                                             setIsClosingWithDelay(true);
                                                                             setTimeout(() => {
@@ -2919,7 +3211,8 @@ export const CarDetails: React.FC = () => {
                                                                     >
                                                                         {hour}
                                                                     </button>
-                                                                ))}
+                                                                    ));
+                                                                })()}
                                                             </div>
                                                         </motion.div>
                                                     )}
@@ -2963,7 +3256,7 @@ export const CarDetails: React.FC = () => {
                                                 disabled
                                                 className="flex-1 font-semibold py-3.5 px-6 rounded-xl transition-colors bg-gray-200 text-gray-400 cursor-not-allowed"
                                             >
-                                                Alegeți datele
+                                                {t('car.chooseDates')}
                                             </button>
                                         )}
                                         <button
@@ -2983,10 +3276,10 @@ export const CarDetails: React.FC = () => {
                                 {/* Pricing Tiers */}
                                 <div className="border-t border-gray-200 pt-6">
                                     <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-lg md:text-2xl font-bold text-gray-900">Costul închirierii</h3>
+                                        <h3 className="text-lg md:text-2xl font-bold text-gray-900">{t('car.rentalCost')}</h3>
                                         {car.discount_percentage && car.discount_percentage > 0 && (
                                             <div className="px-2 py-1 md:px-3 md:py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full text-xs font-semibold shadow-sm md:shadow-md">
-                                                {car.discount_percentage}% REDUCERE
+                                                {car.discount_percentage}% {t('car.discount')}
                                             </div>
                                         )}
                                     </div>
@@ -3000,18 +3293,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">2-4</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_2_4_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_2_4_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_2_4_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -3025,18 +3330,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">5-15</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_5_15_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_5_15_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_5_15_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -3050,18 +3367,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">16-30</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_16_30_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_16_30_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_16_30_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -3075,18 +3404,30 @@ export const CarDetails: React.FC = () => {
                                                         <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500 rounded-full shadow-sm">
                                                             <span className="text-white font-semibold text-xs">30+</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">ZILE</span>
+                                                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">{t('car.days')}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        {car.discount_percentage && car.discount_percentage > 0 && (
-                                                            <span className="text-sm text-gray-500 line-through">
-                                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(car.price_over_30_days || 0).toLocaleString('ro-RO')}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatPrice(convertPrice(car.price_over_30_days || 0), selectedCurrency, i18n.language)}
-                                                        </span>
+                                                        {(() => {
+                                                            const basePrice = car.price_over_30_days || 0;
+                                                            const discount = car.discount_percentage || 0;
+                                                            const finalPrice = discount > 0
+                                                                ? Math.round(basePrice * (1 - discount / 100))
+                                                                : basePrice;
+
+                                                            return (
+                                                                <>
+                                                                    {discount > 0 && (
+                                                                        <span className="text-sm text-gray-500 line-through">
+                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-lg font-bold text-gray-900">
+                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                    </span>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -3098,6 +3439,73 @@ export const CarDetails: React.FC = () => {
                     </aside>
                 </div>
 
+                {/* Recommended Cars Slider - Desktop: After Contract Section */}
+                <div className="mt-12">
+                    <div className="mb-8">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+                            {t('car.recommendedCars', 'Mașini Recomandate')}
+                        </h2>
+                        <p className="text-gray-600">
+                            {t('car.recommendedDescription', 'Descoperă alte mașini care s-ar putea să îți placă')}
+                        </p>
+                    </div>
+
+                    {recommendedLoading ? (
+                        <div className="flex justify-center py-12">
+                            <div className="flex space-x-2">
+                                <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
+                                <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            </div>
+                        </div>
+                    ) : recommendedCars.length > 0 ? (
+                        <div className="relative">
+                            <style>{`
+                                .recommended-slider::-webkit-scrollbar {
+                                    display: none;
+                                }
+                            `}</style>
+                            <div
+                                ref={recommendedSliderRef}
+                                className="overflow-x-auto pb-4 recommended-slider"
+                                style={{
+                                    scrollBehavior: 'smooth',
+                                    scrollbarWidth: 'none', // Firefox
+                                    msOverflowStyle: 'none', // IE/Edge
+                                }}
+                            >
+                                <div className="flex gap-6 min-w-max">
+                                    {recommendedCars.map((recommendedCar, index) => (
+                                        <div key={recommendedCar.id} className="w-80 flex-shrink-0">
+                                            <CarCard car={recommendedCar} index={index} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Slide Indicators */}
+                            {recommendedCars.length > 1 && (
+                                <div className="flex justify-center mt-4 space-x-2">
+                                    {Array.from({ length: Math.ceil(recommendedCars.length / 1) }).map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => {
+                                                setCurrentSlide(index);
+                                                pauseAutoSliding();
+                                            }}
+                                            className={`w-2 h-2 rounded-full transition-colors ${
+                                                index === currentSlide
+                                                    ? 'bg-red-500'
+                                                    : 'bg-gray-300 hover:bg-gray-400'
+                                            }`}
+                                            aria-label={`Go to slide ${index + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
+                </div>
             </div>
 
             {/* Rental Request Modal */}

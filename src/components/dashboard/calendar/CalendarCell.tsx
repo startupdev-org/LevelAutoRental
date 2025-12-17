@@ -52,7 +52,7 @@ export const CalendarCell: React.FC<Props> = ({
             onClick={handleSelect}  // user-only selection
             onMouseEnter={() => {
                 if (viewMode === "user" && isAvailable) {
-                    // console.log(`Available day hovered: ${dayDate}`);
+                    // 
                 }
             }}
         >
@@ -67,16 +67,7 @@ export const CalendarCell: React.FC<Props> = ({
             {viewMode === "user" && isAvailable && (
                 <motion.button
                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-white bg-green-500/80 rounded-md text-sm font-medium"
-                    onClick={() => console.log(`Rent clicked for: ${dayDate}`)}
-                    whileTap={{ scale: 0.95 }}
-                >
-                    Rent
-                </motion.button>
-            )}
-
-            {/* Admin view */}
-            {viewMode === "admin" && dayEvents.map((ev: any, i: number) => {
-                const startDate = format(new Date(ev.pickupDate), "yyyy-MM-dd");
+                    onClick={() => 
                 const endDate = format(new Date(ev.returnDate), "yyyy-MM-dd");
 
                 let borderRadius = "rounded-md";

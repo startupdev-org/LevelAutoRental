@@ -330,10 +330,8 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
 
-        console.log('form data: ', formData)
-
-        if (!formData.customer_first_name || !formData.customer_last_name || !formData.customer_phone || !formData.car_id || !formData.start_date || !formData.end_date) {
-            alert(t('admin.requests.fillRequiredFields'));
+        // Basic validation
+        if (!formData.start_date || !formData.end_date || !formData.customer_email) {
             return;
         }
 
@@ -380,7 +378,6 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
     };
 
     async function handleSaveRental(rentalData: BorrowRequest) {
-        console.log('saving the rentals request with the following info: ', rentalData)
         try {
             // Assuming rentalData is your form / car rental info
             const borrowRequest: BorrowRequest = {
@@ -407,7 +404,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
             const result = await createUserBorrowRequest(borrowRequest);
 
             if (result.success) {
-                console.log('Borrow request created successfully:', result.requestId);
+                
                 setSubmitSuccess(true);
                 // Don't close modal automatically - let user see the success message
             } else {
@@ -1188,8 +1185,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Detalii preț</h3>
                                                 <div className="space-y-3">
                                                     {formData.car_id && car && (() => {
-                                                        console.log('should claculate the summary')
-                                                        const summary = calculatePriceSummary(car, formData, options);
+                                                        
                                                         if (!summary) return null;
 
                                                         return (

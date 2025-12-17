@@ -94,7 +94,8 @@ export function calculatePriceSummary(
     if (isNaN(pricePerDay)) return null;
 
     // Apply car discount if exists (same as OrderDetailsModal)
-    const carDiscount = selectedCar.discount_percentage || 0;
+    // Check both discount_percentage (mapped) and discount (raw DB field)
+    const carDiscount = selectedCar.discount_percentage || (selectedCar as any).discount || 0;
     if (carDiscount > 0) {
         pricePerDay = pricePerDay * (1 - carDiscount / 100);
     }

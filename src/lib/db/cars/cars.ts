@@ -5,7 +5,7 @@ import { Car } from '../../../types';
  * Fetch car by id
  */
 export async function fetchCarById(carId: string): Promise<Car> {
-    console.log('fetching car by id from database');
+    
     try {
         const { data, error } = await supabase
             .from("Cars")
@@ -19,7 +19,14 @@ export async function fetchCarById(carId: string): Promise<Car> {
             return null;
         }
 
-        // console.log('car fetched: ', data)
+        // Map discount field to discount_percentage for consistency
+        if (data) {
+            return {
+                ...data,
+                discount_percentage: (data as any).discount || data.discount_percentage || undefined
+            };
+        }
+
         return data;
     } catch (err) {
         console.error('Unexpected error while fetching a car:', err);
@@ -32,7 +39,7 @@ export async function fetchCarById(carId: string): Promise<Car> {
  * Fetch all cars from Supabase
  */
 export async function fetchCars(): Promise<Car[]> {
-    // console.log('fetching all cars from database');
+    // 
     try {
         const { data, error } = await supabase
             .from("Cars")
@@ -44,7 +51,6 @@ export async function fetchCars(): Promise<Car[]> {
             return [];
         }
 
-        console.log('cars fetched: ', data)
 
         // data can be null, so default to empty array
         return data ?? [];
@@ -55,14 +61,13 @@ export async function fetchCars(): Promise<Car[]> {
 }
 
 export async function fetchImage() {
-    console.log('fetching a image from database');
+    
     try {
         const { data } = await supabase
             .storage
             .from("cars")
             .getPublicUrl('cls-1.jpg')
 
-        console.log('image data: ', data)
 
         // data can be null, so default to empty array
         return data.publicUrl;
@@ -73,19 +78,18 @@ export async function fetchImage() {
 }
 
 export async function fetchImages() {
-    // console.log('fetching all images from database');
+    // 
     try {
         const { data, error } = await supabase.storage.from("cars").list("", {
             limit: 100,
             offset: 0,
             sortBy: { column: 'name', order: 'asc' },
         })
-        // console.log("data:", data, "error:", error);
+        // 
 
 
         if (!data) return [];
 
-        // console.log('all images data: ', data)
 
         const urls = data.map((file) => {
             return supabase.storage
@@ -93,7 +97,6 @@ export async function fetchImages() {
                 .getPublicUrl(file.name).data.publicUrl;
         });
 
-        // console.log('urls: ', urls)
 
 
         // data can be null, so default to empty array
