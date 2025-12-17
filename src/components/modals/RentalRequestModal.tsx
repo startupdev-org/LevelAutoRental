@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { createUserBorrowRequest } from '../../lib/db/requests/requests';
 import { fetchCarById } from '../../lib/cars';
+import { sendRentalRequestEmail } from '../../utils/email/rentalRequestEmail';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
@@ -230,7 +231,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const basePrice = calculateBasePrice();
     const totalCost = calculateTotalCost();
 
-    const pricePerDay = rentalCalculation ? Math.round(totalCost / (rentalCalculation.days + (rentalCalculation.hours / 24))) : 0;
+    // Use the discounted price per day (base price without additional services)
+    const pricePerDay = Math.round(discountedPricePerDay);
 
     // No period-based discounts - only car-level discounts applied in price ranges
 
@@ -585,7 +587,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
             const userIdForRequest = emailToUse;
 
             const borrowRequest = {
-                car_id: parseInt(car.id, 10),
+                car_id: car.id.toString(),
                 start_date: formatDateForDB(pickupDate),
                 start_time: formatTimeForDB(pickupTime),
                 end_date: formatDateForDB(returnDate),
@@ -610,6 +612,93 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
             if (result.success) {
                 setSubmitSuccess(true);
+                
+                // Send email notification
+                try {
+                    // Format car name - use fresh car data if available, otherwise fallback to provided car
+                    const carDataForEmail = freshCarData || car;
+                    const carName = (carDataForEmail as any).name || `${carDataForEmail.make} ${carDataForEmail.model}`;
+                    
+                    // Format dates for display
+                    const formatDateForEmail = (dateString: string): string => {
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('ro-RO', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                    };
+                    
+                    // Format duration
+                    const durationText = rentalCalculation
+                        ? `${rentalCalculation.days} ${rentalCalculation.days === 1 ? 'zi' : 'zile'}${rentalCalculation.hours > 0 ? `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}` : ''}`
+                        : '';
+                    
+                    // Calculate individual option costs for display
+                    const unlimitedKmCost = options.unlimitedKm ? Math.round(discountedPricePerDay * totalDays * 0.5) : 0;
+                    const personalDriverCost = options.personalDriver ? Math.round(800 * totalDays) : 0;
+                    const priorityServiceCost = options.priorityService ? Math.round(1000 * totalDays) : 0;
+                    const childSeatCost = options.childSeat ? Math.round(100 * totalDays) : 0;
+                    const simCardCost = options.simCard ? Math.round(100 * totalDays) : 0;
+                    const roadsideAssistanceCost = options.roadsideAssistance ? Math.round(500 * totalDays) : 0;
+                    
+                    // Format options with labels and values according to email template format
+                    const optionsList: Array<{ label: string; value: string }> = [];
+                    if (options.unlimitedKm) {
+                        const unlimitedKmFormatted = unlimitedKmCost.toLocaleString('ro-RO').replace(/\./g, ',');
+                        optionsList.push({ label: 'Kilometraj', value: `${unlimitedKmFormatted} MDL (+50%)` });
+                    }
+                    if (options.personalDriver) {
+                        const personalDriverFormatted = personalDriverCost.toLocaleString('ro-RO').replace(/\./g, ',');
+                        optionsList.push({ label: 'Șofer personal', value: `${personalDriverFormatted} MDL` });
+                    }
+                    if (options.priorityService) {
+                        const priorityServiceFormatted = priorityServiceCost.toLocaleString('ro-RO').replace(/\./g, ',');
+                        optionsList.push({ label: 'Priority Service', value: `${priorityServiceFormatted} MDL` });
+                    }
+                    if (options.childSeat) {
+                        const childSeatFormatted = childSeatCost.toLocaleString('ro-RO').replace(/\./g, ',');
+                        optionsList.push({ label: 'Scaun copil', value: `${childSeatFormatted} MDL` });
+                    }
+                    if (options.simCard) {
+                        const simCardFormatted = simCardCost.toLocaleString('ro-RO').replace(/\./g, ',');
+                        optionsList.push({ label: 'Cartelă SIM', value: `${simCardFormatted} MDL` });
+                    }
+                    if (options.roadsideAssistance) {
+                        const roadsideAssistanceFormatted = roadsideAssistanceCost.toLocaleString('ro-RO').replace(/\./g, ',');
+                        optionsList.push({ label: 'Asistență rutieră', value: `${roadsideAssistanceFormatted} MDL` });
+                    }
+                    if (options.airportDelivery) {
+                        optionsList.push({ label: 'Livrare', value: 'Gratuit' });
+                    }
+                    
+                    // Format prices - use commas as thousand separators (replace dots from ro-RO locale)
+                    const pricePerDayFormatted = `${pricePerDay.toLocaleString('ro-RO').replace(/\./g, ',')} MDL`;
+                    const totalPriceFormatted = `${Math.round(totalCost).toLocaleString('ro-RO').replace(/\./g, ',')} MDL`;
+                    
+                    // Send email
+                    await sendRentalRequestEmail({
+                        carName,
+                        pickupDate: formatDateForEmail(pickupDate),
+                        pickupTime,
+                        returnDate: formatDateForEmail(returnDate),
+                        returnTime,
+                        duration: durationText,
+                        firstName: formData.firstName,
+                        lastName: formData.lastName,
+                        age: formData.age || 'N/A',
+                        phone: fullPhoneNumber,
+                        email: emailToUse,
+                        options: optionsList,
+                        comment: formData.comment || '',
+                        pricePerDay: pricePerDayFormatted,
+                        totalPrice: totalPriceFormatted,
+                    });
+                } catch (emailError) {
+                    // Don't show error to user - email failure shouldn't block success
+                    console.error('Failed to send email notification:', emailError);
+                }
+                
                 // Don't close modal automatically - let user see the success message and registration option
             } else {
                 setSubmitError(result.error || 'A apărut o eroare la trimiterea cererii. Vă rugăm să încercați din nou.');
@@ -745,23 +834,23 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             <div className="overflow-y-auto max-h-[calc(95vh-200px)] md:max-h-[calc(92vh-200px)]">
                                 {submitSuccess ? (
                                     /* Success View */
-                                    <div className="px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
+                                    <div className="px-4 md:px-8 py-4 md:py-8">
                                         {/* Success Message Card */}
-                                        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 md:p-8">
-                                            <div className="mb-4">
-                                                <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
-                                                    Confirmare
-                                                </span>
-                                            </div>
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600 flex-shrink-0">
-                                                    <CheckCircle className="w-7 h-7 text-white" strokeWidth={2.5} />
+                                        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-4 md:p-8">
+                                            <div className="flex items-start gap-3 md:gap-4">
+                                                <div className="w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600 flex-shrink-0">
+                                                    <CheckCircle className="w-5 h-5 md:w-7 md:h-7 text-white" strokeWidth={2.5} />
                                                 </div>
-                                                <div className="flex-1 pt-1">
-                                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight mb-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="mb-1 md:mb-2">
+                                                        <span className="text-xs font-semibold tracking-wider text-red-500 uppercase">
+                                                            Confirmare
+                                                        </span>
+                                                    </div>
+                                                    <h2 className="text-lg md:text-3xl font-bold text-gray-800 leading-tight mb-1 md:mb-3">
                                                         Cererea a fost trimisă cu succes!
                                                     </h2>
-                                                    <p className="text-gray-600 text-base leading-relaxed">
+                                                    <p className="text-gray-600 text-sm md:text-base leading-relaxed">
                                                         În scurt timp vă vom contacta pentru confirmare.
                                                     </p>
                                                 </div>
