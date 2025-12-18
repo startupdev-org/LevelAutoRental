@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { cars } from '../../data/cars';
-import { format } from 'date-fns';
-import { fetchRentalsForCalendarPageByMonth, OrderDisplay } from '../../lib/orders';
+import React, { useEffect, useState } from 'react';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Car } from '../../types';
-import { formatAmount } from '../../utils/currency';
+import { Car, RentalDTO } from '../../types';
+import { formatPrice, getSelectedCurrency } from '../../utils/currency';
+import { getCarName } from '../../utils/car/car';
+import { formatTime } from '../../utils/time';
+import { formatDateLocal } from '../../utils/date';
+import { fetchRentalsForAdminPaginated } from '../../lib/db/rentals/rentals';
 
 type OrdersTableProps = {
     title: string;
-    orders: OrderDisplay[];
     loading?: boolean;
-    onOrderClick?: (order: OrderDisplay, orderNumber: number) => void;
+    onOrderClick?: (order: RentalDTO, orderNumber: number) => void;
     onAddOrder?: () => void;
     initialSearch?: string;
     showCancelled?: boolean;
@@ -19,188 +19,18 @@ type OrdersTableProps = {
     cars?: Car[];
 };
 
-export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading = false, onOrderClick, onAddOrder, initialSearch, showCancelled = false, onToggleShowCancelled, cars: propCars }) => {
-    const { t } = useTranslation();
+export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false, onOrderClick, initialSearch, showCancelled = false, onToggleShowCancelled, cars: propCars }) => {
+    const { t, i18n } = useTranslation();
     const [searchQuery, setSearchQuery] = useState(initialSearch || '');
     const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
+
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    const [orders, setOrders] = useState<RentalDTO[]>([]);
+    const [totalOrders, setTotalOrders] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
+    const [isLoading, setLoading] = useState(false);
     const pageSize = 6;
-
-    // Use provided cars or fallback to static cars
-    const carsList = propCars || cars;
-
-    // Get total price for an order (use stored amount when available)
-    const getOrderTotalPrice = useCallback((order: OrderDisplay): number => {
-        // Use stored amount when available (from rental or request)
-        if (order.amount && order.amount > 0) {
-            return order.amount;
-        }
-        if (order.total_amount && typeof order.total_amount === 'string') {
-            return parseFloat(order.total_amount) || 0;
-        }
-        if (order.total_amount && typeof order.total_amount === 'number') {
-            return order.total_amount;
-        }
-
-        // Fallback to calculation if no stored amount
-        const car = carsList.find(c => c.id.toString() === order.carId);
-        if (!car) return 0;
-
-        const formatTime = (timeString: string): string => {
-            if (!timeString) return '00:00';
-            if (timeString.includes('AM') || timeString.includes('PM')) {
-                const [time, period] = timeString.split(' ');
-                const [hours, minutes] = time.split(':');
-                let hour24 = parseInt(hours);
-                if (period === 'PM' && hour24 !== 12) hour24 += 12;
-                if (period === 'AM' && hour24 === 12) hour24 = 0;
-                return `${String(hour24).padStart(2, '0')}:${minutes || '00'}`;
-            }
-            if (timeString.includes(':')) {
-                const [hours, minutes] = timeString.split(':');
-                return `${String(parseInt(hours)).padStart(2, '0')}:${minutes || '00'}`;
-            }
-            return '00:00';
-        };
-
-        const startDate = new Date(order.pickupDate);
-        const endDate = new Date(order.returnDate);
-
-        const pickupTime = formatTime(order.pickupTime);
-        const returnTime = formatTime(order.returnTime);
-        const [pickupHour, pickupMin] = pickupTime.split(':').map(Number);
-        const [returnHour, returnMin] = returnTime.split(':').map(Number);
-
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(pickupHour, pickupMin, 0, 0);
-
-        const endDateTime = new Date(endDate);
-        // If return time is 00:00, treat it as end of previous day (23:59:59)
-        if (returnHour === 0 && returnMin === 0) {
-            endDateTime.setHours(23, 59, 59, 999);
-        } else {
-            endDateTime.setHours(returnHour, returnMin, 0, 0);
-        }
-
-        const diffTime = endDateTime.getTime() - startDateTime.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-        const days = diffDays;
-        const hours = diffHours >= 0 ? diffHours : 0;
-
-        // Calculate pricing using same system as Calculator.tsx
-        const rentalDays = days; // Use full days for discount calculation (same as Calculator)
-        const totalDays = days + (hours / 24); // Use total days for final calculation
-
-        // Base price calculation using price ranges (no period discounts)
-        let basePrice = 0;
-        let pricePerDay = 0;
-
-        // Determine price per day based on rental duration
-        if (rentalDays >= 2 && rentalDays <= 4) {
-            pricePerDay = car.price_2_4_days || 0;
-        } else if (rentalDays >= 5 && rentalDays <= 15) {
-            pricePerDay = car.price_5_15_days || 0;
-        } else if (rentalDays >= 16 && rentalDays <= 30) {
-            pricePerDay = car.price_16_30_days || 0;
-        } else if (rentalDays > 30) {
-            pricePerDay = car.price_over_30_days || 0;
-        }
-
-        // Apply car discount if exists
-        const carDiscount = (car as any).discount_percentage || car.discount_percentage || 0;
-        if (carDiscount > 0) {
-            pricePerDay = pricePerDay * (1 - carDiscount / 100);
-        }
-
-        basePrice = pricePerDay * rentalDays;
-
-        // Add hours portion (hours are charged at full price, no discount)
-        if (hours > 0) {
-            const hoursPrice = (hours / 24) * pricePerDay;
-            basePrice += hoursPrice;
-        }
-
-        // Calculate additional costs from options (same as Calculator.tsx)
-        const options = (order as any).options || (order as any).features;
-        let parsedOptions: any = {};
-
-
-        if (options) {
-            if (typeof options === 'string') {
-                try {
-                    parsedOptions = JSON.parse(options);
-                } catch (e) {
-                    parsedOptions = {};
-                }
-            } else if (Array.isArray(options)) {
-                // Handle features array from rentals
-                parsedOptions = {};
-                options.forEach((feature: string) => {
-                    const featureLower = feature.toLowerCase();
-                    if (featureLower.includes('unlimited') || featureLower.includes('kilometraj')) {
-                        parsedOptions.unlimitedKm = true;
-                    } else if (featureLower.includes('speed') || featureLower.includes('viteză')) {
-                        parsedOptions.speedLimitIncrease = true;
-                    } else if (featureLower.includes('tire') || featureLower.includes('anvelope') || featureLower.includes('parbriz')) {
-                        parsedOptions.tireInsurance = true;
-                    } else if (featureLower.includes('driver') || featureLower.includes('șofer')) {
-                        parsedOptions.personalDriver = true;
-                    } else if (featureLower.includes('priority')) {
-                        parsedOptions.priorityService = true;
-                    } else if (featureLower.includes('child') || featureLower.includes('copil') || featureLower.includes('scaun')) {
-                        parsedOptions.childSeat = true;
-                    } else if (featureLower.includes('sim') || featureLower.includes('card')) {
-                        parsedOptions.simCard = true;
-                    } else if (featureLower.includes('roadside') || featureLower.includes('asistență') || featureLower.includes('rutieră')) {
-                        parsedOptions.roadsideAssistance = true;
-                    }
-                });
-            } else {
-                parsedOptions = options;
-            }
-        }
-
-
-        let additionalCosts = 0;
-        const baseCarPrice = car.price_per_day;
-
-        // Percentage-based options (calculated on discounted price)
-        if (parsedOptions.unlimitedKm) {
-            additionalCosts += baseCarPrice * totalDays * 0.5;
-        }
-        if (parsedOptions.speedLimitIncrease) {
-            additionalCosts += baseCarPrice * totalDays * 0.2;
-        }
-        if (parsedOptions.tireInsurance) {
-            additionalCosts += baseCarPrice * totalDays * 0.2;
-        }
-
-        // Fixed daily costs
-        if (parsedOptions.personalDriver) {
-            additionalCosts += 800 * rentalDays;
-        }
-        if (parsedOptions.priorityService) {
-            additionalCosts += 1000 * rentalDays;
-        }
-        if (parsedOptions.childSeat) {
-            additionalCosts += 100 * rentalDays;
-        }
-        if (parsedOptions.simCard) {
-            additionalCosts += 100 * rentalDays;
-        }
-        if (parsedOptions.roadsideAssistance) {
-            additionalCosts += 500 * rentalDays;
-        }
-
-        // Total price = base price + additional costs
-        const totalPrice = basePrice + additionalCosts;
-
-
-        return Math.round(totalPrice);
-    }, [carsList]);
 
     // Update search query when initialSearch prop changes
     useEffect(() => {
@@ -209,76 +39,41 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
         }
     }, [initialSearch]);
 
-    // Filter and sort orders
-    const filteredAndSortedOrders = useMemo(() => {
-        // First filter by search query
-        let filtered = orders.filter(order => {
-            const searchLower = searchQuery.toLowerCase();
-            const orderIdString = typeof order.id === 'string' ? order.id : order.id.toString();
-            const matchesSearch = (
-                order.customerName.toLowerCase().includes(searchLower) ||
-                order.customerPhone?.toLowerCase().includes(searchLower) ||
-                order.customerEmail?.toLowerCase().includes(searchLower) ||
-                order.carName.toLowerCase().includes(searchLower) ||
-                orderIdString.toLowerCase().includes(searchLower)
-            );
 
-            // Filter by cancelled status
-            // When showCancelled is true, only show cancelled orders
-            // When showCancelled is false, hide cancelled orders
-            const matchesCancelledFilter = showCancelled
-                ? order.status === 'CANCELLED'
-                : order.status !== 'CANCELLED';
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [orders]);
 
-            return matchesSearch && matchesCancelledFilter;
-        });
+    useEffect(() => {
+        const loadOrdersPaginated = async () => {
+            setLoading(true);
+            try {
+                const { rentals, total } = await handleFetchRentalsForAdminPaginated(
+                    currentPage,
+                    pageSize
+                );
 
-        // Then sort
-        if (sortBy) {
-            filtered.sort((a, b) => {
-                let diff = 0;
+                setOrders(rentals)
+                setTotalOrders(total)
 
-                if (sortBy === 'date') {
-                    diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                } else if (sortBy === 'customer') {
-                    diff = a.customerName.localeCompare(b.customerName);
-                } else if (sortBy === 'amount') {
-                    diff = getOrderTotalPrice(a) - getOrderTotalPrice(b);
-                } else if (sortBy === 'status') {
-                    const statusOrder: Record<string, number> = {
-                        'CONTRACT': 0,
-                        'ACTIVE': 1,
-                        'COMPLETED': 2,
-                        'CANCELLED': 3,
-                    };
-                    diff = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
-                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false)
+            }
+        };
+        loadOrdersPaginated();
+    }, []);
 
-                return sortOrder === 'asc' ? diff : -diff;
-            });
-        } else {
-            // Default: sort by status ascending
-            const statusOrder: Record<string, number> = {
-                'CONTRACT': 0,
-                'ACTIVE': 1,
-                'COMPLETED': 2,
-                'CANCELLED': 3,
-            };
-            filtered.sort((a, b) => {
-                const diff = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
-                return diff;
-            });
-        }
+    async function handleFetchRentalsForAdminPaginated(
+        page: number,
+        pageSize: number
+    ): Promise<{ rentals: RentalDTO[]; total: number }> {
+        return await fetchRentalsForAdminPaginated(page, pageSize);
+    }
 
-        return filtered;
-    }, [orders, searchQuery, sortBy, sortOrder, showCancelled, getOrderTotalPrice]);
-
-    const totalPages = Math.ceil(filteredAndSortedOrders.length / pageSize);
-
-    const paginatedOrders = filteredAndSortedOrders.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
+    const totalPages = Math.ceil(totalOrders / pageSize);
+    const paginatedOrders = orders;
 
     const goToPage = (page: number) => {
         if (page < 1 || page > totalPages) return;
@@ -299,7 +94,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
 
 
     // Use the actual database ID from Supabase and format as #0001, #0002, etc.
-    const getOrderNumber = (order: OrderDisplay) => {
+    const getOrderNumber = (order: RentalDTO) => {
         // Convert ID to number if it's a string, then format with leading zeros
         const id = typeof order.id === 'number' ? order.id : parseInt(order.id.toString(), 10);
         return id || 0;
@@ -328,15 +123,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
         );
     };
 
-    const formatDate = (dateString: string) => {
-        try {
-            return format(new Date(dateString), 'MMM dd, yyyy');
-        } catch {
-            return dateString;
-        }
-    };
-
-    const handleOrderClick = (order: OrderDisplay) => {
+    const handleOrderClick = (order: RentalDTO) => {
         if (onOrderClick) {
             const orderNumber = getOrderNumber(order);
             onOrderClick(order, orderNumber);
@@ -455,7 +242,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                     </div>
                 ) : (
                     paginatedOrders.map((order) => {
-                        const carImage = (order as any).carImage || order.avatar || '';
+                        const carImage = (order as any).carImage || order.car?.image_url || '';
                         return (
                             <div
                                 key={order.id}
@@ -467,19 +254,19 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     <span className="text-white font-semibold text-sm">
                                         #{getOrderNumber(order).toString().padStart(4, '0')}
                                     </span>
-                                    {getStatusBadge(order.status)}
+                                    {getStatusBadge(order.rental_status)}
                                 </div>
 
                                 {/* Customer Info */}
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 shadow-md">
-                                        {getInitials(order.customerName || 'U')}
+                                        {getInitials(order.customer_email || 'U')}
                                     </div>
                                     <div className="flex flex-col min-w-0 flex-1">
-                                        <span className="font-semibold text-white text-sm truncate">{order.customerName || 'Unknown'}</span>
-                                        {order.customerPhone && (
+                                        <span className="font-semibold text-white text-sm truncate">{order.customer_email || 'Unknown'}</span>
+                                        {/* {order.customerPhone && (
                                             <span className="text-gray-400 text-xs truncate">{order.customerPhone}</span>
-                                        )}
+                                        )} */}
                                     </div>
                                 </div>
 
@@ -488,7 +275,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     {carImage ? (
                                         <img
                                             src={carImage}
-                                            alt={order.carName || 'Car'}
+                                            alt={order.car?.make || 'Car Make'}
                                             className="w-12 h-12 object-cover rounded-md border border-white/10 flex-shrink-0"
                                         />
                                     ) : (
@@ -497,32 +284,32 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-white font-semibold text-sm truncate">{order.carName || 'Unknown Car'}</p>
+                                        <p className="text-white font-semibold text-sm truncate">{getCarName(order.car) || 'Unknown Car'}</p>
                                     </div>
                                 </div>
 
                                 {/* Dates */}
-                                {(order.pickupDate || order.returnDate) && (
+                                {(order.start_date || order.end_date) && (
                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                        {order.pickupDate && (
+                                        {order.start_date && (
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.pickup') || 'Pickup'}</p>
                                                 <p className="text-white text-sm font-medium">
-                                                    {order.pickupDate ? formatDate(order.pickupDate) : '—'}
+                                                    {order.start_date ? formatDateLocal(order.start_date, t('config.date')) : '—'}
                                                 </p>
-                                                {order.pickupTime && (
-                                                    <p className="text-gray-400 text-xs">{order.pickupTime.slice(0, 5)}</p>
+                                                {order.start_time && (
+                                                    <p className="text-gray-400 text-xs">{order.start_time.slice(0, 5)}</p>
                                                 )}
                                             </div>
                                         )}
-                                        {order.returnDate && (
+                                        {order.end_date && (
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">{t('admin.requests.return') || 'Return'}</p>
                                                 <p className="text-white text-sm font-medium">
-                                                    {order.returnDate ? formatDate(order.returnDate) : '—'}
+                                                    {order.end_date ? formatDateLocal(order.end_date, t('config.date')) : '—'}
                                                 </p>
-                                                {order.returnTime && (
-                                                    <p className="text-gray-400 text-xs">{order.returnTime.slice(0, 5)}</p>
+                                                {order.end_time && (
+                                                    <p className="text-gray-400 text-xs">{formatTime(order.end_time)}</p>
                                                 )}
                                             </div>
                                         )}
@@ -533,8 +320,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                 <div className="pt-4 border-t border-white/10">
                                     <p className="text-gray-400 text-xs mb-1">{t('admin.orders.amount')}</p>
                                     <p className="text-white font-semibold text-base">
-                                        {getOrderTotalPrice(order) > 0 ? (
-                                            formatAmount(getOrderTotalPrice(order))
+                                        {order.total_amount && order.total_amount > 0 ? (
+                                            formatPrice(order.total_amount, getSelectedCurrency(), i18n.language)
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -600,20 +387,20 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                     <td className="px-6 py-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 shadow-md">
-                                                {getInitials(order.customerName)}
+                                                {getInitials(order.customer_email || 'U')}
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="font-semibold text-white text-sm truncate">{order.customerName}</span>
-                                                <span className="text-gray-400 text-xs truncate">{order.customerPhone || 'N/A'}</span>
+                                                <span className="font-semibold text-white text-sm truncate">{order.customer_email}</span>
+                                                {/* <span className="text-gray-400 text-xs truncate">{order.customerPhone || 'N/A'}</span> */}
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-3">
                                         <div className="flex items-center gap-3">
-                                            {((order as any).carImage || order.avatar) ? (
+                                            {(order.car?.image_url) ? (
                                                 <img
-                                                    src={(order as any).carImage || order.avatar}
-                                                    alt={order.carName || 'Car'}
+                                                    src={order.car?.image_url}
+                                                    alt={getCarName(order.car) || 'Car Name'}
                                                     className="w-10 h-10 object-cover rounded-md border border-white/10 flex-shrink-0"
                                                 />
                                             ) : (
@@ -622,16 +409,16 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
                                                 </div>
                                             )}
                                             <div>
-                                                <p className="text-white font-semibold text-sm">{order.carName || 'Unknown Car'}</p>
+                                                <p className="text-white font-semibold text-sm">{getCarName(order.car) || 'Unknown Car'}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-3">
-                                        {getStatusBadge(order.status)}
+                                        {getStatusBadge(order.rental_status)}
                                     </td>
                                     <td className="px-6 py-3 text-white font-semibold text-sm">
-                                        {getOrderTotalPrice(order) > 0 ? (
-                                            formatAmount(getOrderTotalPrice(order))
+                                        {order.total_amount && order.total_amount > 0 ? (
+                                            formatPrice(order.total_amount, getSelectedCurrency(), i18n.language)
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -646,7 +433,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, orders, loading
             {/* Pagination */}
             <div className="px-3 md:px-6 py-3 md:py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-xs md:text-sm text-gray-300 text-center sm:text-left">
-                    {t('admin.orders.showing')} {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.orders.to')} {Math.min(currentPage * pageSize, filteredAndSortedOrders.length)} {t('admin.orders.of')} {filteredAndSortedOrders.length} {t('admin.orders.orders')}
+                    {t('admin.orders.showing')} {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.orders.to')} {Math.min(currentPage * pageSize, paginatedOrders.length)} {t('admin.orders.of')} {paginatedOrders.length} {t('admin.orders.orders')}
                 </div>
                 <div className="flex items-center gap-2">
                     <button

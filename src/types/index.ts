@@ -167,7 +167,7 @@ export interface Rental {
   request_id: string;
 
   user_id?: string;
-  customer_email?: string;
+  customer_email: string;
 
   car_id: string;
   price_per_day: string | number;
@@ -181,7 +181,7 @@ export interface Rental {
   subtotal?: number;
   taxes_fees?: number;
   additional_taxes?: number;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
   contract_url?: string;
   options?: any; // JSON object for additional service options
@@ -207,7 +207,7 @@ export interface RentalDTO {
   subtotal?: number;
   taxes_fees?: number;
   additional_taxes?: number;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
   contract_url?: string;
   options?: any; // JSON object for additional service options
