@@ -3,6 +3,7 @@ import { supabase } from '../../supabase';
 import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
 
+const ACTIVE_RENTAL_STATUS = 'ACTIVE';
 
 export async function getUserRentals(): Promise<RentalDTO[]> {
 
@@ -229,9 +230,7 @@ export async function fetchRecentRentals(): Promise<Rental[]> {
     return rentals;
 }
 
-const ACTIVE_RENTAL_STATUS = 'ACTIVE';
-
-export async function fetchActiveRentals(): Promise<Rental[]> {
+export async function fetchUserActiveRentals(): Promise<Rental[]> {
 
     const user = await getLoggedUser();
 
@@ -256,6 +255,64 @@ export async function fetchActiveRentals(): Promise<Rental[]> {
 
     return rentals;
 }
+
+export async function fetchRentalsForAdmin(
+): Promise<RentalDTO[]> {
+
+    const { data, error } = await supabase
+        .from('Rentals')
+        .select('*') // total rows for pagination
+
+    if (error || !data) {
+        console.error('Error fetching active rentals:', error);
+        return [];
+    }
+
+    const rentals: RentalDTO[] = await Promise.all(
+        data.map((rentalRow: Rental) =>
+            toRentalDTO(rentalRow, rentalRow.car_id)
+        )
+    );
+
+    console.log('returning rentals:', rentals);
+
+    return rentals;
+}
+
+export async function fetchRentalsForAdminPaginated(
+    page: number = 1,
+    pageSize: number = 10
+): Promise<{ rentals: RentalDTO[]; total: number }> {
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    console.log('fetching info', { page, pageSize });
+
+    const { data, error, count } = await supabase
+        .from('Rentals')
+        .select('*', { count: 'exact' }) // total rows for pagination
+        .range(from, to);
+
+    if (error || !data) {
+        console.error('Error fetching active rentals:', error);
+        return { rentals: [], total: 0 };
+    }
+
+    const rentals: RentalDTO[] = await Promise.all(
+        data.map((rentalRow: Rental) =>
+            toRentalDTO(rentalRow, rentalRow.car_id)
+        )
+    );
+
+    console.log('returning rentals:', rentals);
+
+    return {
+        rentals,
+        total: count ?? 0
+    };
+}
+
 
 export async function fetchRentalsHistory(
     page = 1,
@@ -375,11 +432,15 @@ export async function fetchUserRentalsForCalendarPage(
 }
 
 export async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
+    if (!rental.id) {
+        throw new Error("Rental must have an id to convert to DTO");
+    }
 
     const carWithImage = await fetchCarWithImagesById(carId);
 
     return {
         ...rental,
+        id: rental.id,
         car: carWithImage
     }
 }

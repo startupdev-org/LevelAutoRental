@@ -185,8 +185,7 @@ export async function fetchBorrowRequestsForDisplay(
 
         const borrowRequestDTOs = await Promise.all(
             allRequests.map(async (request) => {
-                const car = await fetchCarWithImagesById(request.car_id)
-                return toBorrowRequestDTO(request, car)
+                return toBorrowRequestDTO(request)
             })
         )
 
