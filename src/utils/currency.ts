@@ -28,3 +28,7 @@ export const formatPrice = (
         ...options,
     }).format(amount);
 };
+
+export const getSelectedCurrency = (): string => {
+    return localStorage.getItem("selectedCurrency") || '';
+}
