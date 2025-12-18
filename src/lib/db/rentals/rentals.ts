@@ -59,7 +59,7 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
                     .select('options')
                     .eq('id', rental.request_id)
                     .single();
-                
+
                 if (requestData?.options) {
                     rentalOptions = requestData.options;
                 }
@@ -89,7 +89,7 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
                         if (result.mainImage) {
                             mainImage = result.mainImage;
                             photoGallery = result.photoGallery;
-                            
+
                             break;
                         }
                     } catch (e) {
@@ -115,7 +115,7 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
         }
 
         // Ensure price_per_day is a number, not a string
-        const pricePerDay = rental.price_per_day 
+        const pricePerDay = rental.price_per_day
             ? (typeof rental.price_per_day === 'string' ? parseFloat(rental.price_per_day) : rental.price_per_day)
             : undefined;
 
@@ -132,139 +132,6 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
     }));
 
     return processedRentals;
-}
-
-export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
-    const user = await getLoggedUser();
-
-    // Build query to get requests for this user
-    let query = supabase
-        .from('BorrowRequest')
-        .select('*');
-
-    // Include requests where user is the owner OR where customer_email matches
-    if (user?.id && user?.email) {
-        query = query.or(`user_id.eq.${user.id},customer_email.eq.${user.email}`);
-    } else if (user?.id) {
-        query = query.eq('user_id', user.id);
-    } else if (user?.email) {
-        query = query.eq('customer_email', user.email);
-    }
-
-    const { data } = await query.order('requested_at', { ascending: false });
-
-    // If no borrow requests found, return empty array
-    if (!data || data.length === 0) {
-        return [];
-    }
-
-    // Collect all unique car IDs
-    const carIds = new Set<number>();
-    data.forEach((request: any) => {
-        if (request.car_id) {
-            const carId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id);
-            carIds.add(carId);
-        }
-    });
-
-    // Fetch all cars at once
-    let cars: any[] = [];
-    if (carIds.size > 0) {
-        try {
-            const { data: carsData, error } = await supabase
-                .from('Cars')
-                .select('*')
-                .in('id', Array.from(carIds));
-
-            if (!error && carsData) {
-                cars = carsData;
-            }
-        } catch (error) {
-            console.error('Error fetching cars for borrow requests:', error);
-        }
-    }
-
-    // Process the borrow requests to include car data with images AND linked rental data
-    const processedRequests = await Promise.all(data.map(async (request: any) => {
-        // Find the car for this request
-        const carId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id);
-        let car = cars.find((c: any) => c.id === carId);
-
-        // FETCH LINKED RENTAL DATA (if this request has been converted to a rental)
-        let linkedRental = null;
-        try {
-            const { data: rentalData, error: rentalError } = await supabase
-                .from('Rentals')
-                .select('id, price_per_day, total_amount, contract_url')
-                .eq('request_id', request.id)
-                .single();
-            
-            if (!rentalError && rentalData) {
-                linkedRental = rentalData;
-            }
-        } catch (err) {
-            console.debug('No linked rental found for request', request.id);
-        }
-
-        // If car exists, ensure it has images from storage
-        if (car) {
-            try {
-                // Try multiple variations of the car name to find images
-                const carNameVariations = [
-                    car.name,
-                    `${car.make} ${car.model}`,
-                    car.model, // Just the model in case that's how folders are named
-                    `${car.make}-${car.model}`.toLowerCase(),
-                ].filter(Boolean);
-
-                let mainImage: string | null = null;
-                let photoGallery: string[] = [];
-
-                // Try each variation until we find images
-                for (const carName of carNameVariations) {
-                    try {
-                        const result = await fetchImagesByCarName(carName as string);
-                        if (result.mainImage) {
-                            mainImage = result.mainImage;
-                            photoGallery = result.photoGallery;
-                            
-                            break;
-                        }
-                    } catch (e) {
-                        // Continue to next variation
-                    }
-                }
-
-                // Override any existing image_url with the fresh one from storage
-                car = {
-                    ...car,
-                    image_url: mainImage || car.image_url || '/placeholder-car.jpg',
-                    photo_gallery: photoGallery || ([] as string[]),
-                };
-
-            } catch (error) {
-                console.error('❌ Error fetching storage images for', car.make, car.model, ':', error);
-                // Fallback to database image or placeholder
-                car = {
-                    ...car,
-                    image_url: car.image_url || '/placeholder-car.jpg'
-                };
-            }
-        }
-
-        return {
-            ...request,
-            car: car || null,
-            // Include rental data if it exists
-            linkedRental: linkedRental,
-            // Override price_per_day and total_amount with rental values if available
-            price_per_day: linkedRental?.price_per_day || undefined,
-            total_amount: linkedRental?.total_amount || undefined,
-            contract_url: linkedRental?.contract_url || request.contract_url,
-        };
-    }));
-
-    return processedRequests;
 }
 
 export async function fetchFavoriteCar(): Promise<FavoriteCar> {

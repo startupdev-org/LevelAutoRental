@@ -16,7 +16,7 @@ import {
     fetchAllOrders
 } from '../../../lib/orders';
 import { useNotification } from '../../../components/ui/NotificationToaster';
-import { RentalDetailsModal } from '../../../components/modals/OrderDetailsModal';
+import { BorrowRequestsDetailsModal } from '../../../components/modals/BorrowRequestDetailsModal';
 import { fetchBorrowRequests } from '../../../lib/db/requests/requests';
 
 // Dashboard View Component
@@ -107,7 +107,7 @@ export const DashboardView: React.FC = () => {
         const rentedCars = cars.filter(car => {
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
-            
+
             // Check if car has active rental orders
             const hasActiveOrder = orders.some(order =>
                 parseInt(order.carId) === parseInt(car.id, 10) &&
@@ -495,7 +495,7 @@ export const DashboardView: React.FC = () => {
                                                         // Try to get return date from order first
                                                         let returnDate: Date | null = null;
                                                         let returnTime: string | null = null;
-                                                        
+
                                                         if (carOrder?.returnDate) {
                                                             try {
                                                                 returnDate = new Date(carOrder.returnDate);
@@ -511,7 +511,7 @@ export const DashboardView: React.FC = () => {
                                                                 returnDate = null;
                                                             }
                                                         }
-                                                        
+
                                                         // If no order date, try to get from borrow request
                                                         if (!returnDate && carRequest) {
                                                             try {
@@ -523,7 +523,7 @@ export const DashboardView: React.FC = () => {
                                                                 // Ignore error
                                                             }
                                                         }
-                                                        
+
                                                         if (returnDate) {
                                                             // Format date in Romanian format (e.g., "19 nov. 2025")
                                                             const formattedDate = returnDate.toLocaleDateString(t('config.date'), {
@@ -534,7 +534,7 @@ export const DashboardView: React.FC = () => {
 
                                                             return `Până pe ${formattedDate}`;
                                                         }
-                                                        
+
                                                         // Fallback to "Închiriate" if no date available
                                                         return t('admin.dashboard.rented');
                                                     })()}
@@ -644,7 +644,7 @@ export const DashboardView: React.FC = () => {
             </div>
 
             {/* Order Details Modal */}
-            <RentalDetailsModal
+            <BorrowRequestsDetailsModal
                 isOpen={showOrderDetailsModal}
                 onClose={() => {
                     setShowOrderDetailsModal(false);

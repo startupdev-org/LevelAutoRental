@@ -32,7 +32,7 @@ export async function saveBorrowRequest(borrowRequest: any) {
             throw error;
         }
 
-        
+
         return data;
     } catch (err) {
         console.error('Unexpected error saving borrow request:', err);
@@ -555,21 +555,21 @@ export async function createUserBorrowRequest(
 
         try {
             const { data, error } = await supabase
-            .from('BorrowRequest')
-            .insert(insertData)
-            .select()
-            .single();
+                .from('BorrowRequest')
+                .insert(insertData)
+                .select()
+                .single();
 
-        if (error) {
+            if (error) {
+                console.error('Error creating user borrow request:', error);
+                return { success: false, error: error.message };
+            }
+
+            return { success: true, requestId: data.id.toString() };
+        } catch (error) {
             console.error('Error creating user borrow request:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
         }
-
-        return { success: true, requestId: data.id.toString() };
-    } catch (error) {
-        console.error('Error creating user borrow request:', error);
-        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
     } catch (error) {
         console.error('Error in createUserBorrowRequest:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -622,7 +622,7 @@ export async function createRentalManually(
         const pricePerDayStr = getCarPrice(rentalDays, car);
         const pricePerDay = parseFloat(pricePerDayStr) || 0;
 
-        
+
 
         // Calculate subtotal if not provided
         const subtotal = options?.subtotal || (pricePerDay * rentalDays);
@@ -695,7 +695,7 @@ export async function isDateInActualApprovedRequest(
     date: string,
     carId: string
 ): Promise<boolean> {
-    
+
 
     if (error) {
         console.error('Error checking date in rental:', error.message);
@@ -807,9 +807,41 @@ export async function fetchBorrowRequestForUserCalendarPage(
 
     return Promise.all(
         (data ?? []).map((row: any) =>
-            toBorrowRequestDTO(row, row.car_id)
+            toBorrowRequestDTO(row)
         )
     );
+}
+
+export async function fetchUserBorrowRequests(): Promise<BorrowRequestDTO[]> {
+    const user = await getLoggedUser();
+
+    // Build query to get requests for this user
+    let query = supabase
+        .from('BorrowRequest')
+        .select('*');
+
+    // Include requests where user is the owner OR where customer_email matches
+    if (user?.id && user?.email) {
+        query = query.or(`user_id.eq.${user.id},customer_email.eq.${user.email}`);
+    } else if (user?.id) {
+        query = query.eq('user_id', user.id);
+    } else if (user?.email) {
+        query = query.eq('customer_email', user.email);
+    }
+
+    const { data } = await query.order('requested_at', { ascending: false });
+
+    // If no borrow requests found, return empty array
+    if (!data || data.length === 0) {
+        return [];
+    }
+
+    return Promise.all(
+        (data ?? []).map((row: any) =>
+            toBorrowRequestDTO(row)
+        )
+    );
+
 }
 
 

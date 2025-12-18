@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next"
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowRight, Car, Check, Truck } from 'lucide-react';
-import { RentalDetailsModal } from "../../../../components/modals/OrderDetailsModal";
+import { BorrowRequestsDetailsModal } from "../../../../components/modals/BorrowRequestDetailsModal";
 import { getUserRentals as fetchUsersRentals } from "../../../../lib/db/rentals/rentals";
 import { Rental, Car as CarType } from "../../../../types";
 import { formatDateLocal } from "../../../../utils/date";
@@ -316,7 +316,7 @@ export const UserOrdersSection: React.FC = () => {
             </div>
 
             {/* Order Details Modal */}
-            <RentalDetailsModal
+            <BorrowRequestsDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
