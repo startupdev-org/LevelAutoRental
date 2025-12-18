@@ -11,7 +11,7 @@ import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
-import { BorrowRequestsDetailsModal } from '../../../../components/modals/BorrowRequestDetailsModal';
+import { BorrowRequestsDetailsModal } from '../../../../components/modals/OrderDetailsModal';
 import { formatDateLocal } from '../../../../utils/date';
 import { fetchUserBorrowRequests } from '../../../../lib/db/requests/requests';
 
