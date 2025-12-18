@@ -11,25 +11,17 @@ import { Car as CarType } from '../../../types';
 import { useTranslation } from 'react-i18next';
 import { OrderDisplay } from '../../../types';
 import {
-    cancelRentalOrder,
-    redoRentalOrder,
     fetchAllOrders
 } from '../../../lib/orders';
-import { useNotification } from '../../../components/ui/NotificationToaster';
-import { RentalDetailsModal } from '../../../components/modals/OrderDetailsModal';
 import { fetchBorrowRequests } from '../../../lib/db/requests/requests';
 
 // Dashboard View Component
 export const DashboardView: React.FC = () => {
     const { t } = useTranslation();
-    const { showSuccess, showError } = useNotification();
     const [cars, setCars] = useState<CarType[]>([]);
     const [orders, setOrders] = useState<OrderDisplay[]>([]);
     const [borrowRequests, setBorrowRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<OrderDisplay | null>(null);
-    const [processingOrder, setProcessingOrder] = useState<string | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -107,7 +99,7 @@ export const DashboardView: React.FC = () => {
         const rentedCars = cars.filter(car => {
             const rawStatus = car.status?.trim() || '';
             const carStatus = rawStatus.toLowerCase();
-            
+
             // Check if car has active rental orders
             const hasActiveOrder = orders.some(order =>
                 parseInt(order.carId) === parseInt(car.id, 10) &&
@@ -495,7 +487,7 @@ export const DashboardView: React.FC = () => {
                                                         // Try to get return date from order first
                                                         let returnDate: Date | null = null;
                                                         let returnTime: string | null = null;
-                                                        
+
                                                         if (carOrder?.returnDate) {
                                                             try {
                                                                 returnDate = new Date(carOrder.returnDate);
@@ -511,7 +503,7 @@ export const DashboardView: React.FC = () => {
                                                                 returnDate = null;
                                                             }
                                                         }
-                                                        
+
                                                         // If no order date, try to get from borrow request
                                                         if (!returnDate && carRequest) {
                                                             try {
@@ -523,7 +515,7 @@ export const DashboardView: React.FC = () => {
                                                                 // Ignore error
                                                             }
                                                         }
-                                                        
+
                                                         if (returnDate) {
                                                             // Format date in Romanian format (e.g., "19 nov. 2025")
                                                             const formattedDate = returnDate.toLocaleDateString(t('config.date'), {
@@ -534,7 +526,7 @@ export const DashboardView: React.FC = () => {
 
                                                             return `Până pe ${formattedDate}`;
                                                         }
-                                                        
+
                                                         // Fallback to "Închiriate" if no date available
                                                         return t('admin.dashboard.rented');
                                                     })()}
@@ -642,65 +634,6 @@ export const DashboardView: React.FC = () => {
                     </div>
                 </motion.div>
             </div>
-
-            {/* Order Details Modal */}
-            <RentalDetailsModal
-                isOpen={showOrderDetailsModal}
-                onClose={() => {
-                    setShowOrderDetailsModal(false);
-                    setSelectedOrder(null);
-                }}
-                order={selectedOrder}
-                onCancel={async (order) => {
-                    if (!window.confirm(t('admin.orders.confirmCancelOrder'))) {
-                        return;
-                    }
-                    setProcessingOrder(order.id.toString());
-                    try {
-                        const result = await cancelRentalOrder(order.id.toString());
-                        if (result.success) {
-                            showSuccess(t('admin.orders.orderCancelled'));
-                            // Reload orders to update the dashboard
-                            const fetchedOrders = await fetchAllOrders(cars);
-                            setOrders(fetchedOrders);
-                            setShowOrderDetailsModal(false);
-                            setSelectedOrder(null);
-                        } else {
-                            showError(`${t('admin.orders.orderCancelFailed')} ${result.error}`);
-                        }
-                    } catch (error) {
-                        console.error('Error cancelling order:', error);
-                        showError(t('admin.orders.orderCancelErrorOccurred'));
-                    } finally {
-                        setProcessingOrder(null);
-                    }
-                }}
-                onRedo={async (order) => {
-                    if (!window.confirm(t('admin.orders.confirmRestoreOrder'))) {
-                        return;
-                    }
-                    setProcessingOrder(order.id.toString());
-                    try {
-                        const result = await redoRentalOrder(order.id.toString());
-                        if (result.success) {
-                            showSuccess(t('admin.orders.orderRestored'));
-                            // Reload orders to update the dashboard
-                            const fetchedOrders = await fetchAllOrders(cars);
-                            setOrders(fetchedOrders);
-                            setShowOrderDetailsModal(false);
-                            setSelectedOrder(null);
-                        } else {
-                            showError(`${t('admin.orders.orderRestoreFailed')} ${result.error}`);
-                        }
-                    } catch (error) {
-                        console.error('Error restoring order:', error);
-                        showError(t('admin.orders.orderRestoreErrorOccurred'));
-                    } finally {
-                        setProcessingOrder(null);
-                    }
-                }}
-                isProcessing={processingOrder === selectedOrder?.id.toString()}
-            />
         </motion.div>
     );
 };

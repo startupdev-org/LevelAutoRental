@@ -12,7 +12,6 @@ import {
     X,
     RefreshCw,
     FileText,
-    Car
 } from 'lucide-react';
 import { LiaCarSideSolid } from 'react-icons/lia';
 import Settings from '../dashboard/settings/AdminSettings';
@@ -23,24 +22,9 @@ import { fetchCars } from '../../lib/cars';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { NotificationToaster } from '../../components/ui/NotificationToaster';
 
-// Import extracted view components
-import { DashboardView } from './components/DashboardView';
-import { OrdersView, OrderDetailsView, CalendarView, UsersView, CarsView, CarDetailsEditView, RequestsView, RequestDetailsViewWrapper } from './components/views';
-
-// Import extracted modal components
-import { CarFormModal } from './components/modals/CarFormModal';
-import { CreateRentalModal } from './components/modals/CreateRentalModal';
-import { EditRequestModal } from './components/modals/EditRequestModal';
+import { DashboardView } from './components/AdminDashboardView';
+import { OrdersView, OrderDetailsView, CalendarView, UsersView, CarsView, RequestsView, RequestDetailsViewWrapper } from './components/views';
 import { fetchBorrowRequestsForDisplay } from '../../lib/db/requests/requests';
-
-// Dashboard View Component is now imported from ./components/DashboardView
-
-
-
-
-// All view components are now imported from ./components/views
-// All modal components are now imported from ./components/modals
-
 
 export const Admin: React.FC = () => {
     const navigate = useNavigate();
@@ -539,7 +523,7 @@ export const Admin: React.FC = () => {
 
                         {/* Content */}
                         <div className="p-6">
-                            <Settings 
+                            <Settings
                                 onBackToSite={handleBackToSite}
                                 onLogout={handleLogout}
                             />

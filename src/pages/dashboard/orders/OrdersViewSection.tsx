@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { cars as staticCars } from '../../../data/cars';
 import { OrdersTable } from '../../../components/dashboard/OrderTable';
-import { RentalDetailsModal } from '../../../components/modals/OrderDetailsModal';
+import { BorrowRequestsDetailsModal } from '../../../components/modals/BorrowRequestDetailsModal';
 import { ContractCreationModal } from '../../../components/modals/ContractCreationModal';
 import { cancelRentalOrder, redoRentalOrder, fetchRentalsForCalendarPage, fetchRentalsForCalendarPageByMonth } from '../../../lib/orders';
 import { updateBorrowRequest } from '../../../lib/db/requests/requests';
@@ -841,10 +841,10 @@ export const OrdersViewSection: React.FC = () => {
             </motion.div>
 
             {/* Order Details Modal */}
-            <RentalDetailsModal
+            <BorrowRequestsDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
-                    
+
                     setSelectedOrder(null);
                     setOrderNumber(undefined);
                     setIsModalOpening(false);

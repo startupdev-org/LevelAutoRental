@@ -1,33 +1,19 @@
 // OverviewTab.tsx
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, Car, Check, Calendar, Eye } from 'lucide-react';
-import { fetchFavoriteCarsFromStorage, getUserBorrowRequests as fetchUserBorrowRequests } from '../../../../lib/db/rentals/rentals';
+import { fetchFavoriteCarsFromStorage } from '../../../../lib/db/rentals/rentals';
 import { supabase } from '../../../../lib/supabase';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { TabType } from '../../UserDashboard';
-import { BorrowRequest, Car as CarType } from '../../../../types';
+import { BorrowRequestDTO, Car as CarType } from '../../../../types';
 import { fetchCars } from '../../../../lib/cars';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 
-// Extended type for borrow requests with car information
-interface BorrowRequestWithCar extends Omit<BorrowRequest, 'price_per_day' | 'total_amount'> {
-    car: any; // Car information is attached by getUserBorrowRequests
-    created_at?: string;
-    // Override price_per_day and total_amount to allow string or number
-    price_per_day: number | string;
-    total_amount: number | string;
-    // Additional fields from linked Rental (if the request was approved)
-    linkedRental?: {
-        id: number;
-        price_per_day: number | string;
-        total_amount: number | string;
-        contract_url?: string;
-    };
-    contract_url?: string;
-}
 import { FavoriteCar } from '../../../../types';
 import FavoriteCarComponent from '../../../../components/dashboard/user-dashboard/overview/FavoriteCarComponent';
-import { RentalDetailsModal } from '../../../../components/modals/OrderDetailsModal';
+import { BorrowRequestsDetailsModal } from '../../../../components/modals/BorrowRequestDetailsModal';
+import { formatDateLocal } from '../../../../utils/date';
+import { fetchUserBorrowRequests } from '../../../../lib/db/requests/requests';
 
 export interface Booking {
     id: string;
@@ -47,67 +33,16 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => {
 
-    const [borrowRequests, setBorrowRequests] = useState<BorrowRequestWithCar[] | null>(null);
+    const [borrowRequests, setBorrowRequests] = useState<BorrowRequestDTO[] | null>(null);
 
     const [favoriteCars, setFavoriteCars] = useState<FavoriteCar[]>([]);
 
     const [loading, setLoading] = useState(true);
 
     // Modal state for order details
-    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestWithCar | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<BorrowRequestDTO | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [cars, setCars] = useState<CarType[]>([]);
-
-    // Convert BorrowRequest to OrderDisplay format for modal compatibility
-    const convertBorrowRequestToOrderDisplay = (request: BorrowRequestWithCar): any => {
-        const startDate = new Date(request.start_date || new Date());
-        const endDate = new Date(request.end_date || new Date());
-        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-        
-        // CRITICAL: Use price_per_day from linked Rental if available (stored when rental was created)
-        // Otherwise fallback to car's price
-        const pricePerDay = (request as any).price_per_day 
-            ? (typeof (request as any).price_per_day === 'string' ? parseFloat((request as any).price_per_day) : (request as any).price_per_day)
-            : (request.car ? ((request.car as any)?.pricePerDay || request.car.price_per_day || 0) : 0);
-        
-        // Use total_amount from linked Rental if available, otherwise calculate
-        const totalAmount = (request as any).total_amount 
-            ? (typeof (request as any).total_amount === 'string' ? parseFloat((request as any).total_amount) : (request as any).total_amount)
-            : pricePerDay * days;
-
-        return {
-            id: request.id,
-            type: 'request',
-            customerName: (request as any).customer_name ||
-                ((request as any).customer_first_name && (request as any).customer_last_name ?
-                    `${(request as any).customer_first_name} ${(request as any).customer_last_name}` : ''),
-            customerEmail: (request as any).customer_email || request.user_id,
-            customerPhone: (request as any).customer_phone || '',
-            customerFirstName: (request as any).customer_first_name || '',
-            customerLastName: (request as any).customer_last_name || '',
-            customerAge: (request as any).customer_age || undefined,
-            carName: request.car ? `${request.car.make} ${request.car.model}` : 'Unknown Car',
-            avatar: request.car?.image_url || '',
-            pickupDate: request.start_date ? new Date(request.start_date).toISOString().split('T')[0] : '',
-            pickupTime: request.start_time || '09:00',
-            returnDate: request.end_date ? new Date(request.end_date).toISOString().split('T')[0] : '',
-            returnTime: request.end_time || '17:00',
-            status: request.status,
-            amount: totalAmount,
-            total_amount: totalAmount.toString(),
-            carId: request.car_id.toString(),
-            userId: request.user_id,
-            createdAt: request.created_at,
-            features: request.car?.features || [],
-            options: (request as any).options || {},
-            contract_url: (request as any).contract_url || request.contract_url,
-            // CRITICAL: Include price_per_day from rental for the modal
-            price_per_day: pricePerDay,
-            // Attach the full car object for pricing calculations
-            car: request.car,
-        };
-    };
-
 
     useEffect(() => {
         async function loadAll() {
@@ -139,7 +74,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                     table: 'BorrowRequest'
                 },
                 (payload) => {
-                    
+
                     // Refresh borrow request data when any borrow request is updated
                     handleFetchUserBorrowRequests();
                 }
@@ -182,22 +117,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
 
     async function handleFetchUserBorrowRequests() {
         const requests = await fetchUserBorrowRequests();
-        setBorrowRequests(requests as BorrowRequestWithCar[]);
+        setBorrowRequests(requests as BorrowRequestDTO[]);
     }
 
     async function handleFetchUserFavoriteCars() {
         const favoriteCars = await fetchFavoriteCarsFromStorage()
         setFavoriteCars(favoriteCars);
     }
-
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
 
 
     if (loading) {
@@ -314,7 +240,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                                     {activeRequest.car?.make} {activeRequest.car?.model}
                                                 </h3>
                                                 <p className="text-white/80 text-xs">
-                                                    {formatDate(activeRequest.start_date as string)} {activeRequest.start_time ? `la ${activeRequest.start_time.slice(0, 5)}` : ''} - {formatDate(activeRequest.end_date as string)} {activeRequest.end_time ? `la ${activeRequest.end_time.slice(0, 5)}` : ''}
+                                                    {formatDateLocal(activeRequest.start_date as string, t('config.date'))} {activeRequest.start_time ? `la ${activeRequest.start_time.slice(0, 5)}` : ''} - {formatDateLocal(activeRequest.end_date as string, t('config.date'))} {activeRequest.end_time ? `la ${activeRequest.end_time.slice(0, 5)}` : ''}
                                                 </p>
                                             </div>
 
@@ -443,7 +369,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
                                             {request.car?.make} {request.car?.model}
                                         </h3>
                                         <p className="text-white/80 text-xs">
-                                            {formatDate(request.start_date as string)} - {formatDate(request.end_date as string)}
+                                            {formatDateLocal(request.start_date as string, t('config.date'))} - {formatDateLocal(request.end_date as string, t('config.date'))}
                                         </p>
                                     </div>
 
@@ -511,15 +437,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab, t }) => 
             </div>
 
             {/* Order Details Modal */}
-            <RentalDetailsModal
+            <BorrowRequestsDetailsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
                     setSelectedRequest(null);
                 }}
-                order={selectedRequest ? convertBorrowRequestToOrderDisplay(selectedRequest) : null}
+                order={selectedRequest}
                 showOrderNumber={false}
-                cars={cars}
             />
 
         </div>
