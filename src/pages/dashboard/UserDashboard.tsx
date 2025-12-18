@@ -3,35 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  FileText,
-  Clock,
-  Check,
-  Truck,
-} from 'lucide-react';
 import { UserDashboardSidebar } from '../../components/dashboard/sidebar/UserDashboardSidebar';
 import { Header } from '../../components/layout/Header';
 
-import { UserOrdersSection } from './user-dashboard/orders/UserOrdersSection';
 
 import { CarsView } from './user-dashboard/cars/UserCarPage'
 import { ProfileSettingsTab } from './user-dashboard/profile-settings/ProfileSettingsTab';
 import { OverviewTab } from './user-dashboard/overview/UserOverview';
 import UserCalendarPage from './user-dashboard/calendar/UserCalendarPage';
 
-interface Booking {
-  id: string;
-  carName: string;
-  carImage: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  totalPrice: number;
-  pickupLocation: string;
-}
-
 export type TabType = 'overview' | 'profile' | 'settings' | 'calendar' | 'cars';
-
 
 export const UserDashboard: React.FC = () => {
   const { t } = useTranslation();
