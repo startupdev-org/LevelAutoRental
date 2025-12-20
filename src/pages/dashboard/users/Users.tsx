@@ -20,9 +20,13 @@ import { cars } from "../../../data/cars";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
 import { useTranslation } from "react-i18next";
+import { formatPrice } from "../../../utils/currency";
+import { useExchangeRates } from "../../../hooks/useExchangeRates";
+import { convertPrice } from "../../../utils/car/pricing";
 
 export const UsersPage: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const { selectedCurrency, eur, usd } = useExchangeRates();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -192,7 +196,7 @@ export const UsersPage: React.FC = () => {
 
     // Debug selectedUser changes
     useEffect(() => {
-        
+
     }, [selectedUser]);
 
     // Get user orders for selected user
@@ -336,7 +340,7 @@ export const UsersPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <p className="text-gray-400 text-xs mb-1">{t('admin.users.totalSpent')}</p>
-                                        <p className="text-white font-semibold text-base">{getUserTotalSpent(user.id).toFixed(2)} MDL</p>
+                                        <p className="text-white font-semibold text-base">{formatPrice(convertPrice(getUserTotalSpent(user.id), selectedCurrency, usd, eur), selectedCurrency, i18n.language)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -441,7 +445,7 @@ export const UsersPage: React.FC = () => {
                                             {getUserOrderCount(user.id)}
                                         </td>
                                         <td className="px-6 py-4 text-white font-semibold text-sm">
-                                            {getUserTotalSpent(user.id).toFixed(2)} MDL
+                                            {formatPrice(convertPrice(getUserTotalSpent(user.id), selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                         </td>
                                     </tr>
                                 );
@@ -513,10 +517,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
     const { t } = useTranslation();
     const navigate = useNavigate();
 
-    
+
 
     if (!isOpen || !user) {
-        
+
         return null;
     }
 
@@ -537,17 +541,12 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
         }
     };
 
-
-    
-
-    
-
     return createPortal(
         isOpen ? (
             <div
                 className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
                 onClick={(e) => {
-                    
+
                     // Only close if clicking directly on backdrop, not on modal content
                     if (e.target === e.currentTarget) {
                         onClose();
