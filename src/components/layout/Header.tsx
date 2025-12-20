@@ -231,6 +231,13 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
     }
   };
 
+  function handleSetSelectedCurrency(code: string) {
+    i18n.changeLanguage(code);
+    setCurrentLanguage(code);
+    setShowLanguageDropdown(false);
+    localStorage.setItem("selectedLanguage", code);
+  }
+
   if (!shouldRenderHeader) return null;
 
   return (
@@ -278,13 +285,13 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                   ref={userDropdownButtonRef}
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
                   className={`flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-300 ${shouldShowWhiteText
-                      ? 'hover:bg-white/10 text-white'
-                      : 'hover:bg-gray-100 text-gray-700'
+                    ? 'hover:bg-white/10 text-white'
+                    : 'hover:bg-gray-100 text-gray-700'
                     }`}
                 >
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${shouldShowWhiteText
-                      ? 'bg-white/20 text-white'
-                      : 'bg-red-600 text-white'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-red-600 text-white'
                     }`}>
                     {(user.email?.split('@')[0] || user.email || 'U').charAt(0).toUpperCase()}
                   </div>
@@ -490,12 +497,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                       {LANGUAGES.map(({ code, iconClass }) => (
                         <button
                           key={code}
-                          onClick={() => {
-                            i18n.changeLanguage(code);
-                            setCurrentLanguage(code);
-                            setShowLanguageDropdown(false);
-                            localStorage.setItem("selectedLanguage", code);
-                          }}
+                          onClick={() => { handleSetSelectedCurrency(code) }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
                         >
                           <span className={iconClass}></span>
@@ -520,8 +522,8 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             setShowLanguageDropdown(false);
                           }}
                           className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${selectedCurrency === currency.code
-                              ? 'bg-theme-50 text-theme-600'
-                              : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
+                            ? 'bg-theme-50 text-theme-600'
+                            : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
                             }`}
                         >
                           <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${currency.code === 'MDL' ? 'text-xs' : 'text-base'
@@ -600,8 +602,8 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             setShowLanguageDropdown(false);
                           }}
                           className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${selectedCurrency === currency.code
-                              ? 'bg-theme-50 text-theme-600'
-                              : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
+                            ? 'bg-theme-50 text-theme-600'
+                            : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
                             }`}
                         >
                           <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${currency.code === 'MDL' ? 'text-xs' : 'text-base'
@@ -812,8 +814,8 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                     setIsMenuOpen(false);
                                   }}
                                   className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${selectedCurrency === currency.code
-                                      ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                      : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
                                     }`}
                                 >
                                   <span className={`w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 mb-2 ${currency.code === 'MDL' ? 'text-sm' : 'text-lg'
@@ -1019,8 +1021,8 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                   setIsMenuOpen(false);
                                 }}
                                 className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${selectedCurrency === currency.code
-                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
                                   }`}
                               >
                                 <span className="text-lg font-semibold mb-1">{currency.symbol}</span>

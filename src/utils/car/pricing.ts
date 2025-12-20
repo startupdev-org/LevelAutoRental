@@ -1,6 +1,8 @@
 import { OptionsState } from '../../constants/rentalOptions';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { BorrowRequest, BorrowRequestDTO, Car } from '../../types/index'
-import { getDateDiffInDays, calculateRentalDuration } from '../date';
+import { getSelectedCurrency } from '../currency';
+import { calculateRentalDuration } from '../date';
 
 export interface PriceSummaryResult {
     pricePerDay: number;
@@ -136,4 +138,15 @@ export function calculatePriceSummary(
         totalPrice,
         baseCarPrice,
     };
+}
+
+export function convertPrice(
+    price: number,
+    currency: 'MDL' | 'EUR' | 'USD',
+    mdlToEur: number,
+    mdlToUsd: number
+) {
+    if (currency === 'EUR') return Math.round(price / mdlToEur);
+    if (currency === 'USD') return Math.round(price / mdlToUsd);
+    return Math.round(price);
 }
