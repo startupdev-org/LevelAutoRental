@@ -152,7 +152,7 @@ export const UserDashboard: React.FC = () => {
           <div className="fixed inset-0 bg-black/80" style={{ zIndex: 1 }}></div>
 
           <div className="relative" style={{ zIndex: 1 }}>
-            <Header forceRender={true} />
+            <Header />
           </div>
 
           {/* Dashboard box */}
