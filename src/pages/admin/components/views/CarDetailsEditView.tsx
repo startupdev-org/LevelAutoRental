@@ -16,6 +16,10 @@ import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 import { Car as CarType } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { supabase, supabaseAdmin } from '../../../../lib/supabase';
+import { formatPrice } from '../../../../utils/currency';
+import i18n from '../../../../i18n/i18n';
+import { convertPrice } from '../../../../utils/car/pricing';
+import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 
 export interface CarDetailsEditViewProps {
     car: CarType;
@@ -25,13 +29,14 @@ export interface CarDetailsEditViewProps {
 
 export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, onCancel }) => {
     const { t } = useTranslation();
+    const { selectedCurrency, eur, usd } = useExchangeRates()
     // Normalize category to array format for form
-    const normalizedCategory = Array.isArray(car.category) 
-        ? car.category 
-        : car.category 
-            ? [car.category] 
+    const normalizedCategory = Array.isArray(car.category)
+        ? car.category
+        : car.category
+            ? [car.category]
             : [];
-    const [formData, setFormData] = useState<Partial<CarType>>({
+    const [formData, setFormData] = useState<CarType>({
         ...car,
         category: normalizedCategory,
     });
@@ -52,7 +57,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                     // Fetch images from storage
                     const carName = (fetchedCar as any).name || `${fetchedCar.make} ${fetchedCar.model}`;
                     const { mainImage, photoGallery } = await fetchImagesByCarName(carName);
-                    
+
                     // Ensure name field is included and normalize category to array
                     const normalizedCategory = Array.isArray(fetchedCar.category)
                         ? fetchedCar.category
@@ -61,10 +66,6 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                             : [];
 
                     // Debug logging
-                    
-                    
-                    
-
                     setFormData({
                         ...fetchedCar,
                         name: fetchedCar.name || '',
@@ -107,10 +108,10 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
         setLoading(true);
         try {
             // Validate at least one category is selected
-            const categories = Array.isArray(formData.category) 
-                ? formData.category 
-                : formData.category 
-                    ? [formData.category] 
+            const categories = Array.isArray(formData.category)
+                ? formData.category
+                : formData.category
+                    ? [formData.category]
                     : [];
             if (categories.length === 0) {
                 showError(t('admin.cars.categoryRequired') || 'Please select at least one category');
@@ -125,34 +126,34 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
             const oldName = (car as any).name || `${car.make} ${car.model}`;
             const newName = (formData as any).name || `${formData.make} ${formData.model}`;
 
-            
+
 
             if (oldName !== newName && updatedImageUrl && !updatedImageUrl.includes('http')) {
                 // Name changed, update image URLs to new folder structure
                 const oldFolderName = createFolderName(oldName);
                 const newFolderName = createFolderName(newName);
 
-                
-                
-                
+
+
+
 
                 // Only update if the URL actually contains the old folder name
                 if (updatedImageUrl.includes(oldFolderName)) {
                     updatedImageUrl = updatedImageUrl.replace(oldFolderName, newFolderName);
-                    
+
                 }
 
                 if (updatedPhotoGallery && Array.isArray(updatedPhotoGallery)) {
                     updatedPhotoGallery = updatedPhotoGallery.map((url: string) => {
                         if (url && url.includes(oldFolderName)) {
-                            
+
                             return url.replace(oldFolderName, newFolderName);
                         }
                         return url;
                     });
                 }
             } else {
-                
+
             }
 
             // Map form data to database fields
@@ -165,16 +166,16 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                 price_5_15_days: (formData as any).price_5_15_days || formData.price_5_15_days,
                 price_16_30_days: (formData as any).price_16_30_days || formData.price_16_30_days,
                 price_over_30_days: (formData as any).price_over_30_days || formData.price_over_30_days,
-                discount: (formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : formData.discount_percentage,
+                discount_percentage: (formData as any).discountPercentage !== undefined ? (formData as any).discountPercentage : formData.discount_percentage,
                 fuel_type: (formData as any).fuelType || formData.fuel_type,
                 category: categories.length === 1 ? categories[0] : categories,
             };
 
             // Debug logging
-            
-            
-            
-            
+
+
+
+
 
             await onSave(carDataToSave as Partial<CarType>);
             // Show success notification
@@ -279,7 +280,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
             const carName = (formData as any).name || (car as any).name || 'car';
             const folderName = createFolderName(carName);
             const modelPart = getModelPart(carName);
-            
+
             // Get existing gallery images to determine next number
             const currentGallery = (formData as any).photoGallery || formData.photo_gallery || [];
             // Try to find the highest number in existing gallery images
@@ -295,7 +296,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                     nextNumber = Math.max(...numbers) + 1;
                 }
             }
-            
+
             const fileName = `${modelPart}-${nextNumber}.jpg`;
             const filePath = `${folderName}/${fileName}`;
 
@@ -423,13 +424,13 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                     value={formData.year || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
                                     required
                                 />
                             </div>
@@ -440,13 +441,13 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                     value={formData.seats || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, seats: parseInt(e.target.value) }))}
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '40px'
+                                    }}
                                     required
                                 />
                             </div>
@@ -456,10 +457,10 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                             <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')}</label>
                             <div className="flex flex-row gap-4">
                                 {['suv', 'sports', 'luxury'].map((cat) => {
-                                    const categories = Array.isArray(formData.category) 
-                                        ? formData.category 
-                                        : formData.category 
-                                            ? [formData.category] 
+                                    const categories = Array.isArray(formData.category)
+                                        ? formData.category
+                                        : formData.category
+                                            ? [formData.category]
                                             : [];
                                     const isChecked = categories.includes(cat as 'suv' | 'sports' | 'luxury');
                                     return (
@@ -468,36 +469,35 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                                 type="checkbox"
                                                 checked={isChecked}
                                                 onChange={(e) => {
-                                                    const currentCategories = Array.isArray(formData.category) 
-                                                        ? formData.category 
-                                                        : formData.category 
-                                                            ? [formData.category] 
+                                                    const currentCategories = Array.isArray(formData.category)
+                                                        ? formData.category
+                                                        : formData.category
+                                                            ? [formData.category]
                                                             : [];
                                                     if (e.target.checked) {
-                                                        setFormData(prev => ({ 
-                                                            ...prev, 
+                                                        setFormData(prev => ({
+                                                            ...prev,
                                                             category: [...currentCategories, cat] as ('suv' | 'sports' | 'luxury')[]
                                                         }));
                                                     } else {
-                                                        setFormData(prev => ({ 
-                                                            ...prev, 
+                                                        setFormData(prev => ({
+                                                            ...prev,
                                                             category: currentCategories.filter(c => c !== cat) as ('suv' | 'sports' | 'luxury')[]
                                                         }));
                                                     }
                                                 }}
                                                 className="sr-only"
                                             />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                isChecked
-                                                    ? 'bg-red-500 border-red-500'
-                                                    : 'border-white/30 bg-white/5 group-hover:border-red-400'
-                                            }`}>
+                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${isChecked
+                                                ? 'bg-red-500 border-red-500'
+                                                : 'border-white/30 bg-white/5 group-hover:border-red-400'
+                                                }`}>
                                                 {isChecked && <Check className="w-3 h-3 text-white" />}
                                             </div>
                                             <span className="text-white">
-                                                {cat === 'suv' ? t('admin.cars.categorySuv') : 
-                                                 cat === 'sports' ? t('admin.cars.categorySports') : 
-                                                 t('admin.cars.categoryLuxury')}
+                                                {cat === 'suv' ? t('admin.cars.categorySuv') :
+                                                    cat === 'sports' ? t('admin.cars.categorySports') :
+                                                        t('admin.cars.categoryLuxury')}
                                             </span>
                                         </label>
                                     );
@@ -535,8 +535,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                     value={(formData as any).fuelType || formData.fuel_type || ''}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
-                                        fuelType: e.target.value || null,
-                                        fuel_type: e.target.value || null
+                                        fuelType: e.target.value,
                                     }))}
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                                     style={{
@@ -560,7 +559,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                     value={formData.drivetrain || ''}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
-                                        drivetrain: e.target.value || null
+                                        drivetrain: e.target.value
                                     }))}
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                                     style={{
@@ -589,7 +588,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <label className="block text-sm font-medium text-gray-300 mb-2">2-4 zile</label>
                                 <input
                                     type="number"
-                                    value={(formData as any).price_2_4_days || formData.price_2_4_days || ''}
+                                    value={formatPrice(convertPrice(formData.price_2_4_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language) || ''}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
                                         price_2_4_days: parseFloat(e.target.value) || 0
@@ -609,7 +608,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <label className="block text-sm font-medium text-gray-300 mb-2">5-15 zile</label>
                                 <input
                                     type="number"
-                                    value={(formData as any).price_5_15_days || formData.price_5_15_days || ''}
+                                    value={formatPrice(convertPrice(formData.price_5_15_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
                                         price_5_15_days: parseFloat(e.target.value) || 0
@@ -888,12 +887,12 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <Loader2 className="w-4 h-4 animate-spin" />
                                 {t('admin.cars.saving')}
                             </>
-                            ) : (
-                                <>
-                                    <Save className="w-4 h-4" />
-                                    {t('admin.common.save')}
-                                </>
-                            )}
+                        ) : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                {t('admin.common.save')}
+                            </>
+                        )}
                     </button>
                 </div>
             </form>
