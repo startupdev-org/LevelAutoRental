@@ -20,16 +20,15 @@ import { getInitials } from '../../../../utils/customer';
 import { getCarName } from '../../../../utils/car/car';
 import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
-import { formatAmount, formatPrice, getSelectedCurrency } from '../../../../utils/currency';
+import { formatPrice, getSelectedCurrency } from '../../../../utils/currency';
 import { formatTime } from '../../../../utils/time';
 import { supabase } from '../../../../lib/supabase';
-import i18n from '../../../../i18n/i18n';
 import { convertPrice } from '../../../../utils/car/pricing';
 import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 
 export const RequestsView: React.FC = () => {
-    const { t } = useTranslation();
-    const { eur, usd } = useExchangeRates();
+    const { t, i18n } = useTranslation();
+    const { selectedCurrency, eur, usd } = useExchangeRates();
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const { showSuccess, showError } = useNotification();
@@ -363,7 +362,7 @@ export const RequestsView: React.FC = () => {
                                         <div className="mt-4 pt-4 border-t border-white/10">
                                             <p className="text-gray-400 text-xs mb-1">{t('admin.requests.amount')}</p>
                                             <p className="text-white font-semibold text-base">
-                                                {formatAmount(request.total_amount)}
+                                                {formatPrice(convertPrice(request.total_amount, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                             </p>
                                         </div>
                                     </div>
