@@ -29,6 +29,23 @@ export const formatPrice = (
     }).format(amount);
 };
 
-export const getSelectedCurrency = (): string => {
-    return localStorage.getItem("selectedCurrency") || '';
+export type Currency = 'MDL' | 'EUR' | 'USD';
+
+export const getSelectedCurrency = (): Currency => {
+    if (typeof window === 'undefined') {
+        return 'MDL';
+    }
+
+    const value = localStorage.getItem('selectedCurrency');
+
+    if (value === 'MDL' || value === 'EUR' || value === 'USD') {
+        return value;
+    }
+
+    return 'MDL';
+};
+
+
+export const handleSetSelectedCurrency = (code: string) => {
+    localStorage.setItem("selectedLanguage", code);
 }

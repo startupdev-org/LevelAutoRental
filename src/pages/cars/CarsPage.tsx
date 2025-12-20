@@ -87,11 +87,11 @@ export const Cars: React.FC = () => {
       // Map discount field to discount_percentage for compatibility
       const carsWithDiscount = fetchedCars.map(car => ({
         ...car,
-        discount_percentage: car.discount
+        discount_percentage: car.discount_percentage
       }));
       setCars(carsWithDiscount);
       setAllCars(carsWithDiscount); // Store full dataset for model lookups
-      
+
       // Extract unique makes (same logic as hero searchbar)
       const makes = fetchedCars.map(car => {
         const make = car.make || '';
@@ -144,7 +144,7 @@ export const Cars: React.FC = () => {
       // Map discount field to discount_percentage for compatibility
       const carsWithDiscount = fetchedCars.map(car => ({
         ...car,
-        discount_percentage: car.discount
+        discount_percentage: car.discount_percentage
       }));
       setCars(carsWithDiscount);
     } catch (error) {
@@ -199,7 +199,7 @@ export const Cars: React.FC = () => {
     dataFetchedRef.current = true;
 
     // Always fetch all cars initially to populate the make-to-models mapping
-      handleFetchCarsWithPhotos();
+    handleFetchCarsWithPhotos();
   }, []);
 
   // Fetch recommended cars
@@ -378,13 +378,13 @@ export const Cars: React.FC = () => {
     // Validate parameters - only allow non-empty strings without special characters
     const isValidParam = (param: string | null): boolean => {
       return !!(param !== null &&
-             param.trim() !== '' &&
-             param.length < 100 && // Reasonable length limit
-             !param.includes('~') && // Block malformed GitHub Pages URLs
-             !param.includes('<') && // Block potential XSS
-             !param.includes('>') &&
-             !param.includes('&') && // Block HTML entities
-             !param.includes('%')); // Block URL encoding issues
+        param.trim() !== '' &&
+        param.length < 100 && // Reasonable length limit
+        !param.includes('~') && // Block malformed GitHub Pages URLs
+        !param.includes('<') && // Block potential XSS
+        !param.includes('>') &&
+        !param.includes('&') && // Block HTML entities
+        !param.includes('%')); // Block URL encoding issues
     };
 
     if ((makeParam && isValidParam(makeParam)) || (modelParam && isValidParam(modelParam))) {
@@ -406,13 +406,13 @@ export const Cars: React.FC = () => {
     const makeParam = searchParams.get('make');
     const isValidParam = (param: string | null): boolean => {
       return !!(param !== null &&
-             param.trim() !== '' &&
-             param.length < 100 &&
-             !param.includes('~') &&
-             !param.includes('<') &&
-             !param.includes('>') &&
-             !param.includes('&') &&
-             !param.includes('%'));
+        param.trim() !== '' &&
+        param.length < 100 &&
+        !param.includes('~') &&
+        !param.includes('<') &&
+        !param.includes('>') &&
+        !param.includes('&') &&
+        !param.includes('%'));
     };
 
     // Only load models if we have a valid make param and all cars are loaded
@@ -556,18 +556,18 @@ export const Cars: React.FC = () => {
     // Validate filter values before updating URL
     const isValidFilterValue = (value: string): boolean => {
       return !!(value &&
-             value.trim() !== '' &&
-             value.length < 100 && // Reasonable length limit
-             !value.includes('~') && // Block malformed URLs
-             !value.includes('<') && // Block potential XSS
-             !value.includes('>') &&
-             !value.includes('&') && // Block HTML entities
-             !value.includes('%')); // Block URL encoding issues
+        value.trim() !== '' &&
+        value.length < 100 && // Reasonable length limit
+        !value.includes('~') && // Block malformed URLs
+        !value.includes('<') && // Block potential XSS
+        !value.includes('>') &&
+        !value.includes('&') && // Block HTML entities
+        !value.includes('%')); // Block URL encoding issues
     };
 
     // Only update URL if filters are valid
     if ((liveFilters.make && !isValidFilterValue(liveFilters.make)) ||
-        (liveFilters.model && !isValidFilterValue(liveFilters.model))) {
+      (liveFilters.model && !isValidFilterValue(liveFilters.model))) {
       setApplyError('Filtrele conțin caractere nevalide.');
       setTimeout(() => setApplyError(''), 3000);
       return;
@@ -806,16 +806,16 @@ export const Cars: React.FC = () => {
                         onClick={() => filters.make && !loadingModels && openDropdown('model')}
                       >
                         {!filters.make ? t('carsPage.selectMake') :
-                         loadingModels ? 'Se încarcă...' :
-                         (filters.model || t('carsPage.selectModel'))}
+                          loadingModels ? 'Se încarcă...' :
+                            (filters.model || t('carsPage.selectModel'))}
                       </div>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
                         {loadingModels ? (
                           <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin"></div>
                         ) : (
-                        <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                          <svg className={`w-4 h-4 ${!filters.make ? 'text-white/30' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
                         )}
                       </div>
 
@@ -831,14 +831,14 @@ export const Cars: React.FC = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="py-1">
-                          {loadingModels ? (
-                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                                Se încarcă...
-                              </div>
-                            </div>
-                          ) : models.length > 0 ? (
+                              {loadingModels ? (
+                                <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                    Se încarcă...
+                                  </div>
+                                </div>
+                              ) : models.length > 0 ? (
                                 models.map((model, index) => {
                                   const isFirst = index === 0;
                                   const isLast = index === models.length - 1;
@@ -955,11 +955,10 @@ export const Cars: React.FC = () => {
                             <button
                               key={category.key}
                               onClick={() => handleSidebarFilterChange('category', value)}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                isActive
-                                  ? 'bg-red-500 text-white shadow-md transform scale-105'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
-                              }`}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                                ? 'bg-red-500 text-white shadow-md transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                                }`}
                             >
                               {category.label}
                             </button>
@@ -1058,11 +1057,10 @@ export const Cars: React.FC = () => {
                             <button
                               key={transmission.key}
                               onClick={() => handleSidebarFilterChange('transmission', value)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                isActive
-                                  ? 'bg-red-500 text-white shadow-md transform scale-105'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
-                              }`}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                                ? 'bg-red-500 text-white shadow-md transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                                }`}
                             >
                               {transmission.label}
                             </button>
@@ -1088,11 +1086,10 @@ export const Cars: React.FC = () => {
                             <button
                               key={fuelType.key}
                               onClick={() => handleSidebarFilterChange('fuelType', fuelType.value)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                isActive
-                                  ? 'bg-red-500 text-white shadow-md transform scale-105'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
-                              }`}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                                ? 'bg-red-500 text-white shadow-md transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                                }`}
                             >
                               {fuelType.label}
                             </button>
@@ -1155,8 +1152,8 @@ export const Cars: React.FC = () => {
                       return status !== 'ascuns' && status !== 'hidden';
                     })
                     .map((car, index) => (
-                    <CarCard key={car.id} car={car} index={index} />
-                  ))}
+                      <CarCard key={car.id} car={car} index={index} />
+                    ))}
                 </motion.div>
               ) : (
                 // Check if any filters are applied
@@ -1256,11 +1253,10 @@ export const Cars: React.FC = () => {
                             setCurrentSlide(index);
                             pauseAutoSliding();
                           }}
-                          className={`w-2 h-2 rounded-full transition-colors ${
-                            index === currentSlide
-                              ? 'bg-red-500'
-                              : 'bg-gray-300 hover:bg-gray-400'
-                          }`}
+                          className={`w-2 h-2 rounded-full transition-colors ${index === currentSlide
+                            ? 'bg-red-500'
+                            : 'bg-gray-300 hover:bg-gray-400'
+                            }`}
                           aria-label={`Go to slide ${index + 1}`}
                         />
                       ))}
