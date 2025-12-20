@@ -7,6 +7,8 @@ import { getCarName } from '../../utils/car/car';
 import { formatTime } from '../../utils/time';
 import { formatDateLocal } from '../../utils/date';
 import { fetchRentalsForAdminPaginated } from '../../lib/db/rentals/rentals';
+import { convertPrice } from '../../utils/car/pricing';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 type OrdersTableProps = {
     title: string;
@@ -21,6 +23,7 @@ type OrdersTableProps = {
 
 export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false, onOrderClick, initialSearch, showCancelled = false, onToggleShowCancelled, cars: propCars }) => {
     const { t, i18n } = useTranslation();
+    const { eur, usd } = useExchangeRates();
     const [searchQuery, setSearchQuery] = useState(initialSearch || '');
     const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
 
@@ -321,7 +324,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
                                     <p className="text-gray-400 text-xs mb-1">{t('admin.orders.amount')}</p>
                                     <p className="text-white font-semibold text-base">
                                         {order.total_amount && order.total_amount > 0 ? (
-                                            formatPrice(order.total_amount, getSelectedCurrency(), i18n.language)
+                                            formatPrice(convertPrice(order.total_amount, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -418,7 +421,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
                                     </td>
                                     <td className="px-6 py-3 text-white font-semibold text-sm">
                                         {order.total_amount && order.total_amount > 0 ? (
-                                            formatPrice(order.total_amount, getSelectedCurrency(), i18n.language)
+                                            formatPrice(convertPrice(order.total_amount, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}

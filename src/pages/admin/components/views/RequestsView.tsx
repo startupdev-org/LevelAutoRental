@@ -20,12 +20,16 @@ import { getInitials } from '../../../../utils/customer';
 import { getCarName } from '../../../../utils/car/car';
 import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
-import { formatAmount } from '../../../../utils/currency';
+import { formatAmount, formatPrice, getSelectedCurrency } from '../../../../utils/currency';
 import { formatTime } from '../../../../utils/time';
 import { supabase } from '../../../../lib/supabase';
+import i18n from '../../../../i18n/i18n';
+import { convertPrice } from '../../../../utils/car/pricing';
+import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 
 export const RequestsView: React.FC = () => {
     const { t } = useTranslation();
+    const { eur, usd } = useExchangeRates();
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const { showSuccess, showError } = useNotification();
@@ -442,7 +446,7 @@ export const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-white font-semibold text-sm">
-                                                        {formatAmount(request.total_amount)}
+                                                        {formatPrice(convertPrice(request.total_amount, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -605,7 +609,7 @@ export const RequestsView: React.FC = () => {
                                             if (updateRentalError) {
                                                 console.warn('Failed to update associated rental total_amount:', updateRentalError);
                                             } else {
-                                                
+
                                             }
                                         }
                                     } catch (rentalUpdateError) {

@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { BorrowRequestDTO, Car as CarType } from '../../../../types';
 import { calculatePriceSummary, PriceSummaryResult } from '../../../../utils/car/pricing';
-import { calculateRentalDuration } from '../../../../utils/date';
 import { OptionsState } from '../../../../constants/rentalOptions';
 import { DollarSign } from 'lucide-react';
 import { formatTimeHHMM } from '../../../../utils/time/time';

@@ -7,13 +7,17 @@ import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { formatDateLocal, calculateRentalDuration } from '../../../../utils/date';
 import { BorrowRequestDTO } from '../../../../types';
 import { parseRequestOptions } from '../../../../utils/car/options';
-import { calculatePriceSummary } from '../../../../utils/car/pricing';
+import { calculatePriceSummary, convertPrice } from '../../../../utils/car/pricing';
 import { acceptBorrowRequest, rejectBorrowRequest, undoRejectBorrowRequest, updateBorrowRequest, createRentalManually } from '../../../../lib/db/requests/requests';
 import { getLoggedUser } from '../../../../lib/db/user/profile';
 import { supabase } from '../../../../lib/supabase';
 import { fetchBorrowRequestById } from '../../../../lib/db/requests/requests';
 import { useTranslation } from 'react-i18next';
 import { EditRequestModal } from '../modals/EditRequestModal';
+import { getCarName } from '../../../../utils/car/car';
+import { formatPrice, getSelectedCurrency } from '../../../../utils/currency';
+import i18n from '../../../../i18n/i18n';
+import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 
 export interface RequestDetailsViewProps {
     request: BorrowRequestDTO;
@@ -37,6 +41,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
     const car = request.car;
 
     const { t } = useTranslation();
+    const { eur, usd } = useExchangeRates();
 
     return (
         <motion.div
@@ -74,11 +79,11 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     <div className="flex items-center gap-4">
                         <img
                             src={car.image_url || ''}
-                            alt={(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}
+                            alt={getCarName(car) || 'Car Name'}
                             className="w-32 h-20 object-cover rounded-lg border border-white/20"
                         />
                         <div>
-                            <h2 className="text-xl font-bold text-white">{(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}</h2>
+                            <h2 className="text-xl font-bold text-white">{getCarName(car) || 'Car Name'}</h2>
                             <div className="text-sm text-gray-300">{car.transmission === 'Automatic' ? 'Automat' : car.transmission} · {car.seats} locuri</div>
                         </div>
                     </div>
@@ -189,7 +194,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                 {/* Price per day and duration */}
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-300 text-xs sm:text-sm">Preț pe zi</span>
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.pricePerDay)} MDL</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(convertPrice(priceSummary.pricePerDay, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-300 text-xs sm:text-sm">Durată închiriere</span>
@@ -202,7 +207,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                 <div className="pt-2 border-t border-white/10">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-white font-medium text-sm sm:text-base">Preț de bază</span>
-                                                        <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.basePrice).toLocaleString()} MDL</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(convertPrice(priceSummary.basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}</span>
                                                     </div>
                                                 </div>
 
@@ -215,7 +220,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Kilometraj nelimitat</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5).toLocaleString()} MDL
+                                                                        {formatPrice(convertPrice(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -223,7 +228,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Șofer personal</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(800 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(convertPrice(priceSummary.totalHours / 24, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -231,7 +236,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Priority Service</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(1000 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(convertPrice(priceSummary.totalHours / 24, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -239,7 +244,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Scaun auto pentru copii</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(convertPrice(priceSummary.totalHours / 24, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -247,7 +252,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Cartelă SIM cu internet</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(convertPrice(priceSummary.totalHours / 24, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -255,13 +260,15 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Asistență rutieră 24/7</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(500 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(convertPrice(priceSummary.totalHours / 24, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             <div className="flex justify-between pt-2 border-t border-white/10">
                                                                 <span className="text-white font-medium">Costuri suplimentare</span>
-                                                                <span className="text-white font-semibold">{Math.round(priceSummary.additionalCosts).toLocaleString()} MDL</span>
+                                                                <span className="text-white font-semibold">
+                                                                    {formatPrice(convertPrice(priceSummary.additionalCosts, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -271,7 +278,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                 <div className="pt-3 border-t border-white/20">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-white font-bold text-base">Total</span>
-                                                        <span className="text-emerald-400 font-bold text-lg">{Math.round(priceSummary.totalPrice).toLocaleString()} MDL</span>
+                                                        <span className="text-emerald-400 font-bold text-lg">{formatPrice(convertPrice(priceSummary.totalPrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}</span>
                                                     </div>
                                                 </div>
                                             </>
@@ -671,16 +678,16 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
             // Fetch fresh car data to ensure we have correct price information
             const { fetchCarById } = await import('../../../../lib/db/cars/cars');
-            
+
             const freshCarData = await fetchCarById(request.car_id.toString());
 
-            
+
 
             if (!freshCarData) {
                 throw new Error('Car data not found');
             }
 
-            
+
 
             // Create a rental record from the approved request
             const rentalResult = await createRentalManually(
@@ -928,7 +935,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                             if (updateRentalError) {
                                 console.warn('Failed to update associated rental total_amount:', updateRentalError);
                             } else {
-                                
+
                             }
                         }
                     } catch (rentalUpdateError) {
@@ -1072,7 +1079,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     } as any}
                     car={request?.car}
                     onContractCreated={async (contractUrl?: string | null) => {
-                        
+
 
                         if (contractUrl) {
                             // Update the request's contract_url field
