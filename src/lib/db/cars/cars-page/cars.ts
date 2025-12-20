@@ -52,6 +52,57 @@ export async function fetchCars(limit?: number): Promise<Car[]> {
 }
 
 /**
+ * Fetch paginated cars from the database
+ */
+export async function fetchCarsPaginated(
+    page: number = 1,
+    pageSize: number = 10
+): Promise<{
+    data: Car[];
+    total: number;
+    page: number;
+    pageSize: number;
+}> {
+    try {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+
+        const { data, error, count } = await supabase
+            .from('Cars')
+            .select('*', { count: 'exact' })
+            .or('status.is.null,status.neq.deleted')
+            .order('id', { ascending: true })
+            .range(from, to);
+
+        if (error) {
+            console.error('Error fetching paginated cars:', error);
+            return {
+                data: [],
+                total: 0,
+                page,
+                pageSize,
+            };
+        }
+
+        return {
+            data: data ?? [],
+            total: count ?? 0,
+            page,
+            pageSize,
+        };
+    } catch (err) {
+        console.error('Unexpected error in fetchCarsPaginated:', err);
+        return {
+            data: [],
+            total: 0,
+            page,
+            pageSize,
+        };
+    }
+}
+
+
+/**
  * Fetch the cars make from the database
  */
 export async function fetchCarsMake() {
