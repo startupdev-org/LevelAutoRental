@@ -75,7 +75,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
         saveFavorite(carWithImages.id, newFavoriteState);
-        
+
         // Trigger animation
         setIsAnimating(true);
         setTimeout(() => setIsAnimating(false), 600);
@@ -714,14 +714,14 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                 ease: "easeOut",
                             }}
                             className="relative"
-                    >
-                        {React.createElement(BiSolidHeart as any, {
+                        >
+                            {React.createElement(BiSolidHeart as any, {
                                 className: `transition-all duration-300 ${isFavorite
-                                ? 'w-6 h-6 text-red-500'
+                                    ? 'w-6 h-6 text-red-500'
                                     : 'w-6 h-6 text-gray-400 group-hover/heart:text-gray-200 group-hover/heart:scale-110 group-hover/heart:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]'
-                                }`
-                        })}
-                            
+                                    }`
+                            })}
+
                             {/* Particle effect when liked */}
                             <AnimatePresence>
                                 {isAnimating && isFavorite && (
@@ -729,8 +729,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                         {[...Array(8)].map((_, i) => (
                                             <motion.div
                                                 key={i}
-                                                initial={{ 
-                                                    opacity: 1, 
+                                                initial={{
+                                                    opacity: 1,
                                                     scale: 0,
                                                     x: 0,
                                                     y: 0
@@ -760,24 +760,24 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                     </>
                                 )}
                             </AnimatePresence>
-                            
+
                             {/* Ripple effect */}
                             <AnimatePresence>
                                 {isAnimating && (
                                     <motion.div
-                                        initial={{ 
-                                            scale: 0, 
-                                            opacity: 0.6 
+                                        initial={{
+                                            scale: 0,
+                                            opacity: 0.6
                                         }}
-                                        animate={{ 
-                                            scale: 2.5, 
-                                            opacity: 0 
+                                        animate={{
+                                            scale: 2.5,
+                                            opacity: 0
                                         }}
-                                        exit={{ 
-                                            scale: 0, 
-                                            opacity: 0 
+                                        exit={{
+                                            scale: 0,
+                                            opacity: 0
                                         }}
-                                        transition={{ 
+                                        transition={{
                                             duration: 0.6,
                                             ease: "easeOut"
                                         }}
