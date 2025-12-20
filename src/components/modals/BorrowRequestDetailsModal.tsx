@@ -27,9 +27,11 @@ export function BorrowRequestsDetailsModal({
     order,
     showOrderNumber = true,
 }: BorrowRequestsDetailsModalProps) {
-    if (!isOpen || !order) return null;
 
     const { t, i18n } = useTranslation();
+
+    if (!isOpen || !order) return null;
+
     const displayOrder = order;
 
     // If parent provides onOpenContractModal, use it; otherwise use local state
