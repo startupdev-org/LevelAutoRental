@@ -14,12 +14,15 @@ import { EmptyState } from '../../../../components/ui/EmptyState';
 import { supabase } from '../../../../lib/supabase';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 import { useTranslation } from 'react-i18next';
-import { formatPrice, getSelectedCurrency } from '../../../../utils/currency';
+import { formatPrice } from '../../../../utils/currency';
+import { useExchangeRates } from '../../../../hooks/useExchangeRates';
+import { convertPrice } from '../../../../utils/car/pricing';
 
 // Cars Management View Component
 export const CarsView: React.FC = () => {
 
     const { t, i18n } = useTranslation();
+    const { selectedCurrency, eur, usd } = useExchangeRates();
     const navigate = useNavigate();
 
     const [cars, setCars] = useState<CarType[]>([]);
@@ -726,11 +729,11 @@ export const CarsView: React.FC = () => {
                             return (
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-lg font-bold text-white">{formatPrice(finalPrice, getSelectedCurrency(), i18n.language)}</span>
+                                        <span className="text-lg font-bold text-white">{formatPrice(convertPrice(finalPrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                         <span className="text-gray-400 text-sm">/zi</span>
                                     </div>
                                     {discount > 0 && (
-                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60 md:hidden">{formatPrice(basePrice, getSelectedCurrency(), i18n.language)}</span>
+                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60 md:hidden">{formatPrice(convertPrice(basePrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                     )}
                                 </div>
                             );
