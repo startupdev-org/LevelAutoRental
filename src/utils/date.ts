@@ -12,18 +12,26 @@ export const getMonthFromDate = (date: Date): string => {
     return month.charAt(0).toUpperCase() + month.slice(1);
 };
 
-export const formatDateLocal = (date: string | Date, _dateType?: string): string => {
+export const formatDateLocal = (
+    date: string | Date,
+    locale: string | 'en-GB' | 'ro-RO' | 'ru-RU' = 'ro-RO'
+): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
-
     if (isNaN(d.getTime())) return '';
 
-    // Format as "dd.mm.yyyy" (e.g., "10.02.2026")
     const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
-    
-    return `${day}.${month}.${year}`;
+
+    // ro-RO & ru-RU → 10.02.2026
+    if (locale === 'ro-RO' || locale === 'ru-RU') {
+        return `${day}.${month}.${year}`;
+    }
+
+    // en-GB → 10/02/2026
+    return `${day}/${month}/${year}`;
 };
+
 
 export const getDateDiffInDays = (date1: string | Date, date2: string | Date): number => {
     const toMidnight = (d: string | Date) => {
