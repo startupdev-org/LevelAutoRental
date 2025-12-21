@@ -16,10 +16,6 @@ import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
 import { Car as CarType } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { supabase, supabaseAdmin } from '../../../../lib/supabase';
-import { formatPrice } from '../../../../utils/currency';
-import i18n from '../../../../i18n/i18n';
-import { convertPrice } from '../../../../utils/car/pricing';
-import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 
 export interface CarDetailsEditViewProps {
     car: CarType;
@@ -29,7 +25,6 @@ export interface CarDetailsEditViewProps {
 
 export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onSave, onCancel }) => {
     const { t } = useTranslation();
-    const { selectedCurrency, eur, usd } = useExchangeRates()
     // Normalize category to array format for form
     const normalizedCategory = Array.isArray(car.category)
         ? car.category
