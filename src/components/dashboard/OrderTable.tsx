@@ -2,13 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Car as CarIcon, Loader2, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Car, RentalDTO } from '../../types';
-import { formatPrice, getSelectedCurrency } from '../../utils/currency';
+import { formatPrice } from '../../utils/currency';
 import { getCarName } from '../../utils/car/car';
 import { formatTime } from '../../utils/time';
 import { formatDateLocal } from '../../utils/date';
 import { fetchRentalsForAdminPaginated } from '../../lib/db/rentals/rentals';
-import { convertPrice } from '../../utils/car/pricing';
-import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 type OrdersTableProps = {
     title: string;
@@ -18,12 +16,13 @@ type OrdersTableProps = {
     initialSearch?: string;
     showCancelled?: boolean;
     onToggleShowCancelled?: () => void;
+    orderStatusFilter?: 'ACTIVE' | 'COMPLETED' | null;
+    onOrderStatusFilterChange?: (status: 'ACTIVE' | 'COMPLETED' | null) => void;
     cars?: Car[];
 };
 
-export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false, onOrderClick, initialSearch, showCancelled = false, onToggleShowCancelled, cars: propCars }) => {
+export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false, onOrderClick, initialSearch, showCancelled = false, onToggleShowCancelled, orderStatusFilter, onOrderStatusFilterChange, cars: propCars }) => {
     const { t, i18n } = useTranslation();
-    const { eur, usd } = useExchangeRates();
     const [searchQuery, setSearchQuery] = useState(initialSearch || '');
     const [sortBy, setSortBy] = useState<'date' | 'customer' | 'amount' | 'status' | null>('status');
 
@@ -45,7 +44,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [orders]);
+    }, [orders, orderStatusFilter]);
 
     useEffect(() => {
         const loadOrdersPaginated = async () => {
@@ -75,8 +74,26 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
         return await fetchRentalsForAdminPaginated(page, pageSize);
     }
 
-    const totalPages = Math.ceil(totalOrders / pageSize);
-    const paginatedOrders = orders;
+    // Filter orders based on status filter and cancelled visibility
+    const filteredOrders = orders.filter(order => {
+        // Filter by status (ACTIVE/COMPLETED)
+        if (orderStatusFilter && order.rental_status !== orderStatusFilter) {
+            return false;
+        }
+
+        // Filter cancelled orders if not showing them
+        if (!showCancelled && order.rental_status === 'CANCELLED') {
+            return false;
+        }
+
+        return true;
+    });
+
+    const totalPages = Math.ceil(filteredOrders.length / pageSize);
+    const paginatedOrders = filteredOrders.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
 
     const goToPage = (page: number) => {
         if (page < 1 || page > totalPages) return;
@@ -158,7 +175,30 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
                         <div>
                             <h2 className="text-lg md:text-xl font-bold text-white">{title}</h2>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                            {onOrderStatusFilterChange && (
+                                <>
+                                    <button
+                                        onClick={() => onOrderStatusFilterChange(orderStatusFilter === 'ACTIVE' ? null : 'ACTIVE')}
+                                        className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${orderStatusFilter === 'ACTIVE'
+                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 hover:bg-blue-500/30 hover:border-blue-500/60'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                            }`}
+                                    >
+                                        {orderStatusFilter === 'ACTIVE' ? t('admin.orders.hideActive') : t('admin.orders.showActive')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => onOrderStatusFilterChange(orderStatusFilter === 'COMPLETED' ? null : 'COMPLETED')}
+                                        className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm font-semibold rounded-lg border transition-all whitespace-nowrap ${orderStatusFilter === 'COMPLETED'
+                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/30 hover:border-emerald-500/60'
+                                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                            }`}
+                                    >
+                                        {orderStatusFilter === 'COMPLETED' ? t('admin.orders.hideCompleted') : t('admin.orders.showCompleted')}
+                                    </button>
+                                </>
+                            )}
                             {onToggleShowCancelled && (
                                 <button
                                     onClick={onToggleShowCancelled}
@@ -324,7 +364,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
                                     <p className="text-gray-400 text-xs mb-1">{t('admin.orders.amount')}</p>
                                     <p className="text-white font-semibold text-base">
                                         {order.total_amount && order.total_amount > 0 ? (
-                                            formatPrice(convertPrice(order.total_amount, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)
+                                            formatPrice(order.total_amount, 'MDL', i18n.language)
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -421,7 +461,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
                                     </td>
                                     <td className="px-6 py-3 text-white font-semibold text-sm">
                                         {order.total_amount && order.total_amount > 0 ? (
-                                            formatPrice(convertPrice(order.total_amount, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)
+                                            formatPrice(order.total_amount, 'MDL', i18n.language)
                                         ) : (
                                             <span className="text-gray-400">—</span>
                                         )}
@@ -436,7 +476,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
             {/* Pagination */}
             <div className="px-3 md:px-6 py-3 md:py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-xs md:text-sm text-gray-300 text-center sm:text-left">
-                    {t('admin.orders.showing')} {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.orders.to')} {Math.min(currentPage * pageSize, paginatedOrders.length)} {t('admin.orders.of')} {paginatedOrders.length} {t('admin.orders.orders')}
+                    {t('admin.orders.showing')} {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.orders.to')} {Math.min(currentPage * pageSize, filteredOrders.length)} {t('admin.orders.of')} {filteredOrders.length} {t('admin.orders.orders')}
                 </div>
                 <div className="flex items-center gap-2">
                     <button

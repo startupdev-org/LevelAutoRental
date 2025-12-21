@@ -9,16 +9,20 @@ import { useSearchParams } from 'react-router-dom';
 import { RentalDTO } from '../../../types';
 import { useTranslation } from 'react-i18next';
 import { fetchRentalsForAdmin } from '../../../lib/db/rentals/rentals';
+import { OrderDetailsModal } from '../../admin/components/modals/OrderDetailsModal';
 
 export const OrdersViewSection = () => {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const initialSearch = searchParams.get('search') || '';
     const [selectedOrder, setSelectedOrder] = useState<RentalDTO | null>(null);
+    const [orderNumber, setOrderNumber] = useState<number | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModalOpening, setIsModalOpening] = useState(false);
+    const [processingOrder, setProcessingOrder] = useState<string | null>(null);
     const [orders, setOrders] = useState<RentalDTO[]>([]);
     const [showCancelled, setShowCancelled] = useState(false);
+    const [orderStatusFilter, setOrderStatusFilter] = useState<'ACTIVE' | 'COMPLETED' | null>(null);
     const [loading, setLoading] = useState(false);
     const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -369,6 +373,48 @@ export const OrdersViewSection = () => {
         }
     };
 
+    const handleCancelOrder = async (order: RentalDTO) => {
+        setProcessingOrder(order.id.toString());
+        try {
+            const result = await cancelRentalOrder(order.id.toString());
+            if (result.success) {
+                // Close the modal after successful cancellation
+                setIsModalOpen(false);
+                setSelectedOrder(null);
+                setOrderNumber(undefined);
+                setIsModalOpening(false);
+                await loadOrders();
+            } else {
+                console.error('Failed to cancel order:', result.error);
+            }
+        } catch (error) {
+            console.error('Error cancelling order:', error);
+        } finally {
+            setProcessingOrder(null);
+        }
+    };
+
+    const handleRedoOrder = async (order: RentalDTO) => {
+        setProcessingOrder(order.id.toString());
+        try {
+            const result = await redoRentalOrder(order.id.toString());
+            if (result.success) {
+                // Close the modal after successful restoration
+                setIsModalOpen(false);
+                setSelectedOrder(null);
+                setOrderNumber(undefined);
+                setIsModalOpening(false);
+                await loadOrders();
+            } else {
+                console.error('Failed to restore order:', result.error);
+            }
+        } catch (error) {
+            console.error('Error restoring order:', error);
+        } finally {
+            setProcessingOrder(null);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20" >
@@ -398,6 +444,8 @@ export const OrdersViewSection = () => {
                         initialSearch={initialSearch}
                         showCancelled={showCancelled}
                         onToggleShowCancelled={() => setShowCancelled(!showCancelled)}
+                        orderStatusFilter={orderStatusFilter}
+                        onOrderStatusFilterChange={setOrderStatusFilter}
                         cars={[]}
                     />
                 </motion.div>
@@ -518,26 +566,24 @@ export const OrdersViewSection = () => {
             </motion.div>
 
             {/* Order Details Modal */}
-            {/* <BorrowRequestsDetailsModal
+            <OrderDetailsModal
                 isOpen={isModalOpen}
+                order={selectedOrder}
+                orderNumber={orderNumber}
                 onClose={() => {
-
                     setSelectedOrder(null);
                     setOrderNumber(undefined);
                     setIsModalOpening(false);
                 }}
-                order={selectedOrder}
-                orderNumber={orderNumber}
                 onCancel={handleCancelOrder}
                 onRedo={handleRedoOrder}
                 isProcessing={processingOrder === selectedOrder?.id.toString()}
-                cars={[]}
                 onOpenContractModal={() => {
                     setIsModalOpen(false); // Close order details modal
                     setShowContractModal(true); // Open contract modal
                     setIsModalOpening(false);
                 }}
-            /> */}
+            />
         </>
     );
 };

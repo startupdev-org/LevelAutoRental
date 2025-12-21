@@ -33,6 +33,7 @@ export const Admin: React.FC = () => {
     const orderId = searchParams.get('orderId');
     const carId = searchParams.get('carId');
 
+
     // URL sanitization - prevent infinite loops from malformed URLs
     useEffect(() => {
         const currentUrl = window.location.href;
@@ -506,7 +507,7 @@ export const Admin: React.FC = () => {
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+                        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
                     >
                         {/* Header */}
                         <div className="sticky top-0 border-b border-white/20 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>

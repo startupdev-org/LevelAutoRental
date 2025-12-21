@@ -9,7 +9,7 @@ import {
     RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { BorrowRequestDTO, Car } from '../../../../types';
+import { BorrowRequestDTO, Car, RentalDTO } from '../../../../types';
 import { formatDateLocal, getDateDiffInDays } from '../../../../utils/date';
 import { formatTime } from '../../../../utils/time';
 import { getCarPrice } from '../../../../utils/car/pricing';

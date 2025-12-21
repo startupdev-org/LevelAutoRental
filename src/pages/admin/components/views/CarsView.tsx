@@ -38,16 +38,13 @@ const formatCategories = (category: string | string[] | undefined): string => {
 import { CarDetailsEditView } from './CarDetailsEditView';
 import { CarFormModal } from '../modals/CarFormModal';
 import { formatPrice } from '../../../../utils/currency';
-import { convertPrice } from '../../../../utils/car/pricing';
-import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 
 export const CarsView: React.FC = () => {
     const { t, i18n } = useTranslation();
-    const { selectedCurrency, eur, usd } = useExchangeRates();
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | 'lastEdited'>('lastEdited');
+    const [sortBy, setSortBy] = useState<'price' | 'year' | 'status' | 'lastEdited' | null>('lastEdited');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingCar, setEditingCar] = useState<CarType | null>(null);
@@ -275,10 +272,9 @@ export const CarsView: React.FC = () => {
                         return supabase.storage
                             .from('cars')
                             .remove([filePath])
-                            .catch(err => {
-
-                                return null;
-                            });
+                    .catch(() => {
+                        return null;
+                    });
                     });
 
                     await Promise.all(deletePromises);
@@ -913,28 +909,28 @@ export const CarsView: React.FC = () => {
                                                             <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
                                                                 {car.discount_percentage && car.discount_percentage > 0
                                                                     ? Math.round((car.price_2_4_days || 0) * (1 - car.discount_percentage / 100))
-                                                                    : formatPrice(convertPrice(car.price_2_4_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                                    : formatPrice(car.price_2_4_days, 'MDL', i18n.language)}
                                                             </span>
                                                         )}
                                                         {(car.price_5_15_days || 0) > 0 && (
                                                             <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
                                                                 {car.discount_percentage && car.discount_percentage > 0
                                                                     ? Math.round((car.price_5_15_days || 0) * (1 - car.discount_percentage / 100))
-                                                                    : formatPrice(convertPrice(car.price_5_15_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                                    : formatPrice(car.price_5_15_days, 'MDL', i18n.language)}
                                                             </span>
                                                         )}
                                                         {(car.price_16_30_days || 0) > 0 && (
                                                             <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
                                                                 {car.discount_percentage && car.discount_percentage > 0
                                                                     ? Math.round((car.price_16_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                    : formatPrice(convertPrice(car.price_16_30_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                                    : formatPrice(car.price_16_30_days, 'MDL', i18n.language)}
                                                             </span>
                                                         )}
                                                         {(car.price_over_30_days || 0) > 0 && (
                                                             <span className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white font-semibold text-xs">
                                                                 {car.discount_percentage && car.discount_percentage > 0
                                                                     ? Math.round((car.price_over_30_days || 0) * (1 - car.discount_percentage / 100))
-                                                                    : formatPrice(convertPrice(car.price_over_30_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                                    : formatPrice(car.price_over_30_days, 'MDL', i18n.language)}
                                                             </span>
                                                         )}
                                                     </div>
