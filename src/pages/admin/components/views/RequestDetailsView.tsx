@@ -18,6 +18,7 @@ import { getCarName } from '../../../../utils/car/car';
 import { formatPrice, getSelectedCurrency } from '../../../../utils/currency';
 import i18n from '../../../../i18n/i18n';
 import { useExchangeRates } from '../../../../hooks/useExchangeRates';
+import { formatTime } from '../../../../utils/time';
 
 export interface RequestDetailsViewProps {
     request: BorrowRequestDTO;
@@ -328,23 +329,49 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                 >
                     <h2 className="text-xl font-bold text-white mb-4">Client</h2>
-                    <div className="flex items-center gap-4">
+
+                    {/* Client header */}
+                    <div className="flex items-center gap-4 mb-5">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
                             {request.customer_name?.[0]?.toUpperCase() || 'C'}
                         </div>
-                        <div>
-                            <div className="text-white font-semibold">{request.customer_name}</div>
-                            <div className="text-gray-300 text-sm">{request.customer_email}</div>
+
+                        <div className="flex-1">
+                            <div className="text-white font-semibold">
+                                {request.customer_name}
+                            </div>
+                            <div className="text-gray-300 text-sm">
+                                {request.customer_email}
+                            </div>
+
                             {request.customer_phone && (
                                 <a
                                     href={`tel:${request.customer_phone.replace(/\s/g, '')}`}
-                                    className="text-blue-400 hover:text-blue-300 transition-colors text-sm mt-1 inline-block underline decoration-blue-400/50 hover:decoration-blue-300"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors text-sm underline decoration-blue-400/50 hover:decoration-blue-300"
                                 >
                                     {request.customer_phone}
                                 </a>
                             )}
                         </div>
                     </div>
+
+                    {/* Comment section */}
+                    {request.comment && (
+                        <div className="relative bg-white/5 border border-white/10 rounded-lg p-4 pt-5">
+                            {/* Comment text */}
+                            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-line mb-3">
+                                {request.comment}
+                            </p>
+
+                            {/* Label */}
+                            <div className="flex justify-end">
+                                <span className="bg-white/10 px-2 py-0.5 text-xs text-gray-300 rounded">
+                                    Comment
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
                 </motion.div>
 
                 {/* Contract Info */}
@@ -446,21 +473,17 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             {request.requested_at && (
                                 <span className="text-gray-400 text-sm">
                                     Solicitată la {(() => {
-                                        // Parse UTC timestamp and ensure it's displayed in local time
-                                        let date = new Date(request.requested_at);
-
-                                        // If the timestamp string doesn't include timezone info, treat it as UTC
-                                        if (typeof request.requested_at === 'string' && !request.requested_at.includes('Z') && !request.requested_at.includes('+')) {
-                                            // Supabase timestamps are typically in UTC format like "2025-12-14T18:30:00"
-                                            date = new Date(request.requested_at + 'Z'); // Add Z to indicate UTC
-                                        }
-
-                                        const formattedDate = formatDateLocal(date, t('config.date'));
-                                        const formattedTime = date.toLocaleTimeString('ro-RO', {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            hour12: false
-                                        });
+                                        const formattedDate = formatDateLocal(request.requested_at, t('config.date'));
+                                        const formattedTime = formatTime(request.requested_at)
+                                        return `${formattedDate} la ${formattedTime}`;
+                                    })()}
+                                </span>
+                            )}
+                            {request.updated_at && (
+                                <span className="text-gray-400 text-sm">
+                                    Actualizată ultima dată la {(() => {
+                                        const formattedDate = formatDateLocal(request.updated_at, t('config.date'));
+                                        const formattedTime = formatTime(request.updated_at)
                                         return `${formattedDate} la ${formattedTime}`;
                                     })()}
                                 </span>
