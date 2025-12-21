@@ -1,9 +1,94 @@
-import { FavoriteCar, Rental, RentalDTO, BorrowRequest } from '../../../types';
+import { FavoriteCar, Rental, RentalDTO } from '../../../types';
 import { supabase } from '../../supabase';
 import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
 
 const ACTIVE_RENTAL_STATUS = 'ACTIVE';
+
+// Helper function to fetch and merge customer data for a rental
+async function fetchAndMergeCustomerData(rental: any): Promise<{
+    options: any;
+    customer_email?: string;
+    customer_phone?: string;
+    customer_first_name?: string;
+    customer_last_name?: string;
+}> {
+    let rentalOptions = rental.options;
+
+    // Extract customer info from rental object (primary) or options (fallback)
+    let customerInfo = {
+        customer_email: rental.customer_email || rentalOptions?.customerInfo?.email,
+        customer_phone: rental.customer_phone || rentalOptions?.customerInfo?.phone,
+        customer_first_name: rental.customer_first_name || rentalOptions?.customerInfo?.firstName,
+        customer_last_name: rental.customer_last_name || rentalOptions?.customerInfo?.lastName
+    };
+
+    // First, try to fetch from linked borrow request
+    if (rental.request_id) {
+        try {
+            const { data: requestData } = await supabase
+                .from('BorrowRequest')
+                .select('options, customer_email, customer_phone, customer_first_name, customer_last_name')
+                .eq('id', rental.request_id)
+                .single();
+
+            if (requestData) {
+                // Use options from request if not in rental
+                if (!rentalOptions && requestData.options) {
+                    rentalOptions = requestData.options;
+                }
+                // Use customer info from request if not in rental
+                if (!customerInfo.customer_email && requestData.customer_email) {
+                    customerInfo.customer_email = requestData.customer_email;
+                }
+                if (!customerInfo.customer_phone && requestData.customer_phone) {
+                    customerInfo.customer_phone = requestData.customer_phone;
+                }
+                if (!customerInfo.customer_first_name && requestData.customer_first_name) {
+                    customerInfo.customer_first_name = requestData.customer_first_name;
+                }
+                if (!customerInfo.customer_last_name && requestData.customer_last_name) {
+                    customerInfo.customer_last_name = requestData.customer_last_name;
+                }
+            }
+        } catch (err) {
+            console.debug('Could not fetch options/customer info from linked request:', err);
+        }
+    }
+
+    // If still no customer email, try to fetch from user profile
+    if (!customerInfo.customer_email && rental.user_id) {
+        try {
+            const { data: profileData } = await supabase
+                .from('Profiles')
+                .select('email, phone_number, first_name, last_name')
+                .eq('id', rental.user_id)
+                .single();
+
+            if (profileData) {
+                if (!customerInfo.customer_email && profileData.email) {
+                    customerInfo.customer_email = profileData.email;
+                }
+                if (!customerInfo.customer_phone && profileData.phone_number) {
+                    customerInfo.customer_phone = profileData.phone_number;
+                }
+                if (!customerInfo.customer_first_name && profileData.first_name) {
+                    customerInfo.customer_first_name = profileData.first_name;
+                }
+                if (!customerInfo.customer_last_name && profileData.last_name) {
+                    customerInfo.customer_last_name = profileData.last_name;
+                }
+            }
+        } catch (err) {
+            console.debug('Could not fetch customer info from user profile:', err);
+        }
+    }
+
+    return {
+        options: rentalOptions,
+        ...customerInfo
+    };
+}
 
 export async function getUserRentals(): Promise<RentalDTO[]> {
 
@@ -51,23 +136,8 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
         const carId = typeof rental.car_id === 'number' ? rental.car_id : parseInt(rental.car_id);
         let car = cars.find((c: any) => c.id === carId);
 
-        // Get options - if not in rental, try to fetch from linked request
-        let rentalOptions = rental.options;
-        if (!rentalOptions && rental.request_id) {
-            try {
-                const { data: requestData } = await supabase
-                    .from('BorrowRequest')
-                    .select('options')
-                    .eq('id', rental.request_id)
-                    .single();
-
-                if (requestData?.options) {
-                    rentalOptions = requestData.options;
-                }
-            } catch (err) {
-                console.debug('Could not fetch options from linked request:', err);
-            }
-        }
+        // Get customer data and options using helper function
+        const { options: rentalOptions, ...customerInfo } = await fetchAndMergeCustomerData(rental);
 
         // If car exists, ensure it has images from storage
         if (car) {
@@ -129,6 +199,11 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
             options: rentalOptions || undefined,
             request_id: rental.request_id,
             contract_url: rental.contract_url,
+            // Include customer information
+            customer_email: customerInfo.customer_email,
+            customer_phone: customerInfo.customer_phone,
+            customer_first_name: customerInfo.customer_first_name,
+            customer_last_name: customerInfo.customer_last_name,
         } as RentalDTO;
     }));
 
@@ -155,7 +230,16 @@ export async function fetchFavoriteCar(): Promise<FavoriteCar> {
     const favoriteCarId = data[0].car_id;
     const lastRental = data[0].last_rental;
     const borrowCount = data[0].rental_count;
-    // 
+
+    // Fetch car details if we have a favorite car ID
+    let car = null;
+    if (favoriteCarId) {
+        try {
+            car = await fetchCarWithImagesById(favoriteCarId.toString());
+        } catch (err) {
+            console.error('Error fetching favorite car details:', err);
+        }
+    }
 
     return {
         car,
@@ -274,7 +358,6 @@ export async function fetchRentalsForAdmin(
         )
     );
 
-    console.log('returning rentals:', rentals);
 
     return rentals;
 }
@@ -287,7 +370,6 @@ export async function fetchRentalsForAdminPaginated(
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    console.log('fetching info', { page, pageSize });
 
     const { data, error, count } = await supabase
         .from('Rentals')
@@ -300,12 +382,37 @@ export async function fetchRentalsForAdminPaginated(
     }
 
     const rentals: RentalDTO[] = await Promise.all(
-        data.map((rentalRow: Rental) =>
-            toRentalDTO(rentalRow, rentalRow.car_id)
-        )
+        data.map(async (rental: Rental) => {
+
+            // Get car with images
+            const carWithImage = await fetchCarWithImagesById(rental.car_id);
+
+            // Get customer data and options using helper function
+            const { options: rentalOptions, ...customerInfo } = await fetchAndMergeCustomerData(rental);
+
+            // Ensure price_per_day is a number, not a string
+            const pricePerDay = rental.price_per_day
+                ? (typeof rental.price_per_day === 'string' ? parseFloat(rental.price_per_day) : rental.price_per_day)
+                : undefined;
+
+            return {
+                ...rental,
+                id: rental.id, // Explicitly include id
+                car: carWithImage,
+                // Ensure all critical fields are present with proper types
+                price_per_day: pricePerDay,
+                options: rentalOptions || undefined,
+                request_id: rental.request_id,
+                contract_url: rental.contract_url,
+                // Include customer information
+                customer_email: customerInfo.customer_email,
+                customer_phone: customerInfo.customer_phone,
+                customer_first_name: customerInfo.customer_first_name,
+                customer_last_name: customerInfo.customer_last_name,
+            } as RentalDTO;
+        })
     );
 
-    console.log('returning rentals:', rentals);
 
     return {
         rentals,

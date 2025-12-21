@@ -16,6 +16,7 @@ export interface Car {
   photo_gallery?: string[] | null;
   seats?: number;
   transmission?: 'Automatic' | 'Manual';
+  updated_at?: string;
   body?: 'Coupe' | 'Sedan' | 'SUV';
   fuel_type?: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol';
   features?: string[];
@@ -166,8 +167,11 @@ export interface Rental {
   id?: string;
   request_id: string;
 
-  user_id?: string;
+  user_id?: string | null;
   customer_email: string;
+  customer_phone?: string;
+  customer_first_name?: string;
+  customer_last_name?: string;
 
   car_id: string;
   price_per_day: string | number;
@@ -191,8 +195,11 @@ export interface RentalDTO {
   id: string;
   request_id: string;
 
-  user_id?: string;
+  user_id?: string | null;
   customer_email: string;
+  customer_phone?: string;
+  customer_first_name?: string;
+  customer_last_name?: string;
 
   car?: Car;
   car_id: string;

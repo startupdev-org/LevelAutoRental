@@ -21,8 +21,6 @@ interface CalendarPageDesktopProps {
     selectedDayReturns: BorrowRequestDTO[];
     setSelectedDate: (date: string | null) => void;
     selectedCar: Car | null;
-    setSelectedOrder: (order: BorrowRequestDTO | null) => void;
-    setIsModalOpen: (open: boolean) => void;
     formatTime: (timeString: string) => string;
 }
 
@@ -38,8 +36,6 @@ export const CalendarPageDesktop: React.FC<CalendarPageDesktopProps> = ({
     selectedDayPickups,
     selectedDayReturns,
     setSelectedDate,
-    setSelectedOrder,
-    setIsModalOpen,
     formatTime,
 }) => {
     const { t } = useTranslation();

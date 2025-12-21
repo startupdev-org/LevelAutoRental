@@ -9,12 +9,11 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { BorrowRequestDTO, Car } from '../../../../types';
-import { calculatePriceSummary, convertPrice, PriceSummaryResult } from '../../../../utils/car/pricing';
+import { calculatePriceSummary, PriceSummaryResult } from '../../../../utils/car/pricing';
 import { OptionsState } from '../../../../constants/rentalOptions';
 import { DollarSign } from 'lucide-react';
 import { formatTimeHHMM } from '../../../../utils/time/time';
 import { formatPrice } from '../../../../utils/currency';
-import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 import { useTranslation } from 'react-i18next';
 
 export interface EditRequestModalProps {
@@ -27,7 +26,6 @@ export interface EditRequestModalProps {
 export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, request, onSave, onClose }) => {
 
     const { t, i18n } = useTranslation();
-    const { selectedCurrency, eur, usd } = useExchangeRates();
 
     // Helper function to format date to YYYY-MM-DD for HTML date input
     const formatDateForInput = (date: Date | string | undefined): string => {
@@ -761,7 +759,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                 {/* Price per day and duration */}
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-300 text-xs sm:text-sm">Preț pe zi</span>
-                                    <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(convertPrice(priceSummary.pricePerDay, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
+                                    <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(priceSummary.pricePerDay, 'MDL', i18n.language)}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-300 text-xs sm:text-sm">Durată închiriere</span>
@@ -774,7 +772,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                 <div className="pt-2 border-t border-white/10">
                                     <div className="flex justify-between items-center">
                                         <span className="text-white font-medium text-sm sm:text-base">Preț de bază</span>
-                                        <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(convertPrice(priceSummary.basePrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
+                                        <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(priceSummary.basePrice, 'MDL', i18n.language)}</span>
                                     </div>
                                 </div>
 
@@ -787,7 +785,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Kilometraj nelimitat</span>
                                                     <span className="text-white font-medium">
-                                                        {formatPrice(convertPrice(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                        {formatPrice(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5, 'MDL', i18n.language)}
                                                     </span>
                                                 </div>
                                             )}
@@ -795,7 +793,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Șofer personal</span>
                                                     <span className="text-white font-medium">
-                                                        {formatPrice(convertPrice(800 * (priceSummary.totalHours / 24), selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                        {formatPrice(800 * (priceSummary.totalHours / 24), 'MDL', i18n.language)}
                                                     </span>
                                                 </div>
                                             )}
@@ -803,7 +801,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Priority Service</span>
                                                     <span className="text-white font-medium">
-                                                        {formatPrice(convertPrice(1000 * (priceSummary.totalHours / 24), selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                        {formatPrice(1000 * (priceSummary.totalHours / 24), 'MDL', i18n.language)}
                                                     </span>
                                                 </div>
                                             )}
@@ -811,7 +809,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Scaun auto pentru copii</span>
                                                     <span className="text-white font-medium">
-                                                        {formatPrice(convertPrice(100 * (priceSummary.totalHours / 24), selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                        {formatPrice(100 * (priceSummary.totalHours / 24), 'MDL', i18n.language)}
                                                     </span>
                                                 </div>
                                             )}
@@ -819,7 +817,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Cartelă SIM cu internet</span>
                                                     <span className="text-white font-medium">
-                                                        {formatPrice(convertPrice(100 * (priceSummary.totalHours / 24), selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                        {formatPrice(100 * (priceSummary.totalHours / 24), 'MDL', i18n.language)}
                                                     </span>
                                                 </div>
                                             )}
@@ -827,13 +825,13 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Asistență rutieră 24/7</span>
                                                     <span className="text-white font-medium">
-                                                        {formatPrice(convertPrice(500 * (priceSummary.totalHours / 24), selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                        {formatPrice(500 * (priceSummary.totalHours / 24), 'MDL', i18n.language)}
                                                     </span>
                                                 </div>
                                             )}
                                             <div className="flex justify-between pt-2 border-t border-white/10">
                                                 <span className="text-white font-medium">Costuri suplimentare</span>
-                                                {formatPrice(convertPrice(500 * (priceSummary.additionalCosts), selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                                {formatPrice(500 * (priceSummary.additionalCosts), 'MDL', i18n.language)}
                                             </div>
                                         </div>
                                     </div>
@@ -843,7 +841,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                 <div className="pt-3 border-t border-white/20">
                                     <div className="flex justify-between items-center">
                                         <span className="text-white font-bold text-base">Total</span>
-                                        <span className="text-emerald-400 font-bold text-lg">{formatPrice(convertPrice(priceSummary.totalPrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
+                                        <span className="text-emerald-400 font-bold text-lg">{formatPrice(priceSummary.totalPrice, 'MDL', i18n.language)}</span>
                                     </div>
                                 </div>
                             </div>

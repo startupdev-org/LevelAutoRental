@@ -14,7 +14,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Filter, User, Clock, X } from "lucide-react";
 import { CalendarPageDesktop } from "./CalendarPageDesktop";
 import { useTranslation } from 'react-i18next';
-import { fetchCarsModels } from "../../../lib/db/cars/cars-page/cars";
 import { getMakeLogo, getCarName } from "../../../utils/car/car";
 import { formatTime } from "../../../utils/time";
 import { fetchBorrowRequestForCalendarPage } from "../../../lib/db/requests/requests";
@@ -30,8 +29,6 @@ export const CalendarPage: React.FC<Props> = () => {
     const [showFilters, setShowFilters] = useState(false);
     const [selectedCar, setSelectedCar] = useState<Car | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedOrder, setSelectedOrder] = useState<BorrowRequestDTO | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [orders, setOrders] = useState<BorrowRequestDTO[]>([]);
     const [cars, setCars] = useState<Car[]>([]);
     const [isDesktop, setIsDesktop] = useState(false);
@@ -326,29 +323,15 @@ export const CalendarPage: React.FC<Props> = () => {
         });
 
         if (filters.make) {
-            filteredOrders = filteredOrders.filter((o) => {
-                const car = fetchCarsModels(filters.make);
-                if (!car) return false;
+            filteredOrders = filteredOrders.filter((order) => {
+                if (!order.car) return false;
 
-                // Try to get make and model from car object
-                let make = '';
-                let model = '';
+                const car = order.car;
+                const carMake = car.make || '';
+                const carModel = car.model || '';
 
-                // First, try to use make and model properties directly
-                if ((car as any).make && (car as any).model) {
-                    make = (car as any).make;
-                    model = (car as any).model;
-                } else {
-                    // Fallback to parsing from name
-                    const carName = (car as any).name || '';
-                    const parts = carName.split(" ");
-                    const firstPart = parts[0];
-                    make = firstPart.includes("-") ? firstPart.split("-")[0] : firstPart;
-                    model = parts.slice(1).join(" ");
-                }
-
-                const matchesMake = make === filters.make;
-                const matchesModel = filters.model ? model === filters.model : true;
+                const matchesMake = carMake.toLowerCase() === filters.make.toLowerCase();
+                const matchesModel = filters.model ? carModel.toLowerCase() === filters.model.toLowerCase() : true;
 
                 return matchesMake && matchesModel;
             });
@@ -411,7 +394,7 @@ export const CalendarPage: React.FC<Props> = () => {
                 {/* Sort Controls */}
                 <div className="flex flex-col lg:flex-row lg:flex-wrap items-start lg:items-center gap-2 lg:gap-2">
                     {/* Desktop: Sortează după label */}
-                    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 w-auto">
                         {/* Filter button on mobile - in same row */}
                         {!isDesktop && !selectedCar && (
                             <button
@@ -477,7 +460,8 @@ export const CalendarPage: React.FC<Props> = () => {
                     const carMake = isMakeOnly ? (selectedCar as any).make : getCarMake(displayName);
                     const logoPath = getMakeLogo(carMake);
                     return (
-                        <div className="px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-medium flex items-center gap-1.5 max-w-full">
+                        <div className="w-auto self-start">
+                            <div className="px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-medium inline-flex items-center gap-1.5">
                             {logoPath && (
                                 <img
                                     src={logoPath}
@@ -498,6 +482,7 @@ export const CalendarPage: React.FC<Props> = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
+                        </div>
                         </div>
                     );
                 })()}
@@ -1025,8 +1010,6 @@ export const CalendarPage: React.FC<Props> = () => {
                         selectedDayReturns={selectedDayReturns}
                         setSelectedDate={setSelectedDate}
                         selectedCar={selectedCar}
-                        setSelectedOrder={setSelectedOrder}
-                        setIsModalOpen={setIsModalOpen}
                         formatTime={formatTime}
                     />
                 );

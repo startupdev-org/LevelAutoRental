@@ -1,6 +1,6 @@
 import { BorrowRequest, BorrowRequestDTO, Car } from '../../../types';
 import { getCarPrice } from '../../../utils/car/pricing';
-import { calculateRentalDuration, getDateDiffInDays } from '../../../utils/date';
+import { calculateRentalDuration } from '../../../utils/date';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 import { formatDateForSQL } from '../rentals/rentals';
@@ -93,6 +93,7 @@ export async function fetchBorrowRequestById(requestId: string): Promise<BorrowR
         const requestDTO: BorrowRequestDTO = {
             id: data.id.toString(),
             car_id: data.car_id.toString(),
+            user_id: data.user_id,
             start_date: data.start_date,
             start_time: data.start_time,
             end_date: data.end_date,
@@ -579,7 +580,7 @@ export async function createUserBorrowRequest(
  * Create a new rental manually (by admin)
  */
 export async function createRentalManually(
-    userId: string,
+    userId: string | null,
     carId: string,
     startDate: string,
     startTime: string,
@@ -651,9 +652,20 @@ export async function createRentalManually(
                 payment_method: options?.paymentMethod || null,
                 notes: options?.notes || null,
                 special_requests: options?.specialRequests || null,
-                options: options?.options || null, // Store service options as JSON
                 request_id: options?.requestId ? (typeof options.requestId === 'string' ? parseInt(options.requestId) : options.requestId) : null,
                 contract_url: options?.contractUrl || null,
+                customer_email: options?.customerEmail || null, // Always store customer email as backup
+                // Store full customer info in options JSON
+                options: {
+                    ...(options?.options || {}),
+                    customerInfo: {
+                        email: options?.customerEmail,
+                        phone: options?.customerPhone,
+                        firstName: options?.customerFirstName,
+                        lastName: options?.customerLastName,
+                        name: options?.customerName
+                    }
+                },
             })
             .select()
             .single();
@@ -666,6 +678,98 @@ export async function createRentalManually(
     } catch (error) {
         console.error('Error creating rental manually:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+/**
+ * Backfill customer information for existing rentals that have request_id but null customer data
+ */
+export async function backfillRentalCustomerInfo(): Promise<{ success: boolean; updated: number; error?: string }> {
+    try {
+        // Get rentals that have request_id
+        const { data: rentalsToUpdate, error: fetchError } = await supabase
+            .from('Rentals')
+            .select('id, request_id, options, user_id, customer_email')
+            .not('request_id', 'is', null);
+
+        if (fetchError) {
+            return { success: false, updated: 0, error: fetchError.message };
+        }
+
+        if (!rentalsToUpdate || rentalsToUpdate.length === 0) {
+            return { success: true, updated: 0 };
+        }
+
+        let updatedCount = 0;
+
+        // For each rental, check if it needs customer info backfilled
+        for (const rental of rentalsToUpdate) {
+            // Skip if rental already has user_id or customer info in options
+            const hasUserId = rental.user_id;
+            const hasCustomerInfo = rental.options?.customerInfo?.email;
+
+            if (hasUserId && hasCustomerInfo) {
+                continue; // Already has customer data
+            }
+
+            const { data: requestData, error: requestError } = await supabase
+                .from('BorrowRequest')
+                .select('user_id, customer_email, customer_phone, customer_first_name, customer_last_name')
+                .eq('id', rental.request_id)
+                .single();
+
+            if (requestError || !requestData) {
+                console.warn(`Could not fetch request data for rental ${rental.id}, request ${rental.request_id}`);
+                continue;
+            }
+
+            // Prepare update data
+            const updateData: any = {};
+
+            // Always try to set user_id if the request has one and rental doesn't
+            if (!hasUserId && requestData.user_id) {
+                updateData.user_id = requestData.user_id;
+            }
+
+            // Always set customer_email as backup if not set
+            if (!rental.customer_email && requestData.customer_email) {
+                updateData.customer_email = requestData.customer_email;
+            }
+
+            // Set customer info in options if not already set
+            if (!hasCustomerInfo) {
+                updateData.options = {
+                    ...(rental.options || {}),
+                    customerInfo: {
+                        email: requestData.customer_email,
+                        phone: requestData.customer_phone,
+                        firstName: requestData.customer_first_name,
+                        lastName: requestData.customer_last_name
+                    }
+                };
+            }
+
+            if (Object.keys(updateData).length === 0) {
+                continue; // Nothing to update
+            }
+
+            // Update the rental with customer information
+            const { error: updateError } = await supabase
+                .from('Rentals')
+                .update(updateData)
+                .eq('id', rental.id);
+
+            if (updateError) {
+                console.error(`Failed to update rental ${rental.id}:`, updateError);
+            } else {
+                updatedCount++;
+            }
+        }
+
+        return { success: true, updated: updatedCount };
+    } catch (error) {
+        console.error('Error in backfillRentalCustomerInfo:', error);
+        return { success: false, updated: 0, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
 
@@ -694,14 +798,28 @@ export async function isDateInActualApprovedRequest(
     date: string,
     carId: string
 ): Promise<boolean> {
+    try {
+        const startOfDay = `${date} 00:00:00`;
+        const endOfDay = `${date} 23:59:59`;
 
+        const { data, error } = await supabase
+            .from('BorrowRequest')
+            .select('id')
+            .eq('car_id', parseInt(carId))
+            .or('status.eq.APPROVED,status.eq.PROCESSED')
+            .lte('start_date', endOfDay)
+            .gte('end_date', startOfDay);
 
-    if (error) {
-        console.error('Error checking date in rental:', error.message);
+        if (error) {
+            console.error('Error checking date in approved request:', error);
+            return false;
+        }
+
+        return (data?.length ?? 0) > 0;
+    } catch (error) {
+        console.error('Error in isDateInActualApprovedRequest:', error);
         return false;
     }
-
-    return (data?.length ?? 0) > 0;
 }
 
 
