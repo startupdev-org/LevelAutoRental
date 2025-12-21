@@ -2,13 +2,14 @@ import { createPortal } from 'react-dom';
 import { X, Calendar, Clock, FileText, Download } from 'lucide-react';
 import { BorrowRequestDTO } from '../../types';
 import { useTranslation } from 'react-i18next';
-import { calculatePriceSummary } from '../../utils/car/pricing';
+import { calculatePriceSummary, convertPrice } from '../../utils/car/pricing';
 import { formatDateLocal } from '../../utils/date';
 import { formatTime } from '../../utils/time';
 import { parseRequestOptions } from '../../utils/car/options';
 import { getCarName } from '../../utils/car/car';
 import { displayId } from '../../utils/requests/requests';
 import { formatPrice, getSelectedCurrency } from '../../utils/currency';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 interface BorrowRequestsDetailsModalProps {
     isOpen: boolean;
@@ -29,6 +30,7 @@ export function BorrowRequestsDetailsModal({
 }: BorrowRequestsDetailsModalProps) {
 
     const { t, i18n } = useTranslation();
+    const { selectedCurrency, eur, usd } = useExchangeRates()
 
     if (!isOpen || !order) return null;
 
@@ -211,7 +213,7 @@ export function BorrowRequestsDetailsModal({
                                             {t('admin.requestDetails.pricePerDay')}
                                         </span>
                                         <span className="text-white font-semibold text-sm sm:text-base">
-                                            {formatPrice(summary.pricePerDay, selectedCurrency, i18n.language)}
+                                            {formatPrice(convertPrice(summary.pricePerDay, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                         </span>
                                     </div>
 
@@ -230,7 +232,7 @@ export function BorrowRequestsDetailsModal({
                                                 {t('admin.requestDetails.basePrice')}
                                             </span>
                                             <span className="text-white font-semibold text-sm sm:text-base">
-                                                {formatPrice(summary.baseCarPrice, selectedCurrency, i18n.language)}
+                                                {formatPrice(convertPrice(summary.baseCarPrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                             </span>
                                         </div>
                                     </div>
@@ -241,7 +243,7 @@ export function BorrowRequestsDetailsModal({
                                                 {t('admin.requestDetails.total')}
                                             </span>
                                             <span className="text-emerald-400 font-bold text-lg sm:text-xl">
-                                                {formatPrice(summary.totalPrice, selectedCurrency, i18n.language)}
+                                                {formatPrice(convertPrice(summary.totalPrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                             </span>
                                         </div>
                                     </div>
