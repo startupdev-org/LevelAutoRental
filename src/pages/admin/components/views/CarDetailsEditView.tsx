@@ -588,7 +588,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <label className="block text-sm font-medium text-gray-300 mb-2">2-4 zile</label>
                                 <input
                                     type="number"
-                                    value={formatPrice(convertPrice(formData.price_2_4_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language) || ''}
+                                    value={formData.price_2_4_days}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
                                         price_2_4_days: parseFloat(e.target.value) || 0
@@ -608,7 +608,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <label className="block text-sm font-medium text-gray-300 mb-2">5-15 zile</label>
                                 <input
                                     type="number"
-                                    value={formatPrice(convertPrice(formData.price_5_15_days, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
+                                    value={formData.price_5_15_days}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
                                         price_5_15_days: parseFloat(e.target.value) || 0
@@ -628,7 +628,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <label className="block text-sm font-medium text-gray-300 mb-2">16-30 zile</label>
                                 <input
                                     type="number"
-                                    value={(formData as any).price_16_30_days || formData.price_16_30_days || ''}
+                                    value={formData.price_16_30_days}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
                                         price_16_30_days: parseFloat(e.target.value) || 0
@@ -648,7 +648,7 @@ export const CarDetailsEditView: React.FC<CarDetailsEditViewProps> = ({ car, onS
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Peste 30 zile</label>
                                 <input
                                     type="number"
-                                    value={(formData as any).price_over_30_days || formData.price_over_30_days || ''}
+                                    value={formData.price_over_30_days}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
                                         price_over_30_days: parseFloat(e.target.value) || 0
