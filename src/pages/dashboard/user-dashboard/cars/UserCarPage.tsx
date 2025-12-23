@@ -1,37 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
     Car as CarIcon,
-    Eye,
     ArrowRight,
     Users,
 } from 'lucide-react';
 import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
-import { Car, CarFilterOptions, Car as CarType } from '../../../../types';
-import { fetchCars } from '../../../../lib/db/cars/cars-page/cars';
+import { Car as CarType } from '../../../../types';
+import { fetchCarsPaginated } from '../../../../lib/db/cars/cars-page/cars';
 import { LoadingState } from '../../../../components/ui/LoadingState';
 import { EmptyState } from '../../../../components/ui/EmptyState';
 import { supabase } from '../../../../lib/supabase';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
-import { AnimatePresence } from 'framer-motion';
-import { UserCreateRentalRequestModal } from '../../../../components/modals/UserCreateRentalRequestModal/UserCreateRentalRequestModal';
-
+import { useTranslation } from 'react-i18next';
+import { formatPrice } from '../../../../utils/currency';
+import { useExchangeRates } from '../../../../hooks/useExchangeRates';
+import { convertPrice } from '../../../../utils/car/pricing';
 
 // Cars Management View Component
 export const CarsView: React.FC = () => {
-    const [searchParams, setSearchParams] = useSearchParams();
+
+    const { t, i18n } = useTranslation();
+    const { selectedCurrency, eur, usd } = useExchangeRates();
     const navigate = useNavigate();
+
     const [cars, setCars] = useState<CarType[]>([]);
-    const [allCars, setAllCars] = useState<CarType[]>([]);
-
-    // Modal state for rental request
-    const [isRentalModalOpen, setIsRentalModalOpen] = useState(false);
-    const [selectedCarForRental, setSelectedCarForRental] = useState<CarType | null>(null);
-
-
     const [page, setPage] = useState(1);
-    const pageSize = 5;
+    const pageSize = 6;
 
     const [totalCars, setTotalCars] = useState(0);
 
@@ -41,79 +37,39 @@ export const CarsView: React.FC = () => {
 
 
 
-    async function handleFetchCarsWithSortByFilters() {
-        setLoading(true); // start loading
+    async function handleFetchCars() {
+        setLoading(true);
+
         try {
-            const allCars = await fetchCars();
-            setAllCars(allCars);
-            setTotalCars(allCars.length);
+            const res = await fetchCarsPaginated(page, pageSize);
 
-            // Apply client-side pagination
-            const startIndex = (page - 1) * pageSize;
-            const endIndex = startIndex + pageSize;
-            const paginatedCars = allCars.slice(startIndex, endIndex);
-            setCars(paginatedCars);
+            setCars(res.data);
+            setTotalCars(res.total);
 
-            // Batch fetch availability and images for current page cars only
-            if (paginatedCars && paginatedCars.length > 0) {
+            if (res.data.length > 0) {
                 await Promise.all([
-                    fetchCarsAvailability(paginatedCars),
-                    fetchCarsImages(paginatedCars)
+                    fetchCarsAvailability(res.data),
+                    fetchCarsImages(res.data),
                 ]);
             }
         } catch (error) {
             console.error(error);
         } finally {
-            setLoading(false); // stop loading
+            setLoading(false);
         }
     }
 
+
     // Fetch cars on mount
     useEffect(() => {
-        handleFetchCarsWithSortByFilters();
-    }, []);
+        handleFetchCars();
+    }, [page]);
 
-    // Handle page changes by slicing allCars
-    useEffect(() => {
-        if (allCars.length > 0) {
-            const startIndex = (page - 1) * pageSize;
-            const endIndex = startIndex + pageSize;
-            const paginatedCars = allCars.slice(startIndex, endIndex);
-            setCars(paginatedCars);
-        }
-    }, [page, allCars, pageSize]);
-
-
-    const getCurrentFilters = (): CarFilterOptions => {
-        return {
-            sortBy: null,
-            sortOrder: 'asc',
-            status: null,
-            page,
-            pageSize
-        };
-    };
 
 
     const handleViewCarDetails = (car: CarType) => {
         navigate(`/cars/${car.id}`);
     };
-
-    function handleOpenModal(car: CarType) {
-        
-        
-        setSelectedCarForRental(car);
-        
-        setIsRentalModalOpen(true);
-        
-    };
-
-    function handleCloseRentalModal() {
-        
-        setIsRentalModalOpen(false);
-        setSelectedCarForRental(null);
-    }
-
 
     // Batch fetch availability data for all cars
     const fetchCarsAvailability = async (cars: CarType[]) => {
@@ -571,32 +527,6 @@ export const CarsView: React.FC = () => {
             );
         };
 
-        const getStatusColor = (status: string) => {
-            switch (status) {
-                case 'available':
-                    return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50';
-                case 'borrowed':
-                    return 'bg-red-500/20 text-red-300 border-red-500/50';
-                case 'maintenance':
-                    return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50';
-                default:
-                    return 'bg-gray-500/20 text-gray-300 border-gray-500/50';
-            }
-        };
-
-        const getStatusText = (status: string) => {
-            switch (status) {
-                case 'available':
-                    return 'Available';
-                case 'borrowed':
-                    return 'Liber de pe [date]'; // Available from [date] - placeholder
-                case 'maintenance':
-                    return 'În reparație'; // Keep Romanian for maintenance as it's a status
-                default:
-                    return status;
-            }
-        };
-
         return (
             <div className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-md rounded-3xl border border-white/20 overflow-hidden transition-all duration-300 group cursor-pointer hover:-translate-y-2 hover:shadow-2xl">
                 {/* Advanced Photo Gallery Container */}
@@ -799,11 +729,11 @@ export const CarsView: React.FC = () => {
                             return (
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-bold text-white">{finalPrice.toFixed(0)} MDL</span>
+                                        <span className="text-lg font-bold text-white">{formatPrice(convertPrice(finalPrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                         <span className="text-gray-400 text-sm">/zi</span>
                                     </div>
                                     {discount > 0 && (
-                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60 md:hidden">{basePrice} MDL</span>
+                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60 md:hidden">{formatPrice(convertPrice(basePrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                     )}
                                 </div>
                             );
@@ -811,15 +741,12 @@ export const CarsView: React.FC = () => {
 
                         {/* Rent Button */}
                         <button
-                            onClick={() => handleOpenModal(carWithImages)}
-                            disabled={carWithImages.status !== 'available'}
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-sm font-semibold ${carWithImages.status === 'available'
-                                ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                                : 'bg-gray-600/20 text-gray-400 cursor-not-allowed border border-gray-500/30'
-                                }`}
+                            onClick={() => handleViewCarDetails(car)}
+                            // disabled={carWithImages.status !== 'available'}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 text-sm font-semibold bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
                         >
-                            <ArrowRight size={16} />
                             Închiriază
+                            <ArrowRight size={16} />
                         </button>
                     </div>
                 </div>
@@ -953,17 +880,6 @@ export const CarsView: React.FC = () => {
                     )}
                 </>
             )}
-
-            {/* Rental Request Modal */}
-            {selectedCarForRental && (
-                <UserCreateRentalRequestModal
-                    isOpen={isRentalModalOpen}
-                    onClose={handleCloseRentalModal}
-                    car={selectedCarForRental}
-                    initialCarId={selectedCarForRental?.id}
-                />
-            )}
-
         </div>
     );
 };

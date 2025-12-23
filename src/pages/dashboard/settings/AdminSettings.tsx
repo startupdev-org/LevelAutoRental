@@ -26,7 +26,8 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ onBackToSite, onLogout }) => {
     const { t } = useTranslation();
     const { userProfile, user } = useAuth();
-    const [showProfileSettings, setShowProfileSettings] = useState(false);
+    // On desktop, directly show profile settings since logout/back buttons are in sidebar
+    const [showProfileSettings, setShowProfileSettings] = useState(window.innerWidth >= 1024);
     const [tab, setTab] = useState<TabKey>("profile");
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -141,7 +142,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToSite, onLogout }) =>
     };
 
 
-    // Main menu view
+    // Main menu view (only shown on mobile)
     if (!showProfileSettings) {
         return (
             <div className="space-y-4">
@@ -176,17 +177,19 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToSite, onLogout }) =>
         );
     }
 
-    // Profile settings view
+    // Profile settings view (direct display on desktop)
     return (
         <div className="space-y-6">
-            {/* Back Button */}
-            <button
-                onClick={() => setShowProfileSettings(false)}
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-4"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Înapoi</span>
-            </button>
+            {/* Back Button - Only show on mobile/tablet */}
+            {window.innerWidth < 1024 && (
+                <button
+                    onClick={() => setShowProfileSettings(false)}
+                    className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-4"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Înapoi</span>
+                </button>
+            )}
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-2">

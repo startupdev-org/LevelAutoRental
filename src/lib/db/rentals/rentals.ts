@@ -1,8 +1,94 @@
-import { FavoriteCar, Rental, RentalDTO, BorrowRequest } from '../../../types';
+import { FavoriteCar, Rental, RentalDTO } from '../../../types';
 import { supabase } from '../../supabase';
 import { fetchCarIdsByQuery, fetchCarWithImagesById, fetchImagesByCarName } from '../cars/cars';
 import { getLoggedUser } from '../user/profile';
 
+const ACTIVE_RENTAL_STATUS = 'ACTIVE';
+
+// Helper function to fetch and merge customer data for a rental
+async function fetchAndMergeCustomerData(rental: any): Promise<{
+    options: any;
+    customer_email?: string;
+    customer_phone?: string;
+    customer_first_name?: string;
+    customer_last_name?: string;
+}> {
+    let rentalOptions = rental.options;
+
+    // Extract customer info from rental object (primary) or options (fallback)
+    let customerInfo = {
+        customer_email: rental.customer_email || rentalOptions?.customerInfo?.email,
+        customer_phone: rental.customer_phone || rentalOptions?.customerInfo?.phone,
+        customer_first_name: rental.customer_first_name || rentalOptions?.customerInfo?.firstName,
+        customer_last_name: rental.customer_last_name || rentalOptions?.customerInfo?.lastName
+    };
+
+    // First, try to fetch from linked borrow request
+    if (rental.request_id) {
+        try {
+            const { data: requestData } = await supabase
+                .from('BorrowRequest')
+                .select('options, customer_email, customer_phone, customer_first_name, customer_last_name')
+                .eq('id', rental.request_id)
+                .single();
+
+            if (requestData) {
+                // Use options from request if not in rental
+                if (!rentalOptions && requestData.options) {
+                    rentalOptions = requestData.options;
+                }
+                // Use customer info from request if not in rental
+                if (!customerInfo.customer_email && requestData.customer_email) {
+                    customerInfo.customer_email = requestData.customer_email;
+                }
+                if (!customerInfo.customer_phone && requestData.customer_phone) {
+                    customerInfo.customer_phone = requestData.customer_phone;
+                }
+                if (!customerInfo.customer_first_name && requestData.customer_first_name) {
+                    customerInfo.customer_first_name = requestData.customer_first_name;
+                }
+                if (!customerInfo.customer_last_name && requestData.customer_last_name) {
+                    customerInfo.customer_last_name = requestData.customer_last_name;
+                }
+            }
+        } catch (err) {
+            console.debug('Could not fetch options/customer info from linked request:', err);
+        }
+    }
+
+    // If still no customer email, try to fetch from user profile
+    if (!customerInfo.customer_email && rental.user_id) {
+        try {
+            const { data: profileData } = await supabase
+                .from('Profiles')
+                .select('email, phone_number, first_name, last_name')
+                .eq('id', rental.user_id)
+                .single();
+
+            if (profileData) {
+                if (!customerInfo.customer_email && profileData.email) {
+                    customerInfo.customer_email = profileData.email;
+                }
+                if (!customerInfo.customer_phone && profileData.phone_number) {
+                    customerInfo.customer_phone = profileData.phone_number;
+                }
+                if (!customerInfo.customer_first_name && profileData.first_name) {
+                    customerInfo.customer_first_name = profileData.first_name;
+                }
+                if (!customerInfo.customer_last_name && profileData.last_name) {
+                    customerInfo.customer_last_name = profileData.last_name;
+                }
+            }
+        } catch (err) {
+            console.debug('Could not fetch customer info from user profile:', err);
+        }
+    }
+
+    return {
+        options: rentalOptions,
+        ...customerInfo
+    };
+}
 
 export async function getUserRentals(): Promise<RentalDTO[]> {
 
@@ -50,23 +136,8 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
         const carId = typeof rental.car_id === 'number' ? rental.car_id : parseInt(rental.car_id);
         let car = cars.find((c: any) => c.id === carId);
 
-        // Get options - if not in rental, try to fetch from linked request
-        let rentalOptions = rental.options;
-        if (!rentalOptions && rental.request_id) {
-            try {
-                const { data: requestData } = await supabase
-                    .from('BorrowRequest')
-                    .select('options')
-                    .eq('id', rental.request_id)
-                    .single();
-                
-                if (requestData?.options) {
-                    rentalOptions = requestData.options;
-                }
-            } catch (err) {
-                console.debug('Could not fetch options from linked request:', err);
-            }
-        }
+        // Get customer data and options using helper function
+        const { options: rentalOptions, ...customerInfo } = await fetchAndMergeCustomerData(rental);
 
         // If car exists, ensure it has images from storage
         if (car) {
@@ -89,7 +160,7 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
                         if (result.mainImage) {
                             mainImage = result.mainImage;
                             photoGallery = result.photoGallery;
-                            
+
                             break;
                         }
                     } catch (e) {
@@ -115,7 +186,7 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
         }
 
         // Ensure price_per_day is a number, not a string
-        const pricePerDay = rental.price_per_day 
+        const pricePerDay = rental.price_per_day
             ? (typeof rental.price_per_day === 'string' ? parseFloat(rental.price_per_day) : rental.price_per_day)
             : undefined;
 
@@ -128,143 +199,15 @@ export async function getUserRentals(): Promise<RentalDTO[]> {
             options: rentalOptions || undefined,
             request_id: rental.request_id,
             contract_url: rental.contract_url,
+            // Include customer information
+            customer_email: customerInfo.customer_email,
+            customer_phone: customerInfo.customer_phone,
+            customer_first_name: customerInfo.customer_first_name,
+            customer_last_name: customerInfo.customer_last_name,
         } as RentalDTO;
     }));
 
     return processedRentals;
-}
-
-export async function getUserBorrowRequests(): Promise<BorrowRequest[]> {
-    const user = await getLoggedUser();
-
-    // Build query to get requests for this user
-    let query = supabase
-        .from('BorrowRequest')
-        .select('*');
-
-    // Include requests where user is the owner OR where customer_email matches
-    if (user?.id && user?.email) {
-        query = query.or(`user_id.eq.${user.id},customer_email.eq.${user.email}`);
-    } else if (user?.id) {
-        query = query.eq('user_id', user.id);
-    } else if (user?.email) {
-        query = query.eq('customer_email', user.email);
-    }
-
-    const { data } = await query.order('requested_at', { ascending: false });
-
-    // If no borrow requests found, return empty array
-    if (!data || data.length === 0) {
-        return [];
-    }
-
-    // Collect all unique car IDs
-    const carIds = new Set<number>();
-    data.forEach((request: any) => {
-        if (request.car_id) {
-            const carId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id);
-            carIds.add(carId);
-        }
-    });
-
-    // Fetch all cars at once
-    let cars: any[] = [];
-    if (carIds.size > 0) {
-        try {
-            const { data: carsData, error } = await supabase
-                .from('Cars')
-                .select('*')
-                .in('id', Array.from(carIds));
-
-            if (!error && carsData) {
-                cars = carsData;
-            }
-        } catch (error) {
-            console.error('Error fetching cars for borrow requests:', error);
-        }
-    }
-
-    // Process the borrow requests to include car data with images AND linked rental data
-    const processedRequests = await Promise.all(data.map(async (request: any) => {
-        // Find the car for this request
-        const carId = typeof request.car_id === 'number' ? request.car_id : parseInt(request.car_id);
-        let car = cars.find((c: any) => c.id === carId);
-
-        // FETCH LINKED RENTAL DATA (if this request has been converted to a rental)
-        let linkedRental = null;
-        try {
-            const { data: rentalData, error: rentalError } = await supabase
-                .from('Rentals')
-                .select('id, price_per_day, total_amount, contract_url')
-                .eq('request_id', request.id)
-                .single();
-            
-            if (!rentalError && rentalData) {
-                linkedRental = rentalData;
-            }
-        } catch (err) {
-            console.debug('No linked rental found for request', request.id);
-        }
-
-        // If car exists, ensure it has images from storage
-        if (car) {
-            try {
-                // Try multiple variations of the car name to find images
-                const carNameVariations = [
-                    car.name,
-                    `${car.make} ${car.model}`,
-                    car.model, // Just the model in case that's how folders are named
-                    `${car.make}-${car.model}`.toLowerCase(),
-                ].filter(Boolean);
-
-                let mainImage: string | null = null;
-                let photoGallery: string[] = [];
-
-                // Try each variation until we find images
-                for (const carName of carNameVariations) {
-                    try {
-                        const result = await fetchImagesByCarName(carName as string);
-                        if (result.mainImage) {
-                            mainImage = result.mainImage;
-                            photoGallery = result.photoGallery;
-                            
-                            break;
-                        }
-                    } catch (e) {
-                        // Continue to next variation
-                    }
-                }
-
-                // Override any existing image_url with the fresh one from storage
-                car = {
-                    ...car,
-                    image_url: mainImage || car.image_url || '/placeholder-car.jpg',
-                    photo_gallery: photoGallery || ([] as string[]),
-                };
-
-            } catch (error) {
-                console.error('❌ Error fetching storage images for', car.make, car.model, ':', error);
-                // Fallback to database image or placeholder
-                car = {
-                    ...car,
-                    image_url: car.image_url || '/placeholder-car.jpg'
-                };
-            }
-        }
-
-        return {
-            ...request,
-            car: car || null,
-            // Include rental data if it exists
-            linkedRental: linkedRental,
-            // Override price_per_day and total_amount with rental values if available
-            price_per_day: linkedRental?.price_per_day || undefined,
-            total_amount: linkedRental?.total_amount || undefined,
-            contract_url: linkedRental?.contract_url || request.contract_url,
-        };
-    }));
-
-    return processedRequests;
 }
 
 export async function fetchFavoriteCar(): Promise<FavoriteCar> {
@@ -287,7 +230,16 @@ export async function fetchFavoriteCar(): Promise<FavoriteCar> {
     const favoriteCarId = data[0].car_id;
     const lastRental = data[0].last_rental;
     const borrowCount = data[0].rental_count;
-    // 
+
+    // Fetch car details if we have a favorite car ID
+    let car = null;
+    if (favoriteCarId) {
+        try {
+            car = await fetchCarWithImagesById(favoriteCarId.toString());
+        } catch (err) {
+            console.error('Error fetching favorite car details:', err);
+        }
+    }
 
     return {
         car,
@@ -362,9 +314,7 @@ export async function fetchRecentRentals(): Promise<Rental[]> {
     return rentals;
 }
 
-const ACTIVE_RENTAL_STATUS = 'ACTIVE';
-
-export async function fetchActiveRentals(): Promise<Rental[]> {
+export async function fetchUserActiveRentals(): Promise<Rental[]> {
 
     const user = await getLoggedUser();
 
@@ -389,6 +339,87 @@ export async function fetchActiveRentals(): Promise<Rental[]> {
 
     return rentals;
 }
+
+export async function fetchRentalsForAdmin(
+): Promise<RentalDTO[]> {
+
+    const { data, error } = await supabase
+        .from('Rentals')
+        .select('*') // total rows for pagination
+
+    if (error || !data) {
+        console.error('Error fetching active rentals:', error);
+        return [];
+    }
+
+    const rentals: RentalDTO[] = await Promise.all(
+        data.map((rentalRow: Rental) =>
+            toRentalDTO(rentalRow, rentalRow.car_id)
+        )
+    );
+
+
+    return rentals;
+}
+
+export async function fetchRentalsForAdminPaginated(
+    page: number = 1,
+    pageSize: number = 10
+): Promise<{ rentals: RentalDTO[]; total: number }> {
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+
+    const { data, error, count } = await supabase
+        .from('Rentals')
+        .select('*', { count: 'exact' }) // total rows for pagination
+        .range(from, to);
+
+    if (error || !data) {
+        console.error('Error fetching active rentals:', error);
+        return { rentals: [], total: 0 };
+    }
+
+    const rentals: RentalDTO[] = await Promise.all(
+        data.map(async (rental: Rental) => {
+
+            // Get car with images
+            const carWithImage = await fetchCarWithImagesById(rental.car_id);
+
+            // Get customer data and options using helper function
+            const { options: rentalOptions, ...customerInfo } = await fetchAndMergeCustomerData(rental);
+
+            // Ensure price_per_day is a number, not a string
+            const pricePerDay = rental.price_per_day
+                ? (typeof rental.price_per_day === 'string' ? parseFloat(rental.price_per_day) : rental.price_per_day)
+                : undefined;
+
+            return {
+                ...rental,
+                id: rental.id, // Explicitly include id
+                car: carWithImage,
+                // Ensure all critical fields are present with proper types
+                price_per_day: pricePerDay,
+                options: rentalOptions || undefined,
+                request_id: rental.request_id,
+                contract_url: rental.contract_url,
+                // Include customer information
+                customer_email: customerInfo.customer_email,
+                customer_phone: customerInfo.customer_phone,
+                customer_first_name: customerInfo.customer_first_name,
+                customer_last_name: customerInfo.customer_last_name,
+            } as RentalDTO;
+        })
+    );
+
+
+    return {
+        rentals,
+        total: count ?? 0
+    };
+}
+
 
 export async function fetchRentalsHistory(
     page = 1,
@@ -508,11 +539,15 @@ export async function fetchUserRentalsForCalendarPage(
 }
 
 export async function toRentalDTO(rental: Rental, carId: string): Promise<RentalDTO> {
+    if (!rental.id) {
+        throw new Error("Rental must have an id to convert to DTO");
+    }
 
     const carWithImage = await fetchCarWithImagesById(carId);
 
     return {
         ...rental,
+        id: rental.id,
         car: carWithImage
     }
 }

@@ -11,6 +11,9 @@ import { FavoriteCar } from '../../../../types';
 import { fadeInUp } from '../../../../utils/animations';
 import { useNavigate } from 'react-router-dom';
 import { fetchImagesByCarName } from '../../../../lib/db/cars/cars';
+import { convertPrice } from '../../../../utils/car/pricing';
+import { useExchangeRates } from '../../../../hooks/useExchangeRates';
+import { formatPrice } from '../../../../utils/currency';
 
 interface FavoriteCarComponentProps {
     favoriteCars?: FavoriteCar[] | null;
@@ -18,7 +21,8 @@ interface FavoriteCarComponentProps {
 
 export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarComponentProps) {
     const { ref, isInView } = useInView();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const { selectedCurrency, eur, usd } = useExchangeRates();
     const [carsWithImages, setCarsWithImages] = useState<FavoriteCar[]>(favoriteCars || []);
     const [activePhotoIndices, setActivePhotoIndices] = useState<Map<number, number>>(new Map());
 
@@ -322,8 +326,9 @@ export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarCompon
                     {/* Price and CTA */}
                     <div className="flex items-center justify-between pt-4 border-t border-white/20">
                         {(() => {
-                            const basePrice = (favoriteCar.car as any).pricePerDay || favoriteCar.car?.price_per_day || 0;
-                            const discount = (favoriteCar.car as any).discount_percentage || favoriteCar.car?.discount_percentage || 0;
+                            console.log('favorite car: ', favoriteCar)
+                            const basePrice = favoriteCar.car?.price_over_30_days || 0;
+                            const discount = favoriteCar.car?.discount_percentage || 0;
                             const finalPrice = discount > 0
                                 ? basePrice * (1 - discount / 100)
                                 : basePrice;
@@ -331,11 +336,11 @@ export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarCompon
                             return (
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-bold text-white">{finalPrice.toFixed(0)} MDL</span>
+                                        <span className="text-xl font-bold text-white">{formatPrice(convertPrice(finalPrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                         <span className="text-gray-400 text-sm">/zi</span>
                                     </div>
                                     {discount > 0 && (
-                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60">{basePrice} MDL</span>
+                                        <span className="text-sm text-red-300 line-through font-semibold decoration-red-400/60">{formatPrice(convertPrice(basePrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)} MDL</span>
                                     )}
                                 </div>
                             );
@@ -400,7 +405,7 @@ export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarCompon
             {/* Header */}
             <div className="mb-4">
                 <h3 className="text-xl font-bold text-white">{t('dashboard.overview.favoriteCars')}</h3>
-                </div>
+            </div>
 
             {/* Grid container for multiple favorite cars */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

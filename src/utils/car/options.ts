@@ -1,10 +1,14 @@
+import { BorrowRequestDTO } from "../../types";
+
 export type RequestOption = {
     label: string;
     price: string;
     category: string;
 };
 
-export const parseRequestOptions = (request: any): RequestOption[] => {
+export const parseRequestOptions = (request: BorrowRequestDTO): RequestOption[] => {
+    console.log('the request is: ', request)
+
     if (!request) return [];
 
     let parsedOptions: any = {};
@@ -32,6 +36,9 @@ export const parseRequestOptions = (request: any): RequestOption[] => {
     }
     if (parsedOptions.returnAtAddress) {
         selectedOptions.push({ label: 'Returnarea la adresă', price: 'Cost separat', category: 'pickup-return' });
+    }
+    if (parsedOptions.airportDelivery) {
+        selectedOptions.push({ label: 'Livrare la aeroport', price: 'Gratuit', category: 'pickup-return' });
     }
 
     // Limits

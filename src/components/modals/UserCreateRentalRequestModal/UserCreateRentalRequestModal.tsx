@@ -404,7 +404,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
             const result = await createUserBorrowRequest(borrowRequest);
 
             if (result.success) {
-                
+
                 setSubmitSuccess(true);
                 // Don't close modal automatically - let user see the success message
             } else {
@@ -1185,7 +1185,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
                                                 <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Detalii preț</h3>
                                                 <div className="space-y-3">
                                                     {formData.car_id && car && (() => {
-                                                        
+
                                                         if (!summary) return null;
 
                                                         return (

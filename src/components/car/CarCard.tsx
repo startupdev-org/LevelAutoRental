@@ -14,6 +14,10 @@ import { supabase } from '../../lib/supabase';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { formatDateLocal } from '../../utils/date';
 import { NoImagePlaceholder } from './NoImage';
+import { getCarName } from '../../utils/car/car';
+import { formatPrice, getSelectedCurrency } from '../../utils/currency';
+import i18n from '../../i18n/i18n';
+import { convertPrice } from '../../utils/car/pricing';
 
 
 interface CarCardProps {
@@ -23,7 +27,7 @@ interface CarCardProps {
 
 export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     const { t } = useTranslation();
-    const { selectedCurrency, eur: eurRate, usd: usdRate } = useExchangeRates();
+    const { selectedCurrency, eur, usd } = useExchangeRates();
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [imageError, setImageError] = useState(false);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
@@ -75,7 +79,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
         saveFavorite(carWithImages.id, newFavoriteState);
-        
+
         // Trigger animation
         setIsAnimating(true);
         setTimeout(() => setIsAnimating(false), 600);
@@ -329,31 +333,6 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     }, [car]);
 
     const navigate = useNavigate();
-
-    // ───── HELPER FUNCTIONS ─────
-    const convertPrice = (price: number): number => {
-        if (selectedCurrency === 'MDL') return Math.round(price);
-        if (selectedCurrency === 'EUR') return Math.round(price / eurRate);
-        if (selectedCurrency === 'USD') return Math.round(price / usdRate);
-        return Math.round(price);
-    };
-
-    const getCurrencySymbol = (currency: string): string => {
-        switch (currency) {
-            case 'EUR': return '€';
-            case 'USD': return '$';
-            case 'MDL': return 'MDL';
-            default: return currency;
-        }
-    };
-
-    const formatPrice = (amount: number, currency: string): string => {
-        const symbol = getCurrencySymbol(currency);
-        if (currency === 'MDL') {
-            return `${amount} ${symbol}`;
-        }
-        return `${symbol}${amount}`;
-    };
 
     const renderTransmissionIcon = (transmission: string | undefined) => {
         if (!transmission) return React.createElement(TbAutomaticGearboxFilled as any, { className: "w-5 h-5 text-gray-600" });
@@ -714,14 +693,14 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                 ease: "easeOut",
                             }}
                             className="relative"
-                    >
-                        {React.createElement(BiSolidHeart as any, {
+                        >
+                            {React.createElement(BiSolidHeart as any, {
                                 className: `transition-all duration-300 ${isFavorite
-                                ? 'w-6 h-6 text-red-500'
+                                    ? 'w-6 h-6 text-red-500'
                                     : 'w-6 h-6 text-gray-400 group-hover/heart:text-gray-200 group-hover/heart:scale-110 group-hover/heart:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]'
-                                }`
-                        })}
-                            
+                                    }`
+                            })}
+
                             {/* Particle effect when liked */}
                             <AnimatePresence>
                                 {isAnimating && isFavorite && (
@@ -729,8 +708,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                         {[...Array(8)].map((_, i) => (
                                             <motion.div
                                                 key={i}
-                                                initial={{ 
-                                                    opacity: 1, 
+                                                initial={{
+                                                    opacity: 1,
                                                     scale: 0,
                                                     x: 0,
                                                     y: 0
@@ -760,24 +739,24 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                     </>
                                 )}
                             </AnimatePresence>
-                            
+
                             {/* Ripple effect */}
                             <AnimatePresence>
                                 {isAnimating && (
                                     <motion.div
-                                        initial={{ 
-                                            scale: 0, 
-                                            opacity: 0.6 
+                                        initial={{
+                                            scale: 0,
+                                            opacity: 0.6
                                         }}
-                                        animate={{ 
-                                            scale: 2.5, 
-                                            opacity: 0 
+                                        animate={{
+                                            scale: 2.5,
+                                            opacity: 0
                                         }}
-                                        exit={{ 
-                                            scale: 0, 
-                                            opacity: 0 
+                                        exit={{
+                                            scale: 0,
+                                            opacity: 0
                                         }}
-                                        transition={{ 
+                                        transition={{
                                             duration: 0.6,
                                             ease: "easeOut"
                                         }}
@@ -795,7 +774,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                     <div className="mb-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-700 transition-colors duration-300">
-                                {carWithImages.make}{' '}{carWithImages.model}
+                                {getCarName(carWithImages)}
                             </h3>
                             <span className="text-lg font-bold text-gray-600">
                                 {carWithImages.year}
@@ -866,11 +845,11 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             return (
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-1">
-                                        <span className="text-xl font-bold text-gray-800">{formatPrice(convertPrice(finalPrice), selectedCurrency)}</span>
+                                        <span className="text-xl font-bold text-gray-800">{formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}</span>
                                         <span className="text-gray-500 text-sm">{t('car.perDay')}</span>
                                     </div>
                                     {discount > 0 && (
-                                        <span className="text-xs text-red-300 line-through font-semibold decoration-red-400/60">{formatPrice(convertPrice(basePrice), selectedCurrency)}</span>
+                                        <span className="text-xs text-red-300 line-through font-semibold decoration-red-400/60">{formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}</span>
                                     )}
                                 </div>
                             );

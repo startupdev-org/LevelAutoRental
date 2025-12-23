@@ -36,12 +36,14 @@ import { RentalOptionsSection } from '../sections/RentalOptionsSection';
 import { useExchangeRates } from '../../../hooks/useExchangeRates';
 import { NoImagePlaceholder } from '../../../components/car/NoImage';
 import { useTranslation } from 'react-i18next';
-import { formatPrice } from '../../../utils/currency';
+import { formatPrice, getSelectedCurrency } from '../../../utils/currency';
+import { convertPrice } from '../../../utils/car/pricing';
 
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();
     const navigate = useNavigate();
-    const { eur: eurRate, usd: usdRate, selectedCurrency, setSelectedCurrency } = useExchangeRates();
+    const { selectedCurrency, setSelectedCurrency, eur, usd } = useExchangeRates();
+
 
     const { t, i18n } = useTranslation()
 
@@ -127,13 +129,6 @@ export const CarDetails: React.FC = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAutoSlidingPaused, setIsAutoSlidingPaused] = useState(false);
 
-    // ───── HELPER FUNCTIONS ─────
-    const convertPrice = (price: number): number => {
-        if (selectedCurrency === 'MDL') return Math.round(price);
-        if (selectedCurrency === 'EUR') return Math.round(price / eurRate);
-        if (selectedCurrency === 'USD') return Math.round(price / usdRate);
-        return Math.round(price);
-    };
 
     const getCurrencySymbol = (currency: string): string => {
         switch (currency) {
@@ -1417,7 +1412,7 @@ export const CarDetails: React.FC = () => {
                                             <>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                         {/* {/* {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString(t('config.date'), { minimumFractionDigits: 0, maximumFractionDigits: 0 })}  */}
                                                         <span className="text-sm sm:text-base md:text-lg font-normal text-gray-600"> {t('car.perDay')}</span>
                                                     </div>
@@ -1441,7 +1436,7 @@ export const CarDetails: React.FC = () => {
                                                 </div>
                                                 {discount > 0 && (
                                                     <div className="text-sm text-gray-400 line-through mb-1">
-                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString(t('config.date'))}
+                                                        {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                     </div>
                                                 )}
                                             </>
@@ -2120,21 +2115,21 @@ export const CarDetails: React.FC = () => {
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
                                                                                 setReturnTime(hour);
-                                                                            // Close time picker after 0.3s delay so user can see what they clicked
-                                                                            setIsClosingWithDelay(true);
-                                                                            setTimeout(() => {
-                                                                                setShowReturnTime(false);
-                                                                                setIsClosingWithDelay(false);
-                                                                            }, 300);
-                                                                        }}
-                                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                                        className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${returnTime === hour
-                                                                            ? 'bg-theme-500 text-white font-medium'
-                                                                            : 'text-gray-700 hover:bg-gray-100'
-                                                                            }`}
-                                                                    >
-                                                                        {hour}
-                                                                    </button>
+                                                                                // Close time picker after 0.3s delay so user can see what they clicked
+                                                                                setIsClosingWithDelay(true);
+                                                                                setTimeout(() => {
+                                                                                    setShowReturnTime(false);
+                                                                                    setIsClosingWithDelay(false);
+                                                                                }, 300);
+                                                                            }}
+                                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                                            className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${returnTime === hour
+                                                                                ? 'bg-theme-500 text-white font-medium'
+                                                                                : 'text-gray-700 hover:bg-gray-100'
+                                                                                }`}
+                                                                        >
+                                                                            {hour}
+                                                                        </button>
                                                                     ));
                                                                 })()}
                                                             </div>
@@ -2202,11 +2197,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -2239,11 +2234,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, selectedCurrency, eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -2276,11 +2271,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -2313,11 +2308,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -2502,8 +2497,7 @@ export const CarDetails: React.FC = () => {
                                             <>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="text-4xl font-bold text-gray-900">
-                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
-                                                        {/* {/* {getCurrencySymbol(selectedCurrency)}{convertPrice(finalPrice).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}  */}
+                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                         <span className="text-lg font-normal text-gray-600"> {t('car.perDay')}</span>
                                                     </div>
                                                     {/* Currency Dropdown */}
@@ -2526,7 +2520,7 @@ export const CarDetails: React.FC = () => {
                                                 </div>
                                                 {discount > 0 && (
                                                     <div className="text-sm text-gray-400 line-through mb-1">
-                                                        {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                        {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                     </div>
                                                 )}
                                             </>
@@ -3196,21 +3190,21 @@ export const CarDetails: React.FC = () => {
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
                                                                                 setReturnTime(hour);
-                                                                            // Close time picker after 0.3s delay so user can see what they clicked
-                                                                            setIsClosingWithDelay(true);
-                                                                            setTimeout(() => {
-                                                                                setShowReturnTime(false);
-                                                                                setIsClosingWithDelay(false);
-                                                                            }, 300);
-                                                                        }}
-                                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                                        className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${returnTime === hour
-                                                                            ? 'bg-theme-500 text-white font-medium'
-                                                                            : 'text-gray-700 hover:bg-gray-100'
-                                                                            }`}
-                                                                    >
-                                                                        {hour}
-                                                                    </button>
+                                                                                // Close time picker after 0.3s delay so user can see what they clicked
+                                                                                setIsClosingWithDelay(true);
+                                                                                setTimeout(() => {
+                                                                                    setShowReturnTime(false);
+                                                                                    setIsClosingWithDelay(false);
+                                                                                }, 300);
+                                                                            }}
+                                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                                            className={`w-full px-3 py-2 text-sm rounded transition-colors text-center ${returnTime === hour
+                                                                                ? 'bg-theme-500 text-white font-medium'
+                                                                                : 'text-gray-700 hover:bg-gray-100'
+                                                                                }`}
+                                                                        >
+                                                                            {hour}
+                                                                        </button>
                                                                     ));
                                                                 })()}
                                                             </div>
@@ -3230,12 +3224,12 @@ export const CarDetails: React.FC = () => {
                                             {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
                                         </div>
                                         <div className="text-2xl font-bold text-gray-900">
-                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(rentalCalculation.totalPrice).toLocaleString('ro-RO')}
+                                            {formatPrice(convertPrice(rentalCalculation.totalPrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                         </div>
                                         <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
                                             <span className="text-sm font-medium text-gray-700">Total</span>
                                             <span className="text-lg font-bold text-gray-900">
-                                                {getCurrencySymbol(selectedCurrency)}{convertPrice(rentalCalculation.totalPrice).toLocaleString('ro-RO')}
+                                                {formatPrice(convertPrice(rentalCalculation.totalPrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                             </span>
                                         </div>
                                     </div>
@@ -3308,11 +3302,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -3345,11 +3339,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -3382,11 +3376,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -3419,11 +3413,11 @@ export const CarDetails: React.FC = () => {
                                                                 <>
                                                                     {discount > 0 && (
                                                                         <span className="text-sm text-gray-500 line-through">
-                                                                            {getCurrencySymbol(selectedCurrency)}{convertPrice(basePrice).toLocaleString('ro-RO')}
+                                                                            {formatPrice(convertPrice(basePrice, getSelectedCurrency(), eur, usd), getSelectedCurrency(), i18n.language)}
                                                                         </span>
                                                                     )}
                                                                     <span className="text-lg font-bold text-gray-900">
-                                                                        {formatPrice(convertPrice(finalPrice), selectedCurrency, i18n.language)}
+                                                                        {formatPrice(convertPrice(finalPrice, getSelectedCurrency(), eur, usd), selectedCurrency, i18n.language)}
                                                                     </span>
                                                                 </>
                                                             );
@@ -3493,11 +3487,10 @@ export const CarDetails: React.FC = () => {
                                                 setCurrentSlide(index);
                                                 pauseAutoSliding();
                                             }}
-                                            className={`w-2 h-2 rounded-full transition-colors ${
-                                                index === currentSlide
-                                                    ? 'bg-red-500'
-                                                    : 'bg-gray-300 hover:bg-gray-400'
-                                            }`}
+                                            className={`w-2 h-2 rounded-full transition-colors ${index === currentSlide
+                                                ? 'bg-red-500'
+                                                : 'bg-gray-300 hover:bg-gray-400'
+                                                }`}
                                             aria-label={`Go to slide ${index + 1}`}
                                         />
                                     ))}

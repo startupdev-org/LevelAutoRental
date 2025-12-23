@@ -6,16 +6,17 @@ export interface Car {
   model: string;
   year: number;
   price_per_day?: number; // Default price per day (can be overridden by rental-specific price)
-  price_2_4_days?: number; // Price per day for 2-4 days rentals
-  price_5_15_days?: number; // Price per day for 5-15 days rentals
-  price_16_30_days?: number; // Price per day for 16-30 days rentals
-  price_over_30_days?: number; // Price per day for over 30 days rentals
+  price_2_4_days: number; // Price per day for 2-4 days rentals
+  price_5_15_days: number; // Price per day for 5-15 days rentals
+  price_16_30_days: number; // Price per day for 16-30 days rentals
+  price_over_30_days: number; // Price per day for over 30 days rentals
   discount_percentage?: number; // optional discount percentage (0-100)
   category?: 'suv' | 'sports' | 'luxury' | ('suv' | 'sports' | 'luxury')[]; // optional if nullable in DB, supports single or multiple categories
   image_url?: string | null;
   photo_gallery?: string[] | null;
   seats?: number;
   transmission?: 'Automatic' | 'Manual';
+  updated_at?: string;
   body?: 'Coupe' | 'Sedan' | 'SUV';
   fuel_type?: 'gasoline' | 'hybrid' | 'electric' | 'diesel' | 'petrol';
   features?: string[];
@@ -166,8 +167,11 @@ export interface Rental {
   id?: string;
   request_id: string;
 
-  user_id?: string;
-  customer_email?: string;
+  user_id?: string | null;
+  customer_email: string;
+  customer_phone?: string;
+  customer_first_name?: string;
+  customer_last_name?: string;
 
   car_id: string;
   price_per_day: string | number;
@@ -181,7 +185,7 @@ export interface Rental {
   subtotal?: number;
   taxes_fees?: number;
   additional_taxes?: number;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
   contract_url?: string;
   options?: any; // JSON object for additional service options
@@ -191,8 +195,11 @@ export interface RentalDTO {
   id: string;
   request_id: string;
 
-  user_id?: string;
+  user_id?: string | null;
   customer_email: string;
+  customer_phone?: string;
+  customer_first_name?: string;
+  customer_last_name?: string;
 
   car?: Car;
   car_id: string;
@@ -207,7 +214,7 @@ export interface RentalDTO {
   subtotal?: number;
   taxes_fees?: number;
   additional_taxes?: number;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
   contract_url?: string;
   options?: any; // JSON object for additional service options

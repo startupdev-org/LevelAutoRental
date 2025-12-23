@@ -14,6 +14,10 @@ import { supabase } from '../../../../lib/supabase';
 import { fetchBorrowRequestById } from '../../../../lib/db/requests/requests';
 import { useTranslation } from 'react-i18next';
 import { EditRequestModal } from '../modals/EditRequestModal';
+import { getCarName } from '../../../../utils/car/car';
+import { formatPrice } from '../../../../utils/currency';
+import i18n from '../../../../i18n/i18n';
+import { formatTime } from '../../../../utils/time';
 
 export interface RequestDetailsViewProps {
     request: BorrowRequestDTO;
@@ -74,11 +78,11 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     <div className="flex items-center gap-4">
                         <img
                             src={car.image_url || ''}
-                            alt={(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}
+                            alt={getCarName(car) || 'Car Name'}
                             className="w-32 h-20 object-cover rounded-lg border border-white/20"
                         />
                         <div>
-                            <h2 className="text-xl font-bold text-white">{(car as any)?.name || `${car.make || ''} ${car.model || ''}`.trim() || 'Car'}</h2>
+                            <h2 className="text-xl font-bold text-white">{getCarName(car) || 'Car Name'}</h2>
                             <div className="text-sm text-gray-300">{car.transmission === 'Automatic' ? 'Automat' : car.transmission} · {car.seats} locuri</div>
                         </div>
                     </div>
@@ -148,13 +152,6 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                 <div className="space-y-3">
                                     {(() => {
                                         // Calculate detailed price breakdown
-                                        const duration = calculateRentalDuration(
-                                            request.start_date,
-                                            request.start_time || '09:00',
-                                            request.end_date,
-                                            request.end_time || '17:00'
-                                        );
-
                                         // Parse options if needed
                                         let parsedOptions: any = {};
                                         if (request.options) {
@@ -189,7 +186,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                 {/* Price per day and duration */}
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-300 text-xs sm:text-sm">Preț pe zi</span>
-                                                    <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.pricePerDay)} MDL</span>
+                                                    <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(priceSummary.pricePerDay, 'MDL', i18n.language)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-300 text-xs sm:text-sm">Durată închiriere</span>
@@ -202,7 +199,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                 <div className="pt-2 border-t border-white/10">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-white font-medium text-sm sm:text-base">Preț de bază</span>
-                                                        <span className="text-white font-semibold text-sm sm:text-base">{Math.round(priceSummary.basePrice).toLocaleString()} MDL</span>
+                                                        <span className="text-white font-semibold text-sm sm:text-base">{formatPrice(priceSummary.basePrice, 'MDL', i18n.language)}</span>
                                                     </div>
                                                 </div>
 
@@ -215,7 +212,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Kilometraj nelimitat</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5).toLocaleString()} MDL
+                                                                        {formatPrice(priceSummary.baseCarPrice * (priceSummary.totalHours / 24) * 0.5, 'MDL', i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -223,7 +220,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Șofer personal</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(800 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(priceSummary.totalHours / 24, 'MDL', i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -231,7 +228,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Priority Service</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(1000 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(priceSummary.totalHours / 24, 'MDL', i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -239,7 +236,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Scaun auto pentru copii</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(priceSummary.totalHours / 24, 'MDL', i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -247,7 +244,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Cartelă SIM cu internet</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(100 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(priceSummary.totalHours / 24, 'MDL', i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -255,13 +252,15 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-300">Asistență rutieră 24/7</span>
                                                                     <span className="text-white font-medium">
-                                                                        {Math.round(500 * (priceSummary.totalHours / 24)).toLocaleString()} MDL
+                                                                        {formatPrice(priceSummary.totalHours / 24, 'MDL', i18n.language)}
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             <div className="flex justify-between pt-2 border-t border-white/10">
                                                                 <span className="text-white font-medium">Costuri suplimentare</span>
-                                                                <span className="text-white font-semibold">{Math.round(priceSummary.additionalCosts).toLocaleString()} MDL</span>
+                                                                <span className="text-white font-semibold">
+                                                                    {formatPrice(priceSummary.additionalCosts, 'MDL', i18n.language)}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -271,7 +270,7 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                                                 <div className="pt-3 border-t border-white/20">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-white font-bold text-base">Total</span>
-                                                        <span className="text-emerald-400 font-bold text-lg">{Math.round(priceSummary.totalPrice).toLocaleString()} MDL</span>
+                                                        <span className="text-emerald-400 font-bold text-lg">{formatPrice(priceSummary.totalPrice, 'MDL', i18n.language)}</span>
                                                     </div>
                                                 </div>
                                             </>
@@ -321,23 +320,49 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                     className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-lg"
                 >
                     <h2 className="text-xl font-bold text-white mb-4">Client</h2>
-                    <div className="flex items-center gap-4">
+
+                    {/* Client header */}
+                    <div className="flex items-center gap-4 mb-5">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
                             {request.customer_name?.[0]?.toUpperCase() || 'C'}
                         </div>
-                        <div>
-                            <div className="text-white font-semibold">{request.customer_name}</div>
-                            <div className="text-gray-300 text-sm">{request.customer_email}</div>
+
+                        <div className="flex-1">
+                            <div className="text-white font-semibold">
+                                {request.customer_name}
+                            </div>
+                            <div className="text-gray-300 text-sm">
+                                {request.customer_email}
+                            </div>
+
                             {request.customer_phone && (
                                 <a
                                     href={`tel:${request.customer_phone.replace(/\s/g, '')}`}
-                                    className="text-blue-400 hover:text-blue-300 transition-colors text-sm mt-1 inline-block underline decoration-blue-400/50 hover:decoration-blue-300"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors text-sm underline decoration-blue-400/50 hover:decoration-blue-300"
                                 >
                                     {request.customer_phone}
                                 </a>
                             )}
                         </div>
                     </div>
+
+                    {/* Comment section */}
+                    {request.comment && (
+                        <div className="relative bg-white/5 border border-white/10 rounded-lg p-4 pt-5">
+                            {/* Comment text */}
+                            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-line mb-3">
+                                {request.comment}
+                            </p>
+
+                            {/* Label */}
+                            <div className="flex justify-end">
+                                <span className="bg-white/10 px-2 py-0.5 text-xs text-gray-300 rounded">
+                                    Comment
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
                 </motion.div>
 
                 {/* Contract Info */}
@@ -439,21 +464,17 @@ export const RequestDetailsView: React.FC<RequestDetailsViewProps> = ({ request,
                             {request.requested_at && (
                                 <span className="text-gray-400 text-sm">
                                     Solicitată la {(() => {
-                                        // Parse UTC timestamp and ensure it's displayed in local time
-                                        let date = new Date(request.requested_at);
-
-                                        // If the timestamp string doesn't include timezone info, treat it as UTC
-                                        if (typeof request.requested_at === 'string' && !request.requested_at.includes('Z') && !request.requested_at.includes('+')) {
-                                            // Supabase timestamps are typically in UTC format like "2025-12-14T18:30:00"
-                                            date = new Date(request.requested_at + 'Z'); // Add Z to indicate UTC
-                                        }
-
-                                        const formattedDate = formatDateLocal(date, t('config.date'));
-                                        const formattedTime = date.toLocaleTimeString('ro-RO', {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            hour12: false
-                                        });
+                                        const formattedDate = formatDateLocal(request.requested_at, t('config.date'));
+                                        const formattedTime = formatTime(request.requested_at)
+                                        return `${formattedDate} la ${formattedTime}`;
+                                    })()}
+                                </span>
+                            )}
+                            {request.updated_at && (
+                                <span className="text-gray-400 text-sm">
+                                    Actualizată ultima dată la {(() => {
+                                        const formattedDate = formatDateLocal(request.updated_at, t('config.date'));
+                                        const formattedTime = formatTime(request.updated_at)
                                         return `${formattedDate} la ${formattedTime}`;
                                     })()}
                                 </span>
@@ -671,20 +692,21 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
 
             // Fetch fresh car data to ensure we have correct price information
             const { fetchCarById } = await import('../../../../lib/db/cars/cars');
-            
+
             const freshCarData = await fetchCarById(request.car_id.toString());
 
-            
+
 
             if (!freshCarData) {
                 throw new Error('Car data not found');
             }
 
-            
+
 
             // Create a rental record from the approved request
+            // Use request.user_id if available, otherwise null (customer_email will be used)
             const rentalResult = await createRentalManually(
-                currentUser.id,
+                request.user_id || null,
                 request.car_id,
                 typeof request.start_date === 'string' ? request.start_date : request.start_date.toISOString().split('T')[0],
                 request.start_time,
@@ -928,7 +950,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                             if (updateRentalError) {
                                 console.warn('Failed to update associated rental total_amount:', updateRentalError);
                             } else {
-                                
+
                             }
                         }
                     } catch (rentalUpdateError) {
@@ -1072,7 +1094,7 @@ export const RequestDetailsViewWrapper: React.FC<RequestDetailsViewWrapperProps>
                     } as any}
                     car={request?.car}
                     onContractCreated={async (contractUrl?: string | null) => {
-                        
+
 
                         if (contractUrl) {
                             // Update the request's contract_url field

@@ -15,6 +15,7 @@ import { Car as CarType } from '../../../../types';
 import { useNotification } from '../../../../components/ui/NotificationToaster';
 import { LiaCarSideSolid } from 'react-icons/lia';
 import { supabase, supabaseAdmin } from '../../../../lib/supabase';
+import { useExchangeRates } from '../../../../hooks/useExchangeRates';
 
 interface CarFormModalProps {
     car: CarType | null;
@@ -26,11 +27,11 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
     const [, setSearchParams] = useSearchParams();
     const { t } = useTranslation();
     // Normalize category to array format for form
-    const initialCategory = car 
-        ? (Array.isArray(car.category) 
-            ? car.category 
-            : car.category 
-                ? [car.category] 
+    const initialCategory = car
+        ? (Array.isArray(car.category)
+            ? car.category
+            : car.category
+                ? [car.category]
                 : ['luxury'])
         : ['luxury'];
     const [formData, setFormData] = useState<Partial<CarType>>(
@@ -73,10 +74,10 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
         setLoading(true);
         try {
             // Validate at least one category is selected
-            const categories = Array.isArray(formData.category) 
-                ? formData.category 
-                : formData.category 
-                    ? [formData.category] 
+            const categories = Array.isArray(formData.category)
+                ? formData.category
+                : formData.category
+                    ? [formData.category]
                     : [];
             if (categories.length === 0) {
                 showError(t('admin.cars.categoryRequired') || 'Please select at least one category');
@@ -188,38 +189,38 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                 const fileName = `${modelPart}-main.jpg`;
                 const filePath = `${folderName}/${fileName}`;
 
-            // Upload to Supabase storage (try regular client first, fallback to admin)
-            let uploadData, uploadError;
-            try {
-                const result = await supabase.storage
-                    .from('cars')
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: true // Replace if exists
-                    });
-                uploadData = result.data;
-                uploadError = result.error;
-            } catch (regularError) {
-                // Fallback to admin client if regular client fails
-                console.warn('Regular client upload failed, trying admin client:', regularError);
-                const adminResult = await supabaseAdmin.storage
-                    .from('cars')
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: true // Replace if exists
-                    });
-                uploadData = adminResult.data;
-                uploadError = adminResult.error;
-            }
+                // Upload to Supabase storage (try regular client first, fallback to admin)
+                let uploadData, uploadError;
+                try {
+                    const result = await supabase.storage
+                        .from('cars')
+                        .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: true // Replace if exists
+                        });
+                    uploadData = result.data;
+                    uploadError = result.error;
+                } catch (regularError) {
+                    // Fallback to admin client if regular client fails
+                    console.warn('Regular client upload failed, trying admin client:', regularError);
+                    const adminResult = await supabaseAdmin.storage
+                        .from('cars')
+                        .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: true // Replace if exists
+                        });
+                    uploadData = adminResult.data;
+                    uploadError = adminResult.error;
+                }
 
-            if (uploadError) {
-                throw uploadError;
-            }
+                if (uploadError) {
+                    throw uploadError;
+                }
 
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('cars')
-                .getPublicUrl(filePath);
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('cars')
+                    .getPublicUrl(filePath);
 
                 // Update form data with the public URL
                 setFormData(prev => ({
@@ -366,13 +367,13 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                             return updated;
                                         })}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'right 12px center',
+                                            backgroundSize: '12px',
+                                            paddingRight: '40px'
+                                        }}
                                         required
                                     />
                                 </div>
@@ -388,13 +389,13 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                             return updated;
                                         })}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'right 12px center',
+                                            backgroundSize: '12px',
+                                            paddingRight: '40px'
+                                        }}
                                         required
                                     />
                                 </div>
@@ -410,13 +411,13 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                             return updated;
                                         })}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'right 12px center',
+                                            backgroundSize: '12px',
+                                            paddingRight: '40px'
+                                        }}
                                         required
                                     />
                                 </div>
@@ -425,10 +426,10 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                     <label className="block text-sm font-medium text-gray-300 mb-2">{t('admin.cars.category')} *</label>
                                     <div className="flex flex-row gap-4">
                                         {['suv', 'sports', 'luxury'].map((cat) => {
-                                            const categories = Array.isArray(formData.category) 
-                                                ? formData.category 
-                                                : formData.category 
-                                                    ? [formData.category] 
+                                            const categories = Array.isArray(formData.category)
+                                                ? formData.category
+                                                : formData.category
+                                                    ? [formData.category]
                                                     : [];
                                             const isChecked = categories.includes(cat as 'suv' | 'sports' | 'luxury');
                                             return (
@@ -437,36 +438,35 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                                         type="checkbox"
                                                         checked={isChecked}
                                                         onChange={(e) => {
-                                                            const currentCategories = Array.isArray(formData.category) 
-                                                                ? formData.category 
-                                                                : formData.category 
-                                                                    ? [formData.category] 
+                                                            const currentCategories = Array.isArray(formData.category)
+                                                                ? formData.category
+                                                                : formData.category
+                                                                    ? [formData.category]
                                                                     : [];
                                                             if (e.target.checked) {
-                                                                setFormData(prev => ({ 
-                                                                    ...prev, 
+                                                                setFormData(prev => ({
+                                                                    ...prev,
                                                                     category: [...currentCategories, cat] as ('suv' | 'sports' | 'luxury')[]
                                                                 }));
                                                             } else {
-                                                                setFormData(prev => ({ 
-                                                                    ...prev, 
+                                                                setFormData(prev => ({
+                                                                    ...prev,
                                                                     category: currentCategories.filter(c => c !== cat) as ('suv' | 'sports' | 'luxury')[]
                                                                 }));
                                                             }
                                                         }}
                                                         className="sr-only"
                                                     />
-                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                        isChecked
-                                                            ? 'bg-red-500 border-red-500'
-                                                            : 'border-white/30 bg-white/5 group-hover:border-red-400'
-                                                    }`}>
+                                                    <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${isChecked
+                                                        ? 'bg-red-500 border-red-500'
+                                                        : 'border-white/30 bg-white/5 group-hover:border-red-400'
+                                                        }`}>
                                                         {isChecked && <Check className="w-3 h-3 text-white" />}
                                                     </div>
                                                     <span className="text-white">
-                                                        {cat === 'suv' ? t('admin.cars.categorySuv') : 
-                                                         cat === 'sports' ? t('admin.cars.categorySports') : 
-                                                         t('admin.cars.categoryLuxury')}
+                                                        {cat === 'suv' ? t('admin.cars.categorySuv') :
+                                                            cat === 'sports' ? t('admin.cars.categorySports') :
+                                                                t('admin.cars.categoryLuxury')}
                                                     </span>
                                                 </label>
                                             );
@@ -481,13 +481,13 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                         value={formData.year || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'right 12px center',
+                                            backgroundSize: '12px',
+                                            paddingRight: '40px'
+                                        }}
                                         required
                                     />
                                 </div>
@@ -499,13 +499,13 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
                                         value={formData.seats || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, seats: parseInt(e.target.value) }))}
                                         className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '12px',
-                                    paddingRight: '40px'
-                                }}
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'right 12px center',
+                                            backgroundSize: '12px',
+                                            paddingRight: '40px'
+                                        }}
                                         required
                                     />
                                 </div>

@@ -1,6 +1,8 @@
 import { OptionsState } from '../../constants/rentalOptions';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { BorrowRequest, BorrowRequestDTO, Car } from '../../types/index'
-import { getDateDiffInDays, calculateRentalDuration } from '../date';
+import { getSelectedCurrency } from '../currency';
+import { calculateRentalDuration } from '../date';
 
 export interface PriceSummaryResult {
     pricePerDay: number;
@@ -43,9 +45,6 @@ export const calculateAmount = (totalDays: number, pricePerDay: number, startDat
     if (options.speedLimitIncrease) {
         additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
     }
-    if (options.tireInsurance) {
-        additionalCosts += baseCarPrice * totalDays * 0.2; // 20%
-    }
 
     // Fixed daily costs
     if (options.personalDriver) {
@@ -72,18 +71,18 @@ export const calculateAmount = (totalDays: number, pricePerDay: number, startDat
 
 export function calculatePriceSummary(
     selectedCar: Car,
-    formData: BorrowRequest | BorrowRequestDTO,
+    request: BorrowRequest | BorrowRequestDTO,
     options: OptionsState
 ): PriceSummaryResult | null {
 
-    if (!selectedCar || !formData.start_date || !formData.end_date) return null;
+    if (!selectedCar || !request.start_date || !request.end_date) return null;
 
     // Calculate both days and hours
     const duration = calculateRentalDuration(
-        formData.start_date,
-        formData.start_time || '09:00',
-        formData.end_date,
-        formData.end_time || '09:00'
+        request.start_date,
+        request.start_time || '09:00',
+        request.end_date,
+        request.end_time || '09:00'
     );
 
     const { days: rentalDays, hours: rentalHours, totalHours } = duration;
@@ -119,7 +118,6 @@ export function calculatePriceSummary(
     // These should be calculated on the total rental period (days + hours)
     if (options.unlimitedKm) additionalCosts += baseCarPrice * totalDays * 0.5;
     if (options.speedLimitIncrease) additionalCosts += baseCarPrice * totalDays * 0.2;
-    if (options.tireInsurance) additionalCosts += baseCarPrice * totalDays * 0.2;
 
     // Fixed daily costs (calculated per total rental period including hours)
     if (options.personalDriver) additionalCosts += 800 * totalDays;
@@ -140,4 +138,15 @@ export function calculatePriceSummary(
         totalPrice,
         baseCarPrice,
     };
+}
+
+export function convertPrice(
+    price: number,
+    currency: 'MDL' | 'EUR' | 'USD',
+    mdlToEur: number,
+    mdlToUsd: number
+) {
+    if (currency === 'EUR') return Math.round(price / mdlToEur);
+    if (currency === 'USD') return Math.round(price / mdlToUsd);
+    return Math.round(price);
 }

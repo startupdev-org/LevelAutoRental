@@ -21,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut, isAdmin } = useAuth();
   const { selectedCurrency, setSelectedCurrency } = useExchangeRateContext();
-  
+
   // Currency options
   const CURRENCIES = [
     { code: 'MDL', symbol: 'MDL', label: 'MDL' },
@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
 
   // Check if we're on auth pages for transparent header
   const isAuthPage = location.pathname === '/auth/login' || location.pathname === '/auth/signup';
-  
+
   // Pages with hero sections that need white text when header is transparent
   const pagesWithHeroSections = [
     '/',
@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
     '/calculator',
     '/not-found'
   ];
-  
+
   const isNotFoundPage = !!document.getElementById('not-found-page');
   const hasHeroSection = pagesWithHeroSections.includes(location.pathname) || isNotFoundPage;
 
@@ -73,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
   const userDropdownButtonRef = useRef<HTMLButtonElement>(null);
   const [userDropdownPosition, setUserDropdownPosition] = useState<{ top: number; right: number } | null>(null);
-  
+
   // Determine if header text should be white
   // White text when: on auth pages, or on pages with hero sections when not scrolled, or when forceRender is true
   // Note: hasHeroSection takes priority over isDifferentPage for text color
@@ -150,47 +150,47 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   }, [showLanguageDropdown, showUserDropdown]);
 
   const handleLogout = (e?: React.MouseEvent) => {
-    
-    
+
+
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    
+
     // Close dropdowns immediately
     setShowUserDropdown(false);
     setIsMenuOpen(false);
-    
+
     // Clear storage immediately
-    
+
     localStorage.clear();
     sessionStorage.clear();
-    
-    
+
+
     // Try to sign out, but don't wait for it - use timeout
-    
+
     const signOutPromise = signOut();
     const timeoutPromise = new Promise((resolve) => {
       setTimeout(() => {
-        
+
         resolve({ error: null });
       }, 1000); // 1 second timeout
     });
-    
+
     Promise.race([signOutPromise, timeoutPromise])
       .then((result: any) => {
-        
+
         if (result?.error) {
           console.error('Logout error:', result.error);
         } else {
-          
+
         }
       })
       .catch((err) => {
         console.error('Logout promise rejected:', err);
       })
       .finally(() => {
-        
+
         // Force reload regardless of signOut result
         window.location.replace('/');
       });
@@ -230,6 +230,13 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
       }, 0);
     }
   };
+
+  function handleSetSelectedCurrency(code: string) {
+    i18n.changeLanguage(code);
+    setCurrentLanguage(code);
+    setShowLanguageDropdown(false);
+    localStorage.setItem("selectedLanguage", code);
+  }
 
   if (!shouldRenderHeader) return null;
 
@@ -277,17 +284,15 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                 <button
                   ref={userDropdownButtonRef}
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-300 ${
-                    shouldShowWhiteText
-                      ? 'hover:bg-white/10 text-white'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-300 ${shouldShowWhiteText
+                    ? 'hover:bg-white/10 text-white'
+                    : 'hover:bg-gray-100 text-gray-700'
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${
-                    shouldShowWhiteText
-                      ? 'bg-white/20 text-white'
-                      : 'bg-red-600 text-white'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${shouldShowWhiteText
+                    ? 'bg-white/20 text-white'
+                    : 'bg-red-600 text-white'
+                    }`}>
                     {(user.email?.split('@')[0] || user.email || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left">
@@ -296,93 +301,92 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                     </p>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''} ${
-                      shouldShowWhiteText ? 'text-white' : 'text-gray-500'
-                    }`}
+                    className={`w-4 h-4 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''} ${shouldShowWhiteText ? 'text-white' : 'text-gray-500'
+                      }`}
                   />
                 </button>
 
                 {/* User Dropdown Menu */}
                 {forceRender ? (
                   showUserDropdown && userDropdownPosition ? createPortal(
-                  <AnimatePresence>
-                    {showUserDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="user-dropdown-portal fixed bg-white border border-gray-200 rounded-xl shadow-xl z-[99999999] min-w-[220px] overflow-hidden"
-                        style={{
-                          top: `${userDropdownPosition.top}px`,
-                          right: `${userDropdownPosition.right}px`
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                      <div className="p-4 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{user.email?.split('@')[0] || user.email}</p>
-                        <p className="text-xs text-gray-500 mt-1 truncate">{user.email}</p>
-                      </div>
-
-                      <div className="py-2">
-                        <button
-                          onClick={() => {
-                            navigate('/dashboard?tab=overview');
-                            setShowUserDropdown(false);
+                    <AnimatePresence>
+                      {showUserDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="user-dropdown-portal fixed bg-white border border-gray-200 rounded-xl shadow-xl z-[99999999] min-w-[220px] overflow-hidden"
+                          style={{
+                            top: `${userDropdownPosition.top}px`,
+                            right: `${userDropdownPosition.right}px`
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <LayoutDashboard className="w-4 h-4" />
-                          <span>{t('header.dashboard')}</span>
-                        </button>
+                          <div className="p-4 border-b border-gray-100">
+                            <p className="text-sm font-semibold text-gray-900">{user.email?.split('@')[0] || user.email}</p>
+                            <p className="text-xs text-gray-500 mt-1 truncate">{user.email}</p>
+                          </div>
 
-                        {!isAdmin && (
-                          <button
-                            onClick={() => {
-                              navigate('/dashboard?tab=settings&subTab=settings');
-                              setShowUserDropdown(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <Settings className="w-4 h-4" />
-                            <span>{t('header.settings')}</span>
-                          </button>
-                        )}
+                          <div className="py-2">
+                            <button
+                              onClick={() => {
+                                navigate('/dashboard?tab=overview');
+                                setShowUserDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <LayoutDashboard className="w-4 h-4" />
+                              <span>{t('header.dashboard')}</span>
+                            </button>
 
-                        {isAdmin && (
-                          <button
-                            onClick={() => {
-                              navigate('/admin');
-                              setShowUserDropdown(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <Shield className="w-4 h-4" />
-                            <span>{t('header.admin')}</span>
-                          </button>
-                        )}
-                      </div>
+                            {!isAdmin && (
+                              <button
+                                onClick={() => {
+                                  navigate('/dashboard?tab=settings&subTab=settings');
+                                  setShowUserDropdown(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Settings className="w-4 h-4" />
+                                <span>{t('header.settings')}</span>
+                              </button>
+                            )}
 
-                      <div className="border-t border-gray-100 py-2">
-                        <button
-                          onClick={(e) => {
-                            
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleLogout(e);
-                          }}
-                          type="button"
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                          style={{ pointerEvents: 'auto' }}
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span>{t('header.signOut')}</span>
-                        </button>
-                      </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>,
-                  document.body
+                            {isAdmin && (
+                              <button
+                                onClick={() => {
+                                  navigate('/admin');
+                                  setShowUserDropdown(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Shield className="w-4 h-4" />
+                                <span>{t('header.admin')}</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="border-t border-gray-100 py-2">
+                            <button
+                              onClick={(e) => {
+
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleLogout(e);
+                              }}
+                              type="button"
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              <LogOut className="w-4 h-4" />
+                              <span>{t('header.signOut')}</span>
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>,
+                    document.body
                   ) : null
                 ) : (
                   <AnimatePresence>
@@ -443,7 +447,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                         <div className="border-t border-gray-100 py-2">
                           <button
                             onClick={(e) => {
-                              
+
                               e.preventDefault();
                               e.stopPropagation();
                               handleLogout(e);
@@ -493,12 +497,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                       {LANGUAGES.map(({ code, iconClass }) => (
                         <button
                           key={code}
-                          onClick={() => {
-                            i18n.changeLanguage(code);
-                            setCurrentLanguage(code);
-                            setShowLanguageDropdown(false);
-                            localStorage.setItem("selectedLanguage", code);
-                          }}
+                          onClick={() => { handleSetSelectedCurrency(code) }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
                         >
                           <span className={iconClass}></span>
@@ -506,10 +505,10 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                         </button>
                       ))}
                     </div>
-                    
+
                     {/* Divider */}
                     <div className="border-t border-gray-200 my-1"></div>
-                    
+
                     {/* Currency Section */}
                     <div className="py-1">
                       <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -522,15 +521,13 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
                             setShowLanguageDropdown(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
-                            selectedCurrency === currency.code
-                              ? 'bg-theme-50 text-theme-600'
-                              : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
-                          }`}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${selectedCurrency === currency.code
+                            ? 'bg-theme-50 text-theme-600'
+                            : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
+                            }`}
                         >
-                          <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${
-                            currency.code === 'MDL' ? 'text-xs' : 'text-base'
-                          }`}>
+                          <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${currency.code === 'MDL' ? 'text-xs' : 'text-base'
+                            }`}>
                             {currency.symbol}
                           </span>
                           <span className="flex-1 text-left">{currency.label}</span>
@@ -588,10 +585,10 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                         </button>
                       ))}
                     </div>
-                    
+
                     {/* Divider */}
                     <div className="border-t border-gray-200 my-1"></div>
-                    
+
                     {/* Currency Section */}
                     <div className="py-1">
                       <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -604,15 +601,13 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                             setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
                             setShowLanguageDropdown(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
-                            selectedCurrency === currency.code
-                              ? 'bg-theme-50 text-theme-600'
-                              : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
-                          }`}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${selectedCurrency === currency.code
+                            ? 'bg-theme-50 text-theme-600'
+                            : 'text-gray-700 hover:bg-theme-50 hover:text-theme-500'
+                            }`}
                         >
-                          <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${
-                            currency.code === 'MDL' ? 'text-xs' : 'text-base'
-                          }`}>
+                          <span className={`w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 ${currency.code === 'MDL' ? 'text-xs' : 'text-base'
+                            }`}>
                             {currency.symbol}
                           </span>
                           <span className="flex-1 text-left">{currency.label}</span>
@@ -666,182 +661,180 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-[99999999] lg:hidden"
                   >
-                <div className="flex flex-col h-full">
-                  {/* Mobile Menu Header */}
-                  <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src="/logo.png"
-                        alt="Level Auto Rental Logo"
-                        className="w-40 h-auto"
-                      />
-                    </div>
-                    <button
-                      onClick={() => setIsMenuOpen(false)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  {/* Mobile Menu Content */}
-                  <div className="flex-1 overflow-y-auto">
-                    <nav className="p-6 space-y-2">
-                      {navigation.map((item, index) => (
-                        <motion.button
-                          key={item.name}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          onClick={() => {
-                            setIsMenuOpen(false);
-                            handleNavigate(item.href);
-                          }}
-                          className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${isActive(item.href)
-                            ? 'bg-theme-50 text-theme-600 border-l-4 border-theme-500'
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-theme-600'
-                            }`}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                    <div className="flex flex-col h-full">
+                      {/* Mobile Menu Header */}
+                      <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src="/logo.png"
+                            alt="Level Auto Rental Logo"
+                            className="w-40 h-auto"
+                          />
+                        </div>
+                        <button
+                          onClick={() => setIsMenuOpen(false)}
+                          className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                         >
-                          {item.name}
-                        </motion.button>
-                      ))}
-                    </nav>
+                          <X className="w-6 h-6" />
+                        </button>
+                      </div>
 
-                    {/* Mobile Menu Footer */}
-                    <div className="p-6 border-t border-gray-200 space-y-4">
-                      {isAuthenticated && user ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
-                            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-semibold text-white text-sm">
-                              {(user.email?.split('@')[0] || user.email || 'U').charAt(0).toUpperCase()}
+                      {/* Mobile Menu Content */}
+                      <div className="flex-1 overflow-y-auto">
+                        <nav className="p-6 space-y-2">
+                          {navigation.map((item, index) => (
+                            <motion.button
+                              key={item.name}
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                handleNavigate(item.href);
+                              }}
+                              className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${isActive(item.href)
+                                ? 'bg-theme-50 text-theme-600 border-l-4 border-theme-500'
+                                : 'text-gray-700 hover:bg-gray-50 hover:text-theme-600'
+                                }`}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                            >
+                              {item.name}
+                            </motion.button>
+                          ))}
+                        </nav>
+
+                        {/* Mobile Menu Footer */}
+                        <div className="p-6 border-t border-gray-200 space-y-4">
+                          {isAuthenticated && user ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
+                                <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-semibold text-white text-sm">
+                                  {(user.email?.split('@')[0] || user.email || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    {user.email?.split('@')[0] || user.email}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => {
+                                  setIsMenuOpen(false);
+                                  navigate('/dashboard?tab=overview');
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                              >
+                                <LayoutDashboard className="w-4 h-4" />
+                                <span>{t('header.dashboard')}</span>
+                              </button>
+
+
+                              {!isAdmin && (
+                                <button
+                                  onClick={() => {
+                                    setIsMenuOpen(false);
+                                    navigate('/dashboard?tab=settings&subTab=settings');
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                  <span>{t('header.settings')}</span>
+                                </button>
+                              )}
+
+                              {isAdmin && (
+                                <button
+                                  onClick={() => {
+                                    setIsMenuOpen(false);
+                                    navigate('/admin');
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                                >
+                                  <Shield className="w-4 h-4" />
+                                  <span>{t('header.admin')}</span>
+                                </button>
+                              )}
+
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setIsMenuOpen(false);
+                                  handleLogout(e);
+                                }}
+                                type="button"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2"
+                              >
+                                <LogOut className="w-4 h-4" />
+                                <span>{t('header.signOut')}</span>
+                              </button>
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold text-gray-900">
-                                {user.email?.split('@')[0] || user.email}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                          ) : null}
+
+                          {/* Mobile Language Selector */}
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                              {t('header.language')}
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {LANGUAGES.map(({ code, iconClass }) => (
+                                <button
+                                  key={code}
+                                  onClick={() => {
+                                    i18n.changeLanguage(code);
+                                    setCurrentLanguage(code);
+                                    localStorage.setItem("selectedLanguage", code);
+                                    setIsMenuOpen(false);
+                                  }}
+                                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${currentLanguage === code
+                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                                    }`}
+                                >
+                                  <span className={`${iconClass} w-6 h-4 mb-1`}></span>
+                                  <span className="text-xs font-medium">{t(`languages.${code}`)}</span>
+                                </button>
+                              ))}
                             </div>
                           </div>
 
-                          <button
-                            onClick={() => {
-                              setIsMenuOpen(false);
-                              navigate('/dashboard?tab=overview');
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                          >
-                            <LayoutDashboard className="w-4 h-4" />
-                            <span>{t('header.dashboard')}</span>
-                          </button>
-
-
-                          {!isAdmin && (
-                            <button
-                              onClick={() => {
-                                setIsMenuOpen(false);
-                                navigate('/dashboard?tab=settings&subTab=settings');
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                            >
-                              <Settings className="w-4 h-4" />
-                              <span>{t('header.settings')}</span>
-                            </button>
-                          )}
-
-                          {isAdmin && (
-                            <button
-                              onClick={() => {
-                                setIsMenuOpen(false);
-                                navigate('/admin');
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                            >
-                              <Shield className="w-4 h-4" />
-                              <span>{t('header.admin')}</span>
-                            </button>
-                          )}
-
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setIsMenuOpen(false);
-                              handleLogout(e);
-                            }}
-                            type="button"
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span>{t('header.signOut')}</span>
-                          </button>
-                        </div>
-                      ) : null}
-
-                      {/* Mobile Language Selector */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                          {t('header.language')}
-                        </p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {LANGUAGES.map(({ code, iconClass }) => (
-                            <button
-                              key={code}
-                              onClick={() => {
-                                i18n.changeLanguage(code);
-                                setCurrentLanguage(code);
-                                localStorage.setItem("selectedLanguage", code);
-                                setIsMenuOpen(false);
-                              }}
-                              className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${currentLanguage === code
-                                ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                                }`}
-                            >
-                              <span className={`${iconClass} w-6 h-4 mb-1`}></span>
-                              <span className="text-xs font-medium">{t(`languages.${code}`)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Mobile Currency Selector */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                          {t('header.currency') || 'Currency'}
-                        </p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {CURRENCIES.map((currency) => (
-                            <button
-                              key={currency.code}
-                              onClick={() => {
-                                setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
-                                setIsMenuOpen(false);
-                              }}
-                              className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
-                                selectedCurrency === currency.code
-                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span className={`w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 mb-2 ${
-                                currency.code === 'MDL' ? 'text-sm' : 'text-lg'
-                              }`}>
-                                {currency.symbol}
-                              </span>
-                              <span className="text-xs font-medium">{currency.label}</span>
-                            </button>
-                          ))}
+                          {/* Mobile Currency Selector */}
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                              {t('header.currency') || 'Currency'}
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {CURRENCIES.map((currency) => (
+                                <button
+                                  key={currency.code}
+                                  onClick={() => {
+                                    setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
+                                    setIsMenuOpen(false);
+                                  }}
+                                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${selectedCurrency === currency.code
+                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                                    }`}
+                                >
+                                  <span className={`w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 mb-2 ${currency.code === 'MDL' ? 'text-sm' : 'text-lg'
+                                    }`}>
+                                    {currency.symbol}
+                                  </span>
+                                  <span className="text-xs font-medium">{currency.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
-              </>
-            )}
-          </AnimatePresence>,
-          document.body
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>,
+            document.body
           ) : null
         ) : (
           <AnimatePresence>
@@ -1027,11 +1020,10 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                   setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
                                   setIsMenuOpen(false);
                                 }}
-                                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
-                                  selectedCurrency === currency.code
-                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                                }`}
+                                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${selectedCurrency === currency.code
+                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
+                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
+                                  }`}
                               >
                                 <span className="text-lg font-semibold mb-1">{currency.symbol}</span>
                                 <span className="text-xs font-medium">{currency.label}</span>

@@ -20,12 +20,12 @@ import { getInitials } from '../../../../utils/customer';
 import { getCarName } from '../../../../utils/car/car';
 import { BorrowRequestFilters, createBorrowRequest, fetchBorrowRequestsForDisplay, updateBorrowRequest } from '../../../../lib/db/requests/requests';
 import { formatDateLocal } from '../../../../utils/date';
-import { formatAmount } from '../../../../utils/currency';
+import { formatPrice } from '../../../../utils/currency';
 import { formatTime } from '../../../../utils/time';
 import { supabase } from '../../../../lib/supabase';
 
 export const RequestsView: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const { showSuccess, showError } = useNotification();
@@ -359,7 +359,7 @@ export const RequestsView: React.FC = () => {
                                         <div className="mt-4 pt-4 border-t border-white/10">
                                             <p className="text-gray-400 text-xs mb-1">{t('admin.requests.amount')}</p>
                                             <p className="text-white font-semibold text-base">
-                                                {formatAmount(request.total_amount)}
+                                                {formatPrice(request.total_amount, 'MDL', i18n.language)}
                                             </p>
                                         </div>
                                     </div>
@@ -442,7 +442,7 @@ export const RequestsView: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-white font-semibold text-sm">
-                                                        {formatAmount(request.total_amount)}
+                                                        {formatPrice(request.total_amount, 'MDL', i18n.language)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -573,6 +573,7 @@ export const RequestsView: React.FC = () => {
             {/* Edit Request Modal */}
             {showEditModal && editingRequest && (
                 <EditRequestModal
+                    isOpen={showEditModal}
                     request={editingRequest}
                     onSave={async (updatedData) => {
                         try {
@@ -605,7 +606,7 @@ export const RequestsView: React.FC = () => {
                                             if (updateRentalError) {
                                                 console.warn('Failed to update associated rental total_amount:', updateRentalError);
                                             } else {
-                                                
+
                                             }
                                         }
                                     } catch (rentalUpdateError) {
