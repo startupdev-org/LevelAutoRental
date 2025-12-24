@@ -43,11 +43,19 @@ export const CalendarPage: React.FC = () => {
         );
         setOrders(orders)
         //  // update the selected car state
+        // setFilters(prev => ({
+        //     ...prev,
+        //     carId: car?.id || "" // sync the filter
+        // }));
+    }
+
+    const handleSetCar = (car: Car | null) => {
+        setCar(car);
         setFilters(prev => ({
             ...prev,
-            carId: car?.id || "" // sync the filter
+            carId: car?.id ?? ''
         }));
-    }
+    };
 
 
     if (loading && !showFilters) {
@@ -77,7 +85,7 @@ export const CalendarPage: React.FC = () => {
                     setShowFilters={setShowFilters}
                     filters={filters}
                     setFilters={setFilters}
-                    setCar={setCar}
+                    setCar={handleSetCar}
                 />,
                 document.body
             )}
@@ -90,7 +98,7 @@ export const CalendarPage: React.FC = () => {
                     setMonth={setMonth}
                     t={t}
                     car={car}
-                    onCarChange={(car) => handleSetCar(car)}
+                    onCarChange={handleSetCar}
 
                 />
             )}
