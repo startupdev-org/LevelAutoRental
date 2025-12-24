@@ -22,14 +22,18 @@ export async function getLoggedUser(): Promise<User> {
         throw authError
     }
 
+    console.log('id: ', supabase_user.id)
+
     const { data, error } = await supabase
         .from('Profiles')
-        .select()
+        .select('*')
         .eq('id', supabase_user.id)
-        .single()
+        .maybeSingle();
 
     if (error)
         throw error
+
+    console.log('the user is: ', data)
 
     return data as User;
 }
@@ -80,7 +84,7 @@ export async function updateProfile(user: Partial<User>) {
             return { success: false, error: error.message };
         }
 
-        
+
         return { success: true, data };
     } catch (err) {
         console.error('Unexpected error updating user profile:', err);
