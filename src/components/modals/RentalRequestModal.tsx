@@ -8,6 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { createUserBorrowRequest } from '../../lib/db/requests/requests';
 import { fetchCarById } from '../../lib/cars';
 import { sendRentalRequestEmail } from '../../utils/email/rentalRequestEmail';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
+import { convertPrice } from '../../utils/car/pricing';
+import { formatPrice } from '../../utils/currency';
 
 interface RentalRequestModalProps {
     isOpen: boolean;
@@ -52,6 +55,10 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     carRentalsForCalendar = []
 }) => {
 
+    const { selectedCurrency, eur, usd } = useExchangeRates();
+    const { t, i18n } = useTranslation();
+
+
     // Country codes for phone selector
     const COUNTRY_CODES = [
         { code: '+373', flag: '🇲🇩', country: 'Moldova' },
@@ -76,15 +83,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         { code: '+90', flag: '🇹🇷', country: 'Turkey' },
     ];
 
-    // ───── HELPER FUNCTIONS ─────
-    // For rental request modal, prices should always be in MDL
-    const convertPriceToMDL = (price: number): number => {
-        // Always return the price as-is since modal should display MDL prices
-        return price;
-    };
-
-    // Always show MDL in rental request modal
-    const getCurrencySymbol = (): string => 'MDL';
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -114,7 +112,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
         comment?: string;
     }>({});
     const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
-    const { t } = useTranslation();
     const { user } = useAuth();
     const navigate = useNavigate();
 
@@ -612,13 +609,13 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
             if (result.success) {
                 setSubmitSuccess(true);
-                
+
                 // Send email notification
                 try {
                     // Format car name - use fresh car data if available, otherwise fallback to provided car
                     const carDataForEmail = freshCarData || car;
                     const carName = (carDataForEmail as any).name || `${carDataForEmail.make} ${carDataForEmail.model}`;
-                    
+
                     // Format dates for display
                     const formatDateForEmail = (dateString: string): string => {
                         const date = new Date(dateString);
@@ -628,12 +625,12 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             year: 'numeric'
                         });
                     };
-                    
+
                     // Format duration
                     const durationText = rentalCalculation
                         ? `${rentalCalculation.days} ${rentalCalculation.days === 1 ? 'zi' : 'zile'}${rentalCalculation.hours > 0 ? `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}` : ''}`
                         : '';
-                    
+
                     // Calculate individual option costs for display
                     const unlimitedKmCost = options.unlimitedKm ? Math.round(discountedPricePerDay * totalDays * 0.5) : 0;
                     const personalDriverCost = options.personalDriver ? Math.round(800 * totalDays) : 0;
@@ -641,7 +638,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                     const childSeatCost = options.childSeat ? Math.round(100 * totalDays) : 0;
                     const simCardCost = options.simCard ? Math.round(100 * totalDays) : 0;
                     const roadsideAssistanceCost = options.roadsideAssistance ? Math.round(500 * totalDays) : 0;
-                    
+
                     // Format options with labels and values according to email template format
                     const optionsList: Array<{ label: string; value: string }> = [];
                     if (options.unlimitedKm) {
@@ -671,11 +668,11 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                     if (options.airportDelivery) {
                         optionsList.push({ label: 'Livrare', value: 'Gratuit' });
                     }
-                    
+
                     // Format prices - use commas as thousand separators (replace dots from ro-RO locale)
                     const pricePerDayFormatted = `${pricePerDay.toLocaleString('ro-RO').replace(/\./g, ',')} MDL`;
                     const totalPriceFormatted = `${Math.round(totalCost).toLocaleString('ro-RO').replace(/\./g, ',')} MDL`;
-                    
+
                     // Send email
                     await sendRentalRequestEmail({
                         carName,
@@ -698,7 +695,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                     // Don't show error to user - email failure shouldn't block success
                     console.error('Failed to send email notification:', emailError);
                 }
-                
+
                 // Don't close modal automatically - let user see the success message and registration option
             } else {
                 setSubmitError(result.error || 'A apărut o eroare la trimiterea cererii. Vă rugăm să încercați din nou.');
@@ -1378,7 +1375,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between text-sm md:text-base">
                                                     <span className="text-gray-600">Preț pe zi</span>
-                                                    <span className="text-gray-900 font-medium">{convertPriceToMDL(rentalCalculation.pricePerDay).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
+                                                    <span className="text-gray-900 font-medium">{formatPrice(convertPrice(rentalCalculation.pricePerDay, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm md:text-base">
                                                     <span className="text-gray-600">Perioadă</span>
@@ -1390,7 +1387,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 <div className="pt-2 border-t border-gray-300">
                                                     <div className="flex items-center justify-between text-sm md:text-base">
                                                         <span className="text-gray-900 font-medium">Preț de bază</span>
-                                                        <span className="text-gray-900 font-medium">{convertPriceToMDL(Math.round(basePrice)).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
+                                                        <span className="text-gray-900 font-medium">{formatPrice(convertPrice(basePrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                     </div>
                                                 </div>
 
@@ -1403,44 +1400,44 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Kilometraj nelimitat</span>
                                                                         <span className="text-gray-900 font-medium">
-                                                                            {convertPriceToMDL(Math.round(discountedPricePerDay * totalDays * 0.5)).toLocaleString('ro-RO')} {getCurrencySymbol()}
+                                                                            {formatPrice(convertPrice(discountedPricePerDay * totalDays * 0.5, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                                                         </span>
                                                                     </div>
                                                                 )}
                                                                 {options.personalDriver && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Șofer personal</span>
-                                                                        <span className="text-gray-900 font-medium">{Math.round(800 * totalDays)} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{formatPrice(convertPrice(800 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.priorityService && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Priority Service</span>
-                                                                        <span className="text-gray-900 font-medium">{Math.round(1000 * totalDays)} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{formatPrice(convertPrice(1000 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.childSeat && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Scaun auto pentru copii</span>
-                                                                        <span className="text-gray-900 font-medium">{Math.round(100 * totalDays)} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{formatPrice(convertPrice(100 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.simCard && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Cartelă SIM cu internet</span>
-                                                                        <span className="text-gray-900 font-medium">{Math.round(100 * totalDays)} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{formatPrice(convertPrice(100 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.roadsideAssistance && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">Asistență rutieră</span>
-                                                                        <span className="text-gray-900 font-medium">{Math.round(500 * totalDays)} MDL</span>
+                                                                        <span className="text-gray-900 font-medium">{formatPrice(convertPrice(500 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 <div className="pt-2 border-t border-gray-300">
                                                                     <div className="flex justify-between font-medium text-sm md:text-base">
                                                                         <span className="text-gray-900">Total servicii</span>
-                                                                        <span className="text-gray-900">{convertPriceToMDL(Math.round(additionalCosts)).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
+                                                                        <span className="text-gray-900">{formatPrice(convertPrice(additionalCosts, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1450,7 +1447,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                                 <div className="pt-3 border-t border-gray-300 flex items-center justify-between">
                                                     <span className="text-gray-900 font-bold text-base md:text-lg">Total</span>
-                                                    <span className="text-gray-900 font-bold text-lg md:text-xl">{convertPriceToMDL(totalCost).toLocaleString('ro-RO')} {getCurrencySymbol()}</span>
+                                                    <span className="text-gray-900 font-bold text-lg md:text-xl">{formatPrice(convertPrice(totalCost, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                 </div>
                                             </div>
                                         </div>
