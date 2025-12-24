@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Car, Gauge, Zap, UserRound, Star, Shield, Baby, Wifi, Wrench, Check, FileText, Cookie, Bell, CheckCircle } from 'lucide-react';
+import { X, Calendar, Car, UserRound, Star, Shield, FileText, Cookie, Bell, CheckCircle } from 'lucide-react';
 import { Car as CarType } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
