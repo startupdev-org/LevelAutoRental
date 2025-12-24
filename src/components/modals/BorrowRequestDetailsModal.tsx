@@ -30,32 +30,11 @@ export function BorrowRequestsDetailsModal({
 }: BorrowRequestsDetailsModalProps) {
 
     const { t, i18n } = useTranslation();
-    const { selectedCurrency, eur, usd } = useExchangeRates()
+    const { eur, usd } = useExchangeRates()
 
     if (!isOpen || !order) return null;
 
     const displayOrder = order;
-
-    // If parent provides onOpenContractModal, use it; otherwise use local state
-    // const handleOpenContractModal = () => {
-    //     if (onOpenContractModal) {
-    //         onOpenContractModal();
-    //     } else {
-    //         setShowContractModal(true);
-    //     }
-    // };
-
-    // Fetch original request options if request_id exists
-    // TODO: HANDLE THIS THING
-    // useEffect(() => {
-    //     const fetchRequestOptions = async () => {
-
-    //     };
-
-    //     if (isOpen && order) {
-    //         fetchRequestOptions();
-    //     }
-    // }, [isOpen, order]);
 
     // Handle both Rental and OrderDisplay formats
     const startDate = (order as BorrowRequestDTO).start_date;
@@ -81,9 +60,12 @@ export function BorrowRequestsDetailsModal({
                 {/* Header */}
                 <div className="sticky top-0 border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10" style={{ backgroundColor: '#1C1C1C' }}>
                     <div>
-                        <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails')}</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.orders.orderDetails.title')}</h2>
                         <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                            {t('admin.orders.orderNumber')}{displayId(order.id)}
+                            {t('admin.orders.orderDetails.description', {
+                                id: displayId(order.id)
+                            })}
+
                         </p>
                     </div>
                     <button
@@ -102,7 +84,7 @@ export function BorrowRequestsDetailsModal({
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
                             <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                                 <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span className="text-sm sm:text-base">{t('admin.orders.rentalPeriod')}</span>
+                                <span className="text-sm sm:text-base">{t('admin.orders.orderDetails.rentalPeriod')}</span>
                             </h3>
                             <div className="flex items-center gap-2">
                                 {(order.car?.image_url || (order.car as any)?.image || (order as any).car?.image_url) && (
@@ -119,7 +101,7 @@ export function BorrowRequestsDetailsModal({
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
-                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.pickup')}</p>
+                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.orderDetails.pickup')}</p>
                                 <div className="flex items-center gap-2 mb-1">
                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
                                     <span className="text-white font-semibold text-sm sm:text-base">{formatDateLocal(startDate)}</span>
@@ -130,7 +112,7 @@ export function BorrowRequestsDetailsModal({
                                 </div>
                             </div>
                             <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
-                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.return')}</p>
+                                <p className="text-gray-400 text-xs sm:text-sm mb-2">{t('admin.orders.orderDetails.return')}</p>
                                 <div className="flex items-center gap-2 mb-1">
                                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
                                     <span className="text-white font-semibold text-sm sm:text-base">{formatDateLocal(endDate)}</span>
@@ -143,7 +125,7 @@ export function BorrowRequestsDetailsModal({
                         </div>
                         <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/10">
                             {summary && (
-                                <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.duration')}: <span className="text-white font-semibold">{summary?.rentalDays} {t('admin.orders.days')}{summary?.rentalHours > 0 ? `, ${summary?.rentalHours} ${t('admin.requestDetails.hours') || 'ore'}` : ''}</span></p>
+                                <p className="text-gray-400 text-xs sm:text-sm">{t('admin.orders.orderDetails.duration')}: <span className="text-white font-semibold">{summary?.rentalDays} {t('admin.orders.orderDetails.days')}{summary?.rentalHours > 0 ? `, ${summary?.rentalHours} ${t('admin.orders.orderDetails.hours') || 'ore'}` : ''}</span></p>
                             )}
                         </div>
                     </div>
