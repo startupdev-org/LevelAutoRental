@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ArrowLeft, ArrowRight, Loader2, CarIcon } from "lucide-react";
+import { Search, ArrowLeft, ArrowRight, CarIcon } from "lucide-react";
 import { Car } from "../../../../types";
 import { fetchCarsPaginated } from "../../../../lib/db/cars/cars";
 import { EmptyState } from "../../../../components/ui/EmptyState";
@@ -28,6 +28,8 @@ export const CalendarFilters: React.FC<FiltersProps> = ({
     const pageSize = 5;
     const [total, setTotal] = useState(0);
     const totalPages = Math.ceil(total / pageSize);
+
+    const [cars, setCars] = useState<Car[]>([]);
 
     const [debouncedSearch, setDebouncedSearch] = useState(filters.searchQuery || "");
     const [loading, setLoading] = useState(false);

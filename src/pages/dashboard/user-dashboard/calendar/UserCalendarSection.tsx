@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from "date-fns";
 import { motion } from "framer-motion";
-import { User, Clock, X } from "lucide-react";
+import { User, Clock } from "lucide-react";
 import { BorrowRequestDTO, Car } from "../../../../types";
 import { getBorrowRequestsStatusDisplay } from "../../../../utils/car/car";
 
@@ -28,17 +28,6 @@ export const UserCalendarSection: React.FC<UserCalendarSectionProps> = ({ orders
     };
 
     const getOrderNumber = (order: BorrowRequestDTO) => order.id;
-
-    const getStatusDisplay = (status: string) => {
-        switch (status) {
-            case "pending": return { text: "Pending", className: "bg-yellow-500/30 text-yellow-300" };
-            case "active": return { text: "Active", className: "bg-green-500/30 text-green-300" };
-            case "processed": return { text: "Started", className: "bg-blue-500/30 text-blue-300" };
-            case "completed": return { text: "Completed", className: "bg-blue-500/30 text-blue-300" };
-            case "canceled": return { text: "Canceled", className: "bg-red-500/30 text-red-300" };
-            default: return { text: status, className: "bg-gray-500/30 text-gray-300" };
-        }
-    };
 
     const generateCalendarDays = (month: Date): string[] => {
         const startMonth = startOfMonth(month);
