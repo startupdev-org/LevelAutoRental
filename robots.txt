@@ -1,4 +1,12 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /auth/
+Disallow: /update-password
+Disallow: /test/
+
+# Sitemap
+Sitemap: https://levelauto.md/sitemap.xml
 
 Sitemap: https://levelauto.md/sitemap.xml

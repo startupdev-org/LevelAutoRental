@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ro">
 <head>
   <meta charset="utf-8">
-  <title>LVL Car Rental - Redirecting...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Level Auto Rental - Redirecting...</title>
+  <meta name="robots" content="noindex, nofollow">
   <script>
     // Single Page Apps for GitHub Pages
     // https://github.com/rafgraph/spa-github-pages
@@ -25,14 +27,24 @@
     var pathSegmentsToKeep = 0;
 
     var l = window.location;
-    l.replace(
-      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-      l.hash
-    );
+    // Only redirect if not already on the root with query parameter
+    if (!l.search.includes('?/')) {
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    } else {
+      // Already redirected, just load the main app
+      window.location.replace('/');
+    }
   </script>
+  <!-- Fallback: redirect to home if JavaScript is disabled -->
+  <noscript>
+    <meta http-equiv="refresh" content="0; url=/">
+  </noscript>
 </head>
 <body>
   <div style="
@@ -58,6 +70,9 @@
         animation: spin 1s linear infinite;
         margin: 2rem auto;
       "></div>
+      <p style="color: #999; font-size: 0.9rem; margin-top: 2rem;">
+        <a href="/" style="color: #E53E3E; text-decoration: none;">Click here if you are not redirected</a>
+      </p>
     </div>
   </div>
   <style>
