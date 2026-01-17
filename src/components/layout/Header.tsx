@@ -258,6 +258,8 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
             <img
               src="/logo.png"
               alt="Level Auto Rental Logo"
+              width={190}
+              height={60}
               className={`w-[180px] lg:w-[190px] h-auto transition-all duration-300 ${shouldShowWhiteText ? 'brightness-0 invert' : ''
                 }`}
             />

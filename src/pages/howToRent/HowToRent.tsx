@@ -68,7 +68,7 @@ export const HowToRent: React.FC = () => {
             <div
                 className="hidden md:block lg:hidden absolute inset-0"
                 style={{
-                    backgroundImage: "url('/lvl_bg.png')",
+                    backgroundImage: "url('/lvl_bg.jpg')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center center',
                     backgroundRepeat: 'no-repeat',

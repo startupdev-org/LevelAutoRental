@@ -250,8 +250,12 @@ export const Hero: React.FC = () => {
       {/* Background Image - Desktop version */}
       <div className="hidden lg:block absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
         <img
-          src="/lvl_bg.png"
+          src="/lvl_bg.jpg"
           alt="Background"
+          width={1920}
+          height={1080}
+          // @ts-ignore - fetchPriority is a valid HTML attribute but TypeScript types may not include it yet
+          fetchPriority="high"
           className="w-full h-full object-cover"
         style={{
             position: 'absolute',
@@ -269,8 +273,12 @@ export const Hero: React.FC = () => {
       {/* Background Image - Tablet version */}
       <div className="hidden md:block lg:hidden absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
         <img
-          src="/lvl_bg.png"
+          src="/lvl_bg.jpg"
           alt="Background"
+          width={1920}
+          height={1080}
+          // @ts-ignore - fetchPriority is a valid HTML attribute but TypeScript types may not include it yet
+          fetchPriority="high"
           className="w-full h-full object-cover"
         style={{
             position: 'absolute',
@@ -290,6 +298,10 @@ export const Hero: React.FC = () => {
         <img
           src="/backgrounds/bg10-mobile.jpeg"
           alt="Background"
+          width={768}
+          height={1024}
+          // @ts-ignore - fetchPriority is a valid HTML attribute but TypeScript types may not include it yet
+          fetchPriority="high"
           className="w-full h-full object-cover"
           style={{
             position: 'absolute',

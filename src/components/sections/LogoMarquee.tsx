@@ -36,6 +36,26 @@ export const LogoMarquee: React.FC = () => {
     return 'h-16 md:h-24';
   };
 
+  const getLogoDimensions = (alt: string): { width: number; height: number } => {
+    const altLower = alt.toLowerCase();
+    if (altLower === 'audi') {
+      return { width: 120, height: 67 }; // Approximate aspect ratio
+    }
+    if (altLower === 'hyundai') {
+      return { width: 100, height: 41 };
+    }
+    if (altLower === 'volkswagen' || altLower === 'lincoln') {
+      return { width: 120, height: 63 };
+    }
+    if (altLower === 'mercedes-benz' || altLower === 'mercedes') {
+      return { width: 120, height: 61 };
+    }
+    if (altLower === 'porsche' || altLower === 'bmw' || altLower === 'maserati') {
+      return { width: 120, height: 64 };
+    }
+    return { width: 120, height: 64 }; // Default
+  };
+
   const handleLogoClick = (filter: string) => {
     navigate(`/cars?make=${filter}`);
   };
@@ -45,29 +65,41 @@ export const LogoMarquee: React.FC = () => {
       <div className="w-full">
         <div className="marquee">
           <ul className="marquee__content">
-            {logos.map((logo, index) => (
-              <li key={index} className="mx-8 md:mx-12 lg:mx-4">
-                <img
-                  src={logo.src}
-                  alt={logo.alt}
-                  onClick={() => handleLogoClick(logo.filter)}
-                  className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
-                />
-              </li>
-            ))}
+            {logos.map((logo, index) => {
+              const dimensions = getLogoDimensions(logo.alt);
+              return (
+                <li key={index} className="mx-8 md:mx-12 lg:mx-4">
+                  <img
+                    src={logo.src}
+                    alt={logo.alt}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    loading="lazy"
+                    onClick={() => handleLogoClick(logo.filter)}
+                    className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
+                  />
+                </li>
+              );
+            })}
           </ul>
           {/* Mirrors the content above */}
           <ul className="marquee__content" aria-hidden="true">
-            {logos.map((logo, index) => (
-              <li key={`duplicate-${index}`} className="mx-8 md:mx-12 lg:mx-4">
-                <img
-                  src={logo.src}
-                  alt={logo.alt}
-                  onClick={() => handleLogoClick(logo.filter)}
-                  className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
-                />
-              </li>
-            ))}
+            {logos.map((logo, index) => {
+              const dimensions = getLogoDimensions(logo.alt);
+              return (
+                <li key={`duplicate-${index}`} className="mx-8 md:mx-12 lg:mx-4">
+                  <img
+                    src={logo.src}
+                    alt={logo.alt}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    loading="lazy"
+                    onClick={() => handleLogoClick(logo.filter)}
+                    className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
+                  />
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

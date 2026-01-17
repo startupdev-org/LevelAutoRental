@@ -1257,6 +1257,11 @@ export const CarDetails: React.FC = () => {
                                                     <img
                                                         src={photo}
                                                         alt={`${car.make} ${car.model} - Photo ${index + 1}`}
+                                                        width={1200}
+                                                        height={800}
+                                                        loading={index === 0 ? "eager" : "lazy"}
+                                                        // @ts-ignore - fetchPriority is a valid HTML attribute
+                                                        fetchPriority={index === 0 ? "high" : "auto"}
                                                         className="w-full h-full object-cover cursor-pointer select-none"
                                                         draggable={false}
                                                     />
@@ -1389,6 +1394,9 @@ export const CarDetails: React.FC = () => {
                                         <img
                                             src={src || ''}
                                             alt={`${car.make} ${car.model}-${i}`}
+                                            width={115}
+                                            height={80}
+                                            loading="lazy"
                                             className="w-full h-20 object-cover"
                                         />
                                     </button>
@@ -3634,6 +3642,9 @@ export const CarDetails: React.FC = () => {
                                                             <img
                                                                 src={url}
                                                                 alt={`${car.make} ${car.model} - Image ${index + 1}`}
+                                                                width={1200}
+                                                                height={800}
+                                                                loading="lazy"
                                                                 className="max-w-full max-h-[75vh] object-contain rounded-xl select-none md:max-w-[90vw]"
                                                                 style={{ margin: '0 auto' }}
                                                                 draggable={false}
@@ -3662,6 +3673,9 @@ export const CarDetails: React.FC = () => {
                                                         <img
                                                             src={url}
                                                             alt={`Thumbnail ${index + 1}`}
+                                                            width={115}
+                                                            height={80}
+                                                            loading="lazy"
                                                             className={`w-full h-20 object-cover rounded-lg transition-all ${currentImageIndex === index
                                                                 ? 'border-2 border-white'
                                                                 : 'border border-white/20'

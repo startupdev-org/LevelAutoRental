@@ -80,13 +80,45 @@
   }
   </script>
 
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-MN96PQ5H7W"></script>
+  <!-- Google Analytics - Fully deferred to improve performance -->
   <script>
+    // Initialize dataLayer but don't load GA script yet
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-MN96PQ5H7W');
+    
+    // Load GA script only after page is fully interactive
+    if (document.readyState === 'complete') {
+      loadGA();
+    } else {
+      window.addEventListener('load', loadGA);
+    }
+    
+    function loadGA() {
+      // Load GA only after user interaction or 5 seconds after page load
+      // This reduces unused JavaScript on initial load
+      let loaded = false;
+      
+      function load() {
+        if (loaded) return;
+        loaded = true;
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-MN96PQ5H7W';
+        script.onload = function() {
+          gtag('js', new Date());
+          gtag('config', 'G-MN96PQ5H7W');
+        };
+        document.head.appendChild(script);
+      }
+      
+      // Load on user interaction (click, scroll, touch)
+      ['click', 'scroll', 'touchstart', 'keydown'].forEach(function(event) {
+        document.addEventListener(event, load, { once: true, passive: true });
+      });
+      
+      // Fallback: load after 5 seconds if no interaction
+      setTimeout(load, 5000);
+    }
   </script>
   
   
@@ -120,14 +152,88 @@
   <!-- <link rel="manifest" href="/favicons/dark-theme/site.webmanifest"> -->
   
   <!-- Preload critical resources for instant loader display -->
-  <link rel="preload" href="/logo.png" as="image" />
-  <link rel="preload" href="/backgrounds/bg3-mobile.jpeg" as="image" media="(max-width: 768px)" />
-  <link rel="preload" href="/backgrounds/bg2-desktop.jpeg" as="image" media="(min-width: 769px)" />
-  
-  <link href="tailwind.css" rel="stylesheet" />
+  <!-- Resource hints for external domains -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Preconnect to Supabase Storage for faster image loading -->
+  <link rel="preconnect" href="https://akeraamxcaazrtvxkbkt.supabase.co">
+  <link rel="dns-prefetch" href="https://akeraamxcaazrtvxkbkt.supabase.co">
+  <!-- Preconnect to Exchange Rate API -->
+  <link rel="preconnect" href="https://v6.exchangerate-api.com">
+  <link rel="dns-prefetch" href="https://v6.exchangerate-api.com">
+  
+  <!-- Preload critical resources for LCP -->
+  <!-- Preload both desktop and mobile background images for LCP -->
+  <link rel="preload" as="image" href="/lvl_bg.jpg" fetchpriority="high" media="(min-width: 1024px)">
+  <link rel="preload" as="image" href="/backgrounds/bg10-mobile.jpeg" fetchpriority="high" media="(max-width: 1023px)">
+  
+  <!-- Script to defer all CSS files (including Vite-injected ones) to prevent render blocking -->
+  <script>
+    (function() {
+      // Function to defer CSS loading (exclude Google Fonts and already deferred links)
+      function deferCSS(link) {
+        // Don't defer Google Fonts or links that already have onload handlers
+        if (link.href && (link.href.includes('fonts.googleapis.com') || link.href.includes('fonts.gstatic.com'))) {
+          return; // Skip Google Fonts
+        }
+        if (link.rel === 'stylesheet' && !link.hasAttribute('data-deferred') && !link.onload) {
+          link.setAttribute('data-deferred', 'true');
+          link.media = 'print';
+          link.onload = function() {
+            this.media = 'all';
+            this.onload = null;
+          };
+          // Fallback for browsers that don't support onload on link elements
+          if (!link.onload) {
+            setTimeout(function() {
+              link.media = 'all';
+            }, 0);
+          }
+        }
+      }
+      
+      // Defer existing CSS links
+      var links = document.querySelectorAll('link[rel="stylesheet"]');
+      for (var i = 0; i < links.length; i++) {
+        deferCSS(links[i]);
+      }
+      
+      // Watch for new CSS links added by Vite
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          mutation.addedNodes.forEach(function(node) {
+            if (node.nodeName === 'LINK' && node.rel === 'stylesheet') {
+              // Don't defer Google Fonts
+              if (!node.href || (!node.href.includes('fonts.googleapis.com') && !node.href.includes('fonts.gstatic.com'))) {
+                deferCSS(node);
+              }
+            }
+          });
+        });
+      });
+      
+      observer.observe(document.head, {
+        childList: true,
+        subtree: true
+      });
+    })();
+  </script>
+  
+  <!-- Stylesheets - Will be deferred by script above -->
+  <link href="tailwind.css" rel="stylesheet" />
+  
+  <!-- Optimize font loading - load asynchronously but ensure it loads -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Load fonts asynchronously using media trick to prevent render blocking -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'; this.onload=null;">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+  
+  <!-- Defer flag icons CSS -->
   <link rel="stylesheet" href="/node_modules/flag-icons/css/flag-icons.min.css">
   
   <!-- Google Translate -->
@@ -492,11 +598,25 @@
 
   
   <style>
+    /* Critical CSS - minimal styles for above-the-fold content */
+    /* Use system fonts initially, Montserrat will swap in when loaded (font-display: swap) */
     * {
       font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     }
     
-
+    /* Prevent layout shift - reserve space for common elements */
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    
+    /* Critical header/nav styles */
+    header, nav {
+      position: relative;
+    }
+    
+    /* Font will swap in when loaded (font-display: swap in Google Fonts) */
   </style>
 </head>
 
@@ -506,7 +626,8 @@
   
 
   
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <!-- EmailJS - Deferred -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
   <script type="module" src="./src/index.tsx"></script>
 </body>
 

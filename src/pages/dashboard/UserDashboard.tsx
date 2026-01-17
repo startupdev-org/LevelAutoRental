@@ -144,7 +144,7 @@ export const UserDashboard: React.FC = () => {
           <div
             className="fixed inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: "url('/lvl_bg.png')",
+              backgroundImage: "url('/lvl_bg.jpg')",
               backgroundAttachment: 'fixed',
               zIndex: 0
             }}

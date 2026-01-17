@@ -33,7 +33,7 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
       '/logo.png',
       
       // Background images
-      '/lvl_bg.png',
+      '/lvl_bg.jpg',
       '/backgrounds/bg2-desktop.jpeg',
       '/backgrounds/bg3-mobile.jpeg',
       '/backgrounds/bg4-mobile.jpeg',

@@ -605,6 +605,9 @@ export const CarsView: React.FC = () => {
                                 <img
                                     src={carWithImages.image_url}
                                     alt={carWithImages.make + ' ' + carWithImages.model}
+                                    width={400}
+                                    height={224}
+                                    loading="lazy"
                                     className="w-full h-56 object-cover object-center bg-black/10"
                                 />
                             ) : (

@@ -55,6 +55,9 @@ const CarCard: React.FC<{
                     <img
                         src={car.image_url}
                         alt={`${car.make} ${car.model}`}
+                        width={400}
+                        height={224}
+                        loading="lazy"
                         className="w-full h-56 object-cover object-center bg-black/10 transition-transform duration-300 group-hover:scale-105"
                     />
                 ) : (

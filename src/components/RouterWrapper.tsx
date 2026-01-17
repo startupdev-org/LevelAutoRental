@@ -1,27 +1,51 @@
+import React, { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { About } from '../pages/about/About';
-import { Booking } from '../pages/booking/Booking';
-import { Cars } from '../pages/cars/CarsPage.tsx';
-import { CarDetails } from '../pages/cars/car-details/CarDetails.tsx';
-import { Reviews } from '../pages/reviews/Reviews.tsx';
-import { Contact } from '../pages/contact/Contact';
-import { Home } from '../pages/home/Home';
-import { HowToRent } from '../pages/howToRent/HowToRent';
-import { Terms } from '../pages/terms/Terms.tsx';
-import { FAQ } from '../pages/faq/FAQ';
-import { Login } from '../pages/auth/Login.tsx';
-import { SignUp } from '../pages/auth/SignUp.tsx';
-import { ForgotPassword } from '../pages/auth/ForgotPassword.tsx';
-import { Calculator } from '../pages/calculator/Calculator';
-import NotFound from '../pages/NotFound';
 import ScrollToTop from './ScrollToTop';
-
-import { Admin } from '../pages/admin/Admin.tsx';
-import { UserDashboard } from '../pages/dashboard/UserDashboard';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdminProtectedRoute } from './AdminProtectedRoute';
-import { UpdatePassword } from '../pages/auth/UpdatePassword.tsx';
-import { PorscheLogoTest } from '../components/test/PorscheLogoTest';
+
+// Helper to lazy load named exports
+const lazyLoad = <T extends React.ComponentType<any>>(
+  importFunc: () => Promise<{ [key: string]: T }>,
+  exportName: string
+) => {
+  return lazy(() =>
+    importFunc().then((module) => ({ default: module[exportName] as T }))
+  );
+};
+
+// Lazy load routes to reduce initial bundle size and unused JavaScript
+// Only keep Home in initial bundle as it's the landing page
+import { Home } from '../pages/home/Home';
+
+// Lazy load all other routes for better code splitting
+const Cars = lazy(() => import('../pages/cars/CarsPage.tsx').then(m => ({ default: m.Cars })));
+const CarDetails = lazy(() => import('../pages/cars/car-details/CarDetails.tsx').then(m => ({ default: m.CarDetails })));
+const Reviews = lazy(() => import('../pages/reviews/Reviews.tsx').then(m => ({ default: m.Reviews })));
+const About = lazy(() => import('../pages/about/About').then(m => ({ default: m.About })));
+const HowToRent = lazy(() => import('../pages/howToRent/HowToRent').then(m => ({ default: m.HowToRent })));
+const Contact = lazy(() => import('../pages/contact/Contact').then(m => ({ default: m.Contact })));
+const Booking = lazy(() => import('../pages/booking/Booking').then(m => ({ default: m.Booking })));
+const Calculator = lazy(() => import('../pages/calculator/Calculator').then(m => ({ default: m.Calculator })));
+const Terms = lazy(() => import('../pages/terms/Terms.tsx').then(m => ({ default: m.Terms })));
+const FAQ = lazy(() => import('../pages/faq/FAQ').then(m => ({ default: m.FAQ })));
+const Login = lazy(() => import('../pages/auth/Login.tsx').then(m => ({ default: m.Login })));
+const SignUp = lazy(() => import('../pages/auth/SignUp.tsx').then(m => ({ default: m.SignUp })));
+const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword.tsx').then(m => ({ default: m.ForgotPassword })));
+const UpdatePassword = lazy(() => import('../pages/auth/UpdatePassword.tsx').then(m => ({ default: m.UpdatePassword })));
+const NotFound = lazy(() => import('../pages/NotFound').then(m => ({ default: m.default })));
+
+// Lazy load admin and dashboard (heavier components)
+const Admin = lazyLoad(() => import('../pages/admin/Admin.tsx'), 'Admin');
+const UserDashboard = lazyLoad(() => import('../pages/dashboard/UserDashboard'), 'UserDashboard');
+const PorscheLogoTest = lazyLoad(() => import('../components/test/PorscheLogoTest'), 'PorscheLogoTest');
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-theme-500"></div>
+  </div>
+);
 
 const RouterWrapper = () => {
   return (
@@ -29,9 +53,8 @@ const RouterWrapper = () => {
       {/* Scroll to top on route change */}
       <ScrollToTop />
 
-      {/* Page transition loader - temporarily disabled to fix multiple instances */}
-
-      <Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cars" element={<Cars />} />
         <Route path="/cars/:carId" element={<CarDetails />} />
@@ -76,8 +99,9 @@ const RouterWrapper = () => {
           }
         />
 
-        <Route path="*" element={<NotFound />} />
-      </Routes >
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </>
   );
 };

@@ -119,11 +119,11 @@ module.exports = {
       },
       backgroundImage: {
         'hero-mobile': "url('/backgrounds/bg10-mobile.jpeg')",
-        'hero-desktop': "url('/lvl_bg.png')",
+        'hero-desktop': "url('/lvl_bg.jpg')",
         'mobile-loader': "url('/backgrounds/bg3-mobile.jpeg')",
-        'desktop-loader': "url('/lvl_bg.png')",
+        'desktop-loader': "url('/lvl_bg.jpg')",
         'mobile-howto': "url('/backgrounds/bg4-mobile.jpeg')",
-        'desktop-howto': "url('/lvl_bg.png')",
+        'desktop-howto': "url('/lvl_bg.jpg')",
       },
       backgroundPosition: {
         'hero-mobile': 'center -100px',

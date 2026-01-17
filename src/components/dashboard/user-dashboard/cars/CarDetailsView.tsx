@@ -170,6 +170,9 @@ export const CarDetailsView: React.FC<CarDetailsViewProps> = ({ car, onCancel: o
                             <img
                                 src={mainImage}
                                 alt="Selected car image"
+                                width={384}
+                                height={384}
+                                loading="lazy"
                                 className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-cover rounded-lg border border-white/20"
                             />
                         </div>

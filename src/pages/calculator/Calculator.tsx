@@ -224,7 +224,7 @@ export const Calculator: React.FC = () => {
             key={i18n.language}
             className="relative py-60 bg-cover bg-center bg-no-repeat bg-fixed"
             style={{
-                backgroundImage: isDesktop ? 'url(/lvl_bg.png)' : 'url(/backgrounds/bg10-mobile.jpeg)',
+                backgroundImage: isDesktop ? 'url(/lvl_bg.jpg)' : 'url(/backgrounds/bg10-mobile.jpeg)',
                 backgroundPosition: isDesktop ? 'center -150px' : 'center center',
                 backgroundSize: isDesktop ? '115%' : 'cover'
             }}

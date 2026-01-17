@@ -180,8 +180,11 @@ export const About: React.FC = () => {
               className="relative"
             >
               <img
-                src="/lvl_bg.png"
+                src="/lvl_bg.jpg"
                 alt="Our story"
+                width={800}
+                height={600}
+                loading="lazy"
                 className="rounded-2xl shadow-lg"
               />
             </motion.div>

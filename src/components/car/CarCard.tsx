@@ -416,6 +416,9 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                             <img
                                                 src={photo}
                                                 alt={`${carWithImages.make} ${carWithImages.model} - Photo ${index + 1}`}
+                                                width={400}
+                                                height={224}
+                                                loading="lazy"
                                                 className="w-full h-56 object-cover object-center bg-gray-100"
                                                 onError={() => {
                                                     // Handle individual gallery image errors
@@ -454,6 +457,9 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                 <img
                                     src={carWithImages.image_url}
                                     alt={carWithImages.make + ' ' + carWithImages.model}
+                                    width={400}
+                                    height={224}
+                                    loading="lazy"
                                     className="w-full h-56 object-cover object-center bg-gray-100"
                                     onError={handleImageError}
                                 />

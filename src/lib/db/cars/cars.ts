@@ -4,7 +4,7 @@ import { Car } from '../../../types';
 /**
  * Fetch car by id
  */
-export async function fetchCarById(carId: string): Promise<Car> {
+export async function fetchCarById(carId: string): Promise<Car | null> {
     
     try {
         const { data, error } = await supabase
@@ -89,14 +89,6 @@ export async function fetchImages() {
 
 
         if (!data) return [];
-
-
-        const urls = data.map((file) => {
-            return supabase.storage
-                .from("cars")
-                .getPublicUrl(file.name).data.publicUrl;
-        });
-
 
 
         // data can be null, so default to empty array
@@ -218,6 +210,8 @@ export async function fetchImagesByCarName(
         // Fallback: use the first image file if no main file is found
 
         // Generate URLs helper
+        // Note: Removed transform temporarily - if Supabase Image Transformation is enabled,
+        // you can add it back with: transform: { width: 800, height: 600, quality: 85 }
         const getUrl = (name: string) =>
             supabase.storage.from("cars").getPublicUrl(`${folder}/${name}`).data.publicUrl;
 

@@ -67,7 +67,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="border-t border-[#0f0f0f]" style={{ background: 'linear-gradient(to bottom, #0f0f0f, #1a0f0f)' }}>
+    <footer className="border-t border-[#0f0f0f]" style={{ background: 'linear-gradient(to bottom, #0f0f0f, #1a0f0f)', minHeight: '400px' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Content */}
         <motion.div
@@ -77,6 +77,7 @@ export const Footer: React.FC = () => {
           whileInView="animate"
           viewport={{ once: true }}
           className="py-16"
+          style={{ minHeight: '300px' }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
             {/* Company Info */}
@@ -89,12 +90,15 @@ export const Footer: React.FC = () => {
                 <img
                   src="/logo-footer.png"
                   alt="LevelAutoRental"
+                  width={150}
+                  height={48}
+                  loading="lazy"
                   className="h-12 w-auto brightness-0 invert"
                 />
               </div>
 
               {/* Description */}
-              <p className="text-gray-300 leading-relaxed max-w-md">
+              <p className="text-gray-300 leading-relaxed max-w-md" style={{ minHeight: '60px' }}>
                 {t("footer.description")}
               </p>
 

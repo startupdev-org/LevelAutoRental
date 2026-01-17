@@ -135,7 +135,7 @@ export const SignUp: React.FC = () => {
                 <div
                     className="relative hidden md:block bg-cover bg-center min-h-[600px]"
                     style={{
-                        backgroundImage: "url('/lvl_bg.png')",
+                        backgroundImage: "url('/lvl_bg.jpg')",
                         minHeight: "560px",
                     }}
                 >
