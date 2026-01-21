@@ -54,7 +54,7 @@ const RouterWrapper = () => {
       <ScrollToTop />
 
       <Suspense fallback={<LoadingFallback />}>
-        <Routes>
+      <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cars" element={<Cars />} />
         <Route path="/cars/:carId" element={<CarDetails />} />
@@ -99,7 +99,7 @@ const RouterWrapper = () => {
           }
         />
 
-          <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </>

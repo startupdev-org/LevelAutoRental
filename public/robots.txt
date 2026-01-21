@@ -6,7 +6,18 @@ Disallow: /auth/
 Disallow: /update-password
 Disallow: /test/
 
-# Sitemap
-Sitemap: https://levelauto.md/sitemap.xml
+# Block access to sensitive admin areas
+Disallow: /admin/*
+Disallow: /dashboard/*
+Disallow: /auth/*
+Disallow: /*?*auth=*
+Disallow: /*?*admin=*
 
+# Allow access to static assets
+Allow: /assets/
+Allow: /favicons/
+Allow: /backgrounds/
+Allow: /logos/
+
+# Sitemap
 Sitemap: https://levelauto.md/sitemap.xml

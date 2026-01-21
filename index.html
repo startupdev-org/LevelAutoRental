@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ro">
 
-<!-- V6.0.0 VERSION -->
+<!-- V7.0.0 VERSION -->
 
 <head>
   <meta charset="utf-8" />
@@ -15,6 +15,13 @@
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
   <link rel="canonical" href="https://levelauto.md/" />
+
+  <!-- Force HTTPS redirect for any HTTP access -->
+  <script>
+    if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+      window.location.href = window.location.href.replace('http:', 'https:');
+    }
+  </script>
 
   <!-- Language and Locale -->
   <meta property="og:locale" content="ro_MD" />

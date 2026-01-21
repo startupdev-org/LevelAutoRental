@@ -68,17 +68,17 @@ export const LogoMarquee: React.FC = () => {
             {logos.map((logo, index) => {
               const dimensions = getLogoDimensions(logo.alt);
               return (
-                <li key={index} className="mx-8 md:mx-12 lg:mx-4">
-                  <img
-                    src={logo.src}
-                    alt={logo.alt}
+              <li key={index} className="mx-8 md:mx-12 lg:mx-4">
+                <img
+                  src={logo.src}
+                  alt={logo.alt}
                     width={dimensions.width}
                     height={dimensions.height}
                     loading="lazy"
-                    onClick={() => handleLogoClick(logo.filter)}
-                    className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
-                  />
-                </li>
+                  onClick={() => handleLogoClick(logo.filter)}
+                  className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
+                />
+              </li>
               );
             })}
           </ul>
@@ -87,17 +87,17 @@ export const LogoMarquee: React.FC = () => {
             {logos.map((logo, index) => {
               const dimensions = getLogoDimensions(logo.alt);
               return (
-                <li key={`duplicate-${index}`} className="mx-8 md:mx-12 lg:mx-4">
-                  <img
-                    src={logo.src}
-                    alt={logo.alt}
+              <li key={`duplicate-${index}`} className="mx-8 md:mx-12 lg:mx-4">
+                <img
+                  src={logo.src}
+                  alt={logo.alt}
                     width={dimensions.width}
                     height={dimensions.height}
                     loading="lazy"
-                    onClick={() => handleLogoClick(logo.filter)}
-                    className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
-                  />
-                </li>
+                  onClick={() => handleLogoClick(logo.filter)}
+                  className={`${getLogoSizeClass(logo.alt)} w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer`}
+                />
+              </li>
               );
             })}
           </ul>
