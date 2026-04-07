@@ -4,13 +4,11 @@ import { Layout } from './components/layout/Layout';
 import Loader from './components/layout/Loader';
 import RouterWrapper from './components/RouterWrapper';
 import { ExchangeRateProvider } from './context/ExchangeRateContext';
-import { LanguageCurrencyModal } from './components/modals/LanguageCurrencyModal';
 
 
 function App() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showLanguageCurrencyModal, setShowLanguageCurrencyModal] = useState(false);
 
   useEffect(() => {
     // Suppress external MutationObserver errors from browser extensions
@@ -32,17 +30,6 @@ function App() {
       window.console.error = originalError; // Restore original console.error
     };
   }, []);
-
-  // Check if user has completed language/currency setup
-  useEffect(() => {
-    const setupCompleted = localStorage.getItem('languageCurrencySetupCompleted');
-    if (!setupCompleted && !initialLoading) {
-      // Show modal after a short delay to ensure smooth transition
-      setTimeout(() => {
-        setShowLanguageCurrencyModal(true);
-      }, 500);
-    }
-  }, [initialLoading]);
 
   // Handle loading completion from Loader component
   const handleLoadingComplete = () => {
@@ -66,12 +53,6 @@ function App() {
             <RouterWrapper />
           </Layout>
         </Router>
-
-        {/* Language/Currency Selection Modal - One-time setup */}
-        <LanguageCurrencyModal
-          isOpen={showLanguageCurrencyModal}
-          onClose={() => setShowLanguageCurrencyModal(false)}
-        />
       </ExchangeRateProvider>
     </>
   );

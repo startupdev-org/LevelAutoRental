@@ -70,7 +70,6 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
   const [isScrolled, setIsScrolled] = useState(shouldHeaderBeActive);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
   const userDropdownButtonRef = useRef<HTMLButtonElement>(null);
   const [userDropdownPosition, setUserDropdownPosition] = useState<{ top: number; right: number } | null>(null);
 
@@ -233,7 +232,6 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
 
   function handleSetSelectedCurrency(code: string) {
     i18n.changeLanguage(code);
-    setCurrentLanguage(code);
     setShowLanguageDropdown(false);
     localStorage.setItem("selectedLanguage", code);
   }
@@ -467,7 +465,14 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                   </AnimatePresence>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <Button
+                onClick={() => navigate('/auth/login')}
+                className="bg-theme-500 hover:bg-theme-600 text-white"
+              >
+                {t('header.signIn', 'Sign In')}
+              </Button>
+            )}
 
             {/* Desktop Language Selector */}
             <div className="relative language-dropdown-container">
@@ -574,12 +579,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                       {LANGUAGES.map(({ code, iconClass }) => (
                         <button
                           key={code}
-                          onClick={() => {
-                            i18n.changeLanguage(code);
-                            setCurrentLanguage(code);
-                            setShowLanguageDropdown(false);
-                            localStorage.setItem("selectedLanguage", code);
-                          }}
+                          onClick={() => handleSetSelectedCurrency(code)}
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-theme-50 hover:text-theme-500 transition-colors"
                         >
                           <span className={iconClass}></span>
@@ -773,62 +773,18 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                 <span>{t('header.signOut')}</span>
                               </button>
                             </div>
-                          ) : null}
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                navigate('/auth/login');
+                              }}
+                              className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-theme-500 hover:bg-theme-600 rounded-lg transition-colors"
+                            >
+                              {t('header.signIn', 'Sign In')}
+                            </button>
+                          )}
 
-                          {/* Mobile Language Selector */}
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                              {t('header.language')}
-                            </p>
-                            <div className="grid grid-cols-3 gap-2">
-                              {LANGUAGES.map(({ code, iconClass }) => (
-                                <button
-                                  key={code}
-                                  onClick={() => {
-                                    i18n.changeLanguage(code);
-                                    setCurrentLanguage(code);
-                                    localStorage.setItem("selectedLanguage", code);
-                                    setIsMenuOpen(false);
-                                  }}
-                                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${currentLanguage === code
-                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                                    }`}
-                                >
-                                  <span className={`${iconClass} w-6 h-4 mb-1`}></span>
-                                  <span className="text-xs font-medium">{t(`languages.${code}`)}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Mobile Currency Selector */}
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                              {t('header.currency') || 'Currency'}
-                            </p>
-                            <div className="grid grid-cols-3 gap-2">
-                              {CURRENCIES.map((currency) => (
-                                <button
-                                  key={currency.code}
-                                  onClick={() => {
-                                    setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
-                                    setIsMenuOpen(false);
-                                  }}
-                                  className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${selectedCurrency === currency.code
-                                    ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                    : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                                    }`}
-                                >
-                                  <span className={`w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-800 mb-2 ${currency.code === 'MDL' ? 'text-sm' : 'text-lg'
-                                    }`}>
-                                    {currency.symbol}
-                                  </span>
-                                  <span className="text-xs font-medium">{currency.label}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -980,59 +936,18 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <span>{t('header.signOut')}</span>
                             </button>
                           </div>
-                        ) : null}
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              navigate('/auth/login');
+                            }}
+                            className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-theme-500 hover:bg-theme-600 rounded-lg transition-colors"
+                          >
+                            {t('header.signIn', 'Sign In')}
+                          </button>
+                        )}
 
-                        {/* Mobile Language Selector */}
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                            {t('header.language')}
-                          </p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {LANGUAGES.map(({ code, iconClass }) => (
-                              <button
-                                key={code}
-                                onClick={() => {
-                                  i18n.changeLanguage(code);
-                                  setCurrentLanguage(code);
-                                  localStorage.setItem("selectedLanguage", code);
-                                  setIsMenuOpen(false);
-                                }}
-                                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${currentLanguage === code
-                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                                  }`}
-                              >
-                                <span className={`${iconClass} w-6 h-4 mb-1`}></span>
-                                <span className="text-xs font-medium">{t(`languages.${code}`)}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Mobile Currency Selector */}
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                            {t('header.currency') || 'Currency'}
-                          </p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {CURRENCIES.map((currency) => (
-                              <button
-                                key={currency.code}
-                                onClick={() => {
-                                  setSelectedCurrency(currency.code as 'MDL' | 'EUR' | 'USD');
-                                  setIsMenuOpen(false);
-                                }}
-                                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${selectedCurrency === currency.code
-                                  ? 'border-theme-500 bg-theme-50 text-theme-600'
-                                  : 'border-gray-200 text-gray-600 hover:border-theme-300 hover:bg-gray-50'
-                                  }`}
-                              >
-                                <span className="text-lg font-semibold mb-1">{currency.symbol}</span>
-                                <span className="text-xs font-medium">{currency.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>

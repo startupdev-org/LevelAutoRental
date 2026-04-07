@@ -1,4 +1,4 @@
-import { Leaf, Image } from 'lucide-react';
+import { Leaf, Image, ArrowRight } from 'lucide-react';
 import { FaGasPump } from "react-icons/fa6";
 import { TbManualGearboxFilled, TbAutomaticGearboxFilled, TbCar4WdFilled } from "react-icons/tb";
 import { PiSpeedometerFill } from "react-icons/pi";
@@ -25,12 +25,13 @@ interface CarCardProps {
     index: number;
 }
 
-export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
+export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index }) => {
     const { t } = useTranslation();
     const { selectedCurrency, eur, usd } = useExchangeRates();
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
     const [imageError, setImageError] = useState(false);
     const [nextAvailableDate, setNextAvailableDate] = useState<Date | null>(null);
+    const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
     const [carWithImages, setCarWithImages] = useState<Car>(car);
     const [approvedBorrowRequests, setApprovedBorrowRequests] = useState<any[]>([]);
     const [carRentalsForCalendar, setCarRentalsForCalendar] = useState<any[]>([]);
@@ -130,7 +131,13 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     // Fetch rentals and calculate next available date - same logic as CarDetails
     useEffect(() => {
         const fetchCarAvailability = async () => {
-            if (!car) return;
+            if (!car) {
+                setIsAvailabilityLoading(false);
+                return;
+            }
+
+            setIsAvailabilityLoading(true);
+            setNextAvailableDate(null);
 
             try {
                 const carIdNum = typeof car.id === 'number' ? car.id : parseInt(String(car.id), 10);
@@ -326,6 +333,8 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                 setNextAvailableDate(latestReturnDate);
             } catch (error) {
                 console.error('Error fetching car availability:', error);
+            } finally {
+                setIsAvailabilityLoading(false);
             }
         };
 
@@ -357,13 +366,13 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
     const hasImages = carWithImages.image_url || (carWithImages.photo_gallery && carWithImages.photo_gallery.length > 0);
 
     return (
-        <div>
+        <div className="rounded-3xl overflow-hidden">
             <Card
-                className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-3xl !shadow-none cursor-pointer hover:-translate-y-2 hover:shadow-lg" hover={false}
+                className="overflow-hidden flex flex-col bg-white transition-all duration-300 border border-gray-300 group rounded-3xl !shadow-none cursor-pointer hover:shadow-lg" hover={false}
             >
                 {/* Image Container */}
                 <div
-                    className="relative overflow-hidden"
+                    className="relative overflow-hidden h-56"
                     onMouseMove={(e) => {
                         if (carWithImages.photo_gallery && carWithImages.photo_gallery.length > 1) {
                             const container = e.currentTarget;
@@ -394,7 +403,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                         }
                     }}
                 >
-                    <div className="flex transition-transform duration-300 ease-out group-hover:scale-105 photo-gallery">
+                    <div className="flex h-full transition-transform duration-300 ease-out photo-gallery">
                         {carWithImages.photo_gallery && carWithImages.photo_gallery.length > 1 ? (
                             (() => {
                                 const maxPhotos = 5;
@@ -409,7 +418,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                     return (
                                         <div
                                             key={index}
-                                            className={`relative w-full h-56 flex-shrink-0 ${shouldBeClickable ? 'cursor-pointer' : ''}`}
+                                            className={`relative w-full h-full flex-shrink-0 overflow-hidden ${shouldBeClickable ? 'cursor-pointer' : ''}`}
                                             style={{ minWidth: '100%' }}
                                             onClick={shouldBeClickable ? () => navigate(`/cars/${carWithImages.id}`) : undefined}
                                         >
@@ -419,7 +428,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                                 width={400}
                                                 height={224}
                                                 loading="lazy"
-                                                className="w-full h-56 object-cover object-center bg-gray-100"
+                                                className="w-full h-full object-cover object-center bg-gray-100"
                                                 onError={() => {
                                                     // Handle individual gallery image errors
                                                     // Could implement more sophisticated error handling here
@@ -460,7 +469,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                                     width={400}
                                     height={224}
                                     loading="lazy"
-                                    className="w-full h-56 object-cover object-center bg-gray-100"
+                                    className="w-full h-full object-cover object-center bg-gray-100"
                                     onError={handleImageError}
                                 />
                             ) : (
@@ -598,83 +607,57 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             return false;
                         };
 
-                        // Find the first available date using the same logic as the calendar
-                        const findFirstAvailableDate = (): Date | null => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const todayString = formatDateLocal(today);
-
-                            // Always start checking from TODAY first
-                            let checkDate = new Date(today);
-
-                            // Check up to 60 days ahead
-                            for (let i = 0; i < 60; i++) {
-                                const checkDateStr = formatDateLocal(checkDate);
-
-                                // Use the same blocking logic as the calendar
-                                const isPast = checkDateStr < todayString;
-
-                                const isBeforeAvailable = nextAvailableDate
-                                    ? (() => {
-                                        const nextAvailDate = new Date(nextAvailableDate);
-                                        nextAvailDate.setHours(0, 0, 0, 0);
-                                        const dayDate = new Date(checkDateStr);
-                                        dayDate.setHours(0, 0, 0, 0);
-                                        // Only block if nextAvailableDate is today or past, and day is before it
-                                        return nextAvailDate <= today && dayDate < nextAvailDate;
-                                    })()
-                                    : false;
-
-                                const isInActualRequest = isDateInActualApprovedRequest(checkDateStr);
-
-                                // If date is not blocked, this is the first available date
-                                if (!isPast && !isBeforeAvailable && !isInActualRequest) {
-                                    return checkDate;
-                                }
-
-                                // Move to next day
-                                checkDate.setDate(checkDate.getDate() + 1);
-                            }
-
-                            return null;
-                        };
-
                         const formatDateForDisplay = (date: Date): string => {
-                            const day = date.getDate();
-                            const monthNames = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
-                                'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
-                            const month = monthNames[date.getMonth()];
-
-                            // Format date in Romanian: "Liber de pe 30 noiembrie"
-                            return `Liber de pe ${day} ${month}`;
+                            const localizedDate = date.toLocaleDateString(t('config.date'), {
+                                day: 'numeric',
+                                month: 'long',
+                            });
+                            return t('car.availableFrom', { date: localizedDate });
                         };
-
-                        // Find the first available date using calendar logic (always starts from today)
-                        const firstAvailableDate = findFirstAvailableDate();
 
                         // If first available date is today, show "Disponibil"
                         // Otherwise show the date
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
-                        const isAvailableToday = firstAvailableDate &&
-                            formatDateLocal(firstAvailableDate) === formatDateLocal(today);
+                        if (isAvailabilityLoading) return null;
 
-                        const availabilityText = firstAvailableDate
-                            ? (isAvailableToday
-                                ? 'Disponibil'
-                                : formatDateForDisplay(firstAvailableDate))
-                            : (carWithImages.status === 'available' || carWithImages.status === 'Available' ? 'Disponibil' : carWithImages.status || '');
+                        // Priority: Use nextAvailableDate if it exists (from actual bookings), otherwise use firstAvailableDate logic
+                        let availabilityText = '';
 
-                        // Don't show badge if it says "Disponibil" (only show when there's a specific date)
-                        if (!availabilityText || availabilityText === 'Disponibil') return null;
+                        if (nextAvailableDate) {
+                            // We have actual bookings - show when the car becomes available
+                            const nextAvailDate = new Date(nextAvailableDate);
+                            nextAvailDate.setHours(0, 0, 0, 0);
+
+                            if (formatDateLocal(nextAvailDate) === formatDateLocal(today)) {
+                                availabilityText = t('car.availableNow');
+                            } else {
+                                availabilityText = formatDateForDisplay(nextAvailDate);
+                            }
+                        } else {
+                            // No current bookings - show "available now" message
+                            availabilityText = t('car.availableNow');
+                        }
+
+                        // Show badge for availability information, but not for empty text
+                        if (!availabilityText) return null;
 
                         return (
-                            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">
-                                <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <span className="whitespace-nowrap">{availabilityText}</span>
-                            </div>
+                            <AnimatePresence>
+                                <motion.div
+                                    key="availability-ready"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.22, ease: "easeOut" }}
+                                    className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5"
+                                >
+                                    <svg className="w-3 h-3 flex-shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span className="whitespace-nowrap">{availabilityText}</span>
+                                </motion.div>
+                            </AnimatePresence>
                         );
                     })()}
 
@@ -861,14 +844,21 @@ export const CarCard: React.FC<CarCardProps> = ({ car, index: _index }) => {
                             );
                         })()}
 
-                        {/* Rating */}
-                        <div className="flex items-center gap-1">
-                            <span className="text-sm font-semibold text-gray-900 h-6 flex items-center justify-center">{carWithImages.rating}</span>
-                            <img src="/assets/star.png" alt="Rating" className="w-6 h-6 flex-shrink-0 ml-2 relative bottom-0.5" />
-                        </div>
+                        {/* CTA Button */}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/cars/${carWithImages.id}`);
+                            }}
+                            className="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2.5 min-h-[42px] rounded-xl transition-colors inline-flex items-center gap-1.5"
+                        >
+                            {t('car.rentCta')}
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             </Card>
         </div>
     );
-};
+});

@@ -1,8 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export const LogoMarquee: React.FC = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
 
   const logos = [
     { src: "/logos/audi.png", alt: "Audi", filter: "Audi" },
@@ -61,7 +63,7 @@ export const LogoMarquee: React.FC = () => {
   };
 
   return (
-    <section className="lg:py-16 py-0 mt-[280px] lg:mt-20 w-full">
+    <section className={`lg:py-16 py-0 ${i18n.language === 'ru' ? 'mt-[320px]' : 'mt-[280px]'} lg:mt-20 w-full`}>
       <div className="w-full">
         <div className="marquee">
           <ul className="marquee__content">

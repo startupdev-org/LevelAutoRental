@@ -816,7 +816,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                             {/* Header */}
                             <div className="sticky top-0 bg-white border-b border-gray-300 px-6 md:px-8 py-6 flex items-center justify-between rounded-t-2xl z-10">
                                 <div>
-                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">Cerere de închiriere</h2>
+                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">{t('rentalRequestModal.title')}</h2>
                                     <p className="mt-1 text-sm text-gray-500">{(freshCarData || car).make + ' ' + (freshCarData || car).model}</p>
                                 </div>
                                 <button
@@ -841,14 +841,14 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 <div className="flex-1 min-w-0">
                                                     <div className="mb-1 md:mb-2">
                                                         <span className="text-xs font-semibold tracking-wider text-red-500 uppercase">
-                                                            Confirmare
+                                                            {t('rentalRequestModal.confirmation')}
                                                         </span>
                                                     </div>
                                                     <h2 className="text-lg md:text-3xl font-bold text-gray-800 leading-tight mb-1 md:mb-3">
-                                                        Cererea a fost trimisă cu succes!
+                                                        {t('rentalRequestModal.requestSentTitle')}
                                                     </h2>
                                                     <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                                                        În scurt timp vă vom contacta pentru confirmare.
+                                                        {t('rentalRequestModal.requestSentDescription')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -894,15 +894,15 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         <Calendar className="w-5 h-5 text-white" />
                                                     </div>
                                                     <h3 className="text-base md:text-lg font-bold text-gray-800">
-                                                        Perioada închirierii
+                                                        {t('rentalRequestModal.rentalPeriod')}
                                                     </h3>
                                                 </div>
                                             </div>
                                             <div className="space-y-2 md:space-y-3">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-gray-600 text-sm md:text-base">
-                                                        {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
-                                                        {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
+                                                        {rentalCalculation.days} {rentalCalculation.days === 1 ? t('rentalRequestModal.day') : t('rentalRequestModal.days')}
+                                                        {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? t('rentalRequestModal.hour') : t('rentalRequestModal.hours')}`}
                                                     </span>
                                                 </div>
 
@@ -910,14 +910,14 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                                 <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-gray-300">
                                                     <div>
-                                                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data preluării</p>
+                                                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t('rentalRequestModal.pickupDate')}</p>
                                                         <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(pickupDate)}</p>
-                                                        <p className="text-gray-500 text-xs md:text-sm">ora {pickupTime}</p>
+                                                        <p className="text-gray-500 text-xs md:text-sm">{t('rentalRequestModal.atTime')} {pickupTime}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Data returnării</p>
+                                                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t('rentalRequestModal.returnDate')}</p>
                                                         <p className="text-gray-900 font-semibold text-sm md:text-base">{formatDate(returnDate)}</p>
-                                                        <p className="text-gray-500 text-xs md:text-sm">ora {returnTime}</p>
+                                                        <p className="text-gray-500 text-xs md:text-sm">{t('rentalRequestModal.atTime')} {returnTime}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -931,14 +931,14 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         <UserRound className="w-5 h-5 text-white" />
                                                     </div>
                                                     <h3 className="text-base md:text-lg font-bold text-gray-800">
-                                                        Date de contact
+                                                        {t('rentalRequestModal.contactInfo')}
                                                     </h3>
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
                                                 <div data-field="firstName">
                                                     <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                        Prenume <span className="text-red-500">*</span>
+                                                        {t('rentalRequestModal.firstName')} <span className="text-red-500">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -957,7 +957,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                                 <div data-field="lastName">
                                                     <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                        Nume <span className="text-red-500">*</span>
+                                                        {t('rentalRequestModal.lastName')} <span className="text-red-500">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -977,7 +977,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             </div>
                                             <div className="mb-4" data-field="age">
                                                 <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                    Vârstă <span className="text-red-500">*</span>
+                                                    {t('rentalRequestModal.age')} <span className="text-red-500">*</span>
                                                 </label>
                                                 <input
                                                     type="number"
@@ -1020,7 +1020,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             )}
                                             <div data-field="phone">
                                                 <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                                    Telefon <span className="text-red-500">*</span>
+                                                    {t('rentalRequestModal.phone')} <span className="text-red-500">*</span>
                                                 </label>
                                                 <div className="relative">
                                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 country-code-dropdown-container">
@@ -1082,14 +1082,14 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         <Car className="w-5 h-5 text-white" />
                                                     </div>
                                                     <h3 className="text-base md:text-lg font-bold text-gray-800">
-                                                        Opțiuni de închiriere
+                                                        {t('rentalRequestModal.rentalOptions')}
                                                     </h3>
                                                 </div>
                                             </div>
 
                                             {/* Limits */}
                                             <div className="mb-5 md:mb-6">
-                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Limite</h4>
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">{t('calculator.limits')}</h4>
                                                 <div className="space-y-2">
                                                     <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                         <div className="flex items-center gap-3 md:gap-4">
@@ -1118,7 +1118,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     </svg>
                                                                 </div>
                                                             </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Kilometraj nelimitat</span>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('calculator.unlimitedMileage')}</span>
                                                         </div>
                                                         <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+50%</span>
                                                     </label>
@@ -1128,7 +1128,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                             {/* VIP Services */}
                                             <div className="mb-5 md:mb-6">
-                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Servicii VIP</h4>
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">{t('calculator.vipServices')}</h4>
                                                 <div className="space-y-2">
                                                     <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                         <div className="flex items-center gap-3 md:gap-4">
@@ -1157,9 +1157,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     </svg>
                                                                 </div>
                                                             </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Șofer personal</span>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('calculator.personalDriver')}</span>
                                                         </div>
-                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">800 MDL/zi</span>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">800 MDL/{t('rentalRequestModal.day')}</span>
                                                     </label>
 
                                                     <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
@@ -1189,9 +1189,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     </svg>
                                                                 </div>
                                                             </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Priority Service</span>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('calculator.priorityService')}</span>
                                                         </div>
-                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">1 000 MDL/zi</span>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">1 000 MDL/{t('rentalRequestModal.day')}</span>
                                                     </label>
                                                 </div>
                                             </div>
@@ -1199,7 +1199,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                             {/* Additional */}
                                             <div>
-                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Suplimentar</h4>
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">{t('calculator.extra')}</h4>
                                                 <div className="space-y-2">
                                                     <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                         <div className="flex items-center gap-3 md:gap-4">
@@ -1228,9 +1228,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     </svg>
                                                                 </div>
                                                             </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Scaun auto pentru copii</span>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('rentalOptions.childCarSeat.title')}</span>
                                                         </div>
-                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/{t('rentalRequestModal.day')}</span>
                                                     </label>
 
                                                     <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
@@ -1260,9 +1260,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     </svg>
                                                                 </div>
                                                             </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Cartelă SIM cu internet</span>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('rentalOptions.simCard.title')}</span>
                                                         </div>
-                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/zi</span>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">100 MDL/{t('rentalRequestModal.day')}</span>
                                                     </label>
 
                                                     <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
@@ -1292,16 +1292,16 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     </svg>
                                                                 </div>
                                                             </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Asistență rutieră</span>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('rentalOptions.roadsideAssistance.title')}</span>
                                                         </div>
-                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">500 MDL/zi</span>
+                                                        <span className="text-xs md:text-sm font-bold text-gray-900 bg-gray-100 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">500 MDL/{t('rentalRequestModal.day')}</span>
                                                     </label>
                                                 </div>
                                             </div>
 
                                             {/* Delivery */}
                                             <div className="mb-5 md:mb-6">
-                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 mt-4 md:mb-3">Livrare</h4>
+                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 mt-4 md:mb-3">{t('calculator.delivery')}</h4>
                                                 <div className="space-y-2">
                                                     <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
                                                         <div className="flex items-center gap-3 md:gap-4">
@@ -1330,9 +1330,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                     </svg>
                                                                 </div>
                                                             </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">Livrare aeroport</span>
+                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('rentalOptions.airportDelivery.title')}</span>
                                                         </div>
-                                                        <span className="text-xs md:text-sm font-bold text-green-600 bg-green-50 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">Gratuit</span>
+                                                        <span className="text-xs md:text-sm font-bold text-green-600 bg-green-50 px-2 md:px-3 py-1 rounded-lg whitespace-nowrap">{t('rentalOptions.airportDelivery.price')}</span>
                                                     </label>
                                                 </div>
                                             </div>
@@ -1340,7 +1340,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
 
                                         {/* Comment */}
                                         <div data-field="comment">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Comentariu <span className="text-gray-400 font-normal">(opțional)</span></label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">{t('rentalRequestModal.comment')} <span className="text-gray-400 font-normal">({t('rentalRequestModal.optional')})</span></label>
                                             <textarea
                                                 value={formData.comment}
                                                 onChange={(e) => handleInputChange('comment', e.target.value)}
@@ -1349,7 +1349,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                                                     : 'border-gray-300 focus:ring-gray-900 focus:border-gray-900 hover:border-gray-400'
                                                     }`}
-                                                placeholder="Adăugați un comentariu (opțional)"
+                                                placeholder={t('rentalRequestModal.commentPlaceholder')}
                                                 maxLength={1000}
                                             />
                                             {hasAttemptedSubmit && fieldErrors.comment && (
@@ -1357,7 +1357,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                             )}
                                             {formData.comment.length > 0 && (
                                                 <p className="mt-1 text-xs text-gray-500 text-right">
-                                                    {formData.comment.length}/1000 caractere
+                                                    {formData.comment.length}/1000 {t('rentalRequestModal.characters')}
                                                 </p>
                                             )}
                                         </div>
@@ -1369,24 +1369,24 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-b from-red-500 to-red-600">
                                                         <Star className="w-5 h-5 text-white" />
                                                     </div>
-                                                    <h3 className="text-base md:text-lg font-bold text-gray-800">Detalii preț</h3>
+                                                    <h3 className="text-base md:text-lg font-bold text-gray-800">{t('rentalRequestModal.priceDetails')}</h3>
                                                 </div>
                                             </div>
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between text-sm md:text-base">
-                                                    <span className="text-gray-600">Preț pe zi</span>
+                                                    <span className="text-gray-600">{t('rentalRequestModal.pricePerDay')}</span>
                                                     <span className="text-gray-900 font-medium">{formatPrice(convertPrice(rentalCalculation.pricePerDay, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm md:text-base">
-                                                    <span className="text-gray-600">Perioadă</span>
+                                                    <span className="text-gray-600">{t('rentalRequestModal.period')}</span>
                                                     <span className="text-gray-900 font-medium">
-                                                        {rentalCalculation.days} {rentalCalculation.days === 1 ? 'zi' : 'zile'}
-                                                        {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? 'oră' : 'ore'}`}
+                                                        {rentalCalculation.days} {rentalCalculation.days === 1 ? t('rentalRequestModal.day') : t('rentalRequestModal.days')}
+                                                        {rentalCalculation.hours > 0 && `, ${rentalCalculation.hours} ${rentalCalculation.hours === 1 ? t('rentalRequestModal.hour') : t('rentalRequestModal.hours')}`}
                                                     </span>
                                                 </div>
                                                 <div className="pt-2 border-t border-gray-300">
                                                     <div className="flex items-center justify-between text-sm md:text-base">
-                                                        <span className="text-gray-900 font-medium">Preț de bază</span>
+                                                        <span className="text-gray-900 font-medium">{t('rentalRequestModal.basePrice')}</span>
                                                         <span className="text-gray-900 font-medium">{formatPrice(convertPrice(basePrice, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                     </div>
                                                 </div>
@@ -1394,11 +1394,11 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 {additionalCosts > 0 && (
                                                     <>
                                                         <div className="pt-3 border-t border-gray-300">
-                                                            <h4 className="text-sm md:text-base font-bold text-gray-900 mb-3">Servicii suplimentare</h4>
+                                                            <h4 className="text-sm md:text-base font-bold text-gray-900 mb-3">{t('rentalRequestModal.additionalServices')}</h4>
                                                             <div className="space-y-2 text-sm md:text-base">
                                                                 {options.unlimitedKm && (
                                                                     <div className="flex justify-between">
-                                                                        <span className="text-gray-600">Kilometraj nelimitat</span>
+                                                                        <span className="text-gray-600">{t('calculator.unlimitedMileage')}</span>
                                                                         <span className="text-gray-900 font-medium">
                                                                             {formatPrice(convertPrice(discountedPricePerDay * totalDays * 0.5, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
                                                                         </span>
@@ -1406,37 +1406,37 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                                 )}
                                                                 {options.personalDriver && (
                                                                     <div className="flex justify-between">
-                                                                        <span className="text-gray-600">Șofer personal</span>
+                                                                        <span className="text-gray-600">{t('calculator.personalDriver')}</span>
                                                                         <span className="text-gray-900 font-medium">{formatPrice(convertPrice(800 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.priorityService && (
                                                                     <div className="flex justify-between">
-                                                                        <span className="text-gray-600">Priority Service</span>
+                                                                        <span className="text-gray-600">{t('calculator.priorityService')}</span>
                                                                         <span className="text-gray-900 font-medium">{formatPrice(convertPrice(1000 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.childSeat && (
                                                                     <div className="flex justify-between">
-                                                                        <span className="text-gray-600">Scaun auto pentru copii</span>
+                                                                        <span className="text-gray-600">{t('rentalOptions.childCarSeat.title')}</span>
                                                                         <span className="text-gray-900 font-medium">{formatPrice(convertPrice(100 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.simCard && (
                                                                     <div className="flex justify-between">
-                                                                        <span className="text-gray-600">Cartelă SIM cu internet</span>
+                                                                        <span className="text-gray-600">{t('rentalOptions.simCard.title')}</span>
                                                                         <span className="text-gray-900 font-medium">{formatPrice(convertPrice(100 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 {options.roadsideAssistance && (
                                                                     <div className="flex justify-between">
-                                                                        <span className="text-gray-600">Asistență rutieră</span>
+                                                                        <span className="text-gray-600">{t('rentalOptions.roadsideAssistance.title')}</span>
                                                                         <span className="text-gray-900 font-medium">{formatPrice(convertPrice(500 * totalDays, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 )}
                                                                 <div className="pt-2 border-t border-gray-300">
                                                                     <div className="flex justify-between font-medium text-sm md:text-base">
-                                                                        <span className="text-gray-900">Total servicii</span>
+                                                                        <span className="text-gray-900">{t('rentalRequestModal.totalServices')}</span>
                                                                         <span className="text-gray-900">{formatPrice(convertPrice(additionalCosts, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                                     </div>
                                                                 </div>
@@ -1446,7 +1446,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 )}
 
                                                 <div className="pt-3 border-t border-gray-300 flex items-center justify-between">
-                                                    <span className="text-gray-900 font-bold text-base md:text-lg">Total</span>
+                                                    <span className="text-gray-900 font-bold text-base md:text-lg">{t('rentalRequestModal.total')}</span>
                                                     <span className="text-gray-900 font-bold text-lg md:text-xl">{formatPrice(convertPrice(totalCost, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}</span>
                                                 </div>
                                             </div>
@@ -1467,10 +1467,10 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 disabled={isSubmitting || submitSuccess}
                                                 className="w-full font-semibold text-sm md:text-base py-3.5 px-6 rounded-xl transition-all bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                {isSubmitting ? 'Se trimite...' : submitSuccess ? 'Trimis cu succes!' : 'Trimite cererea'}
+                                                {isSubmitting ? t('rentalRequestModal.submitting') : submitSuccess ? t('rentalRequestModal.sentSuccess') : t('rentalRequestModal.submitRequest')}
                                             </button>
                                             <p className="text-[10px] md:text-xs text-center text-gray-500 leading-relaxed">
-                                                Făcând clic pe butonul «Trimite cererea», sunteți de acord cu{' '}
+                                                {t('rentalRequestModal.submitAgreementPrefix')} {' '}
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -1479,9 +1479,9 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     }}
                                                     className="text-red-600 hover:text-red-700 underline"
                                                 >
-                                                    termenii de utilizare
+                                                    {t('rentalRequestModal.termsOfUse')}
                                                 </button>
-                                                {' '}și{' '}
+                                                {' '}{t('rentalRequestModal.and')}{' '}
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -1490,7 +1490,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                     }}
                                                     className="text-red-600 hover:text-red-700 underline"
                                                 >
-                                                    politica de confidențialitate
+                                                    {t('rentalRequestModal.privacyPolicy')}
                                                 </button>
                                             </p>
                                         </div>
@@ -1528,7 +1528,7 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                 <div className="sticky top-0 bg-white border-b border-gray-300 px-6 md:px-8 py-4 flex items-center justify-between rounded-t-2xl z-10">
                                     <div>
                                         <h2 className="text-xl md:text-2xl font-bold text-gray-800">
-                                            {termsModalType === 'terms' ? 'Termeni și condiții' : 'Politica de confidențialitate'}
+                                            {termsModalType === 'terms' ? t('rentalRequestModal.termsAndConditions') : t('rentalRequestModal.privacyPolicyTitle')}
                                         </h2>
                                     </div>
                                     <button

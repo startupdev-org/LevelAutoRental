@@ -277,7 +277,54 @@ export async function fetchFilteredCars(filters: CarFilters): Promise<Car[]> {
         }
 
 
-        return data ?? [];
+        let result = data ?? [];
+
+        // Apply category filter client-side to support legacy formats in DB
+        // (single string: "suv", or JSON array string: ["suv","luxury"]).
+        if (filters.category) {
+            const categoryMap: Record<'SUV' | 'Sport' | 'Lux', string> = {
+                SUV: 'suv',
+                Sport: 'sports',
+                Lux: 'luxury',
+            };
+
+            const targetCategory = categoryMap[filters.category];
+
+            result = result.filter((car: any) => {
+                const rawCategory = car?.category;
+                if (!rawCategory) return false;
+
+                if (Array.isArray(rawCategory)) {
+                    return rawCategory
+                        .map((c) => String(c).toLowerCase())
+                        .includes(targetCategory);
+                }
+
+                if (typeof rawCategory === 'string') {
+                    const normalized = rawCategory.trim().toLowerCase();
+
+                    // Handle JSON array strings like '["suv","luxury"]'
+                    if (normalized.startsWith('[') && normalized.endsWith(']')) {
+                        try {
+                            const parsed = JSON.parse(rawCategory);
+                            if (Array.isArray(parsed)) {
+                                return parsed
+                                    .map((c) => String(c).toLowerCase())
+                                    .includes(targetCategory);
+                            }
+                        } catch {
+                            // fall through to direct string compare
+                        }
+                    }
+
+                    return normalized === targetCategory;
+                }
+
+                return false;
+            });
+        }
+
+        return result;
     } catch (err) {
         console.error('Unexpected error in fetchFilteredCars:', err);
         return [];

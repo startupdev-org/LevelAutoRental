@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, LogOut, Home, Calendar, Settings, Car } from 'lucide-react';
+import { User, LogOut, Home, Globe, Settings, Car } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { TabType } from '../../../pages/dashboard/UserDashboard';
 
@@ -24,11 +25,11 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
 }) => {
     const { t } = useTranslation();
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     const sidebarItems: SidebarItem[] = [
         { id: 'overview', label: t('dashboard.sidebar.overview'), icon: Home },
         { id: 'cars', label: t('dashboard.sidebar.cars'), icon: Car },
-        { id: 'calendar', label: t('dashboard.sidebar.calendar'), icon: Calendar },
         { id: 'settings', label: t('dashboard.sidebar.settings'), icon: Settings },
     ];
 
@@ -72,6 +73,16 @@ export const UserDashboardSidebar: React.FC<UserDashboardSidebarProps> = ({
                     ))}
 
                     <div className="h-[1px] bg-white/10 my-3" />
+
+                    <motion.button
+                        onClick={() => navigate('/')}
+                        className="w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-left text-gray-200 hover:bg-white/10 hover:text-white transition-all duration-300 font-medium"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        <Globe size={20} />
+                        <span>{t('dashboard.sidebar.backToHome', 'Back to Home')}</span>
+                    </motion.button>
 
                     {/* Logout Button */}
                     <motion.button

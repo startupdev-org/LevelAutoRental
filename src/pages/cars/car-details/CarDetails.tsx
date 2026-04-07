@@ -7,6 +7,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import {
     Star,
+    ArrowLeft,
     Calendar,
     Phone,
     Send,
@@ -46,35 +47,14 @@ export const CarDetails: React.FC = () => {
 
 
     const { t, i18n } = useTranslation()
-
-    // Track current language for re-rendering
-    const [currentLang, setCurrentLang] = useState(i18n.language);
-
     // Get translated date labels
     const getPickupDateLabel = () => {
-        if (currentLang === 'ru') return 'Дата получения';
-        if (currentLang === 'en') return 'Pickup Date';
-        return 'Data preluării'; // Romanian default
+        return t('calculator.pickupDate');
     };
 
     const getReturnDateLabel = () => {
-        if (currentLang === 'ru') return 'Дата возврата';
-        if (currentLang === 'en') return 'Return Date';
-        return 'Data returnării'; // Romanian default
+        return t('calculator.returnDate');
     };
-
-    // Update language state when i18n language changes
-    useEffect(() => {
-        const handleLanguageChange = (lng: string) => {
-            setCurrentLang(lng);
-        };
-
-        i18n.on('languageChanged', handleLanguageChange);
-
-        return () => {
-            i18n.off('languageChanged', handleLanguageChange);
-        };
-    }, [i18n]);
 
     // ───── CONSTANTS ─────
     const SHOW_DATE_INPUTS = true; // Temporarily hide date inputs
@@ -145,6 +125,7 @@ export const CarDetails: React.FC = () => {
     const pickupTimeRef = useRef<HTMLDivElement>(null);
     const returnTimeRef = useRef<HTMLDivElement>(null);
     const imageSliderRef = useRef<Slider>(null);
+    const imageThumbsRef = useRef<HTMLDivElement>(null);
     const recommendedSliderRef = useRef<HTMLDivElement>(null);
     const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -208,19 +189,28 @@ export const CarDetails: React.FC = () => {
         return `${year}-${month}-${day}`;
     };
 
+    const getWeekdayLabels = (): string[] => {
+        if (i18n.language === 'ru') return ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        if (i18n.language === 'en') return ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        return ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
+    };
+
     const generateCalendarDays = (date: Date): (string | null)[] => {
         const year = date.getFullYear();
         const month = date.getMonth();
         const firstDay = new Date(year, month, 1);
         const startDate = new Date(firstDay);
-        startDate.setDate(startDate.getDate() - firstDay.getDay());
+        // Calendar starts on Monday (0 = Monday ... 6 = Sunday)
+        const mondayFirstOffset = (firstDay.getDay() + 6) % 7;
+        startDate.setDate(startDate.getDate() - mondayFirstOffset);
 
         const days: (string | null)[] = [];
         const currentDate = new Date(startDate);
 
         for (let i = 0; i < 42; i++) {
             if (currentDate.getMonth() === month) {
-                days.push(currentDate.toISOString().split('T')[0]);
+                // Keep local date to avoid timezone shifts from UTC ISO conversion
+                days.push(formatDateLocal(currentDate));
             } else {
                 days.push(null);
             }
@@ -420,6 +410,15 @@ export const CarDetails: React.FC = () => {
         if (showImageViewer && imageSliderRef.current) {
             imageSliderRef.current.slickGoTo(currentImageIndex);
         }
+    }, [showImageViewer, currentImageIndex]);
+
+    // Keep selected thumbnail visible in horizontal strip
+    useEffect(() => {
+        if (!showImageViewer || !imageThumbsRef.current) return;
+        const activeThumb = imageThumbsRef.current.querySelector(
+            `[data-thumb-index="${currentImageIndex}"]`
+        ) as HTMLElement | null;
+        activeThumb?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }, [showImageViewer, currentImageIndex]);
     // Fetch car and images from storage
     useEffect(() => {
@@ -808,8 +807,7 @@ export const CarDetails: React.FC = () => {
             try {
                 // Fetch cars of the same make, excluding the current car
                 const filters = {
-                    make: car.make,
-                    limit: 6
+                    make: car.make
                 };
 
                 const cars = await fetchFilteredCarsWithPhotos(filters);
@@ -821,7 +819,7 @@ export const CarDetails: React.FC = () => {
                 // If we don't have enough cars of the same make, fetch some general available cars
                 let allAvailableCars = [...sameMakeCars];
                 if (sameMakeCars.length < 5) {
-                    const generalFilters = { limit: 15 }; // Get more to have variety for randomization
+                    const generalFilters = {};
                     const generalCars = await fetchFilteredCarsWithPhotos(generalFilters);
                     const additionalCars = generalCars
                         .filter(c => c.id !== car.id && !sameMakeCars.some(rc => rc.id === c.id));
@@ -1156,6 +1154,14 @@ export const CarDetails: React.FC = () => {
         );
     }
 
+    const transmissionValue = car.transmission?.trim() || '';
+    const fuelValue = (car.fuel_type || '').toString().trim();
+    const bodyValue = (car.body || '').toString().trim();
+    const hasSeats = car.seats !== null && car.seats !== undefined && String(car.seats).trim() !== '';
+    const validFeatures = (car.features || []).filter(
+        (feature): feature is string => typeof feature === 'string' && feature.trim() !== ''
+    );
+
     return (
         <div id='individual-car-page' className="min-h-screen bg-gray-50">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-20">
@@ -1165,23 +1171,42 @@ export const CarDetails: React.FC = () => {
                     <div className="lg:col-start-1">
                         {/* Car Title & Rating - Mobile */}
                         <div className="mb-8 lg:hidden">
+                            <button
+                                type="button"
+                                onClick={() => navigate(-1)}
+                                className="inline-flex items-center gap-2 mb-4 text-gray-700 hover:text-gray-900 transition-colors"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                <span className="text-sm font-medium">{t('notFound.goBack')}</span>
+                            </button>
                             <h1 className="text-3xl font-bold text-gray-900 mb-3">{car.make + ' ' + car.model}</h1>
                             <div className="flex items-center gap-3 text-sm">
                                 <div className="flex items-center gap-1.5">
-                                    <Star className="w-4 h-4 text-gray-400 fill-current" />
+                                    <div className="flex items-center gap-0.5">
+                                        {Array.from({ length: 5 }).map((_, idx) => {
+                                            const filledStars = Math.max(0, Math.min(5, Math.round(Number(car.rating) || 0)));
+                                            const isFilled = idx < filledStars;
+                                            return (
+                                                <Star
+                                                    key={idx}
+                                                    className={`w-4 h-4 ${isFilled ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 fill-gray-300'}`}
+                                                />
+                                            );
+                                        })}
+                                    </div>
                                     <span className="font-semibold text-gray-900">{car.rating}</span>
                                 </div>
                                 <span className="text-gray-400">·</span>
-                                <span className="text-gray-600">{car.reviews} recenzii</span>
+                                <span className="text-gray-600">{car.reviews} {t('car.reviewsLabel')}</span>
                             </div>
                         </div>
 
                         {/* Image Gallery */}
-                        <div className="relative rounded-lg overflow-hidden bg-white shadow-sm mb-6 border border-gray-200">
+                        <div className="relative rounded-lg overflow-hidden bg-white shadow-sm mb-6 border border-gray-200 w-full h-[400px] md:h-[620px]">
                             {gallery.length > 0 ? (
                                 <>
                                     <div
-                                        className="relative w-full h-[450px] md:h-[600px] overflow-hidden"
+                                        className="relative w-full h-full overflow-hidden"
                                         onTouchStart={(e) => {
                                             if (gallery.length > 1) {
                                                 const touch = e.touches[0];
@@ -1327,13 +1352,11 @@ export const CarDetails: React.FC = () => {
                                         };
 
                                         const formatDateForDisplay = (date: Date): string => {
-                                            const day = date.getDate();
-                                            const monthNames = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
-                                                'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
-                                            const month = monthNames[date.getMonth()];
-
-                                            // Format date in Romanian: "Liber de pe 30 noiembrie"
-                                            return `Liber de pe ${day} ${month}`;
+                                            const localizedDate = date.toLocaleDateString(t('config.date'), {
+                                                day: 'numeric',
+                                                month: 'long',
+                                            });
+                                            return t('car.availableFrom', { date: localizedDate });
                                         };
 
                                         // Find the first available date using calendar logic (always starts from today)
@@ -1348,9 +1371,9 @@ export const CarDetails: React.FC = () => {
 
                                         const availabilityText = firstAvailableDate
                                             ? (isAvailableToday
-                                                ? t('car.available')
+                                                ? t('car.availableNow')
                                                 : formatDateForDisplay(firstAvailableDate))
-                                            : (car.status === 'available' || car.status === 'Available' ? t('car.available') : car.status || '');
+                                            : (car.status === 'available' || car.status === 'Available' ? t('car.availableNow') : car.status || '');
 
                                         if (!availabilityText) return null;
 
@@ -1503,7 +1526,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Calendar className="w-4 h-4" />
-                                                    <span>{pickupDate ? formatDate(pickupDate) : 'Data închirierii'}</span>
+                                                    <span>{pickupDate ? formatDate(pickupDate) : getPickupDateLabel()}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showPickupCalendar && (
@@ -1552,12 +1575,12 @@ export const CarDetails: React.FC = () => {
                                                             <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                                                                 <p className="text-xs text-gray-600">
                                                                     {!pickupDate
-                                                                        ? 'Selectează data de început'
-                                                                        : 'Clic pentru a schimba data de început'}
+                                                                        ? t('calculator.selectPickupInstruction')
+                                                                        : t('calculator.changePickupInstruction')}
                                                                 </p>
                                                             </div>
                                                             <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                                                                {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
+                                                                {getWeekdayLabels().map(day => (
                                                                     <div key={day} className="text-gray-500 font-medium">{day}</div>
                                                                 ))}
                                                             </div>
@@ -1705,7 +1728,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{pickupTime || '__ : __'}</span>
+                                                    <span className={pickupTime ? '' : 'text-gray-400 '}>{pickupTime || '__ : __'}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showPickupTime && (
@@ -1887,14 +1910,14 @@ export const CarDetails: React.FC = () => {
                                                             <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                                                                 <p className="text-xs text-gray-600">
                                                                     {!pickupDate
-                                                                        ? 'Selectează mai întâi data de început'
+                                                                        ? t('calculator.selectPickupDate')
                                                                         : !returnDate
-                                                                            ? 'Selectează data de returnare'
-                                                                            : 'Clic pentru a schimba data de returnare'}
+                                                                            ? t('calculator.selectReturnInstruction')
+                                                                            : t('calculator.changeReturnInstruction')}
                                                                 </p>
                                                             </div>
                                                             <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                                                                {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
+                                                                {getWeekdayLabels().map(day => (
                                                                     <div key={day} className="text-gray-500 font-medium">{day}</div>
                                                                 ))}
                                                             </div>
@@ -2078,7 +2101,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{returnTime || '__ : __'}</span>
+                                                    <span className={returnTime ? '' : 'text-gray-400'}>{returnTime || '__ : __'}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showReturnTime && (
@@ -2347,68 +2370,74 @@ export const CarDetails: React.FC = () => {
                             </div>
 
                             {/* Main Specs Grid - Compact Layout */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
-                                        <Users className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
+                            <div className="grid grid-cols-1 gap-3">
+                                {hasSeats && (
+                                    <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
+                                            <Users className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.seats')}</div>
+                                            <div className="text-sm font-bold text-gray-800">{car.seats}</div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.seats')}</div>
-                                        <div className="text-sm font-bold text-gray-800">{car.seats}</div>
-                                    </div>
-                                </div>
+                                )}
 
-                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
-                                        {(() => {
-                                            const trans = car.transmission?.trim() || '';
-                                            const isManual = trans.toLowerCase() === 'manual' || trans === 'Manual';
-                                            const IconComponent = isManual ? TbManualGearboxFilled : TbAutomaticGearboxFilled;
-                                            return React.createElement(IconComponent as any, { className: "w-5 h-5 text-white" });
-                                        })()}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.transmissionLabel')}</div>
-                                        <div className="text-sm font-bold text-gray-800">
+                                {transmissionValue && (
+                                    <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
                                             {(() => {
-                                                const trans = car.transmission?.trim() || '';
-                                                if (trans.toLowerCase() === 'automatic' || trans === 'Automatic') {
-                                                    return t('car.transmission.automatic');
-                                                }
-                                                if (trans.toLowerCase() === 'manual' || trans === 'Manual') {
-                                                    return t('car.transmission.manual');
-                                                }
-                                                return trans || t('car.transmission.automatic');
+                                                const isManual = transmissionValue.toLowerCase() === 'manual' || transmissionValue === 'Manual';
+                                                const IconComponent = isManual ? TbManualGearboxFilled : TbAutomaticGearboxFilled;
+                                                return React.createElement(IconComponent as any, { className: "w-5 h-5 text-white" });
                                             })()}
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
-                                        {React.createElement(RiGasStationLine as any, { className: "w-5 h-5 text-white" })}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.fuelLabel')}</div>
-                                        <div className="text-sm font-bold text-gray-800">
-                                            {car.fuel_type === 'gasoline' ? t('car.fuel.gasoline') :
-                                                car.fuel_type === 'diesel' ? t('car.fuel.diesel') :
-                                                    car.fuel_type === 'petrol' ? t('car.fuel.benzina') :
-                                                        car.fuel_type === 'hybrid' ? t('car.fuel.hybrid') :
-                                                            car.fuel_type === 'electric' ? t('car.fuel.electric') : car.fuel_type}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.transmissionLabel')}</div>
+                                            <div className="text-sm font-bold text-gray-800">
+                                                {(() => {
+                                                    if (transmissionValue.toLowerCase() === 'automatic' || transmissionValue === 'Automatic') {
+                                                        return t('car.transmission.automatic');
+                                                    }
+                                                    if (transmissionValue.toLowerCase() === 'manual' || transmissionValue === 'Manual') {
+                                                        return t('car.transmission.manual');
+                                                    }
+                                                    return transmissionValue;
+                                                })()}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
-                                <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
-                                        {React.createElement(LiaCarSideSolid as any, { className: "w-5 h-5 text-white" })}
+                                {fuelValue && (
+                                    <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
+                                            {React.createElement(RiGasStationLine as any, { className: "w-5 h-5 text-white" })}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.fuelLabel')}</div>
+                                            <div className="text-sm font-bold text-gray-800">
+                                                {fuelValue === 'gasoline' ? t('car.fuel.gasoline') :
+                                                    fuelValue === 'diesel' ? t('car.fuel.diesel') :
+                                                        fuelValue === 'petrol' ? t('car.fuel.benzina') :
+                                                            fuelValue === 'hybrid' ? t('car.fuel.hybrid') :
+                                                                fuelValue === 'electric' ? t('car.fuel.electric') : fuelValue}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.bodyType')}</div>
-                                        <div className="text-sm font-bold text-gray-800">{car.body}</div>
+                                )}
+
+                                {bodyValue && (
+                                    <div className="flex items-center gap-1.5 md:gap-3 p-1.5 md:p-3 bg-white rounded-lg border border-gray-300 hover:shadow-md transition-all">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-b from-red-500 to-red-600">
+                                            {React.createElement(LiaCarSideSolid as any, { className: "w-5 h-5 text-white" })}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{t('car.bodyType')}</div>
+                                            <div className="text-sm font-bold text-gray-800">{bodyValue}</div>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             {/* Additional Specs */}
@@ -2452,7 +2481,7 @@ export const CarDetails: React.FC = () => {
                         </div>
 
                         {/* Features & Equipment */}
-                        {car.features && car.features.length > 0 && (
+                        {validFeatures.length > 0 && (
                             <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 md:p-8 mb-6">
                                 <div className="mb-6">
                                     <span className="text-sm font-semibold tracking-wider text-red-500 uppercase">
@@ -2462,8 +2491,8 @@ export const CarDetails: React.FC = () => {
                                         {t('car.equipmentIncluded')}
                                     </h2>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {car.features.map((feature, i) => (
+                                <div className="grid grid-cols-1 gap-3">
+                                    {validFeatures.map((feature, i) => (
                                         <div
                                             key={i}
                                             className="flex items-center gap-3 bg-white rounded-xl p-4 border border-gray-300 hover:shadow-md transition-all group"
@@ -2641,12 +2670,12 @@ export const CarDetails: React.FC = () => {
                                                             <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                                                                 <p className="text-xs text-gray-600">
                                                                     {!pickupDate
-                                                                        ? 'Selectează data de început'
-                                                                        : 'Clic pentru a schimba data de început'}
+                                                                        ? t('calculator.selectPickupInstruction')
+                                                                        : t('calculator.changePickupInstruction')}
                                                                 </p>
                                                             </div>
                                                             <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                                                                {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
+                                                                {getWeekdayLabels().map(day => (
                                                                     <div key={day} className="text-gray-500 font-medium">{day}</div>
                                                                 ))}
                                                             </div>
@@ -2785,7 +2814,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{pickupTime || '__ : __'}</span>
+                                                    <span className={pickupTime ? '' : 'text-gray-400 '}>{pickupTime || '__ : __'}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showPickupTime && (
@@ -2962,14 +2991,14 @@ export const CarDetails: React.FC = () => {
                                                             <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
                                                                 <p className="text-xs text-gray-600">
                                                                     {!pickupDate
-                                                                        ? 'Selectează mai întâi data de început'
+                                                                        ? t('calculator.selectPickupDate')
                                                                         : !returnDate
-                                                                            ? 'Selectează data de returnare'
-                                                                            : 'Clic pentru a schimba data de returnare'}
+                                                                            ? t('calculator.selectReturnInstruction')
+                                                                            : t('calculator.changeReturnInstruction')}
                                                                 </p>
                                                             </div>
                                                             <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                                                                {['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'].map(day => (
+                                                                {getWeekdayLabels().map(day => (
                                                                     <div key={day} className="text-gray-500 font-medium">{day}</div>
                                                                 ))}
                                                             </div>
@@ -3153,7 +3182,7 @@ export const CarDetails: React.FC = () => {
                                                         }`}
                                                 >
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{returnTime || '__ : __'}</span>
+                                                    <span className={returnTime ? '' : 'text-gray-400 '}>{returnTime || '__ : __'}</span>
                                                 </button>
                                                 <AnimatePresence>
                                                     {showReturnTime && (
@@ -3445,10 +3474,10 @@ export const CarDetails: React.FC = () => {
                 <div className="mt-12">
                     <div className="mb-8">
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                            {t('car.recommendedCars', 'Mașini Recomandate')}
+                            {t('car.recommendedCars')}
                         </h2>
                         <p className="text-gray-600">
-                            {t('car.recommendedDescription', 'Descoperă alte mașini care s-ar putea să îți placă')}
+                            {t('car.recommendedDescription')}
                         </p>
                     </div>
 
@@ -3540,11 +3569,11 @@ export const CarDetails: React.FC = () => {
                                 if (e.key === 'Escape') {
                                     setShowImageViewer(false);
                                 } else if (e.key === 'ArrowLeft' && gallery.length > 1) {
-                                    const prevIndex = currentImageIndex > 0 ? currentImageIndex - 1 : gallery.length - 1;
+                                    const prevIndex = Math.max(currentImageIndex - 1, 0);
                                     setCurrentImageIndex(prevIndex);
                                     imageSliderRef.current?.slickGoTo(prevIndex);
                                 } else if (e.key === 'ArrowRight' && gallery.length > 1) {
-                                    const nextIndex = currentImageIndex < gallery.length - 1 ? currentImageIndex + 1 : 0;
+                                    const nextIndex = Math.min(currentImageIndex + 1, gallery.length - 1);
                                     setCurrentImageIndex(nextIndex);
                                     imageSliderRef.current?.slickGoTo(nextIndex);
                                 }
@@ -3564,7 +3593,7 @@ export const CarDetails: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         {gallery.length > 1 && (
                                             <span className="text-white/70 text-sm font-medium">
-                                                {currentImageIndex + 1} of {gallery.length}
+                                                {currentImageIndex + 1} {t('car.of')} {gallery.length}
                                             </span>
                                         )}
                                     </div>
@@ -3577,9 +3606,9 @@ export const CarDetails: React.FC = () => {
                                 </div>
 
                                 {/* Main Image Display with smooth slider */}
-                                <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-2 relative">
+                                <div className="flex-1 flex flex-col items-center justify-center p-0 relative">
                                     {gallery.length > 0 && (
-                                        <div className="w-full h-full max-w-full max-h-[75vh] flex items-center justify-center md:max-w-6xl md:mx-auto">
+                                        <div className="w-full h-full flex items-center justify-center">
                                             <style>{`
                                                 .image-viewer-slider .slick-list {
                                                     height: 100%;
@@ -3589,7 +3618,7 @@ export const CarDetails: React.FC = () => {
                                                     height: 100%;
                                                     display: flex;
                                                     align-items: center;
-                                                    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                                                    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                                                 }
                                                 .image-viewer-slider .slick-slide {
                                                     height: auto;
@@ -3621,8 +3650,8 @@ export const CarDetails: React.FC = () => {
                                                 ref={imageSliderRef}
                                                 initialSlide={currentImageIndex}
                                                 afterChange={(index) => setCurrentImageIndex(index)}
-                                                infinite={gallery.length > 1}
-                                                speed={400}
+                                                infinite={false}
+                                                speed={200}
                                                 slidesToShow={1}
                                                 slidesToScroll={1}
                                                 swipeToSlide={true}
@@ -3630,7 +3659,7 @@ export const CarDetails: React.FC = () => {
                                                 draggable={true}
                                                 fade={false}
                                                 arrows={false}
-                                                cssEase="cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+                                                cssEase="cubic-bezier(0.4, 0, 0.2, 1)"
                                                 useCSS={true}
                                                 useTransform={true}
                                                 className="image-viewer-slider w-full h-full md:w-full"
@@ -3645,7 +3674,7 @@ export const CarDetails: React.FC = () => {
                                                                 width={1200}
                                                                 height={800}
                                                                 loading="lazy"
-                                                                className="max-w-full max-h-[75vh] object-contain rounded-xl select-none md:max-w-[90vw]"
+                                                                className="w-full h-full object-contain rounded-xl select-none"
                                                                 style={{ margin: '0 auto' }}
                                                                 draggable={false}
                                                             />
@@ -3656,16 +3685,20 @@ export const CarDetails: React.FC = () => {
                                     )}
                                 </div>
 
-                                {/* Photo Grid */}
+                                {/* Thumbnail Carousel (single row) */}
                                 {gallery.length > 1 && (
                                     <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/40 backdrop-blur-md">
-                                        <div className="px-6 py-4 md:px-3 md:py-2">
-                                            <div className="grid grid-cols-6 gap-3 md:gap-1.5 max-w-4xl mx-auto">
+                                        <div className="px-0 py-2">
+                                            <div ref={imageThumbsRef} className="flex gap-3 md:gap-1.5 w-full overflow-x-auto pb-1">
                                                 {gallery.map((url, index) => (
                                                     <button
                                                         key={index}
-                                                        onClick={() => setCurrentImageIndex(index)}
-                                                        className={`relative transition-all ${currentImageIndex === index
+                                                        data-thumb-index={index}
+                                                        onClick={() => {
+                                                            setCurrentImageIndex(index);
+                                                            imageSliderRef.current?.slickGoTo(index);
+                                                        }}
+                                                        className={`relative transition-all flex-shrink-0 ${currentImageIndex === index
                                                             ? 'opacity-100'
                                                             : 'opacity-50 hover:opacity-80'
                                                             }`}
@@ -3676,7 +3709,7 @@ export const CarDetails: React.FC = () => {
                                                             width={115}
                                                             height={80}
                                                             loading="lazy"
-                                                            className={`w-full h-20 object-cover rounded-lg transition-all ${currentImageIndex === index
+                                                            className={`w-24 md:w-20 h-20 object-cover rounded-lg transition-all ${currentImageIndex === index
                                                                 ? 'border-2 border-white'
                                                                 : 'border border-white/20'
                                                                 }`}

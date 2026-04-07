@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from '../../components/car/CarCard';
@@ -26,7 +26,6 @@ interface DisplayCar extends CarType {
 interface SidebarFilters {
   transmission: 'Any' | 'Automatic' | 'Manual';
   fuelType: FuelTypeUI;
-  category: 'Any' | 'SUV' | 'Sport' | 'Lux';
   make?: string;
   model?: string;
   priceRange: [number, number];
@@ -34,6 +33,8 @@ interface SidebarFilters {
   seats?: number;
   status?: string;
 }
+
+type SortKey = 'price-low' | 'price-high' | 'year-new' | 'year-old';
 
 export const Cars: React.FC = () => {
   const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
@@ -70,7 +71,7 @@ export const Cars: React.FC = () => {
   const [models, setModels] = useState<string[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
-  const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'year-new' | 'year-old'>('price-low');
+  const [sortBy, setSortBy] = useState<SortKey | ''>('');
 
   // Recommended cars state
   const [recommendedCars, setRecommendedCars] = useState<CarType[]>([]);
@@ -179,7 +180,6 @@ export const Cars: React.FC = () => {
           : undefined,
         transmission: sidebarFilters.transmission !== 'Any' ? sidebarFilters.transmission as 'Automatic' | 'Manual' : undefined,
         seats: sidebarFilters.seats !== undefined ? sidebarFilters.seats : undefined,
-        category: sidebarFilters.category !== 'Any' ? sidebarFilters.category : undefined,
       };
 
       const fetchedCars = await fetchFilteredCarsWithPhotos(filters);
@@ -208,8 +208,7 @@ export const Cars: React.FC = () => {
       setRecommendedLoading(true);
       try {
         // Fetch available cars for recommendations
-        const generalFilters: CarFilters = { limit: 15 };
-        const generalCars = await fetchFilteredCarsWithPhotos(generalFilters);
+        const generalCars = await fetchCarsWithPhotos(15);
 
         // Shuffle/randomize the array and take first 5
         const shuffled = generalCars.sort(() => Math.random() - 0.5);
@@ -293,12 +292,14 @@ export const Cars: React.FC = () => {
   // Dropdown states
   const [showMakeDropdown, setShowMakeDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
     setShowMakeDropdown(false);
     setShowModelDropdown(false);
+    setShowSortDropdown(false);
   };
 
   // Close sidebar and apply filters
@@ -336,12 +337,12 @@ export const Cars: React.FC = () => {
       }
     };
 
-    if (showMakeDropdown || showModelDropdown) {
+    if (showMakeDropdown || showModelDropdown || showSortDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showMakeDropdown, showModelDropdown]);
+  }, [showMakeDropdown, showModelDropdown, showSortDropdown]);
 
   // Prevent body scroll when drawer is open
   useEffect(() => {
@@ -361,7 +362,6 @@ export const Cars: React.FC = () => {
     yearRange: [new Date().getFullYear() - 10, new Date().getFullYear()],
     transmission: 'Any',
     fuelType: 'Any',
-    category: 'Any',
     seats: undefined,
   };
 
@@ -439,6 +439,30 @@ export const Cars: React.FC = () => {
     }).filter((value, index, self) => self.indexOf(value) === index);
   }, [makes]);
 
+  // Sort visible cars based on selected algorithm
+  const sortedCars = useMemo(() => {
+    const visibleCars = cars.filter((car) => {
+      // Hide only cars that are hidden (Ascuns) - booked cars should still show
+      const status = car.status?.toLowerCase() || '';
+      return status !== 'ascuns' && status !== 'hidden';
+    });
+
+    const getPrice = (car: CarType) => {
+      const basePrice = Number((car as any).price_over_30_days ?? (car as any).price_per_day ?? 0);
+      const discount = Number((car as any).discount_percentage ?? (car as any).discount ?? 0);
+      return discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
+    };
+
+    if (!sortBy) return visibleCars;
+
+    return [...visibleCars].sort((a, b) => {
+      if (sortBy === 'price-low') return getPrice(a) - getPrice(b);
+      if (sortBy === 'price-high') return getPrice(b) - getPrice(a);
+      if (sortBy === 'year-new') return Number(b.year || 0) - Number(a.year || 0);
+      return Number(a.year || 0) - Number(b.year || 0);
+    });
+  }, [cars, sortBy]);
+
   // Get car make logo path
   const getMakeLogo = (make: string): string | null => {
     const makeLower = make.toLowerCase();
@@ -460,6 +484,9 @@ export const Cars: React.FC = () => {
   // Get logo size class based on make
   const getLogoSizeClass = (make: string): string => {
     const makeLower = make.toLowerCase();
+    if (makeLower === 'porsche') {
+      return 'w-4 h-4';
+    }
     if (makeLower === 'audi' || makeLower === 'maserati' || makeLower === 'lincoln' || makeLower === 'porsche') {
       return 'w-6 h-6';
     }
@@ -467,45 +494,56 @@ export const Cars: React.FC = () => {
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => {
-      const newFilters = { ...prev, [key]: value };
+    const newFilters = { ...filters, [key]: value };
 
-      // If make is being changed, reset model if it's not valid for the new make
-      if (key === 'make') {
-        const newMake = value as string;
-        if (newMake && prev.model) {
-          // Check if current model is available for the new make in all cars
-          const normalizedNewMake = newMake.trim().toLowerCase();
-          const modelsForNewMake = allCars
-            .filter(car => {
-              const carMake = car.make || '';
-              const carNormalizedMake = carMake.includes('-') ? carMake.split('-')[0] : carMake;
-              return carNormalizedMake.trim().toLowerCase() === normalizedNewMake;
-            })
-            .map(car => car.model)
-            .filter((model): model is string => model !== null && model !== undefined && model.trim() !== '');
+    // If make is being changed, reset model if it's not valid for the new make
+    if (key === 'make') {
+      const newMake = value as string;
+      if (newMake && filters.model) {
+        // Check if current model is available for the new make in all cars
+        const normalizedNewMake = newMake.trim().toLowerCase();
+        const modelsForNewMake = allCars
+          .filter(car => {
+            const carMake = car.make || '';
+            const carNormalizedMake = carMake.includes('-') ? carMake.split('-')[0] : carMake;
+            return carNormalizedMake.trim().toLowerCase() === normalizedNewMake;
+          })
+          .map(car => car.model)
+          .filter((model): model is string => model !== null && model !== undefined && model.trim() !== '');
 
-          const currentModelValid = modelsForNewMake.some(model =>
-            model.toLowerCase() === prev.model.toLowerCase()
-          );
-          if (!currentModelValid) {
-            newFilters.model = '';
-          }
-        } else if (!newMake) {
-          // If make is cleared, also clear model
+        const currentModelValid = modelsForNewMake.some(model =>
+          model.toLowerCase() === filters.model.toLowerCase()
+        );
+        if (!currentModelValid) {
           newFilters.model = '';
         }
-
-        // Load models locally when make changes
-        if (newMake) {
-          handleFetchCarsModel(newMake);
-        } else {
-          setModels([]);
-        }
+      } else if (!newMake) {
+        // If make is cleared, also clear model
+        newFilters.model = '';
       }
-      return newFilters;
-    });
+
+      // Load models locally when make changes
+      if (newMake) {
+        handleFetchCarsModel(newMake);
+      } else {
+        setModels([]);
+      }
+    }
+
+    setFilters(newFilters);
     setApplyError('');
+
+    // Apply make/model filters instantly (without pressing Search)
+    if (newFilters.make || newFilters.model) {
+      applyFilters(newFilters);
+    } else {
+      setAppliedFilters({ make: '', model: '' });
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath !== '/cars') {
+        navigate('/cars', { replace: true });
+      }
+      handleFetchCarsWithPhotos();
+    }
   };
 
   const resetFilters = () => {
@@ -732,7 +770,7 @@ export const Cars: React.FC = () => {
                             <img
                               src={logoPath}
                               alt={filters.make}
-                              className={`${getLogoSizeClass(filters.make)} object-contain brightness-0 invert`}
+                              className={`${getLogoSizeClass(filters.make)} object-contain brightness-0 invert ${filters.make.toLowerCase() === 'porsche' ? 'ml-px' : ''}`}
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
@@ -777,7 +815,7 @@ export const Cars: React.FC = () => {
                                         <img
                                           src={logoPath}
                                           alt={make}
-                                          className={`${getLogoSizeClass(make)} object-contain`}
+                                          className={`${getLogoSizeClass(make)} object-contain ${make.toLowerCase() === 'porsche' ? 'ml-px' : ''}`}
                                           onError={(e) => {
                                             (e.target as HTMLImageElement).style.display = 'none';
                                           }}
@@ -938,35 +976,6 @@ export const Cars: React.FC = () => {
 
                   {/* Filter Sections */}
                   <div className="space-y-6">
-                    {/* Category Section */}
-                    <div className="border-b border-gray-200 pb-6">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.category.label')}</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { key: 'Any', label: t('filters.category.all') },
-                          { key: 'SUV', label: t('filters.category.suv') },
-                          { key: 'Sport', label: t('filters.category.sport') },
-                          { key: 'Lux', label: t('filters.category.luxury') }
-                        ].map((category) => {
-                          const value = category.key === 'Any' ? 'Any' : category.key;
-                          const isActive = sidebarFilters.category === value;
-
-                          return (
-                            <button
-                              key={category.key}
-                              onClick={() => handleSidebarFilterChange('category', value)}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                                ? 'bg-red-500 text-white shadow-md transform scale-105'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
-                                }`}
-                            >
-                              {category.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
                     {/* Price Range Section */}
                     <div className="border-b border-gray-200 pb-6">
                       <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('filters.price.label')}</h4>
@@ -1075,10 +1084,10 @@ export const Cars: React.FC = () => {
                       <div className="flex flex-wrap gap-2">
                         {[
                           { key: 'Any', label: t('filters.fuel.any'), value: undefined },
-                          { key: 'Benzina', label: t('filters.fuel.benzina'), value: 'petrol' },
-                          { key: 'Diesel', label: t('filters.fuel.diesel'), value: 'diesel' },
-                          { key: 'Hybrid', label: t('filters.fuel.hybrid'), value: 'hybrid' },
-                          { key: 'Electric', label: t('filters.fuel.electric'), value: 'electric' }
+                          { key: 'Benzina', label: t('filters.fuel.benzina'), value: 'Benzina' },
+                          { key: 'Diesel', label: t('filters.fuel.diesel'), value: 'Diesel' },
+                          { key: 'Hybrid', label: t('filters.fuel.hybrid'), value: 'Hybrid' },
+                          { key: 'Electric', label: t('filters.fuel.electric'), value: 'Electric' }
                         ].map((fuelType) => {
                           const isActive = sidebarFilters.fuelType === fuelType.value || fuelType.value === undefined && sidebarFilters.fuelType === 'Any';
 
@@ -1120,6 +1129,16 @@ export const Cars: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Apply Button */}
+                  <div className="mt-8">
+                    <button
+                      onClick={closeSidebarAndApply}
+                      className="w-full py-3 bg-theme-500 hover:bg-theme-600 text-white font-semibold rounded-lg transition-colors"
+                    >
+                      {t('filters.apply')}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </>
@@ -1128,6 +1147,66 @@ export const Cars: React.FC = () => {
 
         {/* Main Layout */}
         <div className="w-full mt-8">
+          {/* Sorting */}
+          <div className="mb-5 h-11 flex items-center justify-end">
+            <div className="flex items-center gap-2 dropdown-container w-full justify-end">
+              <label className="text-sm text-gray-600 font-medium">{t('carsPage.sortBy')}</label>
+              <div className="relative w-[50%] lg:w-[20%] max-w-[560px] min-w-0 flex-none">
+                {(() => {
+                  const sortOptions: Array<{ key: SortKey; label: string; icon: React.ReactNode }> = [
+                    { key: 'price-low', label: t('carsPage.sortPriceLow'), icon: <ArrowUp className="w-4 h-4 text-gray-500 flex-shrink-0" /> },
+                    { key: 'price-high', label: t('carsPage.sortPriceHigh'), icon: <ArrowDown className="w-4 h-4 text-gray-500 flex-shrink-0" /> },
+                    { key: 'year-new', label: t('carsPage.sortYearNew'), icon: <ArrowDown className="w-4 h-4 text-gray-500 flex-shrink-0" /> },
+                    { key: 'year-old', label: t('carsPage.sortYearOld'), icon: <ArrowUp className="w-4 h-4 text-gray-500 flex-shrink-0" /> },
+                  ];
+                  const selectedSort = sortOptions.find((option) => option.key === sortBy);
+
+                  return (
+                    <>
+                <div
+                  className="text-sm text-gray-900 bg-white border border-gray-300 rounded-xl px-4 py-2.5 cursor-pointer select-none"
+                  onClick={() => setShowSortDropdown((prev) => !prev)}
+                >
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <span className="truncate">{selectedSort ? selectedSort.label : t('carsPage.selectSort')}</span>
+                    {selectedSort ? selectedSort.icon : <ArrowUpDown className="w-4 h-4 text-gray-500 flex-shrink-0" />}
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {showSortDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[200]"
+                    >
+                      {sortOptions.map((option, index, arr) => (
+                        <div
+                          key={option.key}
+                          className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${index === 0 ? 'rounded-t-2xl' : ''} ${index === arr.length - 1 ? 'rounded-b-2xl' : ''} ${sortBy === option.key ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                          onClick={() => {
+                            setSortBy(option.key);
+                            setShowSortDropdown(false);
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-2 min-w-0">
+                            <span className="truncate">{option.label}</span>
+                            {option.icon}
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+
           {/* Loading State */}
           {loading ? (
             <div className="text-center py-16 px-4">
@@ -1137,7 +1216,7 @@ export const Cars: React.FC = () => {
           ) : (
             <>
               {/* Cars Grid */}
-              {cars.length > 0 ? (
+              {sortedCars.length > 0 ? (
                 <motion.div
                   ref={ref}
                   variants={staggerContainer}
@@ -1145,13 +1224,7 @@ export const Cars: React.FC = () => {
                   animate={isInView ? "animate" : "initial"}
                   className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
                 >
-                  {cars
-                    .filter((car) => {
-                      // Hide only cars that are hidden (Ascuns) - booked cars should still show
-                      const status = car.status?.toLowerCase() || '';
-                      return status !== 'ascuns' && status !== 'hidden';
-                    })
-                    .map((car, index) => (
+                  {sortedCars.map((car, index) => (
                       <CarCard key={car.id} car={car} index={index} />
                     ))}
                 </motion.div>

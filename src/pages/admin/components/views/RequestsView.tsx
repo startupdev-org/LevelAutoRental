@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Search,
@@ -26,6 +26,7 @@ import { supabase } from '../../../../lib/supabase';
 
 export const RequestsView: React.FC = () => {
     const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const carId = searchParams.get('carId');
     const { showSuccess, showError } = useNotification();
@@ -212,7 +213,7 @@ export const RequestsView: React.FC = () => {
                                 </button>
 
                                 <button
-                                    onClick={() => setShowAddRentalModal(true)}
+                                    onClick={() => navigate('/cars')}
                                     className="px-3 md:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-semibold rounded-lg hover:border-red-500/60 transition-all text-xs md:text-sm whitespace-nowrap flex items-center justify-center gap-2"
                                 >
                                     <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
