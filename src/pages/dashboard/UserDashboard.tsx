@@ -10,9 +10,8 @@ import { Header } from '../../components/layout/Header';
 import { CarsView } from './user-dashboard/cars/UserCarPage'
 import { ProfileSettingsTab } from './user-dashboard/profile-settings/ProfileSettingsTab';
 import { OverviewTab } from './user-dashboard/overview/UserOverview';
-import UserCalendarPage from './user-dashboard/calendar/UserCalendarPage';
 
-export type TabType = 'overview' | 'profile' | 'settings' | 'calendar' | 'cars';
+export type TabType = 'overview' | 'profile' | 'settings' | 'cars';
 
 export const UserDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -206,12 +205,6 @@ export const UserDashboard: React.FC = () => {
                   </div>
                 )}
 
-                {/* Calendar Tab */}
-                {activeTab === 'calendar' && (
-                  <div className="space-y-6">
-                    <UserCalendarPage />
-                  </div>
-                )}
               </div>
             </div>
           </div>

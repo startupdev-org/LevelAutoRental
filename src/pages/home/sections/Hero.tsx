@@ -105,6 +105,9 @@ export const Hero: React.FC = () => {
   // Get logo size class based on make
   const getLogoSizeClass = (make: string): string => {
     const makeLower = make.toLowerCase();
+    if (makeLower === 'porsche') {
+      return 'w-4 h-4';
+    }
     if (makeLower === 'audi' || makeLower === 'maserati' || makeLower === 'lincoln' || makeLower === 'porsche') {
       return 'w-6 h-6';
     }
@@ -331,7 +334,7 @@ export const Hero: React.FC = () => {
                   Level Auto Rental
                 </h1>
 
-                <p className="text-lg md:text-xl text-white max-w-2xl mx-auto leading-relaxed drop-shadow-md">
+                <p className="text-lg md:text-xl text-white max-w-2xl lg:max-w-none mx-auto leading-relaxed drop-shadow-md">
                   {t('hero.label')}
                   <span className="text-theme-500 font-medium block"> {t('hero.smallLabel')}</span>
                 </p>
@@ -424,7 +427,7 @@ export const Hero: React.FC = () => {
                         <img 
                           src={logoPath} 
                           alt={bookingForm.make}
-                          className={`${getLogoSizeClass(bookingForm.make)} object-contain ${isPorsche ? '-ml-0.5' : ''}`}
+                          className={`${getLogoSizeClass(bookingForm.make)} object-contain ${isPorsche ? 'ml-px' : ''}`}
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
@@ -467,7 +470,7 @@ export const Hero: React.FC = () => {
                                     <img 
                                       src={logoPath} 
                                       alt={make}
-                                      className={`${getLogoSizeClass(make)} object-contain ${make.toLowerCase() === 'porsche' ? '-ml-0.5' : ''}`}
+                                      className={`${getLogoSizeClass(make)} object-contain ${make.toLowerCase() === 'porsche' ? 'ml-px' : ''}`}
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}
@@ -737,7 +740,7 @@ export const Hero: React.FC = () => {
                         <img 
                           src={logoPath} 
                           alt={bookingForm.make}
-                          className={`${getLogoSizeClass(bookingForm.make)} object-contain ${isPorsche ? '-ml-0.5' : ''}`}
+                          className={`${getLogoSizeClass(bookingForm.make)} object-contain ${isPorsche ? 'ml-px' : ''}`}
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
@@ -782,7 +785,7 @@ export const Hero: React.FC = () => {
                                     <img 
                                       src={logoPath} 
                                       alt={make}
-                                      className={`${getLogoSizeClass(make)} object-contain ${make.toLowerCase() === 'porsche' ? '-ml-0.5' : ''}`}
+                                      className={`${getLogoSizeClass(make)} object-contain ${make.toLowerCase() === 'porsche' ? 'ml-px' : ''}`}
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}

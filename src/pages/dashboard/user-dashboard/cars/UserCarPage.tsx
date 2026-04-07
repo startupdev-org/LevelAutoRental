@@ -498,24 +498,30 @@ export const CarsView: React.FC = () => {
                 return `Liber de pe ${day} ${month}`;
             };
 
-            // Find the first available date using calendar logic (always starts from today)
-            const firstAvailableDate = findFirstAvailableDate();
-
-            // If first available date is today, show "Disponibil"
-            // Otherwise show the date
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const isAvailableToday = firstAvailableDate &&
-                formatDateLocal(firstAvailableDate) === formatDateLocal(today);
+            // Keep same availability label priority as Cars page cards:
+            // next available date (if bookings exist) -> available now
+            let availabilityText = '';
+            if (nextAvailableDate) {
+                const nextAvailDate = new Date(nextAvailableDate);
+                nextAvailDate.setHours(0, 0, 0, 0);
+                if (formatDateLocal(nextAvailDate) === formatDateLocal(today)) {
+                    availabilityText = t('car.availableNow');
+                } else {
+                    availabilityText = formatDateForDisplay(nextAvailDate);
+                }
+            } else {
+                const firstAvailableDate = findFirstAvailableDate();
+                const isAvailableToday = firstAvailableDate &&
+                    formatDateLocal(firstAvailableDate) === formatDateLocal(today);
 
-            const availabilityText = firstAvailableDate
-                ? (isAvailableToday
-                    ? 'Disponibil'
-                    : formatDateForDisplay(firstAvailableDate))
-                : (car.status === 'available' || car.status === 'Available' ? 'Disponibil' : car.status || '');
+                availabilityText = firstAvailableDate
+                    ? (isAvailableToday ? t('car.availableNow') : formatDateForDisplay(firstAvailableDate))
+                    : t('car.availableNow');
+            }
 
-            // Don't show badge if it says "Disponibil" (only show when there's a specific date)
-            if (!availabilityText || availabilityText === 'Disponibil') return null;
+            if (!availabilityText) return null;
 
             return (
                 <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white rounded-xl px-3 py-1.5 text-xs font-normal shadow-sm flex items-center gap-1.5">

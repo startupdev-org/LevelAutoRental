@@ -202,25 +202,6 @@ export const UserOrdersSection: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Promotion Card */}
-                    <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-md border border-white/20 transition-all duration-500 min-h-[140px] flex items-center justify-center">
-                        <div className="text-center p-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-3 border border-red-500/30">
-                                <span className="text-xl">🎁</span>
-                            </div>
-                            <h4 className="text-white font-medium mb-2 text-base">Ofertă Specială</h4>
-                            <p className="text-gray-300 text-xs mb-3 max-w-xs">
-                                Reduceri până la 20% pentru închirieri de weekend
-                            </p>
-                            <button
-                                onClick={() => window.location.href = '/cars'}
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-3 py-1.5 rounded-md transition-all duration-300 text-white text-xs font-medium"
-                            >
-                                <span>Află mai mult</span>
-                                <ArrowRight size={12} />
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
