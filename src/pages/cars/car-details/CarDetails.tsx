@@ -1267,6 +1267,7 @@ export const CarDetails: React.FC = () => {
                                             }
                                         }}
                                         onClick={() => {
+                                            if (window.innerWidth >= 768) return;
                                             const index = gallery.findIndex(img => img === selectedImage);
                                             setCurrentImageIndex(index >= 0 ? index : 0);
                                             setShowImageViewer(true);
@@ -1295,9 +1296,10 @@ export const CarDetails: React.FC = () => {
                                         </div>
 
                                         {/* Expand Icon */}
-                                        <div className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer z-10"
+                                        <div className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer z-10 md:hidden"
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                if (window.innerWidth >= 768) return;
                                                 const index = gallery.findIndex(img => img === selectedImage);
                                                 setCurrentImageIndex(index >= 0 ? index : 0);
                                                 setShowImageViewer(true);
@@ -3506,9 +3508,9 @@ export const CarDetails: React.FC = () => {
                                 }}
                             >
                                 <div className="flex gap-6 min-w-max py-4">
-                                    {recommendedCars.map((recommendedCar, index) => (
+                                        {recommendedCars.map((recommendedCar) => (
                                         <div key={recommendedCar.id} className="w-[340px] sm:w-[360px] md:w-80 flex-shrink-0">
-                                            <CarCard car={recommendedCar} index={index} />
+                                            <CarCard car={recommendedCar} />
                                         </div>
                                     ))}
                                 </div>

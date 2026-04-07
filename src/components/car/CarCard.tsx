@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { fetchImagesByCarName } from '../../lib/db/cars/cars';
 import { supabase } from '../../lib/supabase';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
-import { formatDateLocal } from '../../utils/date';
 import { NoImagePlaceholder } from './NoImage';
 import { getCarName } from '../../utils/car/car';
 import { formatPrice, getSelectedCurrency } from '../../utils/currency';
@@ -22,10 +21,9 @@ import { convertPrice } from '../../utils/car/pricing';
 
 interface CarCardProps {
     car: Car;
-    index: number;
 }
 
-export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index }) => {
+export const CarCard: React.FC<CarCardProps> = React.memo(({ car }) => {
     const { t } = useTranslation();
     const { selectedCurrency, eur, usd } = useExchangeRates();
     const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -495,7 +493,46 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index 
 
                     {/* Availability Badge */}
                     {(() => {
-                        // Helper function to format date as YYYY-MM-DD (local timezone)
+                        const parseDateSafely = (rawDate: string | undefined | null): Date | null => {
+                            if (!rawDate) return null;
+                            const normalized = rawDate.includes('T')
+                                ? rawDate.split('T')[0]
+                                : rawDate.split(' ')[0];
+
+                            // yyyy-mm-dd
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+                                const parsed = new Date(`${normalized}T00:00:00`);
+                                return Number.isNaN(parsed.getTime()) ? null : parsed;
+                            }
+
+                            // dd.mm.yyyy
+                            const dotMatch = normalized.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+                            if (dotMatch) {
+                                const [, dd, mm, yyyy] = dotMatch;
+                                const parsed = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+                                return Number.isNaN(parsed.getTime()) ? null : parsed;
+                            }
+
+                            // dd/mm/yyyy
+                            const slashMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                            if (slashMatch) {
+                                const [, dd, mm, yyyy] = slashMatch;
+                                const parsed = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+                                return Number.isNaN(parsed.getTime()) ? null : parsed;
+                            }
+
+                            const fallback = new Date(rawDate);
+                            return Number.isNaN(fallback.getTime()) ? null : fallback;
+                        };
+
+                        /** YYYY-MM-DD in local TZ — must match CarDetails calendar / blocking logic (not utils `formatDateLocal`, which is DD.MM.YYYY). */
+                        const formatDateKey = (date: Date): string => {
+                            const y = date.getFullYear();
+                            const m = String(date.getMonth() + 1).padStart(2, '0');
+                            const d = String(date.getDate()).padStart(2, '0');
+                            return `${y}-${m}-${d}`;
+                        };
+
                         // Check if a date/time is in a maintenance period (12 hours after rental ends)
                         const isInMaintenancePeriod = (checkDate: Date): boolean => {
                             if (carRentalsForCalendar.length === 0) return false;
@@ -503,11 +540,8 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index 
                             return carRentalsForCalendar.some(rental => {
                                 if (!rental.end_date || !rental.end_time) return false;
 
-                                // Parse rental end date and time
-                                const endDateStr = rental.end_date.includes('T')
-                                    ? rental.end_date.split('T')[0]
-                                    : rental.end_date.split(' ')[0];
-                                const endDate = new Date(endDateStr + 'T00:00:00');
+                                const endDate = parseDateSafely(rental.end_date);
+                                if (!endDate) return false;
 
                                 const [endHours, endMinutes] = rental.end_time.split(':').map(Number);
                                 endDate.setHours(endHours || 17, endMinutes || 0, 0, 0);
@@ -527,7 +561,7 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index 
                                 // If maintenance spans multiple days, check if checkDate is within range
                                 if (endDateOnly.getTime() === maintenanceEndOnly.getTime()) {
                                     // Same day - check if checkDate is that day
-                                    return formatDateLocal(checkDateOnly) === formatDateLocal(endDateOnly);
+                                    return formatDateKey(checkDateOnly) === formatDateKey(endDateOnly);
                                 } else {
                                     // Spans multiple days
                                     return checkDateOnly >= endDateOnly && checkDateOnly <= maintenanceEndOnly;
@@ -559,16 +593,10 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index 
                                 const result = approvedBorrowRequests.some(request => {
                                     if (!request.start_date || !request.end_date) return false;
 
-                                    const startDateStr = request.start_date.includes('T')
-                                        ? request.start_date.split('T')[0]
-                                        : request.start_date.split(' ')[0];
-                                    const startDate = new Date(startDateStr + 'T00:00:00');
+                                    const startDate = parseDateSafely(request.start_date);
+                                    const endDate = parseDateSafely(request.end_date);
+                                    if (!startDate || !endDate) return false;
                                     startDate.setHours(0, 0, 0, 0);
-
-                                    const endDateStr = request.end_date.includes('T')
-                                        ? request.end_date.split('T')[0]
-                                        : request.end_date.split(' ')[0];
-                                    const endDate = new Date(endDateStr + 'T23:59:59');
                                     endDate.setHours(23, 59, 59, 999);
 
                                     // Only show if the booking is current or future (end date is today or later)
@@ -584,16 +612,10 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index 
                                 const result = carRentalsForCalendar.some(rental => {
                                     if (!rental.start_date || !rental.end_date) return false;
 
-                                    const startDateStr = rental.start_date.includes('T')
-                                        ? rental.start_date.split('T')[0]
-                                        : rental.start_date.split(' ')[0];
-                                    const startDate = new Date(startDateStr + 'T00:00:00');
+                                    const startDate = parseDateSafely(rental.start_date);
+                                    const endDate = parseDateSafely(rental.end_date);
+                                    if (!startDate || !endDate) return false;
                                     startDate.setHours(0, 0, 0, 0);
-
-                                    const endDateStr = rental.end_date.includes('T')
-                                        ? rental.end_date.split('T')[0]
-                                        : rental.end_date.split(' ')[0];
-                                    const endDate = new Date(endDateStr + 'T23:59:59');
                                     endDate.setHours(23, 59, 59, 999);
 
                                     // Only show if the rental is current or future (end date is today or later)
@@ -619,25 +641,54 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car, index: _index 
                         // Otherwise show the date
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
+                        const todayString = formatDateKey(today);
                         if (isAvailabilityLoading) return null;
 
-                        // Priority: Use nextAvailableDate if it exists (from actual bookings), otherwise use firstAvailableDate logic
-                        let availabilityText = '';
+                        // Match CarDetails behavior:
+                        // scan from today and find first unblocked date, then show
+                        // "available now" if it's today, otherwise "available from <date>".
+                        const findFirstAvailableDate = (): Date | null => {
+                            let checkDate = new Date(today);
 
-                        if (nextAvailableDate) {
-                            // We have actual bookings - show when the car becomes available
-                            const nextAvailDate = new Date(nextAvailableDate);
-                            nextAvailDate.setHours(0, 0, 0, 0);
+                            // Check up to 60 days ahead
+                            for (let i = 0; i < 60; i++) {
+                                const checkDateStr = formatDateKey(checkDate);
 
-                            if (formatDateLocal(nextAvailDate) === formatDateLocal(today)) {
-                                availabilityText = t('car.availableNow');
-                            } else {
-                                availabilityText = formatDateForDisplay(nextAvailDate);
+                                const isPast = checkDateStr < todayString;
+                                const isBeforeAvailable = nextAvailableDate
+                                    ? (() => {
+                                        const nextAvailDate = new Date(nextAvailableDate);
+                                        nextAvailDate.setHours(0, 0, 0, 0);
+                                        const dayDate = new Date(`${checkDateStr}T00:00:00`);
+                                        dayDate.setHours(0, 0, 0, 0);
+                                        // Only block if nextAvailableDate is today/past and day is before it
+                                        return nextAvailDate <= today && dayDate < nextAvailDate;
+                                    })()
+                                    : false;
+
+                                const isInActualRequest = isDateInActualApprovedRequest(checkDateStr);
+
+                                if (!isPast && !isBeforeAvailable && !isInActualRequest) {
+                                    return new Date(checkDate);
+                                }
+
+                                checkDate.setDate(checkDate.getDate() + 1);
                             }
-                        } else {
-                            // No current bookings - show "available now" message
-                            availabilityText = t('car.availableNow');
-                        }
+
+                            return null;
+                        };
+
+                        const firstAvailableDate = findFirstAvailableDate();
+                        const isAvailableToday = firstAvailableDate &&
+                            formatDateKey(firstAvailableDate) === todayString;
+
+                        const availabilityText = firstAvailableDate
+                            ? (isAvailableToday
+                                ? t('car.availableNow')
+                                : formatDateForDisplay(firstAvailableDate))
+                            : (carWithImages.status === 'available' || carWithImages.status === 'Available'
+                                ? t('car.availableNow')
+                                : carWithImages.status || '');
 
                         // Show badge for availability information, but not for empty text
                         if (!availabilityText) return null;

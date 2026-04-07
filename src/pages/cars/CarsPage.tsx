@@ -1151,7 +1151,7 @@ export const Cars: React.FC = () => {
           <div className="mb-5 h-11 flex items-center justify-end">
             <div className="flex items-center gap-2 dropdown-container w-full justify-end">
               <label className="text-sm text-gray-600 font-medium">{t('carsPage.sortBy')}</label>
-              <div className="relative w-[50%] lg:w-[20%] max-w-[560px] min-w-0 flex-none">
+              <div className="relative w-[55%] lg:w-[20%] max-w-[560px] min-w-0 flex-none">
                 {(() => {
                   const sortOptions: Array<{ key: SortKey; label: string; icon: React.ReactNode }> = [
                     { key: 'price-low', label: t('carsPage.sortPriceLow'), icon: <ArrowUp className="w-4 h-4 text-gray-500 flex-shrink-0" /> },
@@ -1224,8 +1224,8 @@ export const Cars: React.FC = () => {
                   animate={isInView ? "animate" : "initial"}
                   className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
                 >
-                  {sortedCars.map((car, index) => (
-                      <CarCard key={car.id} car={car} index={index} />
+                  {sortedCars.map((car) => (
+                      <CarCard key={car.id} car={car} />
                     ))}
                 </motion.div>
               ) : (
@@ -1308,9 +1308,9 @@ export const Cars: React.FC = () => {
                     }}
                   >
                     <div className="flex gap-6 min-w-max py-4">
-                      {recommendedCars.map((recommendedCar, index) => (
+                      {recommendedCars.map((recommendedCar) => (
                         <div key={recommendedCar.id} className="w-[340px] sm:w-[360px] md:w-80 flex-shrink-0">
-                          <CarCard car={recommendedCar} index={index} />
+                          <CarCard car={recommendedCar} />
                         </div>
                       ))}
                     </div>
