@@ -13,6 +13,7 @@
         "profile": "Profile",
         "settings": "Settings",
         "admin": "Admin",
+        "signIn": "Sign In",
         "signOut": "Sign Out"
     },
     "languages": {
