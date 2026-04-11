@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { fadeInUp, staggerContainer } from '../../utils/animations';
 
 import { hiddenPaths } from '../../data';
+import { OFFICE_ADDRESS, OFFICE_GOOGLE_MAPS_URL } from '../../constants';
 
 // TikTok Icon Component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -63,7 +64,7 @@ export const Footer: React.FC = () => {
   const contactInfo = [
     { icon: Phone, text: '+373 62 000 112', href: 'tel:+37362000112' },
     { icon: Mail, text: 'level.autorent@yahoo.com', href: 'mailto:level.autorent@yahoo.com' },
-    { icon: MapPin, text: 'Chisinau, Moldova', href: '#' }
+    { icon: MapPin, text: OFFICE_ADDRESS, href: OFFICE_GOOGLE_MAPS_URL }
   ];
 
   return (
@@ -108,6 +109,7 @@ export const Footer: React.FC = () => {
                   <motion.a
                     key={index}
                     href={contact.href}
+                    {...(contact.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     variants={fadeInUp}
                     className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors duration-500 group"
                   >

@@ -179,7 +179,7 @@
                         "refuel": "Do I need to refuel the car before returning it?"
                     },
                     "answers": {
-                        "pickup-location": "• **Main Office**: Central Chisinau location\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
+                        "pickup-location": "• **Main Office**: Chișinău, Muncești 271 A\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
                         "different-return": "• **One-way Rentals**: Available between major cities\n• **Additional Fee**: €50-€200 depending on distance\n• **Advance Notice**: Book 48 hours in advance\n• **Restrictions**: Some locations may not allow returns",
                         "late-return": "• **Grace Period**: 30 minutes free\n• **Late Fees**: €25 per hour after grace period\n• **Communication**: Contact us if you'll be late\n• **Flexibility**: We try to accommodate delays when possible",
                         "refuel": "• **Same Level**: Return with same fuel as pickup\n• **Refueling Service**: €50 + fuel cost if needed\n• **Nearby Stations**: Maps provided for convenience\n• **Receipt**: Keep fuel receipts for verification"
@@ -549,7 +549,7 @@
                         "refuel": "Do I need to refuel the car before returning it?"
                     },
                     "answers": {
-                        "pickup-location": "• **Main Office**: Central Chisinau location\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
+                        "pickup-location": "• **Main Office**: Chișinău, Muncești 271 A\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
                         "different-return": "• **One-way Rentals**: Available between major cities\n• **Additional Fee**: €50-€200 depending on distance\n• **Advance Notice**: Book 48 hours in advance\n• **Restrictions**: Some locations may not allow returns",
                         "late-return": "• **Grace Period**: 30 minutes free\n• **Late Fees**: €25 per hour after grace period\n• **Communication**: Contact us if you'll be late\n• **Flexibility**: We try to accommodate delays when possible",
                         "refuel": "• **Same Level**: Return with same fuel as pickup\n• **Refueling Service**: €50 + fuel cost if needed\n• **Nearby Stations**: Maps provided for convenience\n• **Receipt**: Keep fuel receipts for verification"

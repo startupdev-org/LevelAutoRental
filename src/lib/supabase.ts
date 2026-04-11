@@ -23,8 +23,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Create and export Supabase Admin client
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey!);
+// Admin client: no persisted session (avoids second GoTrueClient on same storage key as `supabase`)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey!, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
 
 // Database types (you can generate these later with Supabase CLI)
 export type Database = {

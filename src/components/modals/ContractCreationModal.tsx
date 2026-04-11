@@ -529,7 +529,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                                             type="text"
                                             value={pickupLocation}
                                             onChange={(e) => setPickupLocation(e.target.value)}
-                                            placeholder="Chișinău, str. Mircea cel Bătrân 13/1"
+                                            placeholder="Chișinău, Muncești 271 A"
                                             className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                                         />
                                     </div>
@@ -541,7 +541,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
                                             type="text"
                                             value={returnLocation}
                                             onChange={(e) => setReturnLocation(e.target.value)}
-                                            placeholder="Chișinău, str. Mircea cel Bătrân 13/1"
+                                            placeholder="Chișinău, Muncești 271 A"
                                             className="w-full px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                                         />
                                     </div>
