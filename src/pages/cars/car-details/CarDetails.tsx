@@ -1286,8 +1286,9 @@ export const CarDetails: React.FC = () => {
                                                         width={1200}
                                                         height={800}
                                                         loading={index === 0 ? "eager" : "lazy"}
-                                                        // @ts-ignore - fetchPriority is a valid HTML attribute
-                                                        fetchPriority={index === 0 ? "high" : "auto"}
+                                                        {...({
+                                                            fetchpriority: index === 0 ? 'high' : 'auto',
+                                                        } as React.ImgHTMLAttributes<HTMLImageElement>)}
                                                         className="w-full h-full object-cover cursor-pointer select-none"
                                                         draggable={false}
                                                     />

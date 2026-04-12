@@ -381,7 +381,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         : firstName || lastName
           ? `${firstName}${lastName}`
           : (email ? email.split('@')[0] : '')
-          || `User ${request.user_id.slice(0, 8)}`;
+          || (request.user_id ? `User ${request.user_id.slice(0, 8)}` : 'Guest');
 
       return {
         id: request.id,
@@ -397,7 +397,7 @@ export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
         returnTime: request.end_time || (request.end_date.includes(' ') ? request.end_date.split(' ')[1] : request.end_time),
         status: request.status,
         total_amount: '0',
-        amount: 0, // Requests don't have amounts yet
+        amount: 0, 
         createdAt: request.created_at,
         carId: request.car_id,
         userId: request.user_id,

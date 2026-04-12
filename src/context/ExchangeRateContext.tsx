@@ -82,9 +82,36 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         const data = await response.json();
 
-        // Handle API response format
-        const mdlToEur = data.rates.EUR; // 1 MDL → EUR
-        const mdlToUsd = data.rates.USD; // 1 MDL → USD
+        // v6 primary: base MDL → conversion_rates; backup v4: base EUR → rates
+        const rates =
+          data.conversion_rates && typeof data.conversion_rates === 'object'
+            ? data.conversion_rates
+            : data.rates && typeof data.rates === 'object'
+              ? data.rates
+              : null;
+
+        let mdlToEur: number;
+        let mdlToUsd: number;
+
+        if (!rates) {
+          throw new Error('Unexpected exchange rate payload');
+        }
+
+        if (data.base_code === 'MDL' || data.base === 'MDL') {
+          mdlToEur = rates.EUR;
+          mdlToUsd = rates.USD;
+        } else if (data.base === 'EUR' && rates.MDL != null) {
+          const mdlPerEur = Number(rates.MDL);
+          const usdPerEur = Number(rates.USD);
+          if (!(mdlPerEur > 0) || !(usdPerEur > 0)) {
+            throw new Error('Invalid EUR-based rate payload');
+          }
+          mdlToEur = 1 / mdlPerEur;
+          mdlToUsd = (1 / mdlPerEur) * usdPerEur;
+        } else {
+          mdlToEur = rates.EUR;
+          mdlToUsd = rates.USD;
+        }
 
         if (mdlToEur > 0 && mdlToUsd > 0) {
           setEur(mdlToEur);

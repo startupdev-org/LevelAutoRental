@@ -56,11 +56,11 @@ export async function createUser(user: User) {
             'create_user_and_link_borrow_requests',
             {
                 p_id: id,
-                p_first_name: first_name,
-                p_last_name: last_name,
-                p_email: email,
-                p_phone_number: phone_number,
-                p_role: role
+                p_first_name: first_name ?? '',
+                p_last_name: last_name ?? '',
+                p_email: email ?? '',
+                p_phone_number: phone_number ?? '',
+                p_role: role ?? 'USER',
             }
         );
 
@@ -69,7 +69,8 @@ export async function createUser(user: User) {
             return { data: null, error };
         }
 
-        return { data, error: null };
+        const row = Array.isArray(data) ? data[0] : data;
+        return { data: row ?? null, error: null };
 
     } catch (err) {
         console.error('Unexpected error while creating user:', err);
