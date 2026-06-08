@@ -65,14 +65,17 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
 
     // Parse options from request
     const parseOptions = (options: any) => {
-        const defaultOptions = {
+        const defaultOptions: OptionsState = {
+            pickupAtAddress: false,
+            returnAtAddress: false,
             unlimitedKm: false,
+            speedLimitIncrease: false,
             personalDriver: false,
             priorityService: false,
             childSeat: false,
             simCard: false,
+            airportDelivery: false,
             roadsideAssistance: false,
-            airportDelivery: false
         };
 
         if (!options) return defaultOptions;
@@ -526,39 +529,6 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                             <span className="text-sm sm:text-base">Servicii Adiționale</span>
                         </h3>
                         <div className="space-y-2">
-                            {/* Unlimited Km */}
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
-                                <div className="flex items-center gap-3">
-                                    <div className="relative flex-shrink-0">
-                                        <input
-                                            type="checkbox"
-                                            checked={options.unlimitedKm}
-                                            onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-white/5 hover:border-red-400'
-                                            }`}>
-                                            <svg
-                                                className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
-                                                    }`}
-                                                fill="currentColor"
-                                                viewBox="0 0 20 20"
-                                            >
-                                                <path
-                                                    fillRule="evenodd"
-                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                    clipRule="evenodd"
-                                                />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <span className="text-white text-xs sm:text-sm">Kilometraj nelimitat</span>
-                                </div>
-                                <span className="text-xs sm:text-sm font-semibold text-emerald-400">+50%</span>
-                            </label>
-
                             {/* Personal Driver */}
                             <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-200 group">
                                 <div className="flex items-center gap-3">
@@ -831,7 +801,7 @@ export const EditRequestModal: React.FC<EditRequestModalProps> = ({ isOpen, requ
                                             )}
                                             <div className="flex justify-between pt-2 border-t border-white/10">
                                                 <span className="text-white font-medium">Costuri suplimentare</span>
-                                                {formatPrice(500 * (priceSummary.additionalCosts), 'MDL', i18n.language)}
+                                                <span className="text-white font-medium">{formatPrice(priceSummary.additionalCosts, 'MDL', i18n.language)}</span>
                                             </div>
                                         </div>
                                     </div>

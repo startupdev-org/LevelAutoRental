@@ -558,7 +558,9 @@
         "transmissionLabel": "Transmisie",
         "fuelLabel": "Combustibil",
         "bodyType": "Caroserie",
-        "mileageLimit": "200km/zi",
+        "mileageLimit": "KM nelimitat",
+        "mileageLimitMobile": "Fără limită de KM",
+        "mileageLimitNarrow": "KM Nelimitat",
         "seeCar": "Vezi mașina",
         "seeMorePhotos": "Vezi încă {{count}} fotografii",
         "seeMorePhotos_one": "Vezi încă o fotografie",
@@ -580,6 +582,10 @@
         "available": "Disponibil",
         "availableNow": "Mașină disponibilă",
         "availableFrom": "Liber de pe {{date}}",
+        "statusBooked": "Rezervat",
+        "statusBorrowed": "Împrumutată",
+        "statusMaintenance": "În mentenanță",
+        "statusUnavailable": "Indisponibil",
         "reviewsLabel": "recenzii",
         "chooseDates": "Alegeți datele",
         "rentalCost": "Costul închirierii",
@@ -651,7 +657,6 @@
         "extra": "Suplimentar",
         "delivery": "Livrare",
         "airportDelivery": "Livrare aeroport",
-        "unlimitedMileage": "Kilometraj nelimitat",
         "noSpeedLimit": "Fără limită de viteză",
         "personalDriver": "Șofer personal",
         "priorityService": "Priority Service",
@@ -697,10 +702,6 @@
     "rentalOptions": {
         "sectionLabel": "Servicii Suplimentare",
         "sectionTitle": "Opțiuni de închiriere",
-        "unlimitedMileage": {
-            "title": "Kilometraj nelimitat",
-            "description": "Prețul închirierii va fi cu 50% mai mare"
-        },
         "personalDriver": {
             "title": "Șofer personal",
             "price": "de la 800 MDL pe zi"
@@ -745,8 +746,8 @@
             "value": "cel puțin 3 ani"
         },
         "mileage": {
-            "label": "km/zi",
-            "value": "până la 200km"
+            "label": "Kilometraj",
+            "value": "Nelimitat"
         },
         "moreDetails": "Mai Multe Detalii",
         "details": {
@@ -764,7 +765,7 @@
             },
             "mileageLimit": {
                 "title": "Limita de kilometraj",
-                "description": "În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat."
+                "description": "În cazul închirierii pentru mai multe zile, limita se calculează în total. Depășirea limitei se achită separat, conform tarifului comunicat la închiriere."
             },
             "secondDriver": {
                 "title": "Al doilea șofer",

@@ -572,7 +572,9 @@
         "transmissionLabel": "Трансмиссия",
         "fuelLabel": "Топливо",
         "bodyType": "Кузов",
-        "mileageLimit": "200км/день",
+        "mileageLimit": "КМ без ограничений",
+        "mileageLimitMobile": "Без лимита км",
+        "mileageLimitNarrow": "КМ без ограничений",
         "seeCar": "Посмотреть автомобиль",
         "seeMorePhotos": "Посмотреть еще {{count}} фотографий",
         "noImage": "Нет Изображения",
@@ -591,6 +593,10 @@
         "available": "Доступен",
         "availableNow": "Машина доступна",
         "availableFrom": "Свободен с {{date}}",
+        "statusBooked": "Забронирован",
+        "statusBorrowed": "Занят",
+        "statusMaintenance": "На обслуживании",
+        "statusUnavailable": "Недоступен",
         "reviewsLabel": "отзывов",
         "chooseDates": "Выберите даты",
         "rentalCost": "Стоимость аренды",
@@ -673,7 +679,6 @@
         "pickup": "Получение",
         "return": "Возврат",
         "additionalOptions": "Дополнительные опции",
-        "unlimitedMileage": "Неограниченный пробег",
         "noSpeedLimit": "Без ограничения скорости",
         "personalDriver": "Личный водитель",
         "priorityService": "Приоритетное обслуживание",
@@ -720,10 +725,6 @@
     "rentalOptions": {
         "sectionLabel": "Дополнительные Услуги",
         "sectionTitle": "Варианты Аренды",
-        "unlimitedMileage": {
-            "title": "Неограниченный Пробег",
-            "description": "Стоимость аренды будет на 50% выше"
-        },
         "personalDriver": {
             "title": "Личный Водитель",
             "price": "от 800 MDL в день"
@@ -768,8 +769,8 @@
             "value": "минимум 3 года"
         },
         "mileage": {
-            "label": "км/день",
-            "value": "до 200км"
+            "label": "Пробег",
+            "value": "Без ограничений"
         },
         "moreDetails": "Подробнее",
         "details": {
@@ -787,7 +788,7 @@
             },
             "mileageLimit": {
                 "title": "Лимит пробега",
-                "description": "В случае аренды на несколько дней лимит рассчитывается в общем. В случае превышения лимита и при отсутствии активированной опции «Неограниченный пробег», превышение оплачивается отдельно."
+                "description": "В случае аренды на несколько дней лимит рассчитывается в общем. Превышение лимита оплачивается отдельно по тарифу, сообщённому при аренде."
             },
             "secondDriver": {
                 "title": "Второй водитель",

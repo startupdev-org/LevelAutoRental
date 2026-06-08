@@ -1,4 +1,4 @@
-import { Car, Gauge, Zap, UserRound, Star, Baby, Wifi, Wrench, MapPin } from 'lucide-react';
+import { UserRound, Star, Baby, Wifi, Wrench, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const RentalOptionsSection: React.FC = () => {
@@ -19,19 +19,6 @@ export const RentalOptionsSection: React.FC = () => {
 
                 {/* Options Grid */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Unlimited KM */}
-                    <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
-                        <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-b from-red-500 to-red-600">
-                                <Gauge className="w-5 h-5 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-gray-900 mb-1.5 text-sm">{t('rentalOptions.unlimitedMileage.title')}</h4>
-                                <p className="text-red-600 font-medium text-xs">{t('rentalOptions.unlimitedMileage.description')}</p>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Personal Driver */}
                     <div className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-all">
                         <div className="flex items-start gap-4">

@@ -573,7 +573,9 @@
         "transmissionLabel": "Transmission",
         "fuelLabel": "Fuel",
         "bodyType": "Body Type",
-        "mileageLimit": "200km/day",
+        "mileageLimit": "Unlimited km",
+        "mileageLimitMobile": "No km limit",
+        "mileageLimitNarrow": "Unlimited km",
         "seeCar": "See car",
         "seeMorePhotos": "See {{count}} more photos",
         "noImage": "No Image",
@@ -592,6 +594,10 @@
         "available": "Available",
         "availableNow": "Car available",
         "availableFrom": "Available from {{date}}",
+        "statusBooked": "Booked",
+        "statusBorrowed": "Borrowed",
+        "statusMaintenance": "In service",
+        "statusUnavailable": "Unavailable",
         "reviewsLabel": "reviews",
         "chooseDates": "Choose dates",
         "rentalCost": "Rental Cost",
@@ -680,7 +686,6 @@
         "pickup": "Pickup",
         "return": "Return",
         "additionalOptions": "Additional options",
-        "unlimitedMileage": "Unlimited mileage",
         "noSpeedLimit": "No speed limit",
         "personalDriver": "Personal driver",
         "priorityService": "Priority Service",
@@ -727,10 +732,6 @@
     "rentalOptions": {
         "sectionLabel": "Additional Services",
         "sectionTitle": "Rental Options",
-        "unlimitedMileage": {
-            "title": "Unlimited mileage",
-            "description": "Rental price will be 50% higher"
-        },
         "personalDriver": {
             "title": "Personal driver",
             "price": "from 800 MDL per day"
@@ -775,8 +776,8 @@
             "value": "at least 3 years"
         },
         "mileage": {
-            "label": "km/day",
-            "value": "up to 200km"
+            "label": "Mileage",
+            "value": "Unlimited"
         },
         "moreDetails": "More Details",
         "details": {
@@ -794,7 +795,7 @@
             },
             "mileageLimit": {
                 "title": "Mileage limit",
-                "description": "In case of rental for several days, the limit is calculated in total. In case of exceeding the limit and in the absence of the activated 'Unlimited mileage' option, the excess is paid separately."
+                "description": "In case of rental for several days, the limit is calculated in total. Exceeding the limit is charged separately according to the rate communicated at rental."
             },
             "secondDriver": {
                 "title": "Second driver",

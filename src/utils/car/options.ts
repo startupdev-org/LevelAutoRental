@@ -1,10 +1,35 @@
 import { BorrowRequestDTO } from "../../types";
+import type { OptionsState } from "../../constants/rentalOptions";
 
 export type RequestOption = {
     label: string;
     price: string;
     category: string;
 };
+
+/** Normalizes stored borrow/rental `options` JSON into `OptionsState` (defaults false). */
+export function parseOptionsStateFromBorrow(raw: unknown): OptionsState {
+    let parsed: Record<string, unknown> = {};
+    if (raw != null && raw !== "") {
+        try {
+            parsed = typeof raw === "string" ? JSON.parse(raw as string) : (raw as Record<string, unknown>);
+        } catch {
+            parsed = {};
+        }
+    }
+    return {
+        pickupAtAddress: !!parsed.pickupAtAddress,
+        returnAtAddress: !!parsed.returnAtAddress,
+        unlimitedKm: !!parsed.unlimitedKm,
+        speedLimitIncrease: !!parsed.speedLimitIncrease,
+        personalDriver: !!parsed.personalDriver,
+        priorityService: !!parsed.priorityService,
+        childSeat: !!parsed.childSeat,
+        simCard: !!parsed.simCard,
+        airportDelivery: !!parsed.airportDelivery,
+        roadsideAssistance: !!parsed.roadsideAssistance,
+    };
+}
 
 export const parseRequestOptions = (request: BorrowRequestDTO): RequestOption[] => {
     console.log('the request is: ', request)
@@ -43,7 +68,7 @@ export const parseRequestOptions = (request: BorrowRequestDTO): RequestOption[] 
 
     // Limits
     if (parsedOptions.unlimitedKm) {
-        selectedOptions.push({ label: 'Kilometraj nelimitat', price: '+50%', category: 'limits' });
+        selectedOptions.push({ label: "Kilometraj nelimitat", price: "+50%", category: "limits" });
     }
     if (parsedOptions.speedLimitIncrease) {
         selectedOptions.push({ label: 'Creșterea limitei de viteză', price: '+20%', category: 'limits' });

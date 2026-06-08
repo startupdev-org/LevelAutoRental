@@ -21,7 +21,7 @@ import { RentalDTO, Car } from '../../../../types';
 import { formatDateLocal, getDateDiffInDays } from '../../../../utils/date';
 import { formatTime } from '../../../../utils/time';
 import { formatPrice } from '../../../../utils/currency';
-import { parseRequestOptions } from '../../../../utils/car/options';
+import { parseOptionsStateFromBorrow } from '../../../../utils/car/options';
 import { calculatePriceSummary } from '../../../../utils/car/pricing';
 import { getCarName } from '../../../../utils/car/car';
 import i18n from '../../../../i18n/i18n';
@@ -59,7 +59,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
     const rentalDays = getDateDiffInDays(order.start_date, order.end_date);
 
-    const options = parseRequestOptions(order.options);
+    const optionFlags = parseOptionsStateFromBorrow(order.options);
 
     // Calculate price summary using the same function as RequestDetailsView
     const priceSummary = calculatePriceSummary(
@@ -71,7 +71,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             start_time: order.start_time,
             end_time: order.end_time,
         },
-        options
+        optionFlags
     );
 
 
@@ -226,7 +226,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                     <div className="pt-3 border-t border-white/10">
                                         <h4 className="text-sm font-bold text-white mb-3">Servicii Adiționale</h4>
                                         <div className="space-y-2 text-sm">
-                                            {options.unlimitedKm && (
+                                            {optionFlags.unlimitedKm && (
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Kilometraj nelimitat</span>
                                                     <span className="text-white font-medium">
@@ -234,7 +234,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     </span>
                                                 </div>
                                             )}
-                                            {options.personalDriver && (
+                                            {optionFlags.personalDriver && (
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Șofer personal</span>
                                                     <span className="text-white font-medium">
@@ -242,7 +242,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     </span>
                                                 </div>
                                             )}
-                                            {options.priorityService && (
+                                            {optionFlags.priorityService && (
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Priority Service</span>
                                                     <span className="text-white font-medium">
@@ -250,7 +250,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     </span>
                                                 </div>
                                             )}
-                                            {options.childSeat && (
+                                            {optionFlags.childSeat && (
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Scaun auto pentru copii</span>
                                                     <span className="text-white font-medium">
@@ -258,7 +258,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     </span>
                                                 </div>
                                             )}
-                                            {options.simCard && (
+                                            {optionFlags.simCard && (
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Cartelă SIM cu internet</span>
                                                     <span className="text-white font-medium">
@@ -266,7 +266,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                                     </span>
                                                 </div>
                                             )}
-                                            {options.roadsideAssistance && (
+                                            {optionFlags.roadsideAssistance && (
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-300">Asistență rutieră 24/7</span>
                                                     <span className="text-white font-medium">
@@ -294,35 +294,35 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     )}
 
                     {/* Options */}
-                    {options && Object.keys(options).length > 0 && (
+                    {Object.values(optionFlags).some(Boolean) && (
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                             <h3 className="text-lg font-bold text-white mb-4">{t('admin.orders.orderDetails.options')}</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {options.unlimitedKm && (
+                                {optionFlags.unlimitedKm && (
                                     <div className="flex items-center gap-2 text-white">
                                         <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                                         <span>Kilometraj nelimitat</span>
                                     </div>
                                 )}
-                                {options.personalDriver && (
+                                {optionFlags.personalDriver && (
                                     <div className="flex items-center gap-2 text-white">
                                         <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                                         <span>Șofer personal</span>
                                     </div>
                                 )}
-                                {options.childSeat && (
+                                {optionFlags.childSeat && (
                                     <div className="flex items-center gap-2 text-white">
                                         <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                                         <span>Scaun auto pentru copii</span>
                                     </div>
                                 )}
-                                {options.simCard && (
+                                {optionFlags.simCard && (
                                     <div className="flex items-center gap-2 text-white">
                                         <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                                         <span>Cartelă SIM cu internet</span>
                                     </div>
                                 )}
-                                {options.roadsideAssistance && (
+                                {optionFlags.roadsideAssistance && (
                                     <div className="flex items-center gap-2 text-white">
                                         <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                                         <span>Asistență rutieră 24/7</span>

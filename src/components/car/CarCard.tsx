@@ -17,6 +17,7 @@ import { getCarName } from '../../utils/car/car';
 import { formatPrice, getSelectedCurrency } from '../../utils/currency';
 import i18n from '../../i18n/i18n';
 import { convertPrice } from '../../utils/car/pricing';
+import { carStatusPublicLabel } from '../../utils/carStatusPublicLabel';
 
 
 interface CarCardProps {
@@ -688,7 +689,7 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car }) => {
                                 : formatDateForDisplay(firstAvailableDate))
                             : (carWithImages.status === 'available' || carWithImages.status === 'Available'
                                 ? t('car.availableNow')
-                                : carWithImages.status || '');
+                                : carStatusPublicLabel(carWithImages.status, t));
 
                         // Show badge for availability information, but not for empty text
                         if (!availabilityText) return null;
@@ -828,7 +829,15 @@ export const CarCard: React.FC<CarCardProps> = React.memo(({ car }) => {
                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                 {React.createElement(PiSpeedometerFill as any, { className: "w-4 h-4 text-gray-600" })}
                             </div>
-                            <span className="text-sm font-medium">{t('car.mileageLimit')}</span>
+                            <span className="text-sm font-medium max-[433px]:text-xs">
+                                <span className="hidden max-[433px]:inline md:hidden">
+                                    {t('car.mileageLimitNarrow', { defaultValue: t('car.mileageLimit') })}
+                                </span>
+                                <span className="hidden min-[434px]:max-md:inline">
+                                    {t('car.mileageLimitMobile', { defaultValue: t('car.mileageLimit') })}
+                                </span>
+                                <span className="hidden md:inline">{t('car.mileageLimit')}</span>
+                            </span>
                         </div>
 
                         {/* Transmission */}

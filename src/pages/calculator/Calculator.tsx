@@ -77,7 +77,6 @@ export const Calculator: React.FC = () => {
 
     
     // Additional options
-    const [unlimitedKm, setUnlimitedKm] = useState(false);
     const [airportDelivery, setAirportDelivery] = useState(false);
     const [driver, setDriver] = useState(false);
     const [priority, setPriority] = useState(false);
@@ -203,7 +202,6 @@ export const Calculator: React.FC = () => {
         // Use current pricing tier for additional services
         const baseCarPrice = getPricePerDay(rentalDays);
         
-        if (unlimitedKm) total += baseCarPrice * rentalDays * 0.5;
         if (driver) total += 800 * rentalDays;
         if (priority) total += 1000 * rentalDays;
         if (childSeat) total += 100 * rentalDays;
@@ -212,7 +210,7 @@ export const Calculator: React.FC = () => {
         // airportDelivery has no cost specified in the prompt
         
         return total;
-    }, [unlimitedKm, driver, priority, childSeat, sim, assistance, selectedCar, rentalDays, airportDelivery, getPricePerDay]);
+    }, [driver, priority, childSeat, sim, assistance, selectedCar, rentalDays, airportDelivery, getPricePerDay]);
 
     const totalPrice = carsLoading ? 0 : basePrice + additionalCosts;
     const priceInEUR = carsLoading ? '0.00' : (totalPrice / eurRate).toFixed(2);
@@ -419,36 +417,6 @@ export const Calculator: React.FC = () => {
                             </h2>
                             
                             <div className="space-y-8">
-                                {/* Limite */}
-                                <div>
-                                    <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.limits', 'Limite')}</h3>
-                                    <div className="space-y-3">
-                                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={unlimitedKm}
-                                                onChange={(e) => setUnlimitedKm(e.target.checked)}
-                                                className="sr-only"
-                                            />
-                                            <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
-                                                unlimitedKm
-                                                    ? 'bg-theme-500 border-theme-500'
-                                                    : 'border-white/30 bg-white/10 group-hover:border-theme-400'
-                                            }`}>
-                                                        <Check className={`w-3 h-3 text-white transition-opacity duration-200 ${
-                                                        unlimitedKm ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                        }`} />
-                                            </div>
-                                        </div>
-                                        <span className="font-medium text-white group-hover:text-gray-100">{t('calculator.unlimitedMileage')}</span>
-                                    </div>
-                                    <span className="text-sm font-bold text-theme-500 bg-theme-500/20 px-3 py-1 rounded-lg">+50%</span>
-                                </label>
-                                    </div>
-                                    </div>
-
                                 {/* Servicii VIP */}
                                 <div>
                                     <h3 className="text-white/90 font-bold mb-4 ml-1 text-lg">{t('calculator.vipServices', 'Servicii VIP')}</h3>
@@ -667,14 +635,6 @@ export const Calculator: React.FC = () => {
                                         <div className="pt-5 border-t border-white/20">
                                             <h4 className="font-bold text-white mb-4 text-lg">{t('calculator.additionalServices')}</h4>
                                             <div className="space-y-2 text-sm">
-                                                {unlimitedKm && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-gray-200">{t('calculator.unlimitedMileage')}</span>
-                                                        <span className="font-medium text-white">
-                                                            {(((selectedCar?.price_2_4_days || selectedCar?.price_over_30_days || 0)) * rentalDays * 0.5).toFixed(0)} MDL
-                                                        </span>
-                                                    </div>
-                                                )}
                                                 {driver && (
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-200">{t('calculator.personalDriver')}</span>

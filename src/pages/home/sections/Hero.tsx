@@ -98,6 +98,7 @@ export const Hero: React.FC = () => {
       'vw': '/logos/volkswagen-1-logo-black-and-white.png',
       'lincoln': '/logos/lincoln.png',
       'porsche': '/logos/porsche.png',
+      'renault': '/logos/renault.png',
     };
     return logoMap[makeLower] || null;
   };

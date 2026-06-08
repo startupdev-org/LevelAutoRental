@@ -39,6 +39,7 @@ import { NoImagePlaceholder } from '../../../components/car/NoImage';
 import { useTranslation } from 'react-i18next';
 import { formatPrice, getSelectedCurrency } from '../../../utils/currency';
 import { convertPrice } from '../../../utils/car/pricing';
+import { carStatusPublicLabel } from '../../../utils/carStatusPublicLabel';
 
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();
@@ -1376,7 +1377,7 @@ export const CarDetails: React.FC = () => {
                                             ? (isAvailableToday
                                                 ? t('car.availableNow')
                                                 : formatDateForDisplay(firstAvailableDate))
-                                            : (car.status === 'available' || car.status === 'Available' ? t('car.availableNow') : car.status || '');
+                                            : (car.status === 'available' || car.status === 'Available' ? t('car.availableNow') : carStatusPublicLabel(car.status, t));
 
                                         if (!availabilityText) return null;
 
