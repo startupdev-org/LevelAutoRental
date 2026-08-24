@@ -1,0 +1,260 @@
+-- ============================================================================
+-- ONE FILE: CREATE TABLES + INSERT DATA + reset sequences
+-- Paste the whole file into Supabase SQL Editor and Run.
+-- Fails if tables already exist — use a fresh project or DROP tables first.
+-- INSERTs use ON CONFLICT (id) DO NOTHING so re-running seed-only is safe if data exists.
+-- No triggers (add from old project after import if needed).
+-- After install: run scripts/rls_public_cars_read.sql so anon users can list Cars (otherwise GET returns []).
+-- ============================================================================
+
+-- Core tables only (no triggers — add your trigger functions + CREATE TRIGGER from old project after data load).
+
+create table public."Profiles" (
+  id text not null,
+  first_name character varying(50) not null,
+  last_name character varying(50) not null,
+  email character varying(255) not null,
+  phone_number character varying(50) null,
+  role character varying(50) null,
+  created_at timestamp without time zone null default now(),
+  updated_at timestamp without time zone null default now(),
+  constraint profiles_pkey primary key (id),
+  constraint profiles_email_key unique (email)
+);
+
+create index if not exists idx_profiles_search on public."Profiles" using gin (
+  to_tsvector(
+    'english'::regconfig,
+    (
+      (
+        (
+          (coalesce(first_name, ''::character varying))::text || ' '::text
+        ) || (coalesce(last_name, ''::character varying))::text
+      ) || ' '::text
+    ) || (coalesce(email, ''::character varying))::text
+  )
+);
+
+create index if not exists idx_profiles_role on public."Profiles" using btree (role);
+create index if not exists idx_profiles_email on public."Profiles" using btree (email);
+create index if not exists idx_profiles_name on public."Profiles" using btree (first_name, last_name);
+create index if not exists idx_profiles_created_at on public."Profiles" using btree (created_at desc);
+
+create table public."Cars" (
+  id serial not null,
+  
+  make character varying(50) not null,
+  model character varying(255) not null,
+  year smallint null,
+  status character varying(50) null,
+  body character varying(50) null,
+  transmission character varying(40) null,
+  drivetrain character varying(50) null,
+  seats smallint null,
+  features text[] null,
+  created_at timestamp without time zone null default now(),
+  updated_at timestamp without time zone null default now(),
+  name character varying(255) null,
+  category character varying(50) null,
+  image_url text null,
+  photo_gallery text[] null default array[]::text[],
+  fuel_type character varying(50) null,
+  rating numeric(3, 2) null default 0,
+  reviews integer null default 0,
+  pickup_date timestamp without time zone null,
+  return_date timestamp without time zone null,
+  price_2_4_days numeric(10, 2) null default 0,
+  price_5_15_days numeric(10, 2) null default 0,
+  price_16_30_days numeric(10, 2) null default 0,
+  price_over_30_days numeric(10, 2) null default 0,
+  discount numeric(5, 2) null default 0,
+  constraint Cars_pkey primary key (id),
+  constraint Cars_rating_check check ((rating >= (0)::numeric) and (rating <= (5)::numeric)),
+  constraint Cars_reviews_check check ((reviews >= 0)),
+  constraint Cars_year_check check ((year > 0)),
+  constraint cars_discount_check check ((discount >= (0)::numeric) and (discount <= (100)::numeric))
+);
+
+create index if not exists idx_cars_category on public."Cars" using btree (category);
+create index if not exists idx_cars_status on public."Cars" using btree (status);
+create index if not exists idx_cars_make_model on public."Cars" using btree (make, model);
+
+create table public."BorrowRequest" (
+  id serial not null,
+  car_id integer not null,
+  start_date date not null,
+  start_time time without time zone null default '09:00:00'::time without time zone,
+  end_date date not null,
+  end_time time without time zone null default '17:00:00'::time without time zone,
+  status character varying(50) null default 'PENDING'::character varying,
+  customer_name character varying(255) null,
+  customer_first_name character varying(100) null,
+  customer_last_name character varying(100) null,
+  customer_email character varying(255) null,
+  customer_phone character varying(50) null,
+  customer_age integer null,
+  comment text null,
+  options jsonb null default '{}'::jsonb,
+  total_amount numeric(10, 2) null,
+  requested_at timestamp without time zone null default now(),
+  updated_at timestamp without time zone null default now(),
+  user_id text null,
+  price_per_day numeric(10, 2) not null,
+  reason character varying null,
+  contract_url text null,
+  constraint borrowrequest_pkey primary key (id),
+  constraint BorrowRequest_user_id_fkey foreign key (user_id) references "Profiles" (id),
+  constraint borrowrequest_car_id_fkey foreign key (car_id) references "Cars" (id) on delete cascade,
+  constraint borrowrequest_customer_age_check check ((customer_age is null) or (customer_age > 0)),
+  constraint borrowrequest_end_date_check check ((end_date >= start_date)),
+  constraint borrowrequest_status_check check (
+    (status)::text = any (
+      array[
+        ('PENDING'::character varying)::text,
+        ('APPROVED'::character varying)::text,
+        ('PROCESSED'::character varying)::text,
+        ('REJECTED'::character varying)::text,
+        ('CANCELLED'::character varying)::text
+      ]
+    )
+  )
+);
+
+create index if not exists idx_borrow_request_car_id on public."BorrowRequest" using btree (car_id);
+create index if not exists idx_borrow_request_status on public."BorrowRequest" using btree (status);
+create index if not exists idx_borrow_request_requested_at on public."BorrowRequest" using btree (requested_at desc);
+create index if not exists idx_borrow_request_start_date on public."BorrowRequest" using btree (start_date);
+create index if not exists idx_borrow_request_end_date on public."BorrowRequest" using btree (end_date);
+
+create table public."Rentals" (
+  id serial not null,
+  user_id text null,
+  car_id integer not null,
+  start_date date not null,
+  end_date date not null,
+  price_per_day numeric(10, 2) not null,
+  subtotal numeric(10, 2) null,
+  taxes_fees numeric(10, 2) null,
+  additional_taxes numeric(10, 2) null,
+  total_amount numeric(10, 2) null,
+  payment_status text null default 'PENDING'::text,
+  payment_method character varying(50) null,
+  rental_status text null default 'ACTIVE'::text,
+  notes character varying(255) null,
+  special_requests character varying(255) null,
+  created_at timestamp without time zone null default now(),
+  updated_at timestamp without time zone null default now(),
+  options jsonb null,
+  start_time character varying(10) null default '09:00'::character varying,
+  end_time character varying(10) null default '17:00'::character varying,
+  contract_url text null,
+  request_id integer null,
+  customer_email character varying(40) null,
+  constraint Rentals_pkey primary key (id),
+  constraint Rentals_request_id_fkey foreign key (request_id) references "BorrowRequest" (id) on delete set null,
+  constraint Rentals_user_id_fkey foreign key (user_id) references "Profiles" (id),
+  constraint Rentals_car_id_fkey foreign key (car_id) references "Cars" (id) on delete cascade,
+  constraint rentals_total_amount_check check ((total_amount is null) or (total_amount >= (0)::numeric)),
+  constraint rentals_dates_check check ((end_date >= start_date)),
+  constraint rentals_price_per_day_check check ((price_per_day >= (0)::numeric)),
+  constraint rentals_rental_status_check check (
+    rental_status = any (
+      array[
+        ('ACTIVE'::character varying)::text,
+        ('FINISHED'::character varying)::text,
+        ('CANCELLED'::character varying)::text
+      ]
+    )
+  )
+);
+
+create index if not exists idx_rentals_car_id on public."Rentals" using btree (car_id);
+create index if not exists idx_rentals_created_at on public."Rentals" using btree (created_at desc);
+create index if not exists idx_rentals_user_id on public."Rentals" using btree (user_id);
+create index if not exists idx_rentals_contract_url on public."Rentals" using btree (contract_url) where (contract_url is not null);
+create index if not exists idx_rentals_request_id on public."Rentals" using btree (request_id) where (request_id is not null);
+create index if not exists idx_rentals_payment_status on public."Rentals" using btree (payment_status);
+create index if not exists idx_rentals_status on public."Rentals" using btree (rental_status);
+create index if not exists idx_rentals_dates on public."Rentals" using btree (start_date, end_date);
+create index if not exists idx_rentals_active_dates on public."Rentals" using btree (start_date, end_date) where (rental_status = 'ACTIVE'::text);
+
+-- --- seed data ---
+
+INSERT INTO public."Profiles" (id, first_name, last_name, email, phone_number, role, created_at, updated_at) VALUES
+
+('1f88af38-5c1b-4680-b345-147345186f76', 'Bogdan', 'Bogdan', 'dowody2007@gmail.com', '+37360870397', 'ADMIN', '2025-11-17 14:13:41.687246'::timestamp, '2025-12-17 15:46:48.346025'::timestamp),
+('6a8d8a87-60cb-49e9-8af4-80cb995f031c', 'Codava', 'Dev', 'codava.dev@gmail.com', '061080018', 'USER', '2025-11-18 18:21:56.076633'::timestamp, '2025-12-11 21:13:23.965334'::timestamp),
+('9c1fc09e-de44-4612-b598-2e0fce83708e', 'Marius', 'Carchilan', 'mariuscarchilan07@gmail.com', '061080018', 'USER', '2025-12-24 08:23:33.614529'::timestamp, '2025-12-24 08:23:33.614529'::timestamp),
+('e04d8331-d214-4c7e-816f-695853fb8339', 'Victorin', 'Levitchi', 'levelauto@admin.com', '+37362000112', 'ADMIN', '2025-11-17 14:13:41.687246'::timestamp, '2025-12-11 21:13:28.656123'::timestamp)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public."Cars" (id, make, model, year, status, body, transmission, drivetrain, seats, features, created_at, updated_at, name, category, image_url, photo_gallery, fuel_type, rating, reviews, pickup_date, return_date, price_2_4_days, price_5_15_days, price_16_30_days, price_over_30_days, discount) VALUES
+
+(1,'Mercedes','C43',2018,'booked','Coupe','Automatic','AWD',4,ARRAY['AMG Package','V6 BiTurbo 3.0L','4MATIC AWD','Sport-Lux Interior']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-03-31 02:06:39.581516'::timestamp,'Mercedes-AMG C43','sports,luxury','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-c43/c43-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-c43/c43-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-c43/c43-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-c43/c43-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-c43/c43-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-c43/c43-5.jpg']::text[],'petrol',4.90,156,NULL,NULL,2200.00,1900.00,1400.00,1200.00,0.00),
+(2,'Mercedes','GLE',2020,'booked','SUV','Automatic','AWD',5,ARRAY['Motor Benzină 2.0L','Interior Premium','Design Imponător']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-03-31 02:06:54.674963'::timestamp,'Mercedes GLE','luxury','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle/gle-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle/gle-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle/gle-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle/gle-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle/gle-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle/gle-5.jpg']::text[],'petrol',4.80,134,NULL,NULL,2800.00,2400.00,2000.00,1800.00,0.00),
+(3,'Mercedes','CLS',2019,'available','SUV','Automatic','AWD',3,ARRAY['Motor 3.0 Diesel','Interior Luxos Premium','Confort Exclusiv']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-03-31 02:07:41.31913'::timestamp,'Mercedes CLS','luxury,sports','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cls/cls-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cls/cls-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cls/cls-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cls/cls-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cls/cls-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cls/cls-5.jpg']::text[],'diesel',4.90,187,NULL,NULL,3000.00,2600.00,2200.00,1900.00,0.00),
+(4,'Maserati','Ghibli',2017,'available','SUV','Automatic','RWD',5,ARRAY['Motor V6 3.0','Interior Premium Piele','Ocazii Speciale']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-03-31 02:07:29.087695'::timestamp,'Maserati Ghibli','luxury','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/maserati-ghibli/ghibli-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/maserati-ghibli/ghibli-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/maserati-ghibli/ghibli-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/maserati-ghibli/ghibli-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/maserati-ghibli/ghibli-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/maserati-ghibli/ghibli-5.jpg']::text[],'gasoline',4.90,203,NULL,NULL,2500.00,2000.00,1700.00,1500.00,0.00),
+(5,'BMW','X4',2022,'booked','SUV','Automatic','AWD',5,ARRAY['Motor 2.0 Benzină','Interior Modern Premium','Tehnologie Avansată','Design Sportiv']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-03-31 02:07:13.046359'::timestamp,'BMW X4','luxury','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x4/x4-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x4/x4-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x4/x4-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x4/x4-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x4/x4-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x4/x4-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x4/x4-6.jpg']::text[],'hybrid',4.80,145,NULL,NULL,2000.00,1700.00,1500.00,1300.00,0.00),
+(6,'Mercedes','CLS 350',2021,'deleted','Sedan','Automatic','AWD',5,ARRAY['Motor Diesel 3.0L','Interior Luxos Premium','Tehnologie Modernă','Design Sportiv și Elegant','4MATIC AWD','Test']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-01-15 08:53:10.72941'::timestamp,'Mercedes CLS 450','luxury,sports','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cls-450/cls-450-main.jpg',ARRAY[]::text[],'diesel',4.90,162,NULL,NULL,3200.00,2800.00,2400.00,1900.00,0.00),
+(7,'Hyundai','Santa Fe',2019,'booked','SUV','Automatic','AWD',5,ARRAY['Motor Diesel 2.0L','Interior Spațios','Ideal pentru Urban și Off-Road','Practic și Eficient']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-03-31 02:08:05.897282'::timestamp,'Hyundai Santa Fe','suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-6.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyundai-santa-fe/santa-fe-7.jpg']::text[],'diesel',4.80,98,NULL,NULL,1200.00,1000.00,900.00,800.00,0.00),
+(8,'Audi','Q7',2018,'booked','SUV','Automatic','AWD',7,ARRAY['Motor 2.0 Benzină','Interior Spațios','Tehnologie Avansată','Confort și Spațiu','Ideal pentru 7 Pasageri']::text[],'2025-11-16 19:36:22.86297'::timestamp,'2026-04-09 12:35:05.058194'::timestamp,'Audi Q7','luxury,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7/audi-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7/audi-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7/audi-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7/audi-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7/audi-6.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7/audi-7.jpg']::text[],'gasoline',4.80,178,NULL,NULL,1600.00,1400.00,1200.00,1000.00,0.00),
+(35,'Test','Test',2025,'deleted',NULL,NULL,NULL,5,ARRAY[]::text[],'2025-12-03 12:47:07.404334'::timestamp,'2025-12-03 12:51:26.386749'::timestamp,'Test','luxury',NULL,ARRAY[]::text[],NULL,0.00,0,NULL,NULL,12.00,12.00,12.00,12.00,0.00),
+(37,'BMW ','X5',2021,'booked',NULL,NULL,NULL,5,ARRAY['Xdrive','BMW','X5 40i']::text[],'2025-12-03 19:42:35.127459'::timestamp,'2026-03-31 02:09:54.647361'::timestamp,'Bmw x5 40i ','luxury,sports,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x5-40i/x5-40i-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x5-40i/x5-40i-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x5-40i/x5-40i-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/bmw-x5-40i/x5-40i-5.jpg']::text[],'petrol',4.90,50,NULL,NULL,3000.00,2600.00,2200.00,1800.00,0.00),
+(38,'Mercedes ','Gle',2022,'booked','SUV',NULL,'AWD',5,ARRAY['2.0','GLE','Lux']::text[],'2025-12-03 19:48:50.876982'::timestamp,'2026-03-31 02:08:33.422644'::timestamp,'Mercedes GLE 350','luxury,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle-350/gle-350-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle-350/gle-350-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle-350/gle-350-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle-350/gle-350-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gle-350/gle-350-5.jpg']::text[],'petrol',4.70,70,NULL,NULL,2700.00,2400.00,2000.00,1800.00,0.00),
+(39,'Woltsvaghen ','Golf R',2016,'deleted','Coupe',NULL,'AWD',5,ARRAY['Golf R','450 hp','Volkswagen']::text[],'2025-12-03 19:58:59.980074'::timestamp,'2025-12-10 19:12:26.848094'::timestamp,'Volkswagen Golf R ','sports','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/woltsvaghen-golf-r/golf-r-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/woltsvaghen-golf-r/golf-r-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/woltsvaghen-golf-r/golf-r-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/woltsvaghen-golf-r/golf-r-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/woltsvaghen-golf-r/golf-r-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/woltsvaghen-golf-r/golf-r-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/woltsvaghen-golf-r/golf-r-6.jpg']::text[],'petrol',4.50,40,NULL,NULL,2000.00,1850.00,1600.00,1100.00,20.00),
+(40,'Audi ','Q7',2020,'deleted','SUV','Automatic','AWD',7,ARRAY['3.0','Q7']::text[],'2025-12-03 20:29:15.966365'::timestamp,'2026-02-22 13:15:39.022288'::timestamp,'Audi Q7 2020','luxury,sports,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2020/q7-2020-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2020/q7-2020-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2020/q7-2020-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2020/q7-2020-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2020/q7-2020-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2020/q7-2020-6.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2020/q7-2020-7.jpg']::text[],'petrol',5.00,48,NULL,NULL,2200.00,1900.00,1700.00,1600.00,0.00),
+(41,'Mercedes ','Gls 450',2021,'deleted','SUV',NULL,'AWD',7,ARRAY['3.0','388 hp','7 locuri','Gls','Mercedes']::text[],'2025-12-03 20:31:45.369431'::timestamp,'2026-02-22 13:15:42.968859'::timestamp,'Mercedes GLS 450 ','luxury,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls-450/gls-450-main.jpg',ARRAY[]::text[],'petrol',5.00,1,NULL,NULL,3200.00,2900.00,2400.00,2000.00,0.00),
+(42,'Volkswagen','Glof R ',2016,'booked','Coupe','Manual','AWD',5,ARRAY['450 hp','Golf R','Sport','APR']::text[],'2025-12-03 20:40:44.088461'::timestamp,'2026-04-09 12:34:25.395071'::timestamp,'Volkswagen','sports','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/volkswagen/car-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/volkswagen/car-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/volkswagen/car-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/volkswagen/car-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/volkswagen/car-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/volkswagen/car-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/volkswagen/car-6.jpg']::text[],'petrol',4.60,94,NULL,NULL,2000.00,1800.00,1400.00,1000.00,0.00),
+(43,'Test','Test',2025,'deleted',NULL,NULL,'AWD',5,ARRAY[]::text[],'2025-12-17 15:28:42.507406'::timestamp,'2025-12-17 16:58:37.798179'::timestamp,'Test','luxury','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/test/car-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/test/car-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/test/car-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/test/car-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/test/car-4.jpg']::text[],'petrol',0.00,0,NULL,NULL,1000.00,1000.00,997.00,2000.00,0.00),
+(44,'test2','test2',2025,'deleted',NULL,'Automatic','AWD',5,ARRAY[]::text[],'2025-12-17 16:07:31.028231'::timestamp,'2025-12-17 16:58:46.336626'::timestamp,'test2','luxury',NULL,ARRAY[]::text[],'hybrid',0.00,0,NULL,NULL,2000.00,2000.00,2000.00,2000.00,0.00),
+(45,'Mercedes','Cla AMG ',2020,'booked',NULL,'Automatic','AWD',5,ARRAY['AMG','4Matic','Sport','Mercedes']::text[],'2025-12-17 20:56:31.762787'::timestamp,'2026-04-09 12:33:46.985232'::timestamp,'Mercedes CLA AMG','sports','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cla-amg/cla-amg-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cla-amg/cla-amg-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cla-amg/cla-amg-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cla-amg/cla-amg-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cla-amg/cla-amg-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cla-amg/cla-amg-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-cla-amg/cla-amg-6.jpg']::text[],'petrol',5.00,160,NULL,NULL,1500.00,1200.00,1000.00,800.00,0.00),
+(46,'Hyundai ','Tucson',2018,'available',NULL,'Automatic','AWD',5,ARRAY['Crossover','Hyndai','Tucson']::text[],'2025-12-17 21:05:45.399155'::timestamp,'2026-03-31 02:11:51.274887'::timestamp,'Hyundai Tucson ','suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyndai-tucson/tucson-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyndai-tucson/tucson-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyndai-tucson/tucson-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyndai-tucson/tucson-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyndai-tucson/tucson-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/hyndai-tucson/tucson-5.jpg']::text[],'petrol',4.70,98,NULL,NULL,1200.00,1000.00,900.00,800.00,0.00),
+(47,'Lincoln','MKZ ',2016,'booked',NULL,'Automatic','AWD',5,ARRAY['Lincoln','MKZ','Confort']::text[],'2025-12-17 21:09:12.470353'::timestamp,'2026-03-31 02:11:36.162175'::timestamp,'Lincoln MKZ ','luxury','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/lincoln-mkz/mkz-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/lincoln-mkz/mkz-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/lincoln-mkz/mkz-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/lincoln-mkz/mkz-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/lincoln-mkz/mkz-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/lincoln-mkz/mkz-5.jpg']::text[],'petrol',4.80,98,NULL,NULL,1000.00,900.00,800.00,700.00,0.00),
+(48,'Porsche','Macan',2021,'booked',NULL,'Automatic','AWD',5,ARRAY['Porsche','Macan']::text[],'2026-02-22 13:12:11.938796'::timestamp,'2026-04-02 19:42:41.345708'::timestamp,'Porsche Macan  ','luxury,suv,sports','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-6.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-7.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/porsche-macan/macan-8.jpg']::text[],'petrol',4.90,30,NULL,NULL,1800.00,1500.00,1300.00,1100.00,0.00),
+(49,'Mercedes ','GLS 450',2021,'deleted',NULL,'Automatic','AWD',7,ARRAY[]::text[],'2026-02-22 13:19:25.993167'::timestamp,'2026-02-22 13:21:16.009023'::timestamp,'Mercedes GLS 450','luxury,suv',NULL,ARRAY[]::text[],'petrol',0.00,0,NULL,NULL,3400.00,2900.00,2400.00,2000.00,0.00),
+(50,'Mercedes','GLS',2021,'booked',NULL,'Automatic','AWD',7,ARRAY['7 locuri','GLS 450','Mercedes','Lux']::text[],'2026-02-22 13:30:14.972159'::timestamp,'2026-03-31 02:10:23.966494'::timestamp,'Mercedes GLS','luxury,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-6.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/mercedes-gls/gls-7.jpg']::text[],'petrol',5.00,70,NULL,NULL,3400.00,2900.00,2400.00,2000.00,0.00),
+(51,'Audi','Q7',2020,'deleted',NULL,'Automatic','AWD',7,ARRAY[]::text[],'2026-02-22 13:35:07.674895'::timestamp,'2026-02-22 13:35:29.722837'::timestamp,'Audi Q7 2020','luxury,suv',NULL,ARRAY[]::text[],'petrol',0.00,0,NULL,NULL,NULL,NULL,NULL,NULL,0.00),
+(52,'Audi','Q7',2021,'deleted',NULL,'Automatic','AWD',7,ARRAY[]::text[],'2026-02-22 13:41:55.510232'::timestamp,'2026-02-22 13:43:01.198476'::timestamp,'Audi Q7 ','luxury,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7/q7-main.jpg',ARRAY[]::text[],'petrol',0.00,0,NULL,NULL,NULL,NULL,NULL,NULL,0.00),
+(53,'Audi ','Q7',2021,'available',NULL,'Automatic','AWD',7,ARRAY['7 locuri','Audi','Q7','Quattro']::text[],'2026-02-22 13:43:46.137286'::timestamp,'2026-03-31 02:10:10.410553'::timestamp,'Audi Q7 2021','luxury,suv','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-main.jpg',ARRAY['https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-main.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-2.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-3.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-4.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-5.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-6.jpg','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/cars/audi-q7-2021/q7-2021-7.jpg']::text[],'petrol',5.00,45,NULL,NULL,2200.00,1900.00,1600.00,1400.00,0.00),
+(54,'Mercedes ','Cls 450',2020,'deleted',NULL,'Automatic','RWD',5,ARRAY[]::text[],'2026-02-22 14:22:08.25378'::timestamp,'2026-02-22 14:29:46.280921'::timestamp,'Mercedes CLS 450','luxury,sports',NULL,ARRAY[]::text[],'petrol',5.00,80,NULL,NULL,3200.00,2800.00,2400.00,2000.00,0.00)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public."BorrowRequest" (id, car_id, start_date, start_time, end_date, end_time, status, customer_name, customer_first_name, customer_last_name, customer_email, customer_phone, customer_age, comment, options, total_amount, requested_at, updated_at, user_id, price_per_day, reason, contract_url) VALUES
+
+(1,2,'2025-12-17'::date,'23:00:00'::time,'2026-01-17'::date,'14:00:00'::time,'APPROVED','Ghenadie  Rusu','Ghenadie','Rusu','levelauto@admin.com','+373 60880012',NULL,'!!! Inchiriere LevelAutoRental','{"airportDelivery":true}'::jsonb,67375.00,'2025-12-17 21:15:52.22'::timestamp,'2025-12-18 11:19:27.792283'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',2200.00,NULL,NULL),
+(2,1,'2025-12-17'::date,'23:00:00'::time,'2026-02-10'::date,'10:00:00'::time,'APPROVED','Victorin  Levicthi','Victorin','Levicthi','levelauto@admin.com','+373 62000112',NULL,'——- !!! Inchiriere LevelAutoRental','{}'::jsonb,81688.00,'2025-12-17 21:17:28.581'::timestamp,'2025-12-18 11:19:29.842278'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1500.00,NULL,NULL),
+(3,5,'2025-12-17'::date,'23:00:00'::time,'2026-05-30'::date,'10:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 62000112',NULL,'!!! Inchiriere LevelAutoRental','{"airportDelivery":true}'::jsonb,212442.00,'2025-12-17 21:18:27.104'::timestamp,'2025-12-18 11:19:25.384912'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1300.00,NULL,NULL),
+(4,7,'2025-12-19'::date,'04:00:00'::time,'2026-01-02'::date,'10:00:00'::time,'APPROVED','Mihail Popovici','Mihail','Popovici','levelauto@admin.com','+373 62000112',NULL,'!!! Inchiriere LevelAutoRental','{"airportDelivery":true}'::jsonb,14250.00,'2025-12-17 21:20:29.965'::timestamp,'2025-12-18 11:19:23.914084'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1000.00,NULL,NULL),
+(5,8,'2025-12-17'::date,'23:00:00'::time,'2026-04-29'::date,'10:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 62000112',NULL,'!!! Inchiriere LevelAutoRental','{}'::jsonb,132417.00,'2025-12-17 21:21:14.596'::timestamp,'2025-12-18 11:19:22.355127'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1000.00,NULL,NULL),
+(6,37,'2025-12-17'::date,'23:00:00'::time,'2026-02-27'::date,'12:00:00'::time,'APPROVED','Victorin  Levitchi ','Victorin','Levitchi','levelauto@admin.com','+373 62000112',NULL,'!!! Inchiriere LevelAutoRental','{}'::jsonb,128775.00,'2025-12-17 21:22:01.641'::timestamp,'2025-12-18 11:19:20.571135'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1800.00,NULL,NULL),
+(7,38,'2025-12-17'::date,'23:00:00'::time,'2026-04-29'::date,'10:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 62000112',NULL,'!!! Inchiriere LevelAutoRental','{}'::jsonb,238350.00,'2025-12-17 21:22:41.134'::timestamp,'2025-12-18 11:19:19.205267'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1800.00,NULL,NULL),
+(8,42,'2025-12-17'::date,'23:00:00'::time,'2026-03-30'::date,'10:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 62000112',NULL,'!!! Inchiriere LevelAutoRental','{}'::jsonb,102417.00,'2025-12-17 21:23:44.741'::timestamp,'2025-12-18 11:19:17.637242'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1000.00,NULL,NULL),
+(9,45,'2025-12-23'::date,'21:00:00'::time,'2025-12-28'::date,'23:00:00'::time,'APPROVED','Sergiu Colta ','Sergiu','Colta','levelauto@admin.com','+373 62000112',NULL,'!!! Inchiriere LevelAutoRental','{"unlimitedKm":false,"personalDriver":false,"priorityService":false,"childSeat":false,"simCard":false,"roadsideAssistance":false,"airportDelivery":true}'::jsonb,6100.00,'2025-12-17 22:37:15.143'::timestamp,'2025-12-18 11:17:42.890145'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1200.00,NULL,NULL),
+(11,45,'2026-01-07'::date,'12:00:00'::time,'2026-01-21'::date,'10:00:00'::time,'APPROVED','Alexandru  Gitu','Alexandru','Gitu','levelauto@admin.com','+373 62000112',NULL,'!!! Închiriere LevelAutoRental','{"unlimitedKm":false,"personalDriver":false,"priorityService":false,"childSeat":false,"simCard":false,"roadsideAssistance":false,"airportDelivery":true}'::jsonb,16700.00,'2025-12-18 19:52:27.804'::timestamp,'2025-12-21 09:48:57.667232'::timestamp,NULL,1200.00,NULL,NULL),
+(16,7,'2026-01-03'::date,'10:00:00'::time,'2026-01-17'::date,'10:00:00'::time,'REJECTED','LEVITCHI  Andrei ','LEVITCHI','Andrei','lehi.andrei@gmail.com','+373 60880013',NULL,NULL,'{}'::jsonb,14000.00,'2025-12-30 06:01:42.081'::timestamp,'2026-01-02 19:59:43.774295'::timestamp,NULL,1000.00,NULL,NULL),
+(17,45,'2026-01-02'::date,'23:00:00'::time,'2026-01-06'::date,'10:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 60880012',NULL,'Rezervat','{}'::jsonb,5188.00,'2026-01-02 19:57:06.117'::timestamp,'2026-01-02 19:57:28.819925'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1500.00,NULL,NULL),
+(18,7,'2026-01-03'::date,'00:00:00'::time,'2026-01-10'::date,'10:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 6088012',NULL,'Rezervat','{}'::jsonb,7417.00,'2026-01-02 19:59:19.342'::timestamp,'2026-01-02 19:59:52.741994'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1000.00,NULL,NULL),
+(19,1,'2026-02-26'::date,'12:00:00'::time,'2026-05-01'::date,'12:00:00'::time,'APPROVED','Victorin  Levitchi ','Victorin','Levitchi','levelauto@admin.com','+373 62000112',NULL,'By level','{}'::jsonb,61400.00,'2026-02-24 08:51:00.455'::timestamp,'2026-02-24 10:23:32.83918'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1200.00,NULL,NULL),
+(20,7,'2026-02-24'::date,'12:00:00'::time,'2026-04-09'::date,'12:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 60880012',NULL,NULL,'{}'::jsonb,28133.00,'2026-02-24 08:51:59.722'::timestamp,'2026-02-24 10:23:39.778987'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',800.00,NULL,NULL),
+(21,8,'2026-05-01'::date,'12:00:00'::time,'2026-07-22'::date,'12:00:00'::time,'APPROVED','Victorin  Victorin  L','Victorin','Victorin  L','levelauto@admin.com','+373 60880012',NULL,NULL,'{}'::jsonb,65600.00,'2026-02-24 08:52:54.511'::timestamp,'2026-02-24 10:23:12.927721'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1000.00,NULL,NULL),
+(22,37,'2026-02-28'::date,'12:00:00'::time,'2026-05-31'::date,'10:00:00'::time,'APPROVED','Victorin  Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 6088012',NULL,NULL,'{}'::jsonb,132300.00,'2026-02-24 08:54:00.608'::timestamp,'2026-02-24 10:23:25.242482'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1800.00,NULL,NULL),
+(23,38,'2026-05-02'::date,'12:00:00'::time,'2026-07-29'::date,'12:00:00'::time,'APPROVED','Victorin  Victorin  L','Victorin','Victorin  L','levelauto@admin.com','+373 62000112',NULL,'level','{"simCard":true,"childSeat":true,"unlimitedKm":true,"personalDriver":true,"airportDelivery":true,"priorityService":true,"roadsideAssistance":true}'::jsonb,410080.00,'2026-02-24 08:55:31.849'::timestamp,'2026-02-24 10:23:00.203134'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1800.00,NULL,NULL),
+(24,42,'2026-04-30'::date,'00:00:00'::time,'2026-08-31'::date,'12:00:00'::time,'APPROVED','Victorin  Victorin  L','Victorin','Victorin  L','levelauto@admin.com','+373 60880012',NULL,NULL,'{}'::jsonb,98800.00,'2026-02-24 08:56:25.548'::timestamp,'2026-02-24 10:23:18.665295'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1000.00,NULL,NULL),
+(25,50,'2026-02-24'::date,'20:00:00'::time,'2026-03-13'::date,'12:00:00'::time,'APPROVED','Victorin  Levitchi ','Victorin','Levitchi','levelauto@admin.com','+373 60880012',NULL,'Automobilul este la reparație','{}'::jsonb,32000.00,'2026-02-24 08:57:48.063'::timestamp,'2026-02-24 10:23:50.613402'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',2400.00,NULL,NULL),
+(26,47,'2026-03-30'::date,'12:00:00'::time,'2026-04-09'::date,'18:00:00'::time,'APPROVED','El Moraru','El','Moraru','levelauto@admin.com','+373 62000112',NULL,NULL,'{"airportDelivery":true}'::jsonb,7380.00,'2026-02-27 19:18:59.434'::timestamp,'2026-02-27 19:19:33.548683'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',900.00,NULL,NULL),
+(27,47,'2026-06-03'::date,'19:00:00'::time,'2026-06-06'::date,'12:00:00'::time,'APPROVED','Doru Maxim','Doru','Maxim','dorumaxim@gmail.com','+49 15129590009',NULL,NULL,'{"airportDelivery":true}'::jsonb,2167.00,'2026-03-30 09:30:32.752'::timestamp,'2026-03-30 09:44:46.472193'::timestamp,NULL,1000.00,NULL,NULL),
+(28,48,'2026-04-06'::date,'12:00:00'::time,'2026-04-27'::date,'12:00:00'::time,'APPROVED','Black Blondine','Black','Blondine','levelauto@admin.com','+373 62000112',NULL,'Este rezervat de client','{}'::jsonb,27300.00,'2026-04-02 19:42:09.981'::timestamp,'2026-04-02 19:42:41.345708'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1300.00,NULL,NULL),
+(29,42,'2026-04-09'::date,'16:00:00'::time,'2026-04-29'::date,'12:00:00'::time,'APPROVED','Victorin levitchi','Victorin','levitchi','levelauto@admin.com','+373 62000112',NULL,NULL,'{"airportDelivery":true}'::jsonb,27767.00,'2026-04-09 06:29:53.789'::timestamp,'2026-04-09 12:34:25.395071'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',1400.00,NULL,NULL),
+(30,45,'2026-04-09'::date,'16:00:00'::time,'2026-08-30'::date,'12:00:00'::time,'APPROVED','Victorin Levitchi','Victorin','Levitchi','levelauto@admin.com','+373 62000112',NULL,NULL,'{}'::jsonb,114267.00,'2026-04-09 06:33:31.305'::timestamp,'2026-04-09 12:33:46.985232'::timestamp,'e04d8331-d214-4c7e-816f-695853fb8339',800.00,NULL,NULL)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public."Rentals" (id, user_id, car_id, start_date, end_date, price_per_day, subtotal, taxes_fees, additional_taxes, total_amount, payment_status, payment_method, rental_status, notes, special_requests, created_at, updated_at, options, start_time, end_time, contract_url, request_id, customer_email) VALUES
+
+(9,'e04d8331-d214-4c7e-816f-695853fb8339',1,'2026-02-18'::date,'2026-02-25'::date,2200.00,15400.00,1540.00,0.00,15400.00,'PENDING',NULL,'ACTIVE',NULL,NULL,'2025-12-21 14:39:37.249363'::timestamp,'2025-12-21 14:39:37.249363'::timestamp,'{"customerInfo":{"name":"test test","email":"levelauto@admin.com","phone":"+373 567534245675432","lastName":"test","firstName":"test"},"airportDelivery":true}'::jsonb,'02:00:00','02:00:00','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/contracts/Public/rental-12/Contract_Locatiune_CT-12-2025.pdf',NULL,NULL),
+(10,'6a8d8a87-60cb-49e9-8af4-80cb995f031c',3,'2026-01-04'::date,'2026-01-09'::date,2900.00,14500.00,1450.00,0.00,14983.33,'PENDING',NULL,'CANCELLED',NULL,NULL,'2025-12-21 14:43:26.968589'::timestamp,'2026-01-21 15:57:46.173'::timestamp,'{"unlimitedKm":false,"personalDriver":false,"priorityService":false,"childSeat":false,"simCard":false,"roadsideAssistance":false,"airportDelivery":true,"tireInsurance":false,"pickupAtAddress":false,"returnAtAddress":false,"speedLimitIncrease":false,"customerInfo":{"name":"Codava Dev","email":"codava.dev@gmail.com","phone":"+373 061080018","lastName":"Dev","firstName":"Codava"}}'::jsonb,'02:00:00','06:00:00','https://akeraamxcaazrtvxkbkt.supabase.co/storage/v1/object/public/contracts/Public/rental-10/Contract_Locatiune_CT-10-2025.pdf',NULL,'codava.dev@gmail.com')
+ON CONFLICT (id) DO NOTHING;
+
+
+SELECT setval(pg_get_serial_sequence('public."Cars"', 'id'), (SELECT COALESCE(MAX(id), 1) FROM public."Cars"));
+SELECT setval(pg_get_serial_sequence('public."BorrowRequest"', 'id'), (SELECT COALESCE(MAX(id), 1) FROM public."BorrowRequest"));
+SELECT setval(pg_get_serial_sequence('public."Rentals"', 'id'), (SELECT COALESCE(MAX(id), 1) FROM public."Rentals"));

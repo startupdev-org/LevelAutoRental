@@ -59,7 +59,6 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
     '/how-to-rent',
     '/reviews',
     '/terms',
-    '/calculator',
     '/not-found'
   ];
 
