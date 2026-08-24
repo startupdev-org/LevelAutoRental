@@ -1879,9 +1879,9 @@ export const uploadContractToStorage = async (
     const { supabaseAdmin } = await import('./supabase');
 
     // Verify service key is available
-    const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+    const serviceKey = import.meta.env.SUPABASE_SERVICE_KEY;
     if (!serviceKey) {
-      console.error('VITE_SUPABASE_SERVICE_KEY is not set. Cannot upload to storage.');
+      console.error('SUPABASE_SERVICE_KEY is not set. Cannot upload to storage.');
       throw new Error('Service key not configured');
     }
 

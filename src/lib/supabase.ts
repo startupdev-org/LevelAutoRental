@@ -1,17 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+const supabaseUrl = import.meta.env.SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_KEY;
 
 // Validate environment variables
 if (!supabaseUrl) {
-  throw new Error('Missing env.VITE_SUPABASE_URL');
+  throw new Error('Missing env.SUPABASE_URL');
 }
 
 if (!supabaseAnonKey) {
-  throw new Error('Missing env.VITE_SUPABASE_ANON_KEY');
+  throw new Error('Missing env.SUPABASE_ANON_KEY');
 }
 
 // Create and export Supabase client

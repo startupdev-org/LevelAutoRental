@@ -3,7 +3,7 @@ import { supabase, supabaseAdmin } from '../../supabase';
 import { getLoggedUser } from '../user/profile';
 
 
-const redirectUrl = `${import.meta.env.VITE_BASE_URL}/update-password`;
+const redirectUrl = `${import.meta.env.BASE_URL}/update-password`;
 
 
 
