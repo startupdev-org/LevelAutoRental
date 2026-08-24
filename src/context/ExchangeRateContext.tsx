@@ -58,7 +58,7 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
         }
 
         // Use exchangeratesapi.io
-        const apiKey = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
+        const apiKey = import.meta.env.EXCHANGE_RATE_API_KEY;
         let url = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/MDL`;
         let usedBackupApi = false;
 
