@@ -45,6 +45,7 @@ const LoadingScreen = ({ isTransitioning = false, onLoadingComplete }: LoadingSc
       '/logos/hyundai.png',
       '/logos/maserati.png',
       '/logos/merc.svg',
+      '/logos/renault.png',
       
       // Car images (main images only for faster loading)
       // '/cars/c43/c43-1.jpg',

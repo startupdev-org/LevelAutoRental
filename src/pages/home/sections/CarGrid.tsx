@@ -12,29 +12,33 @@ import { fetchCarsWithPhotos } from '../../../lib/db/cars/cars-page/cars';
 
 const NUMBER_OF_CARS = 4;
 
-export const CarGrid: React.FC = () => {
+export const CarGrid: React.FC<{ excludeCarId?: string | number }> = ({ excludeCarId }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { ref, isInView } = useInView();
-  const dataFetchedRef = React.useRef(false);
-
   const [cars, setCars] = useState<CarType[]>([]);
 
-  async function handleFetchCarsWithPhotos() {
-    try {
-      const fetchedCars = await fetchCarsWithPhotos(NUMBER_OF_CARS);
-      setCars(fetchedCars);
-    } catch (error) {
-      console.error('Error fetching cars:', error);
-    }
-  }
-
   useEffect(() => {
-    if (dataFetchedRef.current) return;
-    dataFetchedRef.current = true;
-    handleFetchCarsWithPhotos();
-  }, []);
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const fetchedCars = await fetchCarsWithPhotos(excludeCarId ? NUMBER_OF_CARS + 1 : NUMBER_OF_CARS);
+        if (cancelled) return;
+        const next = excludeCarId
+          ? fetchedCars.filter((item) => String(item.id) !== String(excludeCarId)).slice(0, NUMBER_OF_CARS)
+          : fetchedCars;
+        setCars(next);
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [excludeCarId]);
 
   return (
     <section className="py-16 pb-32 https://sevenluxurycarrental.com/wp-content/uploads/2024/08/benefits-of-renting-an-exotic-car-in-dubai.jpg">

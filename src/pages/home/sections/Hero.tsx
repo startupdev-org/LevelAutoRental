@@ -98,6 +98,7 @@ export const Hero: React.FC = () => {
       'vw': '/logos/volkswagen-1-logo-black-and-white.png',
       'lincoln': '/logos/lincoln.png',
       'porsche': '/logos/porsche.png',
+      'renault': '/logos/renault.png',
     };
     return logoMap[makeLower] || null;
   };
@@ -105,6 +106,9 @@ export const Hero: React.FC = () => {
   // Get logo size class based on make
   const getLogoSizeClass = (make: string): string => {
     const makeLower = make.toLowerCase();
+    if (makeLower === 'renault') {
+      return 'w-[15px] h-[15px] -ml-[2px]';
+    }
     if (makeLower === 'porsche') {
       return 'w-4 h-4';
     }

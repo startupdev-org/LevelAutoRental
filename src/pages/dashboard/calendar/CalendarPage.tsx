@@ -302,6 +302,9 @@ export const CalendarPage: React.FC<Props> = () => {
     const getLogoSize = (make: string): string => {
         const makeLower = make.toLowerCase();
         // Maserati, Audi, Lincoln, and Porsche need bigger logos
+        if (makeLower === 'renault') {
+            return 'w-[15px] h-[15px] -ml-[2px]';
+        }
         if (makeLower === 'maserati' || makeLower === 'audi' || makeLower === 'lincoln' || makeLower === 'porsche') {
             return 'w-6 h-6';
         }
