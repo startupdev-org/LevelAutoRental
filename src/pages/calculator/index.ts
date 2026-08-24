@@ -1,2 +1,0 @@
-export { Calculator } from './Calculator';
-

@@ -26,7 +26,6 @@ const About = lazy(() => import('../pages/about/About').then(m => ({ default: m.
 const HowToRent = lazy(() => import('../pages/howToRent/HowToRent').then(m => ({ default: m.HowToRent })));
 const Contact = lazy(() => import('../pages/contact/Contact').then(m => ({ default: m.Contact })));
 const Booking = lazy(() => import('../pages/booking/Booking').then(m => ({ default: m.Booking })));
-const Calculator = lazy(() => import('../pages/calculator/Calculator').then(m => ({ default: m.Calculator })));
 const Terms = lazy(() => import('../pages/terms/Terms.tsx').then(m => ({ default: m.Terms })));
 const FAQ = lazy(() => import('../pages/faq/FAQ').then(m => ({ default: m.FAQ })));
 const Login = lazy(() => import('../pages/auth/Login.tsx').then(m => ({ default: m.Login })));
@@ -63,7 +62,6 @@ const RouterWrapper = () => {
         <Route path="/how-to-rent" element={<HowToRent />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/booking" element={<Booking />} />
-        <Route path="/calculator" element={<Calculator />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<FAQ />} />
         <Route path="/not-found" element={<NotFound />} />
