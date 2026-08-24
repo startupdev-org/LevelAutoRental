@@ -41,59 +41,44 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
         }
     }, [initialSearch]);
 
-
+    // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [orders, orderStatusFilter]);
+    }, [searchQuery, orderStatusFilter, showCancelled, sortBy, sortOrder]);
 
+    // Fetch orders when page or filters change
     useEffect(() => {
         const loadOrdersPaginated = async () => {
             setLoading(true);
             try {
-                const { rentals, total } = await handleFetchRentalsForAdminPaginated(
+                const { rentals, total } = await fetchRentalsForAdminPaginated(
                     currentPage,
-                    pageSize
+                    pageSize,
+                    {
+                        status: orderStatusFilter,
+                        searchQuery,
+                        sortBy,
+                        sortOrder
+                    }
                 );
 
-                setOrders(rentals)
-                setTotalOrders(total)
-
+                setOrders(rentals);
+                setTotalOrders(total);
             } catch (err) {
                 console.error(err);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
         };
         loadOrdersPaginated();
-    }, []);
+    }, [currentPage, searchQuery, orderStatusFilter, sortBy, sortOrder]);
 
-    async function handleFetchRentalsForAdminPaginated(
-        page: number,
-        pageSize: number
-    ): Promise<{ rentals: RentalDTO[]; total: number }> {
-        return await fetchRentalsForAdminPaginated(page, pageSize);
-    }
+    // For cancelled items, we still need to filter client-side since DB doesn't know about showCancelled preference
+    const displayOrders = showCancelled ? orders : orders.filter(order => order.rental_status !== 'CANCELLED');
 
-    // Filter orders based on status filter and cancelled visibility
-    const filteredOrders = orders.filter(order => {
-        // Filter by status (ACTIVE/COMPLETED)
-        if (orderStatusFilter && order.rental_status !== orderStatusFilter) {
-            return false;
-        }
-
-        // Filter cancelled orders if not showing them
-        if (!showCancelled && order.rental_status === 'CANCELLED') {
-            return false;
-        }
-
-        return true;
-    });
-
-    const totalPages = Math.ceil(filteredOrders.length / pageSize);
-    const paginatedOrders = filteredOrders.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
+    const totalPages = Math.ceil(totalOrders / pageSize);
+    // Orders are already paginated by the server, no need to slice client-side
+    const paginatedOrders = displayOrders;
 
     const goToPage = (page: number) => {
         if (page < 1 || page > totalPages) return;
@@ -476,7 +461,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ title, loading = false
             {/* Pagination */}
             <div className="px-3 md:px-6 py-3 md:py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-xs md:text-sm text-gray-300 text-center sm:text-left">
-                    {t('admin.orders.showing')} {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.orders.to')} {Math.min(currentPage * pageSize, filteredOrders.length)} {t('admin.orders.of')} {filteredOrders.length} {t('admin.orders.orders')}
+                    {t('admin.orders.showing')} {paginatedOrders.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} {t('admin.orders.to')} {Math.min(currentPage * pageSize, totalOrders)} {t('admin.orders.of')} {totalOrders} {t('admin.orders.orders')}
                 </div>
                 <div className="flex items-center gap-2">
                     <button

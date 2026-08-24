@@ -294,6 +294,8 @@ export const Cars: React.FC = () => {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
@@ -305,6 +307,7 @@ export const Cars: React.FC = () => {
   // Close sidebar and apply filters
   const closeSidebarAndApply = () => {
     setShowAdvancedFilters(false);
+    setCurrentPage(1); // Reset to first page when applying filters
     // Apply the current sidebar filters automatically when closing
     handleFetchFilteredCars({
       make: filters.make,
@@ -422,6 +425,11 @@ export const Cars: React.FC = () => {
     }
   }, [allCars, searchParams]); // Run when allCars change or search params change
 
+  // Reset page when sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy]);
+
   // Validation states (kept for potential future use)
   // const [validationErrors, setValidationErrors] = useState({
   //   yearRange: false,
@@ -462,6 +470,12 @@ export const Cars: React.FC = () => {
       return Number(a.year || 0) - Number(b.year || 0);
     });
   }, [cars, sortBy]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedCars.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCars = sortedCars.slice(startIndex, endIndex);
 
   // Get car make logo path
   const getMakeLogo = (make: string): string | null => {
@@ -556,6 +570,7 @@ export const Cars: React.FC = () => {
       model: ''
     });
     setSidebarFilters(prev => ({ ...prev, ...defaultSidebarFilters }));
+    setCurrentPage(1); // Reset to first page
     // Clear URL params - only if we're not already on the clean URL
     const currentPath = window.location.pathname + window.location.search;
     if (currentPath !== '/cars') {
@@ -1217,17 +1232,69 @@ export const Cars: React.FC = () => {
             <>
               {/* Cars Grid */}
               {sortedCars.length > 0 ? (
-                <motion.div
-                  ref={ref}
-                  variants={staggerContainer}
-                  initial="initial"
-                  animate={isInView ? "animate" : "initial"}
-                  className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
-                >
-                  {sortedCars.map((car, index) => (
-                      <CarCard key={car.id} car={car} index={index} />
-                    ))}
-                </motion.div>
+                <>
+                  <motion.div
+                    ref={ref}
+                    variants={staggerContainer}
+                    initial="initial"
+                    animate={isInView ? "animate" : "initial"}
+                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
+                  >
+                    {paginatedCars.map((car, index) => (
+                        <CarCard key={car.id} car={car} index={index} />
+                      ))}
+                  </motion.div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="mt-12 flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (currentPage > 1) {
+                            setCurrentPage(currentPage - 1);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }
+                        }}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Anterior
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => {
+                              setCurrentPage(page);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                              currentPage === page
+                                ? 'bg-theme-500 text-white'
+                                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (currentPage < totalPages) {
+                            setCurrentPage(currentPage + 1);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }
+                        }}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Următor
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 // Check if any filters are applied
                 (appliedFilters.make || appliedFilters.model ||

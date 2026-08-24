@@ -13,7 +13,7 @@ import { OrderDisplay } from '../../../types';
 import {
     fetchAllOrders
 } from '../../../lib/orders';
-import { fetchBorrowRequests } from '../../../lib/db/requests/requests';
+import { fetchActiveBorrowRequests } from '../../../lib/db/requests/requests';
 
 // Dashboard View Component
 export const DashboardView: React.FC = () => {
@@ -53,9 +53,9 @@ export const DashboardView: React.FC = () => {
                     setOrders(fetchedOrders);
                 }
 
-                // Fetch borrow requests with APPROVED and PROCESSED status
-                const allBorrowRequests = await fetchBorrowRequests();
-                const approvedOrProcessedRequests = allBorrowRequests.filter(
+                // Fetch active borrow requests (PENDING/APPROVED/PROCESSED)
+                const activeRequests = await fetchActiveBorrowRequests();
+                const approvedOrProcessedRequests = activeRequests.filter(
                     request => request.status === 'APPROVED' || request.status === 'PROCESSED'
                 );
                 setBorrowRequests(approvedOrProcessedRequests);
