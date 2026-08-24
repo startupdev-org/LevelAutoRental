@@ -1,5 +1,6 @@
 import { supabase } from '../../supabase';
 import { Car } from '../../../types';
+import { imageCache } from '../../cache/imageCache';
 
 /**
  * Fetch car by id
@@ -137,6 +138,12 @@ function normalizeCarNameToFolder(carName: string): string {
 export async function fetchImagesByCarName(
     carName: string
 ): Promise<{ mainImage: string | null; photoGallery: string[] }> {
+    // Check cache first to avoid repeated Supabase requests
+    const cached = imageCache.get(carName);
+    if (cached) {
+        return { mainImage: cached.mainImage, photoGallery: cached.photoGallery };
+    }
+
     try {
         // Normalize car name to match folder structure
         // "Mercedes-AMG C43" → "mercedes-c43", "BMW X4" → "bmw-x4"
@@ -237,6 +244,9 @@ export async function fetchImagesByCarName(
             ...(mainImage ? [mainImage] : []),
             ...sortedImages,
         ];
+
+        // Cache the result for future requests
+        imageCache.set(carName, { mainImage, photoGallery });
 
         return { mainImage, photoGallery };
     } catch (err) {
