@@ -120,13 +120,7 @@ export const HowToRent: React.FC = () => {
                 </motion.div>
 
                 {/* Customer Journey Narrative */}
-                <motion.div
-                    variants={staggerContainer}
-                    initial="initial"
-                    whileInView="animate"
-                    viewport={{ once: true }}
-                    className="lg:max-w-9xl mx-[30px] lg:mx-auto"
-                >
+                <div className="lg:max-w-9xl mx-[30px] lg:mx-auto">
                     {/* Journey Flow */}
                     <div className="relative">
                         {/* Connecting Line */}
@@ -134,9 +128,8 @@ export const HowToRent: React.FC = () => {
 
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-[150px] relative z-10">
                             {journeySteps.map((step, index) => (
-                                <motion.div
+                                <div
                                     key={step.id}
-                                    variants={fadeInUp}
                                     className="relative"
                                 >
                                     {/* Step Card */}
@@ -169,35 +162,27 @@ export const HowToRent: React.FC = () => {
                                     {/* Flow Arrow - Hidden on mobile, visible on lg+ */}
                                     {index < journeySteps.length - 1 && (
                                         <div className="hidden lg:block absolute top-1/2 -right-[75px] transform -translate-y-1/2 z-20">
-                                            <motion.div
-                                                initial={{ x: -10, opacity: 0 }}
-                                                whileInView={{ x: 0, opacity: 1 }}
-                                                transition={{ delay: 0.5 + index * 0.2 }}
-                                                className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg"
-                                            >
+                                            <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
                                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                                                 </svg>
-                                            </motion.div>
+                                            </div>
                                         </div>
                                     )}
-                                </motion.div>
+                                </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Closing Tagline */}
-                    <motion.div
-                        variants={fadeInUp}
-                        className="text-center mt-12 lg:mt-16"
-                    >
+                    <div className="text-center mt-12 lg:mt-16">
                         <div className="inline-flex items-center justify-center bg-gradient-to-r from-red-500 to-red-600 rounded-full px-4 py-3 md:px-8 md:py-4 shadow-2xl">
                             <span className="text-white font-bold text-sm md:text-lg">
                                 {t('howToRent.tagline')}
                             </span>
                         </div>
-                    </motion.div>
-                </motion.div>
+                    </div>
+                </div>
             </div>
         </section>
     );
