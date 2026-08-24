@@ -64,8 +64,20 @@ export const getRentalStatusDisplay = (status: string): { text: string; classNam
     };
 };
 
+export const MAKE_LOGOS: { src: string; alt: string; filter: string }[] = [
+    { src: '/logos/audi.png', alt: 'Audi', filter: 'Audi' },
+    { src: '/logos/bmw.webp', alt: 'BMW', filter: 'BMW' },
+    { src: '/logos/hyundai.png', alt: 'Hyundai', filter: 'Hyundai' },
+    { src: '/logos/maserati.png', alt: 'Maserati', filter: 'Maserati' },
+    { src: '/logos/merc.svg', alt: 'Mercedes-Benz', filter: 'Mercedes' },
+    { src: '/logos/lincoln.png', alt: 'Lincoln', filter: 'Lincoln' },
+    { src: '/logos/volkswagen-1-logo-black-and-white.png', alt: 'Volkswagen', filter: 'Volkswagen' },
+    { src: '/logos/porsche.png', alt: 'Porsche', filter: 'Porsche' },
+    { src: '/logos/renault.png', alt: 'Renault', filter: 'Renault' },
+];
+
 export const getMakeLogo = (make: string): string | null => {
-    const makeLower = make.toLowerCase();
+    const makeLower = make.toLowerCase().trim();
     const logoMap: { [key: string]: string } = {
         'mercedes': '/logos/merc.svg',
         'mercedes-benz': '/logos/merc.svg',
@@ -77,6 +89,9 @@ export const getMakeLogo = (make: string): string | null => {
         'vw': '/logos/volkswagen-1-logo-black-and-white.png',
         'lincoln': '/logos/lincoln.png',
         'porsche': '/logos/porsche.png',
+        'renault': '/logos/renault.png',
     };
-    return logoMap[makeLower] || null;
+    if (logoMap[makeLower]) return logoMap[makeLower];
+    const match = Object.keys(logoMap).find((key) => key.length > 2 && makeLower.startsWith(key));
+    return match ? logoMap[match] : null;
 };
