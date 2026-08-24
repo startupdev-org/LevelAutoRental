@@ -28,7 +28,7 @@ export const Contact: React.FC = () => {
     mediaQuery.addEventListener("change", handleChange);
 
     // Initialize EmailJS with public key from environment variables
-    const publicKey = import.meta.env.EMAILJS_PUBLIC_KEY;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
     if (publicKey && emailjs) {
       emailjs.init(publicKey);
     }
@@ -374,8 +374,8 @@ export const Contact: React.FC = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={`mt-4 p-4 rounded-2xl text-center ${submitStatus.type === 'success'
-                        ? 'bg-green-50 text-green-800 border border-green-200'
-                        : 'bg-red-50 text-red-800 border border-red-200'
+                      ? 'bg-green-50 text-green-800 border border-green-200'
+                      : 'bg-red-50 text-red-800 border border-red-200'
                       }`}
                   >
                     {submitStatus.message}

@@ -21,7 +21,7 @@ interface RentalRequestEmailParams {
 export const sendRentalRequestEmail = async (params: RentalRequestEmailParams): Promise<void> => {
     try {
         // Initialize EmailJS if not already initialized
-        const publicKey = import.meta.env.EMAILJS_PUBLIC_KEY;
+        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
         if (publicKey && emailjs) {
             emailjs.init(publicKey);
