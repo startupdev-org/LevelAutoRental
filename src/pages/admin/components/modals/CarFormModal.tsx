@@ -179,7 +179,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
             setUploadingMainImage(true);
             try {
                 // Check if supabaseAdmin is available (service key required)
-                if (!import.meta.env.SUPABASE_SERVICE_KEY) {
+                if (!import.meta.env.VITE_SUPABASE_SERVICE_KEY) {
                     throw new Error('Service key not available for file upload');
                 }
 
@@ -246,7 +246,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({ car, onSave, onClose
         setUploadingMainImage(true);
         try {
             // Check if supabaseAdmin is available (service key required)
-            if (!import.meta.env.SUPABASE_SERVICE_KEY) {
+            if (!import.meta.env.VITE_SUPABASE_SERVICE_KEY) {
                 throw new Error('Service key not available for file upload');
             }
 
