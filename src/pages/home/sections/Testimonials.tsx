@@ -1,9 +1,8 @@
-import React from 'react';
 import { testimonials } from '../../../data/testimonials';
 import { useTranslation } from 'react-i18next';
 import { TestimonialSlider } from '../../../components/ui/TestimonialSlider';
 
-export const Testimonials: React.FC = () => {
+export const Testimonials = () => {
   const { t } = useTranslation();
 
   return (
@@ -23,9 +22,7 @@ export const Testimonials: React.FC = () => {
 
         <TestimonialSlider
           testimonials={testimonials}
-          showArrows={true}
-          autoplay={true}
-          autoplaySpeed={4000}
+          autoplay
         />
       </div>
     </section>
