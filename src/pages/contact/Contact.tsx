@@ -6,6 +6,7 @@ import { Phone, Mail, MapPin, Send } from "lucide-react";
 import { FaFacebookF } from "react-icons/fa";
 import { GrInstagram } from "react-icons/gr";
 import emailjs from '@emailjs/browser';
+import { OFFICE_ADDRESS, OFFICE_GOOGLE_MAPS_URL } from '../../constants';
 
 // TikTok Icon Component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -39,7 +40,7 @@ export const Contact: React.FC = () => {
   const contactInfo = [
     { icon: Phone, text: '+373 62 000 112', href: 'tel:+37362000112', label: 'Phone' },
     { icon: Mail, text: 'info@levelautorental.com', href: 'mailto:info@levelautorental.com', label: 'Email' },
-    { icon: MapPin, text: 'Chisinau, Moldova', href: '#', label: 'Location' }
+    { icon: MapPin, text: OFFICE_ADDRESS, href: OFFICE_GOOGLE_MAPS_URL, label: 'Location' }
   ];
 
   const socialLinks: Array<{ icon: React.FC<any>, href: string, label: string }> = [
@@ -203,6 +204,7 @@ export const Contact: React.FC = () => {
                   <motion.a
                     key={index}
                     href={contact.href}
+                    {...(contact.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     variants={fadeInUp}
                     className="flex items-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group"
                   >
@@ -233,6 +235,7 @@ export const Contact: React.FC = () => {
                       aria-label={social.label}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.95 }}
+
                     >
                       <social.icon className={social.icon === FaFacebookF ? "w-5 h-5" : "w-6 h-6"} />
                     </motion.a>

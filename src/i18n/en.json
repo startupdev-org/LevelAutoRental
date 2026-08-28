@@ -13,6 +13,7 @@
         "profile": "Profile",
         "settings": "Settings",
         "admin": "Admin",
+        "signIn": "Sign In",
         "signOut": "Sign Out"
     },
     "languages": {
@@ -178,7 +179,7 @@
                         "refuel": "Do I need to refuel the car before returning it?"
                     },
                     "answers": {
-                        "pickup-location": "• **Main Office**: Central Chisinau location\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
+                        "pickup-location": "• **Main Office**: Chișinău, Muncești 271 A\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
                         "different-return": "• **One-way Rentals**: Available between major cities\n• **Additional Fee**: €50-€200 depending on distance\n• **Advance Notice**: Book 48 hours in advance\n• **Restrictions**: Some locations may not allow returns",
                         "late-return": "• **Grace Period**: 30 minutes free\n• **Late Fees**: €25 per hour after grace period\n• **Communication**: Contact us if you'll be late\n• **Flexibility**: We try to accommodate delays when possible",
                         "refuel": "• **Same Level**: Return with same fuel as pickup\n• **Refueling Service**: €50 + fuel cost if needed\n• **Nearby Stations**: Maps provided for convenience\n• **Receipt**: Keep fuel receipts for verification"
@@ -565,7 +566,7 @@
                         "refuel": "Do I need to refuel the car before returning it?"
                     },
                     "answers": {
-                        "pickup-location": "• **Main Office**: Central Chisinau location\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
+                        "pickup-location": "• **Main Office**: Chișinău, Muncești 271 A\n• **Airport**: Chisinau International Airport\n• **Partner Stations**: Select hotels and stations\n• **Delivery Service**: Available for premium rentals",
                         "different-return": "• **One-way Rentals**: Available between major cities\n• **Additional Fee**: €50-€200 depending on distance\n• **Advance Notice**: Book 48 hours in advance\n• **Restrictions**: Some locations may not allow returns",
                         "late-return": "• **Grace Period**: 30 minutes free\n• **Late Fees**: €25 per hour after grace period\n• **Communication**: Contact us if you'll be late\n• **Flexibility**: We try to accommodate delays when possible",
                         "refuel": "• **Same Level**: Return with same fuel as pickup\n• **Refueling Service**: €50 + fuel cost if needed\n• **Nearby Stations**: Maps provided for convenience\n• **Receipt**: Keep fuel receipts for verification"
@@ -589,7 +590,9 @@
         "transmissionLabel": "Transmission",
         "fuelLabel": "Fuel",
         "bodyType": "Body Type",
-        "mileageLimit": "200km/day",
+        "mileageLimit": "Unlimited km",
+        "mileageLimitMobile": "No km limit",
+        "mileageLimitNarrow": "Unlimited km",
         "seeCar": "See car",
         "seeMorePhotos": "See {{count}} more photos",
         "noImage": "No Image",
@@ -608,6 +611,10 @@
         "available": "Available",
         "availableNow": "Car available",
         "availableFrom": "Available from {{date}}",
+        "statusBooked": "Booked",
+        "statusBorrowed": "Borrowed",
+        "statusMaintenance": "In service",
+        "statusUnavailable": "Unavailable",
         "reviewsLabel": "reviews",
         "chooseDates": "Choose dates",
         "rentalCost": "Rental Cost",
@@ -694,7 +701,6 @@
         "pickup": "Pickup",
         "return": "Return",
         "additionalOptions": "Additional options",
-        "unlimitedMileage": "Unlimited mileage",
         "noSpeedLimit": "No speed limit",
         "personalDriver": "Personal driver",
         "priorityService": "Priority Service",
@@ -741,10 +747,6 @@
     "rentalOptions": {
         "sectionLabel": "Additional Services",
         "sectionTitle": "Rental Options",
-        "unlimitedMileage": {
-            "title": "Unlimited mileage",
-            "description": "Rental price will be 50% higher"
-        },
         "personalDriver": {
             "title": "Personal driver",
             "price": "from 800 MDL per day"
@@ -789,8 +791,8 @@
             "value": "at least 3 years"
         },
         "mileage": {
-            "label": "km/day",
-            "value": "up to 200km"
+            "label": "Mileage",
+            "value": "Unlimited"
         },
         "moreDetails": "More Details",
         "details": {
@@ -808,7 +810,7 @@
             },
             "mileageLimit": {
                 "title": "Mileage limit",
-                "description": "In case of rental for several days, the limit is calculated in total. In case of exceeding the limit and in the absence of the activated 'Unlimited mileage' option, the excess is paid separately."
+                "description": "In case of rental for several days, the limit is calculated in total. Exceeding the limit is charged separately according to the rate communicated at rental."
             },
             "secondDriver": {
                 "title": "Second driver",

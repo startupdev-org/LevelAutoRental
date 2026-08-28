@@ -48,13 +48,16 @@ export function useAuth() {
           setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
         );
         
-        // Try Profiles table first (most common)
+        const { data: authUserMeta } = await supabase.auth.getUser();
+        const sessionEmail = authUserMeta?.user?.email?.trim() ?? null;
+
+        // Primary: Profiles.id must match auth.uid() after signup / sync.
         const fetchPromise = supabase
           .from('Profiles')
           .select('id, email, first_name, last_name, phone_number, role')
           .eq('id', userId)
           .maybeSingle();
-        
+
         let queryResult;
         try {
           queryResult = await Promise.race([fetchPromise, timeoutPromise]);
@@ -65,8 +68,8 @@ export function useAuth() {
           isFetchingRef.current = false;
           return;
         }
-        
-        const { data, error } = queryResult as any;
+
+        const { data: byId, error } = queryResult as any;
 
         if (error) {
           console.error('❌ Error fetching profile:', error);
@@ -81,14 +84,30 @@ export function useAuth() {
           return;
         }
 
-        if (data) {
-          const profile = data as UserProfile;
+        let row = byId;
+        if (!row && sessionEmail) {
+          const { data: byEmail, error: emailErr } = await supabase
+            .from('Profiles')
+            .select('id, email, first_name, last_name, phone_number, role')
+            .ilike('email', sessionEmail)
+            .maybeSingle();
+          if (emailErr) {
+            console.error('❌ Error fetching profile by email:', emailErr);
+          } else {
+            row = byEmail;
+          }
+        }
+
+        if (row) {
+          const profile = {
+            ...row,
+            id: userId,
+            email: row.email ?? sessionEmail ?? '',
+          } as UserProfile;
           setUserProfile(profile);
-          // Cache the result
           profileCacheRef.current.set(userId, profile);
         } else {
           setUserProfile(null);
-          // Cache the null result
           profileCacheRef.current.set(userId, null);
         }
         setRoleLoaded(true);

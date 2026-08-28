@@ -1761,24 +1761,6 @@ export const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, on
                                     <div className="flex items-center gap-3">
                                         <input
                                             type="checkbox"
-                                            checked={options.unlimitedKm}
-                                            onChange={(e) => setOptions((prev: any) => ({ ...prev, unlimitedKm: e.target.checked }))}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-5 h-5 border-2 rounded transition-all flex items-center justify-center ${options.unlimitedKm
-                                            ? 'bg-red-500 border-red-500'
-                                            : 'border-white/30 bg-transparent group-hover:border-white/50'
-                                            }`}>
-                                            {options.unlimitedKm && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                        <span className="font-medium text-white text-sm">Kilometraj nelimitat</span>
-                                    </div>
-                                    <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">+50%</span>
-                                </label>
-                                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="checkbox"
                                             checked={options.speedLimitIncrease}
                                             onChange={(e) => setOptions((prev: any) => ({ ...prev, speedLimitIncrease: e.target.checked }))}
                                             className="sr-only"
@@ -1986,9 +1968,12 @@ export const CreateRentalModal: React.FC<CreateRentalModalProps> = ({ onSave, on
 
                                 let additionalCosts = 0;
 
-        if (options.unlimitedKm) {
-            additionalCosts += pricePerDay * rentalDays * 0.5;
-        }
+                                if (options.unlimitedKm) {
+                                    additionalCosts += pricePerDay * totalDays * 0.5;
+                                }
+                                if (options.speedLimitIncrease) {
+                                    additionalCosts += pricePerDay * totalDays * 0.2;
+                                }
         if (options.tireInsurance) {
             additionalCosts += pricePerDay * rentalDays * 0.2;
         }

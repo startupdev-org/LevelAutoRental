@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, ArrowLeft } from 'lucide-react';
@@ -8,6 +8,16 @@ import { useTranslation } from 'react-i18next';
 const NotFound: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    setIsDesktop(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   return (
     /* Main content with background */
@@ -15,9 +25,9 @@ const NotFound: React.FC = () => {
         id="not-found-page"
         className="relative bg-cover bg-no-repeat bg-fixed bg-center flex items-center justify-center py-32"
         style={{
-          backgroundImage: window.innerWidth < 768
-            ? "url('/backgrounds/bg10-mobile.jpeg')"
-            : "url('/backgrounds/bg2-desktop.jpeg')",
+          backgroundImage: isDesktop
+            ? "url('/lvl_bg.jpg')"
+            : "url('/backgrounds/bg10-mobile.jpeg')",
           backgroundPosition: 'center center',
           backgroundSize: 'cover',
           minHeight: 'calc(100vh - 80px)' // Full viewport minus approximate header height

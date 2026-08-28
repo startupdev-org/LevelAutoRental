@@ -261,8 +261,7 @@ export const Hero: React.FC = () => {
           alt="Background"
           width={1920}
           height={1080}
-          // @ts-ignore - fetchPriority is a valid HTML attribute but TypeScript types may not include it yet
-          fetchPriority="high"
+          {...({ fetchpriority: 'high' } as React.ImgHTMLAttributes<HTMLImageElement>)}
           className="w-full h-full object-cover"
         style={{
             position: 'absolute',
@@ -284,8 +283,7 @@ export const Hero: React.FC = () => {
           alt="Background"
           width={1920}
           height={1080}
-          // @ts-ignore - fetchPriority is a valid HTML attribute but TypeScript types may not include it yet
-          fetchPriority="high"
+          {...({ fetchpriority: 'high' } as React.ImgHTMLAttributes<HTMLImageElement>)}
           className="w-full h-full object-cover"
         style={{
             position: 'absolute',
@@ -307,8 +305,7 @@ export const Hero: React.FC = () => {
           alt="Background"
           width={768}
           height={1024}
-          // @ts-ignore - fetchPriority is a valid HTML attribute but TypeScript types may not include it yet
-          fetchPriority="high"
+          {...({ fetchpriority: 'high' } as React.ImgHTMLAttributes<HTMLImageElement>)}
           className="w-full h-full object-cover"
           style={{
             position: 'absolute',

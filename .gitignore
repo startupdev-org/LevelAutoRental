@@ -37,4 +37,6 @@ scripts
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?scripts/
+*.sw?
+
+/scripts

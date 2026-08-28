@@ -91,13 +91,17 @@ async function fetchAndMergeCustomerData(rental: any): Promise<{
 }
 
 export async function getUserRentals(): Promise<RentalDTO[]> {
-
-    const user = await getLoggedUser();
+    const {
+        data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser?.id) {
+        return [];
+    }
 
     const { data } = await supabase
         .from('Rentals')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', authUser.id)
 
     // If no rentals found, return empty array
     if (!data || data.length === 0) {

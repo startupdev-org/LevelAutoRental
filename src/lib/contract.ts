@@ -190,7 +190,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.setFont('times', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(60, 60, 60);
-    const addressText = convertRomanianToASCII('Republica Moldova, mun. Chișinău, or. Chișinău');
+    const addressText = convertRomanianToASCII('Republica Moldova, mun. Chișinău, str. Muncești 271 A');
     const addressWidth = doc.getTextWidth(addressText);
     doc.text(addressText, infoX - addressWidth, infoStartY + companyNameHeight + 2);
     const telText = 'Tel: +373 62-000-112';
@@ -234,7 +234,7 @@ export const generateContractPDF = async (data: ContractData): Promise<{ pdfBlob
     doc.setFontSize(9);
 
     const partyText1 = convertRomanianToASCII('Compania LEVEL AUTO RENTAL S.R.L., cu sediul in Republica Moldova, mun. Chisinau, or. Chisinau,');
-    const partyText2 = convertRomanianToASCII('str. Mircea cel Batran 13/1, cod fiscal 1024606013124, (denumita in continuare "Locator"), reprezentata de Levițchi');
+    const partyText2 = convertRomanianToASCII('str. Muncești 271 A, cod fiscal 1024606013124, (denumita in continuare "Locator"), reprezentata de Levițchi');
     const partyText3 = convertRomanianToASCII('Victorin, in calitate de administrator, care actioneaza in baza statutului, pe de o parte,');
 
     doc.text(partyText1, margin, y);
@@ -2023,8 +2023,8 @@ export const createContractDataFromOrder = (
       startTime: order.pickupTime,
       endDate: order.returnDate,
       endTime: order.returnTime,
-      pickupLocation: additionalData?.pickupLocation || 'Chișinău, str. Mircea cel Bătrân 13/1',
-      returnLocation: additionalData?.returnLocation || 'Chișinău, str. Mircea cel Bătrân 13/1',
+      pickupLocation: additionalData?.pickupLocation || 'Chișinău, Muncești 271 A',
+      returnLocation: additionalData?.returnLocation || 'Chișinău, Muncești 271 A',
       pricePerDay,
       numberOfDays: days,
       subtotal,

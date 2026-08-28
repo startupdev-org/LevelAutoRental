@@ -13,31 +13,57 @@ export interface UserProfileUpdate {
 
 export async function getLoggedUser(): Promise<User> {
     const {
-        data: { user: supabase_user },
+        data: { user: authUser },
         error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !supabase_user || !supabase_user.id) {
+    if (authError || !authUser?.id) {
         console.error('Auth error or no logged-in user', authError);
-        throw authError
+        throw authError;
     }
 
-    console.log('id: ', supabase_user.id)
+    const { data: profile, error } = await supabase
+        .from('Profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+    if (error) throw error;
+
+    const email = profile?.email ?? authUser.email ?? '';
+
+    // App identity uses Auth id. BorrowRequest.user_id still requires a Profiles row (FK).
+    if (!profile) {
+        return {
+            id: authUser.id,
+            email,
+            role: null,
+        } as User;
+    }
+
+    return {
+        ...profile,
+        id: authUser.id,
+        email: profile.email ?? authUser.email ?? email,
+    } as User;
+}
+
+/** Profiles.id for the current session, or null if no row (safe for BorrowRequest.user_id FK). */
+export async function getProfileIdForBorrowFkey(): Promise<string | null> {
+    const {
+        data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser?.id) return null;
 
     const { data, error } = await supabase
         .from('Profiles')
-        .select('*')
-        .eq('id', supabase_user.id)
+        .select('id')
+        .eq('id', authUser.id)
         .maybeSingle();
 
-    if (error)
-        throw error
-
-    console.log('the user is: ', data)
-
-    return data as User;
+    if (error || !data?.id) return null;
+    return data.id;
 }
-
 
 export async function getProfile(): Promise<User | null> {
     try {

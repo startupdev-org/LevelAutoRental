@@ -278,7 +278,15 @@ export default function FavoriteCarComponent({ favoriteCars }: FavoriteCarCompon
                             <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
                                 <PiSpeedometerFill className="w-4 h-4 text-gray-300" />
                             </div>
-                            <span className="text-sm font-medium">{t('car.mileageLimit')}</span>
+                            <span className="text-sm font-medium max-[433px]:text-xs">
+                                <span className="hidden max-[433px]:inline md:hidden">
+                                    {t('car.mileageLimitNarrow', { defaultValue: t('car.mileageLimit') })}
+                                </span>
+                                <span className="hidden min-[434px]:max-md:inline">
+                                    {t('car.mileageLimitMobile', { defaultValue: t('car.mileageLimit') })}
+                                </span>
+                                <span className="hidden md:inline">{t('car.mileageLimit')}</span>
+                            </span>
                         </div>
 
                         {/* Transmission */}
