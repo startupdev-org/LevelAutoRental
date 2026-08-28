@@ -3,7 +3,6 @@ import { Menu, X, Globe, User, LogOut, Settings, LayoutDashboard, ChevronDown, S
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '../ui/Button';
 import { LANGUAGES } from "../../constants";
 import { useTranslation } from 'react-i18next';
 import { hiddenPaths } from '../../data';
@@ -464,14 +463,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                   </AnimatePresence>
                 )}
               </div>
-            ) : (
-              <Button
-                onClick={() => navigate('/auth/login')}
-                className="bg-theme-500 hover:bg-theme-600 text-white"
-              >
-                {t('header.signIn', 'Sign In')}
-              </Button>
-            )}
+            ) : null}
 
             {/* Desktop Language Selector */}
             <div className="relative language-dropdown-container">
@@ -772,17 +764,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                                 <span>{t('header.signOut')}</span>
                               </button>
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setIsMenuOpen(false);
-                                navigate('/auth/login');
-                              }}
-                              className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-theme-500 hover:bg-theme-600 rounded-lg transition-colors"
-                            >
-                              {t('header.signIn', 'Sign In')}
-                            </button>
-                          )}
+                          ) : null}
 
                         </div>
                       </div>
@@ -935,17 +917,7 @@ export const Header: React.FC<HeaderProps> = ({ forceRender }) => {
                               <span>{t('header.signOut')}</span>
                             </button>
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setIsMenuOpen(false);
-                              navigate('/auth/login');
-                            }}
-                            className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-theme-500 hover:bg-theme-600 rounded-lg transition-colors"
-                          >
-                            {t('header.signIn', 'Sign In')}
-                          </button>
-                        )}
+                        ) : null}
 
                       </div>
                     </div>
