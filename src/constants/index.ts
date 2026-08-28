@@ -1,3 +1,9 @@
+/** Main office — used in footer, contact, and map links */
+export const OFFICE_ADDRESS = 'Chișinău, Muncești 271 A';
+export const OFFICE_GOOGLE_MAPS_URL =
+  'https://www.google.com/maps/search/?api=1&query=' +
+  encodeURIComponent(`${OFFICE_ADDRESS}, Moldova`);
+
 export const LANGUAGES = [
     {
         code: "ro",

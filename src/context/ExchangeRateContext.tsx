@@ -38,24 +38,29 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
         setLoading(true);
         setError(null);
 
-        // Check cache first
-        const cachedData = localStorage.getItem('exchange_rates_v2');
+        // Check cache first (MDL per 1 EUR/USD — values should be > 1, not EUR-per-MDL fractions)
+        const cachedData = localStorage.getItem('exchange_rates_v3');
         if (cachedData) {
           try {
             const { timestamp, rates } = JSON.parse(cachedData);
             const now = new Date().getTime();
-            // Cache valid for 24 hours
-            if (now - timestamp < 24 * 60 * 60 * 1000) {
+            const cacheValid =
+              now - timestamp < 24 * 60 * 60 * 1000 &&
+              rates.eur > 1 &&
+              rates.usd > 1;
+            if (cacheValid) {
               setEur(rates.eur);
               setUsd(rates.usd);
-              setSource('api'); // It's from API, just cached
+              setSource('api');
               setLoading(false);
               return;
             }
+            localStorage.removeItem('exchange_rates_v3');
           } catch (e) {
-            localStorage.removeItem('exchange_rates_v2');
+            localStorage.removeItem('exchange_rates_v3');
           }
         }
+        localStorage.removeItem('exchange_rates_v2');
 
         // Use exchangeratesapi.io
         const apiKey = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
@@ -82,22 +87,54 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         const data = await response.json();
 
-        // Handle API response format
-        const mdlToEur = data.rates.EUR; // 1 MDL → EUR
-        const mdlToUsd = data.rates.USD; // 1 MDL → USD
+        // v6 primary: base MDL → conversion_rates; backup v4: base EUR → rates
+        const rates =
+          data.conversion_rates && typeof data.conversion_rates === 'object'
+            ? data.conversion_rates
+            : data.rates && typeof data.rates === 'object'
+              ? data.rates
+              : null;
 
-        if (mdlToEur > 0 && mdlToUsd > 0) {
-          setEur(mdlToEur);
-          setUsd(mdlToUsd);
+        // MDL per 1 unit of foreign currency (used by convertPrice as: mdlPrice / rate)
+        let mdlPerEur: number;
+        let mdlPerUsd: number;
+
+        if (!rates) {
+          throw new Error('Unexpected exchange rate payload');
+        }
+
+        if (data.base_code === 'MDL' || data.base === 'MDL') {
+          const eurPerMdl = Number(rates.EUR);
+          const usdPerMdl = Number(rates.USD);
+          if (!(eurPerMdl > 0) || !(usdPerMdl > 0)) {
+            throw new Error('Invalid MDL-based rate payload');
+          }
+          mdlPerEur = 1 / eurPerMdl;
+          mdlPerUsd = 1 / usdPerMdl;
+        } else if (data.base === 'EUR' && rates.MDL != null) {
+          const mdlPerOneEur = Number(rates.MDL);
+          const usdPerEur = Number(rates.USD);
+          if (!(mdlPerOneEur > 0) || !(usdPerEur > 0)) {
+            throw new Error('Invalid EUR-based rate payload');
+          }
+          mdlPerEur = mdlPerOneEur;
+          mdlPerUsd = mdlPerOneEur / usdPerEur;
+        } else {
+          throw new Error('Unsupported exchange rate base currency');
+        }
+
+        if (mdlPerEur > 0 && mdlPerUsd > 0) {
+          setEur(mdlPerEur);
+          setUsd(mdlPerUsd);
           setSource(usedBackupApi ? 'fallback' : 'api');
 
           localStorage.setItem(
-            'exchange_rates_v2',
+            'exchange_rates_v3',
             JSON.stringify({
               timestamp: Date.now(),
               rates: {
-                eur: mdlToEur,
-                usd: mdlToUsd
+                eur: mdlPerEur,
+                usd: mdlPerUsd
               }
             })
           );

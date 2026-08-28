@@ -1172,8 +1172,8 @@ export const Cars: React.FC = () => {
                     animate={isInView ? "animate" : "initial"}
                     className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
                   >
-                    {paginatedCars.map((car, index) => (
-                        <CarCard key={car.id} car={car} index={index} />
+                    {paginatedCars.map((car) => (
+                        <CarCard key={car.id} car={car} />
                       ))}
                   </motion.div>
 

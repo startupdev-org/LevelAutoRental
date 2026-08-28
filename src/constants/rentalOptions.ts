@@ -1,5 +1,5 @@
 export interface RentalOption {
-    id: keyof OptionsState; // one of the keys, e.g., 'unlimitedKm'
+    id: keyof OptionsState;
     label: string;
     description?: string; // optional
     category: "Limits" | "VIP Services" | "Insurance" | "Additional" | "Delivery";
@@ -21,13 +21,6 @@ export interface OptionsState {
 }
 
 export const rentalOptions: RentalOption[] = [
-    {
-        id: "unlimitedKm",
-        label: "Kilometraj nelimitat",
-        category: "Limits",
-        price: "+50%",
-        color: "red",
-    },
     {
         id: "personalDriver",
         label: "Șofer personal",

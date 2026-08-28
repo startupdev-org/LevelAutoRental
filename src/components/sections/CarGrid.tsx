@@ -103,8 +103,8 @@ export const CarGrid: React.FC = () => {
           animate={isInView ? "animate" : "initial"}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8"
         >
-          {cars.map((car, index) => (
-            <CarCard key={car.name} car={car} index={index} />
+          {cars.map((car) => (
+            <CarCard key={car.name} car={car} />
           ))}
         </motion.div>
 

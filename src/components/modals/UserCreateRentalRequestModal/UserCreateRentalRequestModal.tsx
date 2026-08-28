@@ -70,7 +70,7 @@ export const UserCreateRentalRequestModal: React.FC<CreateRentalModalProps> = ({
 
     const [user, setUser] = useState<User | null>(null);
 
-    const categories: RentalOption["category"][] = ["Limits", "VIP Services", "Insurance", "Additional", "Delivery"];
+    const categories: RentalOption["category"][] = ["VIP Services", "Additional", "Delivery"];
 
 
     const defaultFormData: BorrowRequest = {

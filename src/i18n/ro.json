@@ -13,6 +13,7 @@
         "profile": "Profil",
         "settings": "Setări",
         "admin": "Admin",
+        "signIn": "Autentificare",
         "signOut": "Deconectare"
     },
     "languages": {
@@ -178,7 +179,7 @@
                         "refuel": "Trebuie să realimentez mașina înainte de returnare?"
                     },
                     "answers": {
-                        "pickup-location": "• **Birou Principal**: Locația centrală din Chișinău\n• **Aeroport**: Aeroportul Internațional Chișinău\n• **Stații Partenere**: Hoteluri și stații selectate\n• **Serviciu de Livrare**: Disponibil pentru închirieri premium",
+                        "pickup-location": "• **Birou Principal**: Chișinău, Muncești 271 A\n• **Aeroport**: Aeroportul Internațional Chișinău\n• **Stații Partenere**: Hoteluri și stații selectate\n• **Serviciu de Livrare**: Disponibil pentru închirieri premium",
                         "different-return": "• **Închirieri Sens Unic**: Disponibile între orașe majore\n• **Taxă Suplimentară**: €50-€200 în funcție de distanță\n• **Notificare Înainte**: Rezervă cu 48 ore înainte\n• **Restricții**: Unele locații pot să nu permită returnări",
                         "late-return": "• **Perioada de Grație**: 30 minute gratuite\n• **Taxe Întârziere**: €25 pe oră după perioada de grație\n• **Comunicare**: Contactează-ne dacă vei întârzia\n• **Flexibilitate**: Încercăm să acomodăm întârzierile când este posibil",
                         "refuel": "• **Același Nivel**: Returnează cu același combustibil ca la preluare\n• **Serviciu Realimentare**: €50 + costul combustibilului dacă necesar\n• **Stații Apropiate**: Hărți furnizate pentru confort\n• **Bon**: Păstrează bonurile de combustibil pentru verificare"
@@ -551,7 +552,7 @@
                         "refuel": "Trebuie să alimentez mașina înainte să o returnez?"
                     },
                     "answers": {
-                        "pickup-location": "Puteți prelua mașina la biroul nostru principal, locațiile de la aeroport sau stațiile partenere selectate. Locația de preluare este aleasă în timpul rezervării.",
+                        "pickup-location": "Puteți prelua mașina la biroul nostru principal (Chișinău, Muncești 271 A), la aeroport sau la stațiile partenere selectate. Locația de preluare este aleasă în timpul rezervării.",
                         "different-return": "Da, închirierile în sens unic sunt disponibile între anumite locații. Poate fi aplicată o taxă suplimentară în funcție de distanță.",
                         "late-return": "Returnările întârziate pot rezulta în taxe suplimentare. Recomandăm să ne contactați dacă anticipați că veți întârzia pentru a explora opțiuni flexibile.",
                         "refuel": "Mașinile ar trebui returnate cu același nivel de combustibil ca la închiriere. Altfel, se va aplica o taxă de alimentare."
@@ -574,7 +575,9 @@
         "transmissionLabel": "Transmisie",
         "fuelLabel": "Combustibil",
         "bodyType": "Caroserie",
-        "mileageLimit": "200km/zi",
+        "mileageLimit": "KM nelimitat",
+        "mileageLimitMobile": "Fără limită de KM",
+        "mileageLimitNarrow": "KM Nelimitat",
         "seeCar": "Vezi mașina",
         "seeMorePhotos": "Vezi încă {{count}} fotografii",
         "seeMorePhotos_one": "Vezi încă o fotografie",
@@ -596,6 +599,10 @@
         "available": "Disponibil",
         "availableNow": "Mașină disponibilă",
         "availableFrom": "Liber de pe {{date}}",
+        "statusBooked": "Rezervat",
+        "statusBorrowed": "Împrumutată",
+        "statusMaintenance": "În mentenanță",
+        "statusUnavailable": "Indisponibil",
         "reviewsLabel": "recenzii",
         "chooseDates": "Alegeți datele",
         "rentalCost": "Costul închirierii",
@@ -665,7 +672,6 @@
         "extra": "Suplimentar",
         "delivery": "Livrare",
         "airportDelivery": "Livrare aeroport",
-        "unlimitedMileage": "Kilometraj nelimitat",
         "noSpeedLimit": "Fără limită de viteză",
         "personalDriver": "Șofer personal",
         "priorityService": "Priority Service",
@@ -711,10 +717,6 @@
     "rentalOptions": {
         "sectionLabel": "Servicii Suplimentare",
         "sectionTitle": "Opțiuni de închiriere",
-        "unlimitedMileage": {
-            "title": "Kilometraj nelimitat",
-            "description": "Prețul închirierii va fi cu 50% mai mare"
-        },
         "personalDriver": {
             "title": "Șofer personal",
             "price": "de la 800 MDL pe zi"
@@ -759,8 +761,8 @@
             "value": "cel puțin 3 ani"
         },
         "mileage": {
-            "label": "km/zi",
-            "value": "până la 200km"
+            "label": "Kilometraj",
+            "value": "Nelimitat"
         },
         "moreDetails": "Mai Multe Detalii",
         "details": {
@@ -778,7 +780,7 @@
             },
             "mileageLimit": {
                 "title": "Limita de kilometraj",
-                "description": "În cazul închirierii pentru mai multe zile, limita se calculează în total. În cazul depășirii limitei și în lipsa opțiunii activate «Kilometraj nelimitat», depășirea se achită separat."
+                "description": "În cazul închirierii pentru mai multe zile, limita se calculează în total. Depășirea limitei se achită separat, conform tarifului comunicat la închiriere."
             },
             "secondDriver": {
                 "title": "Al doilea șofer",

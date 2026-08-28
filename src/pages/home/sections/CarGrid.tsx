@@ -73,8 +73,8 @@ export const CarGrid: React.FC<{ excludeCarId?: string | number }> = ({ excludeC
           animate={isInView ? "animate" : "initial"}
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
         >
-          {cars.map((car, index) => (
-            <CarCard key={car.id} car={car} index={index} />
+          {cars.map((car) => (
+            <CarCard key={car.id} car={car} />
           ))}
         </motion.div>
 

@@ -4,7 +4,7 @@ import { calculateRentalDuration } from '../../../utils/date';
 import { supabase, supabaseAdmin } from '../../supabase';
 import { fetchCarById, fetchCarIdsByQuery, fetchCarWithImagesById } from '../cars/cars';
 import { formatDateForSQL } from '../rentals/rentals';
-import { getLoggedUser } from '../user/profile';
+import { getLoggedUser, getProfileIdForBorrowFkey } from '../user/profile';
 
 
 
@@ -402,12 +402,10 @@ export async function createBorrowRequest(
     totalAmount?: number
 ): Promise<{ success: boolean; requestId?: string; error?: string }> {
     try {
-        // Generate a temporary user_id for admin-created requests
-        // In a real scenario, you might want to create a user or use a system user ID
-        const userId = `admin-${Date.now()}`;
-
+        // Must be NULL or an existing Profiles.id (FK borrowrequest_user_id_fkey).
+        // Signup RPC links rows by customer_email when the customer registers.
         const insertData: any = {
-            user_id: userId,
+            user_id: null,
             car_id: carId,
             start_date: startDate,
             start_time: startTime,
@@ -502,9 +500,9 @@ export async function createUserBorrowRequest(
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
         const recentRequests = await supabase
             .from('BorrowRequest')
-            .select('id, customer_email, created_at')
+            .select('id, customer_email, requested_at')
             .eq('customer_email', request.customer_email)
-            .gte('created_at', oneHourAgo.toISOString())
+            .gte('requested_at', oneHourAgo.toISOString())
 
         // Stricter rate limiting: max 3 requests per hour per email
         if (recentRequests.data && recentRequests.data.length >= 3) {
@@ -544,14 +542,7 @@ export async function createUserBorrowRequest(
             throw new Error('Invalid phone number format')
         }
 
-        let finalUserId: string | null = null;
-        try {
-            const user = await getLoggedUser()
-            if (user !== null)
-                finalUserId = user.id
-        } catch {
-            // User not logged in, continue with null userId
-        }
+        const finalUserId = await getProfileIdForBorrowFkey();
 
         // Fetch the car to calculate pricing
         const car = await fetchCarById(request.car_id);
@@ -969,35 +960,52 @@ export async function fetchBorrowRequestForUserCalendarPage(
 }
 
 export async function fetchUserBorrowRequests(): Promise<BorrowRequestDTO[]> {
-    const user = await getLoggedUser();
-
-    // Build query to get requests for this user
-    let query = supabase
-        .from('BorrowRequest')
-        .select('*');
-
-    // Include requests where user is the owner OR where customer_email matches
-    if (user?.id && user?.email) {
-        query = query.or(`user_id.eq.${user.id},customer_email.eq.${user.email}`);
-    } else if (user?.id) {
-        query = query.eq('user_id', user.id);
-    } else if (user?.email) {
-        query = query.eq('customer_email', user.email);
-    }
-
-    const { data } = await query.order('requested_at', { ascending: false });
-
-    // If no borrow requests found, return empty array
-    if (!data || data.length === 0) {
+    const {
+        data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser?.id) {
         return [];
     }
 
-    return Promise.all(
-        (data ?? []).map((row: any) =>
-            toBorrowRequestDTO(row)
-        )
+    const email = authUser.email?.trim();
+
+    const { data: byUserId, error: errId } = await supabase
+        .from('BorrowRequest')
+        .select('*')
+        .eq('user_id', authUser.id);
+
+    if (errId) {
+        console.error('fetchUserBorrowRequests by user_id:', errId);
+        return [];
+    }
+
+    let byEmail: any[] = [];
+    if (email) {
+        const { data: emailRows, error: errEmail } = await supabase
+            .from('BorrowRequest')
+            .select('*')
+            .eq('customer_email', email);
+        if (errEmail) {
+            console.error('fetchUserBorrowRequests by customer_email:', errEmail);
+        } else if (emailRows) {
+            byEmail = emailRows;
+        }
+    }
+
+    const merged = new Map<number, any>();
+    for (const row of byUserId ?? []) {
+        merged.set(row.id, row);
+    }
+    for (const row of byEmail) {
+        merged.set(row.id, row);
+    }
+
+    const sorted = Array.from(merged.values()).sort(
+        (a, b) =>
+            new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime(),
     );
 
+    return Promise.all(sorted.map((row: any) => toBorrowRequestDTO(row)));
 }
 
 

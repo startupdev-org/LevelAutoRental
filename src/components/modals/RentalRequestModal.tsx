@@ -151,10 +151,8 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
     const carDiscount = (carData as any).discount_percentage || 0;
     const discountedPricePerDay = carDiscount > 0 ? basePricePerDayMDL * (1 - carDiscount / 100) : basePricePerDayMDL;
 
-    // Percentage-based options (calculated as percentage of base car price * totalDays)
-    // These should be calculated on the total rental period (days + hours)
     if (options.unlimitedKm) {
-        additionalCosts += discountedPricePerDay * totalDays * 0.5; // 50%
+        additionalCosts += discountedPricePerDay * totalDays * 0.5;
     }
 
     // Fixed daily costs (in MDL) - calculated per total rental period including hours
@@ -1087,45 +1085,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* Limits */}
-                                            <div className="mb-5 md:mb-6">
-                                                <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">{t('calculator.limits')}</h4>
-                                                <div className="space-y-2">
-                                                    <label className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-white border border-gray-300 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                                                        <div className="flex items-center gap-3 md:gap-4">
-                                                            <div className="relative flex-shrink-0">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={options.unlimitedKm}
-                                                                    onChange={(e) => handleOptionChange('unlimitedKm', e.target.checked)}
-                                                                    className="sr-only"
-                                                                />
-                                                                <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${options.unlimitedKm
-                                                                    ? 'bg-red-500 border-red-500'
-                                                                    : 'border-gray-300 bg-white group-hover:border-red-400'
-                                                                    }`}>
-                                                                    <svg
-                                                                        className={`w-3 h-3 text-white transition-opacity duration-200 ${options.unlimitedKm ? 'opacity-100' : 'opacity-0'
-                                                                            }`}
-                                                                        fill="currentColor"
-                                                                        viewBox="0 0 20 20"
-                                                                    >
-                                                                        <path
-                                                                            fillRule="evenodd"
-                                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                            clipRule="evenodd"
-                                                                        />
-                                                                    </svg>
-                                                                </div>
-                                                            </div>
-                                                            <span className="font-medium text-gray-900 text-xs md:text-sm">{t('calculator.unlimitedMileage')}</span>
-                                                        </div>
-                                                        <span className="text-xs md:text-sm font-bold text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg">+50%</span>
-                                                    </label>
-
-                                                </div>
-                                            </div>
-
                                             {/* VIP Services */}
                                             <div className="mb-5 md:mb-6">
                                                 <h4 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">{t('calculator.vipServices')}</h4>
@@ -1396,14 +1355,6 @@ export const RentalRequestModal: React.FC<RentalRequestModalProps> = ({
                                                         <div className="pt-3 border-t border-gray-300">
                                                             <h4 className="text-sm md:text-base font-bold text-gray-900 mb-3">{t('rentalRequestModal.additionalServices')}</h4>
                                                             <div className="space-y-2 text-sm md:text-base">
-                                                                {options.unlimitedKm && (
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-gray-600">{t('calculator.unlimitedMileage')}</span>
-                                                                        <span className="text-gray-900 font-medium">
-                                                                            {formatPrice(convertPrice(discountedPricePerDay * totalDays * 0.5, selectedCurrency, eur, usd), selectedCurrency, i18n.language)}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
                                                                 {options.personalDriver && (
                                                                     <div className="flex justify-between">
                                                                         <span className="text-gray-600">{t('calculator.personalDriver')}</span>

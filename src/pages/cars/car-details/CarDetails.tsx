@@ -38,6 +38,7 @@ import { NoImagePlaceholder } from '../../../components/car/NoImage';
 import { useTranslation } from 'react-i18next';
 import { formatPrice, getSelectedCurrency } from '../../../utils/currency';
 import { convertPrice } from '../../../utils/car/pricing';
+import { carStatusPublicLabel } from '../../../utils/carStatusPublicLabel';
 
 export const CarDetails: React.FC = () => {
     const { carId } = useParams<{ carId: string }>();
@@ -1132,6 +1133,7 @@ export const CarDetails: React.FC = () => {
                                             }
                                         }}
                                         onClick={() => {
+                                            if (window.innerWidth >= 768) return;
                                             const index = gallery.findIndex(img => img === selectedImage);
                                             setCurrentImageIndex(index >= 0 ? index : 0);
                                             setShowImageViewer(true);
@@ -1150,8 +1152,9 @@ export const CarDetails: React.FC = () => {
                                                         width={1200}
                                                         height={800}
                                                         loading={index === 0 ? "eager" : "lazy"}
-                                                        // @ts-ignore - fetchPriority is a valid HTML attribute
-                                                        fetchPriority={index === 0 ? "high" : "auto"}
+                                                        {...({
+                                                            fetchpriority: index === 0 ? 'high' : 'auto',
+                                                        } as React.ImgHTMLAttributes<HTMLImageElement>)}
                                                         className="w-full h-full object-cover cursor-pointer select-none"
                                                         draggable={false}
                                                     />
@@ -1160,9 +1163,10 @@ export const CarDetails: React.FC = () => {
                                         </div>
 
                                         {/* Expand Icon */}
-                                        <div className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer z-10"
+                                        <div className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer z-10 md:hidden"
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                if (window.innerWidth >= 768) return;
                                                 const index = gallery.findIndex(img => img === selectedImage);
                                                 setCurrentImageIndex(index >= 0 ? index : 0);
                                                 setShowImageViewer(true);
@@ -1238,7 +1242,7 @@ export const CarDetails: React.FC = () => {
                                             ? (isAvailableToday
                                                 ? t('car.availableNow')
                                                 : formatDateForDisplay(firstAvailableDate))
-                                            : (car.status === 'available' || car.status === 'Available' ? t('car.availableNow') : car.status || '');
+                                            : (car.status === 'available' || car.status === 'Available' ? t('car.availableNow') : carStatusPublicLabel(car.status, t));
 
                                         if (!availabilityText) return null;
 
@@ -3334,6 +3338,7 @@ export const CarDetails: React.FC = () => {
                         </div>
                     </aside>
                 </div>
+
             </div>
 
             <CarGrid excludeCarId={car.id} />
