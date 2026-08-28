@@ -341,12 +341,30 @@
                 "Detailing auto": "Detailing auto"
             },
             "home-page": {
-                "1": "Serviciu uimitor! Mașina a fost curată, fiabilă, iar procesul de rezervare extrem de simplu. Cu siguranță voi mai folosi acest serviciu!",
-                "2": "Cea mai bună experiență de închiriere auto pe care am avut-o. Prețuri excelente, serviciu clienți extraordinar, iar mașina a depășit așteptările mele.",
-                "3": "Serviciu foarte profesional. Preluarea a fost rapidă, iar mașina era exact cum a fost descrisă. Recomand cu încredere!",
-                "4": "Experiență fantastică de la început până la sfârșit. Site-ul este ușor de folosit, iar mașina a fost perfectă pentru călătoria noastră în familie.",
-                "5": "Serviciu excelent! Mașina a fost în stare perfectă, iar procesul de rezervare foarte simplu. Prețuri rezonabile, recomand cu încredere!",
-                "6": "Foarte mulțumit de serviciu! Mașina corespundea descrierii, iar personalul a fost profesionist. Cu siguranță voi reveni."
+                "1": "Am avut o experiență excelentă cu Level Auto Rental. Totul a fost organizat impecabil, iar la aeroport am fost întâmpinat fără grabă. Îi recomand cu mare încredere!",
+                "2": "Recomand cu toată încrederea această companie. Sunt serioși, de încredere, iar mașinile sunt luxoase și impecabil întreținute. Recomandarea mea maximă!",
+                "3": "Am închiriat un Maserati și experiența a fost foarte bună. Mașina a fost curată, preluarea simplă, iar personalul profesionist. Recomand și aș apela din nou.",
+                "4": "Am avut o experiență excelentă cu această companie de închirieri auto. Am închiriat un Mercedes-Benz GLS pentru trei săptămâni, și totul a fost perfect de la început până la sfârșit.",
+                "5": "Experiență foarte plăcută cu LEVEL AUTO RENTAL. Totul a decurs rapid și fără stres, iar mașina a fost impecabilă și exact cum mi-a fost prezentată.",
+                "6": "O experiență premium, cu profesionalism și transparență. Mașina a fost livrată prompt și într-o stare impecabilă.",
+                "7": "Vin acasă o dată sau de două ori pe an și închiriez. Level este de departe cea mai bună — mașină excelentă și servicii excelente.",
+                "9": "Mașini de calitate și siguranță referitoare la confortabilitate nici nu mai zic nimic super o parcare de nota 10",
+                "10": "Recomand cu mare încredere LEVEL AUTO RENTAL! Băieți plini cu ambiție si profesionalism către clienți!",
+                "11": "Cei mai bravi și disciplinați, recomand cu mare încredere",
+                "12": "Mulțumit enorm de servici, recomand cu cea mai mare încredere!",
+                "published": {
+                    "1": "acum 4 luni",
+                    "2": "acum 3 luni",
+                    "3": "acum 2 luni",
+                    "4": "acum 3 săptămâni",
+                    "5": "acum 3 săptămâni",
+                    "6": "acum 7 luni",
+                    "7": "acum 7 luni",
+                    "9": "acum 2 luni",
+                    "10": "acum 3 luni",
+                    "11": "acum un an",
+                    "12": "acum 2 săptămâni"
+                }
             },
             "comments": {
                 "1": "Am avut experiență cu mai multe servicii de închiriere, iar acesta este, probabil, unul dintre cele mai rapide și de încredere. Mașinile îngrijite, contractul este transparent și bine detaliat, fără condiții speciale sau plată în plus pentru plecări peste hotare, loiali. Dacă ar trebui să recomand un parc de închirieri, cu siguranță ar fi acesta.",
@@ -442,7 +460,6 @@
                 "links": {
                     "start": "Începe o rezervare",
                     "howTo": "Cum să rezervi",
-                    "calculator": "Calculator închirieri",
                     "faq": "Întrebări frecvente"
                 }
             },
@@ -598,8 +615,6 @@
         "days": "ZILE",
         "equipment": "Echipament",
         "equipmentIncluded": "Echipament inclus",
-        "recommendedCars": "Mașini Recomandate",
-        "recommendedDescription": "Descoperă alte mașini care s-ar putea să îți placă",
         "of": "din"
     },
     "filters": {

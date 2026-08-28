@@ -344,12 +344,14 @@ export async function fetchUserActiveRentals(): Promise<Rental[]> {
     return rentals;
 }
 
-export async function fetchRentalsForAdmin(
+export async function fetchRentalsForAdminSince(
+    sinceDate: Date
 ): Promise<RentalDTO[]> {
 
     const { data, error } = await supabase
         .from('Rentals')
-        .select('*') // total rows for pagination
+        .select('*')
+        .gte('created_at', sinceDate.toISOString());
 
     if (error || !data) {
         console.error('Error fetching active rentals:', error);
@@ -362,23 +364,54 @@ export async function fetchRentalsForAdmin(
         )
     );
 
-
     return rentals;
 }
 
 export async function fetchRentalsForAdminPaginated(
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    filters?: {
+        status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | null;
+        searchQuery?: string;
+        sortBy?: 'date' | 'customer' | 'amount' | 'status' | null;
+        sortOrder?: 'asc' | 'desc';
+    }
 ): Promise<{ rentals: RentalDTO[]; total: number }> {
 
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-
-    const { data, error, count } = await supabase
+    let query = supabase
         .from('Rentals')
-        .select('*', { count: 'exact' }) // total rows for pagination
-        .range(from, to);
+        .select('*', { count: 'exact' });
+
+    // Apply search filter (by car name/make/model)
+    if (filters?.searchQuery?.trim()) {
+        const carIds = await fetchCarIdsByQuery(filters.searchQuery);
+        if (!carIds.length) {
+            return { rentals: [], total: 0 };
+        }
+        query = query.in('car_id', carIds);
+    }
+
+    // Apply status filter
+    if (filters?.status) {
+        query = query.eq('rental_status', filters.status);
+    }
+
+    // Apply sorting
+    if (filters?.sortBy) {
+        const sortField = filters.sortBy === 'date' ? 'created_at' :
+                         filters.sortBy === 'amount' ? 'total_amount' :
+                         filters.sortBy === 'status' ? 'rental_status' :
+                         'customer_email';
+        query = query.order(sortField, { ascending: filters.sortOrder === 'asc' });
+    }
+
+    // Apply pagination
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
 
     if (error || !data) {
         console.error('Error fetching active rentals:', error);

@@ -106,6 +106,9 @@ export const Hero: React.FC = () => {
   // Get logo size class based on make
   const getLogoSizeClass = (make: string): string => {
     const makeLower = make.toLowerCase();
+    if (makeLower === 'renault') {
+      return 'w-[15px] h-[15px] -ml-[2px]';
+    }
     if (makeLower === 'porsche') {
       return 'w-4 h-4';
     }

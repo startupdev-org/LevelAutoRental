@@ -22,7 +22,7 @@ export const sendRentalRequestEmail = async (params: RentalRequestEmailParams): 
     try {
         // Initialize EmailJS if not already initialized
         const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-        
+
         if (publicKey && emailjs) {
             emailjs.init(publicKey);
         }
@@ -58,8 +58,8 @@ export const sendRentalRequestEmail = async (params: RentalRequestEmailParams): 
             total: params.totalPrice,
         };
 
-        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_ku8aes8';
-        const templateId = import.meta.env.VITE_EMAILJS_RENTAL_REQUEST_TEMPLATE_ID || 'template_wh4bg9s';
+        const serviceId = import.meta.env.EMAILJS_SERVICE_ID || 'service_ku8aes8';
+        const templateId = import.meta.env.EMAILJS_RENTAL_REQUEST_TEMPLATE_ID || 'template_wh4bg9s';
 
         // Send email using EmailJS
         await emailjs.send(

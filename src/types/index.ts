@@ -44,15 +44,12 @@ export interface BookingForm {
 
 export interface Testimonial {
   id: string;
-  name: string;
   userName: string;
   rating: number;
   comment: string;
-  location: string;
-  product: {
-    name: string;
-    images: { url: string }[];
-  };
+  publishedAt: string;
+  avatar?: string;
+  reviewImages?: string[];
 }
 
 export interface Feature {

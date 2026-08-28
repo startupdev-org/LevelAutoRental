@@ -62,6 +62,45 @@ export async function fetchBorrowRequests(): Promise<BorrowRequest[]> {
     }
 }
 
+export async function fetchActiveBorrowRequests(): Promise<BorrowRequest[]> {
+    try {
+        const { data, error } = await supabase
+            .from('BorrowRequest')
+            .select('*')
+            .in('status', ['PENDING', 'APPROVED', 'PROCESSED'])
+            .order('requested_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching active borrow requests:', error);
+            return [];
+        }
+        return data;
+
+    } catch (error) {
+        console.error('Error in fetchActiveBorrowRequests:', error);
+        return [];
+    }
+}
+
+export async function countPendingBorrowRequests(): Promise<number> {
+    try {
+        const { count, error } = await supabase
+            .from('BorrowRequest')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'PENDING');
+
+        if (error) {
+            console.error('Error counting pending borrow requests:', error);
+            return 0;
+        }
+        return count ?? 0;
+
+    } catch (error) {
+        console.error('Error in countPendingBorrowRequests:', error);
+        return 0;
+    }
+}
+
 /**
  * Fetch a single borrow request by ID
  */

@@ -142,7 +142,7 @@ export const ContractCreationModal: React.FC<ContractCreationModalProps> = ({
             basePrice += hoursPrice;
         }
 
-        // Calculate additional costs from options (same as Calculator.tsx)
+        // Calculate additional costs from options (same pricing logic as rental flow)
         const options = (order as any).options;
         let parsedOptions: any = {};
 

@@ -355,12 +355,30 @@
                 "Detailing auto": "Auto Detailing"
             },
             "home-page": {
-                "1": "Amazing service! The car was clean, reliable, and the booking process was incredibly simple. I will definitely use it again!",
-                "2": "The best car rental experience I've ever had. Great prices, excellent customer service, and the car exceeded my expectations.",
-                "3": "Very professional service. Pickup was fast and the car was exactly as described. Highly recommended!",
-                "4": "Fantastic experience from start to finish. The website is easy to use and the car was perfect for our family trip.",
-                "5": "Excellent service! The car was in perfect condition, and the booking process was very simple. Reasonable prices, highly recommended!",
-                "6": "Very satisfied with the service! The car matched the description, and the staff was professional. Will definitely use again."
+                "1": "Excellent experience with Level Auto Rental. Everything was perfectly organized, and I was greeted at the airport without rush. I highly recommend them!",
+                "2": "I wholeheartedly recommend this company. They are professional and trustworthy, and the cars are luxurious and impeccably maintained. Highest recommendation!",
+                "3": "I rented a Maserati and the experience was very good. The car was clean, pickup was simple, and the staff was professional. I would use them again.",
+                "4": "I had an excellent experience with this car rental company. I rented a Mercedes-Benz GLS for three weeks, and everything was perfect from start to finish.",
+                "5": "A very pleasant experience with LEVEL AUTO RENTAL. Everything went quickly and without stress, and the car was impeccable and exactly as presented.",
+                "6": "A premium rental experience, with professionalism and transparency. The car was delivered promptly and in impeccable condition.",
+                "7": "I come home once or twice a year and rent. Level is by far the best — excellent car and excellent service.",
+                "9": "Quality cars, and as for comfort and safety I don't even need to say more — super, a 10/10 parking lot.",
+                "10": "I highly recommend LEVEL AUTO RENTAL! Ambitious guys with real professionalism toward clients!",
+                "11": "The bravest and most disciplined, I highly recommend them",
+                "12": "Extremely satisfied with the service, I recommend with the greatest confidence!",
+                "published": {
+                    "1": "4 months ago",
+                    "2": "3 months ago",
+                    "3": "2 months ago",
+                    "4": "3 weeks ago",
+                    "5": "3 weeks ago",
+                    "6": "7 months ago",
+                    "7": "7 months ago",
+                    "9": "2 months ago",
+                    "10": "3 months ago",
+                    "11": "a year ago",
+                    "12": "2 weeks ago"
+                }
             },
             "comments": {
                 "1": "I've had experience with several rental services, and this is probably one of the fastest and most reliable. Well-maintained cars, transparent and well-detailed contract, no special conditions or extra payment for cross-border trips, loyal. If I had to recommend a rental fleet, this would definitely be it.",
@@ -456,7 +474,6 @@
                 "links": {
                     "start": "Start a reservation",
                     "howTo": "How to reserve",
-                    "calculator": "Rental Calculator",
                     "faq": "Help & FAQ"
                 }
             },
@@ -610,8 +627,6 @@
         "days": "DAYS",
         "equipment": "Equipment",
         "equipmentIncluded": "Equipment Included",
-        "recommendedCars": "Recommended Cars",
-        "recommendedDescription": "Discover other cars you might like",
         "of": "of"
     },
     "carsPage": {

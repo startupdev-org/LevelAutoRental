@@ -2,7 +2,7 @@ import { supabase, supabaseAdmin } from './supabase';
 import { BorrowRequest, Car, OrderDisplay, Rental, RentalDTO } from '../types';
 import { fetchCarById, fetchImagesByCarName } from './db/cars/cars';
 import { fetchUserProfiles } from './db/user/profile';
-import { fetchBorrowRequests } from './db/requests/requests';
+import { fetchActiveBorrowRequests } from './db/requests/requests';
 import { getCarPrice } from '../utils/car/pricing';
 import { formatDateForSQL, toRentalDTO } from './db/rentals/rentals';
 
@@ -294,7 +294,7 @@ export async function fetchRentalsForCalendarPageByMonth(cars: Car[]): Promise<O
 export async function fetchAllOrders(cars: Car[]): Promise<OrderDisplay[]> {
   try {
     const [requests, rentals] = await Promise.all([
-      fetchBorrowRequests(),
+      fetchActiveBorrowRequests(),
       fetchRentals(),
     ]);
 

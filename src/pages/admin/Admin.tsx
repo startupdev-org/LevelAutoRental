@@ -24,7 +24,7 @@ import { NotificationToaster } from '../../components/ui/NotificationToaster';
 
 import { DashboardView } from './components/AdminDashboardView';
 import { OrdersView, OrderDetailsView, CalendarView, UsersView, CarsView, RequestsView, RequestDetailsViewWrapper } from './components/views';
-import { fetchBorrowRequestsForDisplay } from '../../lib/db/requests/requests';
+import { fetchBorrowRequestsForDisplay, countPendingBorrowRequests } from '../../lib/db/requests/requests';
 
 export const Admin: React.FC = () => {
     const navigate = useNavigate();
@@ -124,10 +124,8 @@ export const Admin: React.FC = () => {
         if (cars.length === 0) return;
         const loadRequestsCount = async () => {
             try {
-                const response = await fetchBorrowRequestsForDisplay(1, 1000); // Get all requests for counting
-                // Only count requests with PENDING status
-                const pendingRequests = response.data.filter(request => request.status === 'PENDING');
-                setTotalRequests(pendingRequests.length);
+                const count = await countPendingBorrowRequests();
+                setTotalRequests(count);
             } catch (error) {
                 console.error('Failed to load requests count:', error);
             }

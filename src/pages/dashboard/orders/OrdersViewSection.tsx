@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { RentalDTO } from '../../../types';
 import { useTranslation } from 'react-i18next';
-import { fetchRentalsForAdmin } from '../../../lib/db/rentals/rentals';
+import { fetchRentalsForAdminSince } from '../../../lib/db/rentals/rentals';
 import { OrderDetailsModal } from '../../admin/components/modals/OrderDetailsModal';
 
 export const OrdersViewSection = () => {
@@ -30,7 +30,9 @@ export const OrdersViewSection = () => {
     const loadOrders = async () => {
         try {
             setOrdersLoading(true);
-            const data = await fetchRentalsForAdmin();
+            const sinceDate = new Date();
+            sinceDate.setMonth(sinceDate.getMonth() - 13);
+            const data = await fetchRentalsForAdminSince(sinceDate);
             setOrders(data);
         } catch (error) {
             console.error('Failed to load orders:', error);

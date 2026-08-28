@@ -6,7 +6,7 @@ import { Search, Filter, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from '../../components/car/CarCard';
-import { fetchCars, fetchFilteredCars, CarFilters, fetchCarsMake, fetchFilteredCarsWithPhotos, fetchCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
+import { fetchCars, CarFilters, fetchCarsMake, fetchFilteredCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
 import { Car as CarType } from '../../types';
 
 import { RentalOptionsSection } from './sections/RentalOptionsSection'
@@ -72,14 +72,6 @@ export const Cars: React.FC = () => {
   const [loadingModels, setLoadingModels] = useState(false);
 
   const [sortBy, setSortBy] = useState<SortKey | ''>('');
-
-  // Recommended cars state
-  const [recommendedCars, setRecommendedCars] = useState<CarType[]>([]);
-  const [recommendedLoading, setRecommendedLoading] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isAutoSlidingPaused, setIsAutoSlidingPaused] = useState(false);
-  const recommendedSliderRef = React.useRef<HTMLDivElement>(null);
-  const pauseTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   async function handleFetchCarsWithPhotos() {
     setLoading(true);
@@ -202,81 +194,6 @@ export const Cars: React.FC = () => {
     handleFetchCarsWithPhotos();
   }, []);
 
-  // Fetch recommended cars
-  useEffect(() => {
-    const fetchRecommendedCars = async () => {
-      setRecommendedLoading(true);
-      try {
-        // Fetch available cars for recommendations
-        const generalCars = await fetchCarsWithPhotos(15);
-
-        // Shuffle/randomize the array and take first 5
-        const shuffled = generalCars.sort(() => Math.random() - 0.5);
-        const recommended = shuffled.slice(0, 5);
-
-        setRecommendedCars(recommended);
-      } catch (error) {
-        console.error('Error fetching recommended cars:', error);
-      } finally {
-        setRecommendedLoading(false);
-      }
-    };
-
-    fetchRecommendedCars();
-  }, []);
-
-  // Auto-slide recommended cars
-  useEffect(() => {
-    if (recommendedCars.length <= 1 || isAutoSlidingPaused) return;
-
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => {
-        const next = (prev + 1) % Math.ceil(recommendedCars.length / 1);
-        return next;
-      });
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [recommendedCars.length, isAutoSlidingPaused]);
-
-  // Scroll to the current slide
-  useEffect(() => {
-    if (recommendedSliderRef.current) {
-      const cardWidth = 336; // w-80 = 320px + gap 16px = 336px
-      const scrollLeft = currentSlide * cardWidth;
-      recommendedSliderRef.current.scrollTo({
-        left: scrollLeft,
-        behavior: 'smooth'
-      });
-    }
-  }, [currentSlide]);
-
-  // Pause auto-sliding on user interaction
-  const pauseAutoSliding = React.useCallback(() => {
-    setIsAutoSlidingPaused(true);
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current);
-    }
-    pauseTimeoutRef.current = setTimeout(() => {
-      setIsAutoSlidingPaused(false);
-    }, 5000);
-  }, []);
-
-  // Handle manual scrolling to pause auto-sliding
-  useEffect(() => {
-    const handleScroll = () => {
-      pauseAutoSliding();
-    };
-
-    const sliderElement = recommendedSliderRef.current;
-    if (sliderElement) {
-      sliderElement.addEventListener('scroll', handleScroll);
-      return () => {
-        sliderElement.removeEventListener('scroll', handleScroll);
-      };
-    }
-  }, [recommendedCars.length, pauseAutoSliding]);
-
   // Filter state
   const [filters, setFilters] = useState({
     make: '',
@@ -294,6 +211,19 @@ export const Cars: React.FC = () => {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+
+  // Update itemsPerPage based on screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerPage(window.innerWidth < 768 ? 8 : 12);
+    };
+
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
@@ -305,6 +235,7 @@ export const Cars: React.FC = () => {
   // Close sidebar and apply filters
   const closeSidebarAndApply = () => {
     setShowAdvancedFilters(false);
+    setCurrentPage(1); // Reset to first page when applying filters
     // Apply the current sidebar filters automatically when closing
     handleFetchFilteredCars({
       make: filters.make,
@@ -422,6 +353,11 @@ export const Cars: React.FC = () => {
     }
   }, [allCars, searchParams]); // Run when allCars change or search params change
 
+  // Reset page when sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy]);
+
   // Validation states (kept for potential future use)
   // const [validationErrors, setValidationErrors] = useState({
   //   yearRange: false,
@@ -463,6 +399,12 @@ export const Cars: React.FC = () => {
     });
   }, [cars, sortBy]);
 
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedCars.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCars = sortedCars.slice(startIndex, endIndex);
+
   // Get car make logo path
   const getMakeLogo = (make: string): string | null => {
     const makeLower = make.toLowerCase();
@@ -485,6 +427,9 @@ export const Cars: React.FC = () => {
   // Get logo size class based on make
   const getLogoSizeClass = (make: string): string => {
     const makeLower = make.toLowerCase();
+    if (makeLower === 'renault') {
+      return 'w-[15px] h-[15px] -ml-[2px]';
+    }
     if (makeLower === 'porsche') {
       return 'w-4 h-4';
     }
@@ -557,6 +502,7 @@ export const Cars: React.FC = () => {
       model: ''
     });
     setSidebarFilters(prev => ({ ...prev, ...defaultSidebarFilters }));
+    setCurrentPage(1); // Reset to first page
     // Clear URL params - only if we're not already on the clean URL
     const currentPath = window.location.pathname + window.location.search;
     if (currentPath !== '/cars') {
@@ -1152,7 +1098,7 @@ export const Cars: React.FC = () => {
           <div className="mb-5 h-11 flex items-center justify-end">
             <div className="flex items-center gap-2 dropdown-container w-full justify-end">
               <label className="text-sm text-gray-600 font-medium">{t('carsPage.sortBy')}</label>
-              <div className="relative w-[55%] lg:w-[20%] max-w-[560px] min-w-0 flex-none">
+              <div className="relative w-[50%] lg:w-[20%] max-w-[560px] min-w-0 flex-none">
                 {(() => {
                   const sortOptions: Array<{ key: SortKey; label: string; icon: React.ReactNode }> = [
                     { key: 'price-low', label: t('carsPage.sortPriceLow'), icon: <ArrowUp className="w-4 h-4 text-gray-500 flex-shrink-0" /> },
@@ -1218,17 +1164,69 @@ export const Cars: React.FC = () => {
             <>
               {/* Cars Grid */}
               {sortedCars.length > 0 ? (
-                <motion.div
-                  ref={ref}
-                  variants={staggerContainer}
-                  initial="initial"
-                  animate={isInView ? "animate" : "initial"}
-                  className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
-                >
-                  {sortedCars.map((car) => (
-                      <CarCard key={car.id} car={car} />
-                    ))}
-                </motion.div>
+                <>
+                  <motion.div
+                    ref={ref}
+                    variants={staggerContainer}
+                    initial="initial"
+                    animate={isInView ? "animate" : "initial"}
+                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5"
+                  >
+                    {paginatedCars.map((car) => (
+                        <CarCard key={car.id} car={car} />
+                      ))}
+                  </motion.div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="mt-12 flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (currentPage > 1) {
+                            setCurrentPage(currentPage - 1);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }
+                        }}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Anterior
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => {
+                              setCurrentPage(page);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                              currentPage === page
+                                ? 'bg-theme-500 text-white'
+                                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (currentPage < totalPages) {
+                            setCurrentPage(currentPage + 1);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }
+                        }}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Următor
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 // Check if any filters are applied
                 (appliedFilters.make || appliedFilters.model ||
@@ -1271,75 +1269,6 @@ export const Cars: React.FC = () => {
 
           {/* Contract Section */}
           <ContractSection />
-
-          {/* Recommended Cars Slider */}
-          {recommendedCars.length > 0 && (
-            <div className="mt-12">
-              <div className="mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                  {t('car.recommendedCars', 'Mașini Recomandate')}
-                </h2>
-                <p className="text-gray-600">
-                  {t('car.recommendedDescription', 'Descoperă alte mașini care s-ar putea să îți placă')}
-                </p>
-              </div>
-
-              {recommendedLoading ? (
-                <div className="flex justify-center py-12">
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              ) : (
-                <div className="relative">
-                  <style>{`
-                    .recommended-slider::-webkit-scrollbar {
-                      display: none;
-                    }
-                  `}</style>
-                  <div
-                    ref={recommendedSliderRef}
-                    className="overflow-x-auto pb-4 recommended-slider"
-                    style={{
-                      scrollBehavior: 'smooth',
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
-                    }}
-                  >
-                    <div className="flex gap-6 min-w-max py-4">
-                      {recommendedCars.map((recommendedCar) => (
-                        <div key={recommendedCar.id} className="w-[340px] sm:w-[360px] md:w-80 flex-shrink-0">
-                          <CarCard car={recommendedCar} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Slide Indicators */}
-                  {recommendedCars.length > 1 && (
-                    <div className="flex justify-center mt-4 space-x-2">
-                      {Array.from({ length: Math.ceil(recommendedCars.length / 1) }).map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            setCurrentSlide(index);
-                            pauseAutoSliding();
-                          }}
-                          className={`w-2 h-2 rounded-full transition-colors ${index === currentSlide
-                            ? 'bg-red-500'
-                            : 'bg-gray-300 hover:bg-gray-400'
-                            }`}
-                          aria-label={`Go to slide ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
         </div>
       </div>

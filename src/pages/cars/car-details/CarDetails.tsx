@@ -30,10 +30,9 @@ import { Car } from '../../../types';
 import { fetchCarById } from '../../../lib/cars';
 import { fetchImagesByCarName } from '../../../lib/db/cars/cars';
 import { fetchRentals } from '../../../lib/orders';
-import { CarCard } from '../../../components/car/CarCard';
-import { fetchFilteredCarsWithPhotos } from '../../../lib/db/cars/cars-page/cars';
 import { supabase } from '../../../lib/supabase';
 import { RentalOptionsSection } from '../sections/RentalOptionsSection';
+import { CarGrid } from '../../home/sections/CarGrid';
 import { useExchangeRates } from '../../../hooks/useExchangeRates';
 import { NoImagePlaceholder } from '../../../components/car/NoImage';
 import { useTranslation } from 'react-i18next';
@@ -105,11 +104,6 @@ export const CarDetails: React.FC = () => {
     const [isClosingWithDelay, setIsClosingWithDelay] = useState(false);
     const [pickupCalendarInitialized, setPickupCalendarInitialized] = useState(false);
     const [returnCalendarInitialized, setReturnCalendarInitialized] = useState(false);
-    const [recommendedCars, setRecommendedCars] = useState<Car[]>([]);
-    const [recommendedLoading, setRecommendedLoading] = useState(false);
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const [isAutoSlidingPaused, setIsAutoSlidingPaused] = useState(false);
-
 
     const getCurrencySymbol = (currency: string): string => {
         switch (currency) {
@@ -127,8 +121,6 @@ export const CarDetails: React.FC = () => {
     const returnTimeRef = useRef<HTMLDivElement>(null);
     const imageSliderRef = useRef<Slider>(null);
     const imageThumbsRef = useRef<HTMLDivElement>(null);
-    const recommendedSliderRef = useRef<HTMLDivElement>(null);
-    const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // ───── HELPERS ─────
     const getFavorites = (): number[] => {
@@ -156,22 +148,6 @@ export const CarDetails: React.FC = () => {
         const newFavoriteState = !isFavorite;
         setIsFavorite(newFavoriteState);
         saveFavorite(Number(car.id), newFavoriteState);
-    };
-
-    // Pause auto-sliding for 5 seconds when user interacts
-    const pauseAutoSliding = () => {
-        setIsAutoSlidingPaused(true);
-
-        // Clear any existing timeout
-        if (pauseTimeoutRef.current) {
-            clearTimeout(pauseTimeoutRef.current);
-        }
-
-        // Set new timeout
-        pauseTimeoutRef.current = setTimeout(() => {
-            setIsAutoSlidingPaused(false);
-            pauseTimeoutRef.current = null;
-        }, 5000); // Resume after 5 seconds
     };
 
     const formatDate = (dateString: string): string => {
@@ -798,117 +774,6 @@ export const CarDetails: React.FC = () => {
 
         fetchApprovedRequests();
     }, [car, carId]);
-
-    // Fetch recommended cars
-    useEffect(() => {
-        const fetchRecommendedCars = async () => {
-            if (!car) return;
-
-            setRecommendedLoading(true);
-            try {
-                // Fetch cars of the same make, excluding the current car
-                const filters = {
-                    make: car.make
-                };
-
-                const cars = await fetchFilteredCarsWithPhotos(filters);
-
-                // Filter out the current car and get cars of the same make
-                const sameMakeCars = cars
-                    .filter(c => c.id !== car.id);
-
-                // If we don't have enough cars of the same make, fetch some general available cars
-                let allAvailableCars = [...sameMakeCars];
-                if (sameMakeCars.length < 5) {
-                    const generalFilters = {};
-                    const generalCars = await fetchFilteredCarsWithPhotos(generalFilters);
-                    const additionalCars = generalCars
-                        .filter(c => c.id !== car.id && !sameMakeCars.some(rc => rc.id === c.id));
-
-                    allAvailableCars = [...sameMakeCars, ...additionalCars];
-                }
-
-                // Shuffle/randomize the array and take first 5
-                const shuffled = allAvailableCars.sort(() => Math.random() - 0.5);
-                const recommended = shuffled.slice(0, 5);
-
-                setRecommendedCars(recommended);
-            } catch (error) {
-                console.error('Error fetching recommended cars:', error);
-            } finally {
-                setRecommendedLoading(false);
-            }
-        };
-
-        fetchRecommendedCars();
-    }, [car]);
-
-    // Cleanup timeout on unmount or car change
-    useEffect(() => {
-        return () => {
-            if (pauseTimeoutRef.current) {
-                clearTimeout(pauseTimeoutRef.current);
-                pauseTimeoutRef.current = null;
-            }
-        };
-    }, [car]);
-
-    // Auto-slide recommended cars
-    useEffect(() => {
-        if (recommendedCars.length <= 1 || isAutoSlidingPaused) return;
-
-        const interval = setInterval(() => {
-            setCurrentSlide(prev => {
-                const next = (prev + 1) % Math.ceil(recommendedCars.length / 1); // Show 1 car at a time on mobile
-                return next;
-            });
-        }, 4000); // Change slide every 4 seconds
-
-        return () => clearInterval(interval);
-    }, [recommendedCars.length, isAutoSlidingPaused]);
-
-    // Scroll to the current slide
-    useEffect(() => {
-        if (recommendedSliderRef.current) {
-            const cardWidth = 336; // w-80 = 320px + gap 16px = 336px
-            const scrollLeft = currentSlide * cardWidth;
-            recommendedSliderRef.current.scrollTo({
-                left: scrollLeft,
-                behavior: 'smooth'
-            });
-        }
-    }, [currentSlide]);
-
-    // Handle manual scrolling to pause auto-sliding
-    useEffect(() => {
-        const handleScroll = () => {
-            // Clear any existing timeout
-            if (pauseTimeoutRef.current) {
-                clearTimeout(pauseTimeoutRef.current);
-            }
-
-            // Pause auto-sliding
-            setIsAutoSlidingPaused(true);
-
-            // Resume after 5 seconds
-            pauseTimeoutRef.current = setTimeout(() => {
-                setIsAutoSlidingPaused(false);
-                pauseTimeoutRef.current = null;
-            }, 5000);
-        };
-
-        const sliderElement = recommendedSliderRef.current;
-        if (sliderElement) {
-            sliderElement.addEventListener('scroll', handleScroll, { passive: true });
-            return () => {
-                sliderElement.removeEventListener('scroll', handleScroll);
-                if (pauseTimeoutRef.current) {
-                    clearTimeout(pauseTimeoutRef.current);
-                    pauseTimeoutRef.current = null;
-                }
-            };
-        }
-    }, [recommendedCars.length]); // Depend on recommendedCars.length to re-attach when cars change
 
     // Scroll to top on car change
     useEffect(() => {
@@ -3474,73 +3339,9 @@ export const CarDetails: React.FC = () => {
                     </aside>
                 </div>
 
-                {/* Recommended Cars Slider - Desktop: After Contract Section */}
-                <div className="mt-12">
-                    <div className="mb-8">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                            {t('car.recommendedCars')}
-                        </h2>
-                        <p className="text-gray-600">
-                            {t('car.recommendedDescription')}
-                        </p>
-                    </div>
-
-                    {recommendedLoading ? (
-                        <div className="flex justify-center py-12">
-                            <div className="flex space-x-2">
-                                <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
-                                <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                                <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                            </div>
-                        </div>
-                    ) : recommendedCars.length > 0 ? (
-                        <div className="relative">
-                            <style>{`
-                                .recommended-slider::-webkit-scrollbar {
-                                    display: none;
-                                }
-                            `}</style>
-                            <div
-                                ref={recommendedSliderRef}
-                                className="overflow-x-auto pb-4 recommended-slider"
-                                style={{
-                                    scrollBehavior: 'smooth',
-                                    scrollbarWidth: 'none', // Firefox
-                                    msOverflowStyle: 'none', // IE/Edge
-                                }}
-                            >
-                                <div className="flex gap-6 min-w-max py-4">
-                                        {recommendedCars.map((recommendedCar) => (
-                                        <div key={recommendedCar.id} className="w-[340px] sm:w-[360px] md:w-80 flex-shrink-0">
-                                            <CarCard car={recommendedCar} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Slide Indicators */}
-                            {recommendedCars.length > 1 && (
-                                <div className="flex justify-center mt-4 space-x-2">
-                                    {Array.from({ length: Math.ceil(recommendedCars.length / 1) }).map((_, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => {
-                                                setCurrentSlide(index);
-                                                pauseAutoSliding();
-                                            }}
-                                            className={`w-2 h-2 rounded-full transition-colors ${index === currentSlide
-                                                ? 'bg-red-500'
-                                                : 'bg-gray-300 hover:bg-gray-400'
-                                                }`}
-                                            aria-label={`Go to slide ${index + 1}`}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ) : null}
-                </div>
             </div>
+
+            <CarGrid excludeCarId={car.id} />
 
             {/* Rental Request Modal */}
             {car && (
