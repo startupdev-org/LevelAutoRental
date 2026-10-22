@@ -33,7 +33,7 @@ export type Currency = 'MDL' | 'EUR' | 'USD';
 
 export const getSelectedCurrency = (): Currency => {
     if (typeof window === 'undefined') {
-        return 'MDL';
+        return 'EUR';
     }
 
     const value = localStorage.getItem('selectedCurrency');
@@ -42,7 +42,7 @@ export const getSelectedCurrency = (): Currency => {
         return value;
     }
 
-    return 'MDL';
+    return 'EUR';
 };
 
 

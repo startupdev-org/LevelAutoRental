@@ -3338,7 +3338,6 @@ export const CarDetails: React.FC = () => {
                         </div>
                     </aside>
                 </div>
-
             </div>
 
             <CarGrid excludeCarId={car.id} />

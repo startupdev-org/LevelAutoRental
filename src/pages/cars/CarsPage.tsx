@@ -6,8 +6,10 @@ import { Search, Filter, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react
 import { useInView } from '../../hooks/useInView';
 import { staggerContainer } from '../../utils/animations';
 import { CarCard } from '../../components/car/CarCard';
-import { fetchCars, CarFilters, fetchCarsMake, fetchFilteredCarsWithPhotos } from '../../lib/db/cars/cars-page/cars';
+import { fetchCars, CarFilters, fetchCarsMake, fetchFilteredCarsWithPhotos, fetchBookedCarIds } from '../../lib/db/cars/cars-page/cars';
 import { Car as CarType } from '../../types';
+import { BudgetField, DateRangeField, SearchMode, SearchModeTabs } from '../../components/search/SearchFields';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 import { RentalOptionsSection } from './sections/RentalOptionsSection'
 import { ContractSection } from './sections/ContractSection';
@@ -36,12 +38,97 @@ interface SidebarFilters {
 
 type SortKey = 'price-low' | 'price-high' | 'year-new' | 'year-old';
 
+interface SearchFilters {
+  make: string;
+  model: string;
+  startDate: string;
+  endDate: string;
+  budget: string;
+  currency: 'EUR';
+}
+
+function isSafeText(param: string | null): param is string {
+  return !!(param !== null &&
+    param.trim() !== '' &&
+    param.length < 100 &&
+    !param.includes('~') &&
+    !param.includes('<') &&
+    !param.includes('>') &&
+    !param.includes('&') &&
+    !param.includes('%'));
+}
+
+function isIsoDate(value: string | null): value is string {
+  return !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function readSearchFilters(params: URLSearchParams): SearchFilters {
+  const startDate = isIsoDate(params.get('startDate')) ? params.get('startDate')! : '';
+  const endDate = isIsoDate(params.get('endDate')) ? params.get('endDate')! : '';
+  const budgetParam = params.get('budget');
+  const budget = budgetParam && /^\d+$/.test(budgetParam) && budgetParam.length < 10 ? budgetParam : '';
+
+  return {
+    make: isSafeText(params.get('make')) ? params.get('make')! : '',
+    model: isSafeText(params.get('model')) ? params.get('model')! : '',
+    startDate,
+    endDate: startDate && endDate && endDate >= startDate ? endDate : '',
+    budget,
+    currency: 'EUR',
+  };
+}
+
+function hasMakeModel(filters: Pick<SearchFilters, 'make' | 'model'>) {
+  return Boolean(filters.make || filters.model);
+}
+
+function hasDateRange(filters: Pick<SearchFilters, 'startDate' | 'endDate'>) {
+  return Boolean(filters.startDate && filters.endDate && filters.endDate >= filters.startDate);
+}
+
+function hasBudget(filters: Pick<SearchFilters, 'budget'>) {
+  const amount = Number(filters.budget);
+  return Boolean(filters.budget) && Number.isFinite(amount) && amount > 0;
+}
+
+function hasSearchCriteria(filters: SearchFilters) {
+  return hasMakeModel(filters) || hasDateRange(filters) || hasBudget(filters);
+}
+
+function searchModeFor(filters: SearchFilters): SearchMode {
+  if (hasMakeModel(filters)) return 'make';
+  if (hasDateRange(filters) || hasBudget(filters)) return 'budget';
+  return 'make';
+}
+
+function filtersForMode(filters: SearchFilters, mode: SearchMode): SearchFilters {
+  if (mode === 'make') {
+    return { ...filters, startDate: '', endDate: '', budget: '', currency: 'EUR' };
+  }
+  return { ...filters, make: '', model: '' };
+}
+
+function displayedDailyRateMdl(car: CarType): number {
+  const base = Number(car.price_over_30_days || car.price_2_4_days) || 0;
+  const discount = Number((car as CarType & { discount?: number }).discount_percentage ?? (car as CarType & { discount?: number }).discount ?? 0);
+  if (discount > 0 && discount < 100) return base * (1 - discount / 100);
+  return base;
+}
+
+function budgetToMdl(amount: number, eur: number) {
+  return amount * (eur > 1 ? eur : 1);
+}
+
 export const Cars: React.FC = () => {
   const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { eur } = useExchangeRates();
   const dataFetchedRef = React.useRef(false);
+  const rawSearchFilters = readSearchFilters(searchParams);
+  const initialSearchMode = searchModeFor(rawSearchFilters);
+  const initialSearchFilters = filtersForMode(rawSearchFilters, initialSearchMode);
 
   // URL sanitization - prevent infinite loops from malformed GitHub Pages URLs
   useEffect(() => {
@@ -73,17 +160,18 @@ export const Cars: React.FC = () => {
 
   const [sortBy, setSortBy] = useState<SortKey | ''>('');
 
-  async function handleFetchCarsWithPhotos() {
-    setLoading(true);
+  async function handleFetchCarsWithPhotos(updateVisible = true) {
+    if (updateVisible) setLoading(true);
     try {
       const fetchedCars = await fetchCars();
-      // Map discount field to discount_percentage for compatibility
       const carsWithDiscount = fetchedCars.map(car => ({
         ...car,
-        discount_percentage: car.discount_percentage
+        discount_percentage: car.discount_percentage ?? (car as CarType & { discount?: number }).discount
       }));
-      setCars(carsWithDiscount);
-      setAllCars(carsWithDiscount); // Store full dataset for model lookups
+      if (updateVisible) {
+        setCars(carsWithDiscount);
+      }
+      setAllCars(carsWithDiscount);
 
       // Extract unique makes (same logic as hero searchbar)
       const makes = fetchedCars.map(car => {
@@ -101,7 +189,7 @@ export const Cars: React.FC = () => {
     } catch (error) {
       console.error('Error fetching cars:', error);
     } finally {
-      setLoading(false);
+      if (updateVisible) setLoading(false);
     }
   }
 
@@ -190,26 +278,27 @@ export const Cars: React.FC = () => {
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
-    // Always fetch all cars initially to populate the make-to-models mapping
-    handleFetchCarsWithPhotos();
+    const shouldFilterOnServer = hasMakeModel(initialSearchFilters);
+    handleFetchCarsWithPhotos(!shouldFilterOnServer);
+    if (shouldFilterOnServer) {
+      handleFetchFilteredCars(initialSearchFilters);
+    }
   }, []);
 
   // Filter state
-  const [filters, setFilters] = useState({
-    make: '',
-    model: ''
-  });
+  const [filters, setFilters] = useState<SearchFilters>(initialSearchFilters);
+  const [searchMode, setSearchMode] = useState<SearchMode>(initialSearchMode);
 
   // Applied filters state (what's actually used for filtering)
-  const [appliedFilters, setAppliedFilters] = useState({
-    make: '',
-    model: ''
-  });
+  const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(initialSearchFilters);
+  const [bookedCarIds, setBookedCarIds] = useState<Set<string> | null>(null);
 
   // Dropdown states
   const [showMakeDropdown, setShowMakeDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [showDateCalendar, setShowDateCalendar] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [pendingSort, setPendingSort] = useState<SortKey | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -229,6 +318,7 @@ export const Cars: React.FC = () => {
   const closeAllDropdowns = () => {
     setShowMakeDropdown(false);
     setShowModelDropdown(false);
+    setShowDateCalendar(false);
     setShowSortDropdown(false);
   };
 
@@ -244,9 +334,10 @@ export const Cars: React.FC = () => {
   };
 
   // Handle opening a specific dropdown and closing others
-  const openDropdown = (dropdownType: 'make' | 'model') => {
+  const openDropdown = (dropdownType: 'make' | 'model' | 'date') => {
     if ((dropdownType === 'make' && showMakeDropdown) ||
-      (dropdownType === 'model' && showModelDropdown)) {
+      (dropdownType === 'model' && showModelDropdown) ||
+      (dropdownType === 'date' && showDateCalendar)) {
       closeAllDropdowns();
       return;
     }
@@ -256,6 +347,8 @@ export const Cars: React.FC = () => {
       setShowMakeDropdown(true);
     } else if (dropdownType === 'model') {
       setShowModelDropdown(true);
+    } else if (dropdownType === 'date') {
+      setShowDateCalendar(true);
     }
   };
 
@@ -268,12 +361,12 @@ export const Cars: React.FC = () => {
       }
     };
 
-    if (showMakeDropdown || showModelDropdown || showSortDropdown) {
+    if (showMakeDropdown || showModelDropdown || showDateCalendar || showSortDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showMakeDropdown, showModelDropdown, showSortDropdown]);
+  }, [showMakeDropdown, showModelDropdown, showDateCalendar, showSortDropdown]);
 
   // Prevent body scroll when drawer is open
   useEffect(() => {
@@ -301,69 +394,33 @@ export const Cars: React.FC = () => {
 
   const [applyError, setApplyError] = useState('');
 
-  // Read URL parameters on mount and apply them (only run once)
   useEffect(() => {
-    const makeParam = searchParams.get('make');
-    const modelParam = searchParams.get('model');
-
-    // Validate parameters - only allow non-empty strings without special characters
-    const isValidParam = (param: string | null): boolean => {
-      return !!(param !== null &&
-        param.trim() !== '' &&
-        param.length < 100 && // Reasonable length limit
-        !param.includes('~') && // Block malformed GitHub Pages URLs
-        !param.includes('<') && // Block potential XSS
-        !param.includes('>') &&
-        !param.includes('&') && // Block HTML entities
-        !param.includes('%')); // Block URL encoding issues
-    };
-
-    if ((makeParam && isValidParam(makeParam)) || (modelParam && isValidParam(modelParam))) {
-      const initialFilters = {
-        make: (makeParam && isValidParam(makeParam)) ? makeParam : '',
-        model: (modelParam && isValidParam(modelParam)) ? modelParam : ''
-      };
-      setFilters(initialFilters);
-      setAppliedFilters(initialFilters);
-
-      // Also trigger the fetch for filtered cars
-      handleFetchFilteredCars(initialFilters);
+    if (!hasDateRange(appliedFilters)) {
+      setBookedCarIds(null);
+      return;
     }
-    // Note: Removed the else clause that was causing redirects - let the URL sanitization handle malformed URLs
-  }, []); // Only run once on mount, no dependencies to prevent re-running
 
-  // Handle model loading after cars are fetched
+    let cancelled = false;
+    setBookedCarIds(null);
+    fetchBookedCarIds(appliedFilters.startDate, appliedFilters.endDate).then((ids) => {
+      if (!cancelled) setBookedCarIds(ids);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedFilters.startDate, appliedFilters.endDate]);
+
   useEffect(() => {
-    const makeParam = searchParams.get('make');
-    const isValidParam = (param: string | null): boolean => {
-      return !!(param !== null &&
-        param.trim() !== '' &&
-        param.length < 100 &&
-        !param.includes('~') &&
-        !param.includes('<') &&
-        !param.includes('>') &&
-        !param.includes('&') &&
-        !param.includes('%'));
-    };
-
-    // Only load models if we have a valid make param and all cars are loaded
-    // But don't override if user has manually selected a different make
-    if (makeParam && isValidParam(makeParam) && allCars.length > 0 && !filters.make) {
-      handleFetchCarsModel(makeParam);
+    if (filters.make && allCars.length > 0) {
+      handleFetchCarsModel(filters.make);
     }
-  }, [allCars, searchParams]); // Run when allCars change or search params change
+  }, [allCars]);
 
   // Reset page when sort changes
   useEffect(() => {
     setCurrentPage(1);
   }, [sortBy]);
-
-  // Validation states (kept for potential future use)
-  // const [validationErrors, setValidationErrors] = useState({
-  //   yearRange: false,
-  //   priceRange: false,
-  //   kilometersRange: false,
-  // });
 
   // Get unique makes from fetched makes array
   const uniqueMakes = useMemo(() => {
@@ -378,16 +435,21 @@ export const Cars: React.FC = () => {
   // Sort visible cars based on selected algorithm
   const sortedCars = useMemo(() => {
     const visibleCars = cars.filter((car) => {
-      // Hide only cars that are hidden (Ascuns) - booked cars should still show
       const status = car.status?.toLowerCase() || '';
-      return status !== 'ascuns' && status !== 'hidden';
+      if (status === 'ascuns' || status === 'hidden') return false;
+
+      if (hasDateRange(appliedFilters) && bookedCarIds?.has(String(car.id))) return false;
+
+      if (hasBudget(appliedFilters)) {
+        const maxMdl = budgetToMdl(Number(appliedFilters.budget), eur);
+        const rate = displayedDailyRateMdl(car);
+        if (!(rate > 0 && rate <= maxMdl)) return false;
+      }
+
+      return true;
     });
 
-    const getPrice = (car: CarType) => {
-      const basePrice = Number((car as any).price_over_30_days ?? (car as any).price_per_day ?? 0);
-      const discount = Number((car as any).discount_percentage ?? (car as any).discount ?? 0);
-      return discount > 0 ? basePrice * (1 - discount / 100) : basePrice;
-    };
+    const getPrice = (car: CarType) => displayedDailyRateMdl(car);
 
     if (!sortBy) return visibleCars;
 
@@ -397,7 +459,9 @@ export const Cars: React.FC = () => {
       if (sortBy === 'year-new') return Number(b.year || 0) - Number(a.year || 0);
       return Number(a.year || 0) - Number(b.year || 0);
     });
-  }, [cars, sortBy]);
+  }, [cars, sortBy, appliedFilters, bookedCarIds, eur]);
+
+  const availabilityLoading = hasDateRange(appliedFilters) && bookedCarIds === null;
 
   // Calculate pagination
   const totalPages = Math.ceil(sortedCars.length / itemsPerPage);
@@ -430,10 +494,7 @@ export const Cars: React.FC = () => {
     if (makeLower === 'renault') {
       return 'w-[15px] h-[15px] -ml-[2px]';
     }
-    if (makeLower === 'porsche') {
-      return 'w-4 h-4';
-    }
-    if (makeLower === 'audi' || makeLower === 'maserati' || makeLower === 'lincoln' || makeLower === 'porsche') {
+    if (makeLower === 'audi' || makeLower === 'maserati' || makeLower === 'lincoln') {
       return 'w-6 h-6';
     }
     return 'w-4 h-4';
@@ -476,14 +537,14 @@ export const Cars: React.FC = () => {
       }
     }
 
-    setFilters(newFilters);
+    const exclusive = filtersForMode(newFilters, searchMode);
+    setFilters(exclusive);
     setApplyError('');
 
-    // Apply make/model filters instantly (without pressing Search)
-    if (newFilters.make || newFilters.model) {
-      applyFilters(newFilters);
+    if (hasSearchCriteria(exclusive)) {
+      applyFilters(exclusive);
     } else {
-      setAppliedFilters({ make: '', model: '' });
+      setAppliedFilters(exclusive);
       const currentPath = window.location.pathname + window.location.search;
       if (currentPath !== '/cars') {
         navigate('/cars', { replace: true });
@@ -493,14 +554,16 @@ export const Cars: React.FC = () => {
   };
 
   const resetFilters = () => {
-    setFilters({
+    const cleared = {
       make: '',
-      model: ''
-    });
-    setAppliedFilters({
-      make: '',
-      model: ''
-    });
+      model: '',
+      startDate: '',
+      endDate: '',
+      budget: '',
+      currency: 'EUR' as const,
+    };
+    setFilters(cleared);
+    setAppliedFilters(cleared);
     setSidebarFilters(prev => ({ ...prev, ...defaultSidebarFilters }));
     setCurrentPage(1); // Reset to first page
     // Clear URL params - only if we're not already on the clean URL
@@ -512,73 +575,141 @@ export const Cars: React.FC = () => {
     handleFetchCarsWithPhotos()
   };
 
+  const otherFiltersActive =
+    hasSearchCriteria(filters) ||
+    hasSearchCriteria(appliedFilters) ||
+    sidebarFilters.transmission !== defaultSidebarFilters.transmission ||
+    sidebarFilters.fuelType !== defaultSidebarFilters.fuelType ||
+    sidebarFilters.seats !== undefined ||
+    sidebarFilters.priceRange[0] !== defaultSidebarFilters.priceRange[0] ||
+    sidebarFilters.priceRange[1] !== defaultSidebarFilters.priceRange[1] ||
+    sidebarFilters.yearRange[0] !== defaultSidebarFilters.yearRange[0] ||
+    sidebarFilters.yearRange[1] !== defaultSidebarFilters.yearRange[1];
+
+  const requestSort = (key: SortKey) => {
+    setShowSortDropdown(false);
+    if (key === sortBy) return;
+    if (otherFiltersActive) {
+      setPendingSort(key);
+      return;
+    }
+    setSortBy(key);
+  };
+
+  const confirmSortReset = () => {
+    if (!pendingSort) return;
+    const nextSort = pendingSort;
+    setPendingSort(null);
+    resetFilters();
+    setSortBy(nextSort);
+  };
+
+  const switchSearchMode = (mode: SearchMode) => {
+    if (mode === searchMode) return;
+    closeAllDropdowns();
+    setSearchMode(mode);
+    const next = filtersForMode(filters, mode);
+    setFilters(next);
+
+    if (hasSearchCriteria(next)) {
+      applyFilters(next);
+      return;
+    }
+
+    setAppliedFilters(next);
+    setApplyError('');
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/cars') {
+      navigate('/cars', { replace: true });
+    }
+    if (hasMakeModel(appliedFilters)) {
+      handleFetchCarsWithPhotos();
+    }
+  };
+
   const handleSidebarFilterChange = (key: string, value: any) => {
     if (value === 'Any')
       value = undefined
     setSidebarFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const applyFilters = (liveFilters: typeof filters) => {
-    // Validate that at least one filter is set
-    const hasFilters =
-      liveFilters.make ||
-      liveFilters.model;
+  const applyFilters = (liveFilters: SearchFilters) => {
+    const next = filtersForMode({ ...liveFilters, currency: 'EUR' }, searchMode);
 
-    if (!hasFilters) {
+    if (!hasSearchCriteria(next)) {
       setApplyError('Vă rugăm să selectați cel puțin un filtru pentru căutare.');
       setTimeout(() => setApplyError(''), 3000);
       return;
     }
 
     setApplyError('');
-    setAppliedFilters({
-      make: liveFilters.make,
-      model: liveFilters.model,
-    });
+    setAppliedFilters(next);
+    setCurrentPage(1);
 
     closeAllDropdowns();
 
-    // Validate filter values before updating URL
-    const isValidFilterValue = (value: string): boolean => {
-      return !!(value &&
-        value.trim() !== '' &&
-        value.length < 100 && // Reasonable length limit
-        !value.includes('~') && // Block malformed URLs
-        !value.includes('<') && // Block potential XSS
-        !value.includes('>') &&
-        !value.includes('&') && // Block HTML entities
-        !value.includes('%')); // Block URL encoding issues
-    };
-
-    // Only update URL if filters are valid
-    if ((liveFilters.make && !isValidFilterValue(liveFilters.make)) ||
-      (liveFilters.model && !isValidFilterValue(liveFilters.model))) {
+    if ((next.make && !isSafeText(next.make)) || (next.model && !isSafeText(next.model))) {
       setApplyError('Filtrele conțin caractere nevalide.');
       setTimeout(() => setApplyError(''), 3000);
       return;
     }
 
-    // Update URL with search parameters
     const params = new URLSearchParams();
 
-    if (liveFilters.make && isValidFilterValue(liveFilters.make)) {
-      params.set('make', liveFilters.make);
+    if (next.make && isSafeText(next.make)) {
+      params.set('make', next.make);
     }
-    if (liveFilters.model && isValidFilterValue(liveFilters.model)) {
-      params.set('model', liveFilters.model);
+    if (next.model && isSafeText(next.model)) {
+      params.set('model', next.model);
+    }
+    if (next.startDate && isIsoDate(next.startDate)) {
+      params.set('startDate', next.startDate);
+    }
+    if (next.endDate && isIsoDate(next.endDate)) {
+      params.set('endDate', next.endDate);
+    }
+    if (hasBudget(next)) {
+      params.set('budget', next.budget);
+      params.set('currency', next.currency);
     }
 
     const queryString = params.toString();
     const newUrl = `/cars${queryString ? `?${queryString}` : ''}`;
     const currentPath = window.location.pathname + window.location.search;
 
-    // Only navigate if the URL would actually change
     if (currentPath !== newUrl) {
       navigate(newUrl, { replace: true });
     }
 
-    // Trigger filtered fetch
-    handleFetchFilteredCars(liveFilters);
+    if (hasMakeModel(next)) {
+      handleFetchFilteredCars(next);
+    } else if (hasMakeModel(appliedFilters)) {
+      handleFetchCarsWithPhotos();
+    }
+  };
+
+  const handleDateRangeChange = (range: { startDate: string; endDate: string }) => {
+    const next = filtersForMode({ ...filters, startDate: range.startDate, endDate: range.endDate }, searchMode);
+    setFilters(next);
+
+    const completed = Boolean(range.startDate && range.endDate);
+    const cleared = !range.startDate && !range.endDate;
+    if (!completed && !cleared) return;
+
+    if (hasSearchCriteria(next)) {
+      applyFilters(next);
+      return;
+    }
+
+    setAppliedFilters(next);
+    setApplyError('');
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/cars') {
+      navigate('/cars', { replace: true });
+    }
+    if (hasMakeModel(appliedFilters)) {
+      handleFetchCarsWithPhotos();
+    }
   };
 
   return (
@@ -587,7 +718,7 @@ export const Cars: React.FC = () => {
         {/* Top Filter Section - Full Width */}
         <div className="mt-8 mb-10 relative">
           <div
-            className="rounded-3xl overflow-visible min-h-[500px] md:min-h-[350px] flex flex-col justify-end relative"
+            className="rounded-3xl overflow-visible flex flex-col relative"
           >
             {/* Background Image Container - Clipped */}
             <div
@@ -606,8 +737,14 @@ export const Cars: React.FC = () => {
               <Filter className="w-5 h-5 stroke-2" />
             </button>
 
-            {/* Hero Text */}
-            <div className="absolute top-6 left-4 right-4 md:top-12 md:left-12 md:right-auto z-10 max-w-[calc(100%-2rem)] md:max-w-3xl">
+            <button
+              onClick={() => setShowAdvancedFilters(true)}
+              className={`md:hidden absolute top-4 right-4 z-20 w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600 shadow-lg' : 'backdrop-blur-md bg-white/20 hover:bg-white/30 border border-white/30 text-white'}`}
+            >
+              <Filter className="w-5 h-5 stroke-2" />
+            </button>
+
+            <div className="relative z-10 px-6 pt-6 pr-20 md:px-8 md:pt-8 md:max-w-3xl">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -626,7 +763,7 @@ export const Cars: React.FC = () => {
               </motion.p>
             </div>
 
-            <div className="flex flex-col gap-4 p-6 md:p-8 relative z-10">
+            <div className="flex flex-col gap-4 px-6 pb-6 pt-4 md:px-8 md:pb-8 md:pt-6 relative z-10">
               {/* Mobile Error Notification - Fixed at top */}
               <AnimatePresence>
                 {applyError && (
@@ -649,10 +786,10 @@ export const Cars: React.FC = () => {
                 )}
               </AnimatePresence>
 
-              {/* Error Message and Reset Button - Same Row (Desktop) */}
               <div className="hidden md:flex items-center justify-between gap-4">
-                {/* Error Message Container - Always present to prevent layout shift */}
-                <div className="flex-1 min-w-0">
+                <SearchModeTabs mode={searchMode} onChange={switchSearchMode} variant="cars" />
+
+                <div className="flex items-center gap-4 min-w-0">
                   <AnimatePresence>
                     {applyError && (
                       <motion.div
@@ -666,43 +803,35 @@ export const Cars: React.FC = () => {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
 
-                {/* Reset Button - Always visible */}
-                <button
-                  onClick={resetFilters}
-                  className="text-sm md:text-base text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
-                >
-                  <X className="w-3 h-3 md:w-4 md:h-4" />
-                  {t('carsPage.clearFilters')}
-                </button>
+                  <button
+                    onClick={resetFilters}
+                    className="text-sm md:text-base text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
+                  >
+                    <X className="w-3 h-3 md:w-4 md:h-4" />
+                    {t('carsPage.clearFilters')}
+                  </button>
+                </div>
               </div>
 
-              {/* Filter and Reset Buttons - Mobile */}
-              <div className="flex md:hidden items-center justify-between gap-2.5 mb-2">
-                {/* Reset Button - Mobile */}
+              <div className="flex md:hidden items-center">
                 <button
                   onClick={resetFilters}
-                  className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap"
+                  className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
                   {t('carsPage.clearFilters')}
                 </button>
-
-                {/* Advanced Filters Button - Mobile */}
-                <button
-                  onClick={() => setShowAdvancedFilters(true)}
-                  className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${showAdvancedFilters ? 'bg-theme-500 text-white hover:bg-theme-600 shadow-lg' : 'backdrop-blur-md bg-white/20 hover:bg-white/30 border border-white/30 text-white'}`}
-                >
-                  <Filter className="w-5 h-5 stroke-2" />
-                </button>
               </div>
 
               {/* Filter Card - Glassmorphism Style */}
+              <div className="md:hidden">
+                <SearchModeTabs mode={searchMode} onChange={switchSearchMode} variant="cars" />
+              </div>
               <div className="backdrop-blur-md bg-white/20 border border-white/30 rounded-3xl overflow-visible shadow-lg">
                 <div className="flex flex-col lg:flex-row gap-0 items-stretch">
                   {/* Car Brand */}
-                  <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+                  <div className={`flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible ${searchMode === 'make' ? '' : 'hidden'}`}>
                     <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.make ? 'text-white' : 'text-white/80'}`}>
                       {t('carsPage.make')}
                     </label>
@@ -744,16 +873,24 @@ export const Cars: React.FC = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="py-1">
+                              <div
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 transition-colors rounded-t-2xl ${!filters.make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('make', '');
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                {t('search.any')}
+                              </div>
                               {uniqueMakes.map((make, index) => {
                                 const logoPath = getMakeLogo(make.toLowerCase());
-                                const isFirst = index === 0;
                                 const isLast = index === uniqueMakes.length - 1;
                                 return (
                                   <div
                                     key={make}
-                                    className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                    className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isLast ? 'rounded-b-2xl' : ''} ${filters.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                                     onClick={() => {
-                                      handleFilterChange('make', make);
+                                      handleFilterChange('make', filters.make === make ? '' : make);
                                       closeAllDropdowns();
                                     }}
                                   >
@@ -781,7 +918,7 @@ export const Cars: React.FC = () => {
                   </div>
 
                   {/* Car Model */}
-                  <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible">
+                  <div className={`flex-1 relative border-b lg:border-b-0 lg:border-r border-white/20 px-4 py-3 md:px-6 md:py-5 dropdown-container overflow-visible ${searchMode === 'make' ? '' : 'hidden'}`}>
                     <label className={`text-[11px] font-semibold mb-2 md:mb-3 block transition-colors uppercase tracking-widest ${filters.model ? 'text-white' : 'text-white/80'}`}>
                       {t('carsPage.model')}
                     </label>
@@ -816,6 +953,15 @@ export const Cars: React.FC = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="py-1">
+                              <div
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 transition-colors rounded-t-2xl ${!filters.model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                onClick={() => {
+                                  handleFilterChange('model', '');
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                {t('search.any')}
+                              </div>
                               {loadingModels ? (
                                 <div className="px-4 py-3 text-sm text-gray-500 text-center">
                                   <div className="flex items-center justify-center gap-2">
@@ -825,14 +971,13 @@ export const Cars: React.FC = () => {
                                 </div>
                               ) : models.length > 0 ? (
                                 models.map((model, index) => {
-                                  const isFirst = index === 0;
                                   const isLast = index === models.length - 1;
                                   return (
                                     <div
                                       key={model}
-                                      className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                      className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isLast ? 'rounded-b-2xl' : ''} ${filters.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                                       onClick={() => {
-                                        handleFilterChange('model', model);
+                                        handleFilterChange('model', filters.model === model ? '' : model);
                                         closeAllDropdowns();
                                       }}
                                     >
@@ -851,6 +996,33 @@ export const Cars: React.FC = () => {
                       </AnimatePresence>
                     </div>
                   </div>
+
+                  {searchMode === 'budget' && (
+                  <DateRangeField
+                    variant="cars"
+                    label={t('search.period')}
+                    startDate={filters.startDate}
+                    endDate={filters.endDate}
+                    open={showDateCalendar}
+                    onToggle={() => openDropdown('date')}
+                    onChange={handleDateRangeChange}
+                    onRangeComplete={closeAllDropdowns}
+                  />
+                  )}
+
+                  {searchMode === 'budget' && (
+                  <BudgetField
+                    variant="cars"
+                    label={t('search.budget')}
+                    value={filters.budget}
+                    onFocus={closeAllDropdowns}
+                    onChange={(value) => setFilters((prev) => ({
+                      ...prev,
+                      budget: value,
+                      currency: 'EUR',
+                    }))}
+                  />
+                  )}
 
                   {/* Search Button */}
                   <div className="px-4 py-3 md:px-6 md:py-5 flex-[1.5] lg:flex-[1]">
@@ -1133,10 +1305,7 @@ export const Cars: React.FC = () => {
                         <div
                           key={option.key}
                           className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${index === 0 ? 'rounded-t-2xl' : ''} ${index === arr.length - 1 ? 'rounded-b-2xl' : ''} ${sortBy === option.key ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
-                          onClick={() => {
-                            setSortBy(option.key);
-                            setShowSortDropdown(false);
-                          }}
+                          onClick={() => requestSort(option.key)}
                         >
                           <div className="flex items-center justify-between gap-2 min-w-0">
                             <span className="truncate">{option.label}</span>
@@ -1155,7 +1324,7 @@ export const Cars: React.FC = () => {
           </div>
 
           {/* Loading State */}
-          {loading ? (
+          {(loading || availabilityLoading) ? (
             <div className="text-center py-16 px-4">
               <div className="w-16 h-16 mx-auto mb-4 border-4 border-theme-500 border-t-transparent rounded-full animate-spin"></div>
               <p className="text-gray-600">Se încarcă mașinile...</p>
@@ -1229,7 +1398,7 @@ export const Cars: React.FC = () => {
                 </>
               ) : (
                 // Check if any filters are applied
-                (appliedFilters.make || appliedFilters.model ||
+                (hasSearchCriteria(appliedFilters) ||
                   Object.values(sidebarFilters).some(value => {
                     if (Array.isArray(value)) {
                       return value[0] !== (value[1] === 2025 ? 2020 : 0) || value[1] !== 2025;
@@ -1272,6 +1441,50 @@ export const Cars: React.FC = () => {
 
         </div>
       </div>
+
+      <AnimatePresence>
+        {pendingSort && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setPendingSort(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t('carsPage.sortResetTitle')}
+              </h3>
+              <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                {t('carsPage.sortResetMessage')}
+              </p>
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPendingSort(null)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  {t('carsPage.sortResetCancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmSortReset}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-theme-500 hover:bg-theme-600 text-white transition-colors"
+                >
+                  {t('carsPage.sortResetConfirm')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

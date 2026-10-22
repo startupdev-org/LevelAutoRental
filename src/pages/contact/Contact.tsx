@@ -204,7 +204,6 @@ export const Contact: React.FC = () => {
                   <motion.a
                     key={index}
                     href={contact.href}
-                    {...(contact.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     variants={fadeInUp}
                     className="flex items-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group"
                   >
@@ -235,7 +234,6 @@ export const Contact: React.FC = () => {
                       aria-label={social.label}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.95 }}
-
                     >
                       <social.icon className={social.icon === FaFacebookF ? "w-5 h-5" : "w-6 h-6"} />
                     </motion.a>

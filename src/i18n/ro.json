@@ -34,10 +34,25 @@
         "returnDate": "Data de returnare",
         "selectReturnDate": "Selectați data de returnare",
         "search": "Căutare",
+        "searchPrompt": "Căutare...",
         "make": "Marcă",
         "model": "Model",
         "selectMake": "Selectează marca",
         "selectModel": "Selectează modelul"
+    },
+    "search": {
+        "period": "Perioadă",
+        "selectPeriod": "Selectează perioada",
+        "selectStart": "Selectează data de început",
+        "selectEnd": "Selectează data de sfârșit",
+        "changePeriod": "Clic pentru a schimba perioada",
+        "clearDates": "Șterge datele",
+        "budget": "Buget",
+        "budgetPlaceholder": "pe zi",
+        "any": "Oricare",
+        "byMake": "După marcă",
+        "byBudget": "După buget",
+        "filter": "Filtru"
     },
     "popularCars": {
         "sectionLabel": "Mașini Populare",
@@ -1423,7 +1438,11 @@
         "sortPriceLow": "Preț crescător",
         "sortPriceHigh": "Preț descrescător",
         "sortYearNew": "Mai noi",
-        "sortYearOld": "Mai vechi"
+        "sortYearOld": "Mai vechi",
+        "sortResetTitle": "Resetezi celelalte filtre?",
+        "sortResetMessage": "Sortarea va șterge marca, modelul, perioada, bugetul și celelalte filtre.",
+        "sortResetConfirm": "Sortează și resetează",
+        "sortResetCancel": "Anulează"
     },
     "rentalRequestModal": {
         "title": "Cerere de închiriere",
