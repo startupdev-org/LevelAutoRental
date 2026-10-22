@@ -7,13 +7,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchCars } from '../../../lib/db/cars/cars-page/cars';
 import { Car } from '../../../types';
+import { BudgetField, DateRangeField, SearchMode, SearchModeMenu, SearchModeTabs } from '../../../components/search/SearchFields';
 
 export const Hero: React.FC = () => {
 
   const { t } = useTranslation();
 
   const navigate = useNavigate();
-  const todayDate = new Date().toISOString().split('T')[0];
 
   const [cars, setCars] = useState<Car[]>([]);
 
@@ -32,10 +32,11 @@ export const Hero: React.FC = () => {
   const [bookingForm, setBookingForm] = useState({
     make: '',
     model: '',
-    location: '',
+    budget: '',
     dateRange: { startDate: '', endDate: '' } as { startDate: string; endDate: string }
   });
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [searchMode, setSearchMode] = useState<SearchMode>('make');
+  const [showModeMenu, setShowModeMenu] = useState(false);
   const [showDateCalendar, setShowDateCalendar] = useState(false);
   const [showMakeDropdown, setShowMakeDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -109,10 +110,7 @@ export const Hero: React.FC = () => {
     if (makeLower === 'renault') {
       return 'w-[15px] h-[15px] -ml-[2px]';
     }
-    if (makeLower === 'porsche') {
-      return 'w-4 h-4';
-    }
-    if (makeLower === 'audi' || makeLower === 'maserati' || makeLower === 'lincoln' || makeLower === 'porsche') {
+    if (makeLower === 'audi' || makeLower === 'maserati' || makeLower === 'lincoln') {
       return 'w-6 h-6';
     }
     return 'w-4 h-4';
@@ -120,16 +118,21 @@ export const Hero: React.FC = () => {
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
-    setShowLocationDropdown(false);
     setShowDateCalendar(false);
     setShowMakeDropdown(false);
     setShowModelDropdown(false);
+    setShowModeMenu(false);
+  };
+
+  const toggleModeMenu = () => {
+    const open = !showModeMenu;
+    closeAllDropdowns();
+    if (open) setShowModeMenu(true);
   };
 
   // Handle opening a specific dropdown and closing others
-  const openDropdown = (dropdownType: 'location' | 'date' | 'make' | 'model') => {
-    if ((dropdownType === 'location' && showLocationDropdown) ||
-        (dropdownType === 'date' && showDateCalendar) ||
+  const openDropdown = (dropdownType: 'date' | 'make' | 'model') => {
+    if ((dropdownType === 'date' && showDateCalendar) ||
         (dropdownType === 'make' && showMakeDropdown) ||
         (dropdownType === 'model' && showModelDropdown)) {
       closeAllDropdowns();
@@ -137,9 +140,7 @@ export const Hero: React.FC = () => {
     }
     
     closeAllDropdowns();
-    if (dropdownType === 'location') {
-      setShowLocationDropdown(true);
-    } else if (dropdownType === 'date') {
+    if (dropdownType === 'date') {
       setShowDateCalendar(true);
     } else if (dropdownType === 'make') {
       setShowMakeDropdown(true);
@@ -160,12 +161,12 @@ export const Hero: React.FC = () => {
     };
 
     // Only add listener if any dropdown is open
-    if (showLocationDropdown || showDateCalendar || showMakeDropdown || showModelDropdown) {
+    if (showDateCalendar || showMakeDropdown || showModelDropdown || showModeMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showLocationDropdown, showDateCalendar, showMakeDropdown, showModelDropdown]);
+  }, [showDateCalendar, showMakeDropdown, showModelDropdown, showModeMenu]);
 
   const handleFilterChange = (key: string, value: string | { startDate: string; endDate: string }) => {
     setBookingForm(prev => {
@@ -194,60 +195,32 @@ export const Hero: React.FC = () => {
     });
   };
 
-  const handleDateSelect = (selectedDate: string) => {
-    const { startDate, endDate } = bookingForm.dateRange;
-    
-    // If no start date, set it as start date
-    if (!startDate) {
-      handleFilterChange('dateRange', { startDate: selectedDate, endDate: '' });
-      return;
-    }
-    
-    // If start date exists but no end date yet
-    if (!endDate) {
-      // If selected date is before start date, reset start date
-      if (selectedDate < startDate) {
-        handleFilterChange('dateRange', { startDate: selectedDate, endDate: '' });
-      }
-      // If selected date is on or after start date, set as end date
-      else if (selectedDate >= startDate) {
-        handleFilterChange('dateRange', { startDate, endDate: selectedDate });
-        setTimeout(() => closeAllDropdowns(), 200);
-      }
-    }
-    // If both dates exist, allow changing them
-    else {
-      // If clicking before start date, set new start date
-      if (selectedDate < startDate) {
-        handleFilterChange('dateRange', { startDate: selectedDate, endDate: '' });
-      }
-      // If clicking between start and end, or after end, set new end date
-      else {
-        handleFilterChange('dateRange', { startDate, endDate: selectedDate });
-        setTimeout(() => closeAllDropdowns(), 200);
-      }
-    }
+  const switchSearchMode = (mode: SearchMode) => {
+    if (mode === searchMode) return;
+    closeAllDropdowns();
+    setSearchMode(mode);
+    setBookingForm((prev) => (
+      mode === 'make'
+        ? { ...prev, budget: '', dateRange: { startDate: '', endDate: '' } }
+        : { ...prev, make: '', model: '' }
+    ));
   };
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    
-    if (bookingForm.make) {
-      params.set('make', bookingForm.make);
+
+    if (searchMode === 'make') {
+      if (bookingForm.make) params.set('make', bookingForm.make);
+      if (bookingForm.model) params.set('model', bookingForm.model);
+    } else {
+      if (bookingForm.dateRange.startDate) params.set('startDate', bookingForm.dateRange.startDate);
+      if (bookingForm.dateRange.endDate) params.set('endDate', bookingForm.dateRange.endDate);
+      if (bookingForm.budget) {
+        params.set('budget', bookingForm.budget);
+        params.set('currency', 'EUR');
+      }
     }
-    if (bookingForm.model) {
-      params.set('model', bookingForm.model);
-    }
-    if (bookingForm.location) {
-      params.set('location', bookingForm.location);
-    }
-    if (bookingForm.dateRange.startDate) {
-      params.set('startDate', bookingForm.dateRange.startDate);
-    }
-    if (bookingForm.dateRange.endDate) {
-      params.set('endDate', bookingForm.dateRange.endDate);
-    }
-    
+
     const queryString = params.toString();
     navigate(`/cars${queryString ? `?${queryString}` : ''}`);
   };
@@ -405,14 +378,14 @@ export const Hero: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Bar Section */}
       <div className="py-[0px] top-[140px] lg:top-[305px] -mt-10 md:-mt-28 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white backdrop-blur-sm rounded-3xl shadow-lg border border-white/20 dropdown-container">
-            {/* Mobile Layout - Stack vertically */}
+            <div className="px-4 pt-4 md:hidden">
+              <SearchModeTabs mode={searchMode} onChange={switchSearchMode} variant="hero" />
+            </div>
             <div className="flex flex-col md:hidden space-y-4 p-4">
-              {/* Make */}
-              <div className="w-full dropdown-container overflow-visible">
+              <div className={`w-full dropdown-container overflow-visible mt-4 ${searchMode === 'make' ? '' : 'hidden'}`}>
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   {t('hero.make')}
                 </label>
@@ -441,7 +414,6 @@ export const Hero: React.FC = () => {
                     </svg>
                   </div>
 
-                  {/* Make Dropdown */}
                   <AnimatePresence>
                     {showMakeDropdown && (
                       <motion.div
@@ -453,16 +425,24 @@ export const Hero: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="py-1">
+                          <div
+                            className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 transition-colors rounded-t-2xl ${!bookingForm.make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                            onClick={() => {
+                              handleFilterChange('make', '');
+                              closeAllDropdowns();
+                            }}
+                          >
+                            {t('search.any')}
+                          </div>
                           {uniqueMakes.map((make, index) => {
                             const logoPath = getMakeLogo(make.toLowerCase());
-                            const isFirst = index === 0;
                             const isLast = index === uniqueMakes.length - 1;
                             return (
                               <div
                                 key={make}
-                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                                 onClick={() => {
-                                  handleFilterChange('make', make);
+                                  handleFilterChange('make', bookingForm.make === make ? '' : make);
                                   closeAllDropdowns();
                                 }}
                               >
@@ -489,8 +469,7 @@ export const Hero: React.FC = () => {
                 </div>
               </div>
 
-              {/* Model */}
-              <div className="w-full dropdown-container overflow-visible">
+              <div className={`w-full dropdown-container overflow-visible ${searchMode === 'make' ? '' : 'hidden'}`}>
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   {t('hero.model')}
                 </label>
@@ -505,7 +484,6 @@ export const Hero: React.FC = () => {
                     </svg>
                   </div>
 
-                  {/* Model Dropdown */}
                   <AnimatePresence>
                     {showModelDropdown && bookingForm.make && (
                       <motion.div
@@ -517,16 +495,24 @@ export const Hero: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="py-1">
+                          <div
+                            className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 transition-colors rounded-t-2xl ${!bookingForm.model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                            onClick={() => {
+                              handleFilterChange('model', '');
+                              closeAllDropdowns();
+                            }}
+                          >
+                            {t('search.any')}
+                          </div>
                           {availableModels.length > 0 ? (
                             availableModels.map((model, index) => {
-                              const isFirst = index === 0;
                               const isLast = index === availableModels.length - 1;
                               return (
                                 <div
                                   key={model}
-                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                                   onClick={() => {
-                                    handleFilterChange('model', model);
+                                    handleFilterChange('model', bookingForm.model === model ? '' : model);
                                     closeAllDropdowns();
                                   }}
                                 >
@@ -546,186 +532,48 @@ export const Hero: React.FC = () => {
                 </div>
               </div>
 
-              {/* Location */}
-              <div className="w-full">
-                <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  {t("hero.location")}
-                </label>
-                <div className="relative">
-                  <div
-                    className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700 transition-colors border border-gray-200 rounded-xl py-3 px-4"
-                    onClick={() => openDropdown('location')}
-                  >
-                    {bookingForm.location || t("hero.searchLocation")}
-                  </div>
+              {searchMode === 'budget' && (
+                <DateRangeField
+                variant="hero-mobile"
+                label={t('search.period')}
+                startDate={bookingForm.dateRange.startDate}
+                endDate={bookingForm.dateRange.endDate}
+                open={showDateCalendar}
+                onToggle={() => openDropdown('date')}
+                onChange={(range) => handleFilterChange('dateRange', range)}
+                onRangeComplete={closeAllDropdowns}
+              />
+              )}
+              {searchMode === 'budget' && (
+              <BudgetField
+                variant="hero-mobile"
+                label={t('search.budget')}
+                value={bookingForm.budget}
+                onChange={(value) => handleFilterChange('budget', value)}
+                onFocus={closeAllDropdowns}
+              />
+              )}
 
-                  {/* Location Dropdown */}
-                  <AnimatePresence>
-                    {showLocationDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="py-1">
-                          <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-t-2xl"
-                            onClick={() => {
-                              handleFilterChange('location', 'Chisinau Airport');
-                              closeAllDropdowns();
-                            }}
-                          >
-                            Chisinau Airport
-                          </div>
-                          <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-b-2xl"
-                            onClick={() => {
-                              handleFilterChange('location', 'Chisinau');
-                              closeAllDropdowns();
-                            }}
-                          >
-                            Chisinau
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Date Range */}
-              <div className="w-full hidden">
-                <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Perioadă
-                </label>
-                <div className="relative">
-                  <div
-                    className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700 transition-colors border border-gray-200 rounded-xl py-3 px-4"
-                    onClick={() => openDropdown('date')}
-                  >
-                    {formatDateRange(bookingForm.dateRange) || 'Selectează perioada'}
-                  </div>
-
-                  {/* Calendar Dropdown */}
-                  <AnimatePresence>
-                    {showDateCalendar && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {/* Instruction Message */}
-                        <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                          <p className="text-xs text-gray-600">
-                            {!bookingForm.dateRange.startDate 
-                              ? 'Selectează data de început' 
-                              : !bookingForm.dateRange.endDate 
-                              ? 'Selectează data de sfârșit'
-                              : 'Clic pentru a schimba perioada'}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between mb-3">
-                          <button
-                            onClick={() => {
-                              const currentDate = bookingForm.dateRange.startDate || todayDate;
-                              const newDate = new Date(currentDate);
-                              newDate.setMonth(newDate.getMonth() - 1);
-                              setBookingForm(prev => ({
-                                ...prev,
-                                dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                              }));
-                            }}
-                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                          >
-                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          <div className="text-sm font-medium text-gray-700">
-                            {new Date(bookingForm.dateRange.startDate || todayDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                          </div>
-                          <button
-                            onClick={() => {
-                              const currentDate = bookingForm.dateRange.startDate || todayDate;
-                              const newDate = new Date(currentDate);
-                              newDate.setMonth(newDate.getMonth() + 1);
-                              setBookingForm(prev => ({
-                                ...prev,
-                                dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                              }));
-                            }}
-                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                          >
-                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                            <div key={day} className="text-gray-500 font-medium">{day}</div>
-                          ))}
-                        </div>
-                        <div className="grid grid-cols-7 gap-1">
-                          {generateCalendarDays(new Date(bookingForm.dateRange.startDate || todayDate)).map((day, index) => {
-                            if (!day) return <div key={index}></div>;
-                            
-                            const dayDate = new Date(day);
-                            const dayString = day;
-                            const isStartDate = bookingForm.dateRange.startDate && isSameDay(dayDate, new Date(bookingForm.dateRange.startDate));
-                            const isEndDate = bookingForm.dateRange.endDate && isSameDay(dayDate, new Date(bookingForm.dateRange.endDate));
-                            const isInRange = bookingForm.dateRange.startDate && bookingForm.dateRange.endDate && 
-                                              dayString >= bookingForm.dateRange.startDate && 
-                                              dayString <= bookingForm.dateRange.endDate;
-                            const isSelected = isStartDate || isEndDate;
-
-                            return (
-                              <div
-                                key={index}
-                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
-                                  } ${isSelected
-                                    ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                    : isInRange
-                                      ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                      : 'hover:bg-gray-100'
-                                  }`}
-                                onClick={() => {
-                                  handleDateSelect(day);
-                                }}
-                              >
-                                {new Date(day).getDate()}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Search Button - Full width on mobile */}
               <div className="w-full">
                 <Button
                   onClick={handleSearch}
-                  className="w-full bg-theme-500 hover:bg-theme-600 text-white py-5 px-8 rounded-2xl text-base font-semibold flex items-center justify-center gap-2"
+                  className="w-full bg-theme-500 hover:bg-theme-600 text-white py-4 px-4 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
                 >
                   <Search className="w-4 h-4 stroke-2" />
-                  {t("hero.search")}
+                  {t("hero.searchPrompt")}
                 </Button>
               </div>
             </div>
 
-            {/* Desktop Layout - Horizontal flex */}
             <div className="hidden md:flex">
-              {/* Make */}
-              <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
+              <SearchModeMenu
+                mode={searchMode}
+                open={showModeMenu}
+                onToggle={toggleModeMenu}
+                onChange={switchSearchMode}
+              />
+              <div className="w-px bg-gray-200 my-4"></div>
+              <div className={`flex-1 px-6 py-5 dropdown-container overflow-visible ${searchMode === 'make' ? '' : 'hidden'}`}>
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   {t('hero.make')}
                 </label>
@@ -756,7 +604,6 @@ export const Hero: React.FC = () => {
                     </svg>
                   </div>
 
-                  {/* Make Dropdown */}
                   <AnimatePresence>
                     {showMakeDropdown && (
                       <motion.div
@@ -768,16 +615,24 @@ export const Hero: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="py-1">
+                          <div
+                            className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 transition-colors rounded-t-2xl ${!bookingForm.make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                            onClick={() => {
+                              handleFilterChange('make', '');
+                              closeAllDropdowns();
+                            }}
+                          >
+                            {t('search.any')}
+                          </div>
                           {uniqueMakes.map((make, index) => {
                             const logoPath = getMakeLogo(make.toLowerCase());
-                            const isFirst = index === 0;
                             const isLast = index === uniqueMakes.length - 1;
                             return (
                               <div
                                 key={make}
-                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-2 ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.make === make ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                                 onClick={() => {
-                                  handleFilterChange('make', make);
+                                  handleFilterChange('make', bookingForm.make === make ? '' : make);
                                   closeAllDropdowns();
                                 }}
                               >
@@ -804,11 +659,9 @@ export const Hero: React.FC = () => {
                 </div>
               </div>
 
-              {/* Separator */}
-              <div className="w-px bg-gray-200 my-4"></div>
+              <div className={`w-px bg-gray-200 my-4 ${searchMode === 'make' ? '' : 'hidden'}`}></div>
 
-              {/* Model */}
-              <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
+              <div className={`flex-1 px-6 py-5 dropdown-container overflow-visible ${searchMode === 'make' ? '' : 'hidden'}`}>
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
                   {t('hero.model')}
                 </label>
@@ -825,7 +678,6 @@ export const Hero: React.FC = () => {
                     </svg>
                   </div>
 
-                  {/* Model Dropdown */}
                   <AnimatePresence>
                     {showModelDropdown && bookingForm.make && (
                       <motion.div
@@ -837,16 +689,24 @@ export const Hero: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="py-1">
+                          <div
+                            className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 transition-colors rounded-t-2xl ${!bookingForm.model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                            onClick={() => {
+                              handleFilterChange('model', '');
+                              closeAllDropdowns();
+                            }}
+                          >
+                            {t('search.any')}
+                          </div>
                           {availableModels.length > 0 ? (
                             availableModels.map((model, index) => {
-                              const isFirst = index === 0;
                               const isLast = index === availableModels.length - 1;
                               return (
                                 <div
                                   key={model}
-                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+                                  className={`px-4 py-2 text-sm cursor-pointer select-none border-b border-gray-100 last:border-b-0 transition-colors ${isLast ? 'rounded-b-2xl' : ''} ${bookingForm.model === model ? 'text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
                                   onClick={() => {
-                                    handleFilterChange('model', model);
+                                    handleFilterChange('model', bookingForm.model === model ? '' : model);
                                     closeAllDropdowns();
                                   }}
                                 >
@@ -866,190 +726,33 @@ export const Hero: React.FC = () => {
                 </div>
               </div>
 
-              {/* Separator */}
+              {searchMode === 'budget' && (
+              <DateRangeField
+                variant="hero"
+                label={t('search.period')}
+                startDate={bookingForm.dateRange.startDate}
+                endDate={bookingForm.dateRange.endDate}
+                open={showDateCalendar}
+                onToggle={() => openDropdown('date')}
+                onChange={(range) => handleFilterChange('dateRange', range)}
+                onRangeComplete={closeAllDropdowns}
+              />
+              )}
+
+              {searchMode === 'budget' && <div className="w-px bg-gray-200 my-4"></div>}
+
+              {searchMode === 'budget' && (
+              <BudgetField
+                variant="hero"
+                label={t('search.budget')}
+                value={bookingForm.budget}
+                onChange={(value) => handleFilterChange('budget', value)}
+                onFocus={closeAllDropdowns}
+              />
+              )}
+
               <div className="w-px bg-gray-200 my-4"></div>
 
-              {/* Location */}
-              <div className="flex-1 px-6 py-5 dropdown-container overflow-visible">
-                <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Locație
-                </label>
-                <div className="relative">
-                  <div
-                    className="text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors pr-8"
-                    onClick={() => openDropdown('location')}
-                  >
-                    {bookingForm.location || t("hero.searchLocation")}
-                  </div>
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-
-                  {/* Location Dropdown */}
-                  <AnimatePresence>
-                    {showLocationDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-[100] min-w-[200px]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="py-1">
-                          <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-t-2xl"
-                            onClick={() => {
-                              handleFilterChange('location', 'Chisinau Airport');
-                              closeAllDropdowns();
-                            }}
-                          >
-                            Chisinau Airport
-                          </div>
-                          <div
-                            className="px-4 py-2 text-sm text-gray-700 cursor-pointer select-none border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors rounded-b-2xl"
-                            onClick={() => {
-                              handleFilterChange('location', 'Chisinau');
-                              closeAllDropdowns();
-                            }}
-                          >
-                            Chisinau
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Separator */}
-              <div className="w-px bg-gray-200 my-4"></div>
-
-              {/* Date Range - Hidden */}
-              {/* <div className="flex-1 px-6 py-5 dropdown-container overflow-visible hidden">
-                <label className="block text-xs font-semibold text-gray-700 uppercase mb-2 tracking-wide">
-                  Perioadă
-                </label>
-                <div className="relative">
-                  <div
-                    className="text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors pr-8"
-                    onClick={() => openDropdown('date')}
-                  >
-                    {formatDateRange(bookingForm.dateRange) || 'Selectează perioada'}
-                  </div>
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div> */}
-
-                  {/* Calendar Dropdown */}
-                  {/* <AnimatePresence>
-                    {showDateCalendar && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 p-3 min-w-[280px]"
-                        onClick={(e) => e.stopPropagation()}
-                      > */}
-                        {/* Instruction Message */}
-                        {/* <div className="mb-3 px-2 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                          <p className="text-xs text-gray-600">
-                            {!bookingForm.dateRange.startDate 
-                              ? 'Selectează data de început' 
-                              : !bookingForm.dateRange.endDate 
-                              ? 'Selectează data de sfârșit'
-                              : 'Clic pentru a schimba perioada'}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between mb-3">
-                          <button
-                            onClick={() => {
-                              const currentDate = bookingForm.dateRange.startDate || todayDate;
-                              const newDate = new Date(currentDate);
-                              newDate.setMonth(newDate.getMonth() - 1);
-                              setBookingForm(prev => ({
-                                ...prev,
-                                dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                              }));
-                            }}
-                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                          >
-                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          <div className="text-sm font-medium text-gray-700">
-                            {new Date(bookingForm.dateRange.startDate || todayDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                          </div>
-                          <button
-                            onClick={() => {
-                              const currentDate = bookingForm.dateRange.startDate || todayDate;
-                              const newDate = new Date(currentDate);
-                              newDate.setMonth(newDate.getMonth() + 1);
-                              setBookingForm(prev => ({
-                                ...prev,
-                                dateRange: { ...prev.dateRange, startDate: newDate.toISOString().split('T')[0] }
-                              }));
-                            }}
-                            className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
-                          >
-                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-7 gap-1 text-xs text-center mb-2">
-                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                            <div key={day} className="text-gray-500 font-medium">{day}</div>
-                          ))}
-                        </div>
-                        <div className="grid grid-cols-7 gap-1">
-                          {generateCalendarDays(new Date(bookingForm.dateRange.startDate || todayDate)).map((day, index) => {
-                            if (!day) return <div key={index}></div>;
-                            
-                            const dayDate = new Date(day);
-                            const dayString = day;
-                            const isStartDate = bookingForm.dateRange.startDate && isSameDay(dayDate, new Date(bookingForm.dateRange.startDate));
-                            const isEndDate = bookingForm.dateRange.endDate && isSameDay(dayDate, new Date(bookingForm.dateRange.endDate));
-                            const isInRange = bookingForm.dateRange.startDate && bookingForm.dateRange.endDate && 
-                                              dayString >= bookingForm.dateRange.startDate && 
-                                              dayString <= bookingForm.dateRange.endDate;
-                            const isSelected = isStartDate || isEndDate;
-
-                            return (
-                              <div
-                                key={index}
-                                className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer rounded-xl transition-colors ${day ? 'text-gray-700' : 'text-gray-300'
-                                  } ${isSelected
-                                    ? 'bg-theme-500 text-white hover:bg-theme-600 font-medium'
-                                    : isInRange
-                                      ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                      : 'hover:bg-gray-100'
-                                  }`}
-                                onClick={() => {
-                                  handleDateSelect(day);
-                                }}
-                              >
-                                {new Date(day).getDate()}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence> */}
-                {/* </div>
-              </div> */}
-
-              {/* Separator - Hidden */}
-              {/* <div className="w-px bg-gray-200 my-4 hidden"></div> */}
-
-              {/* Search Button */}
               <div className="flex-1 px-6 py-5 flex items-center">
                 <Button
                   onClick={handleSearch}
@@ -1065,48 +768,4 @@ export const Hero: React.FC = () => {
       </div>
     </section>
   );
-
-  // Helper functions
-  function formatDate(dateString: string): string {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
-  }
-
-  function formatDateRange(dateRange: { startDate: string; endDate: string }): string {
-    if (!dateRange.startDate && !dateRange.endDate) return '';
-    if (!dateRange.endDate) return formatDate(dateRange.startDate);
-    if (!dateRange.startDate) return formatDate(dateRange.endDate);
-    return `${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`;
-  }
-
-  function generateCalendarDays(date: Date): (string | null)[] {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-    const days: (string | null)[] = [];
-    const currentDate = new Date(startDate);
-
-    for (let i = 0; i < 42; i++) {
-      if (currentDate.getMonth() === month) {
-        days.push(currentDate.toISOString().split('T')[0]);
-      } else {
-        days.push(null);
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return days;
-  }
-
-  function isSameDay(date1: Date, date2: Date): boolean {
-    return date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate();
-  }
 };

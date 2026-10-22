@@ -35,10 +35,25 @@
         "returnDate": "Дата возврата",
         "selectReturnDate": "Выберите дату возврата",
         "search": "Поиск",
+        "searchPrompt": "Поиск...",
         "make": "Марка",
         "model": "Модель",
         "selectMake": "Выберите марку",
         "selectModel": "Выберите модель"
+    },
+    "search": {
+        "period": "Период",
+        "selectPeriod": "Выберите период",
+        "selectStart": "Выберите дату начала",
+        "selectEnd": "Выберите дату окончания",
+        "changePeriod": "Нажмите, чтобы изменить период",
+        "clearDates": "Очистить даты",
+        "budget": "Бюджет",
+        "budgetPlaceholder": "в день",
+        "any": "Любая",
+        "byMake": "По марке",
+        "byBudget": "По бюджету",
+        "filter": "Фильтр"
     },
     "popularCars": {
         "sectionLabel": "Популярные автомобили",
@@ -642,7 +657,11 @@
         "sortPriceLow": "Цена по возрастанию",
         "sortPriceHigh": "Цена по убыванию",
         "sortYearNew": "Год новее",
-        "sortYearOld": "Год старее"
+        "sortYearOld": "Год старее",
+        "sortResetTitle": "Сбросить остальные фильтры?",
+        "sortResetMessage": "Сортировка удалит марку, модель, даты, бюджет и остальные фильтры.",
+        "sortResetConfirm": "Сортировать и сбросить",
+        "sortResetCancel": "Отмена"
     },
     "filters": {
         "title": "Фильтры",

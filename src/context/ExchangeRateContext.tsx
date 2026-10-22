@@ -19,12 +19,11 @@ export const ExchangeRateProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<'api' | 'fallback'>('fallback');
   const [selectedCurrency, setSelectedCurrency] = useState<'MDL' | 'EUR' | 'USD'>(() => {
-    // Load from localStorage if available, otherwise default to MDL
     const savedCurrency = localStorage.getItem('selectedCurrency');
     if (savedCurrency === 'MDL' || savedCurrency === 'EUR' || savedCurrency === 'USD') {
       return savedCurrency;
     }
-    return 'MDL';
+    return 'EUR';
   });
 
   const handleSetSelectedCurrency = (currency: 'MDL' | 'EUR' | 'USD') => {

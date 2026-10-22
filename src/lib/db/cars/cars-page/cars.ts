@@ -164,7 +164,7 @@ export async function fetchFilteredCarsWithPhotos(filters: CarFilters): Promise<
                 const { mainImage, photoGallery } = await fetchImagesByCarName(carName)
                 return {
                     ...car,
-                    discount_percentage: car.discount,
+                    discount_percentage: car.discount_percentage ?? (car as Car & { discount?: number }).discount,
                     image_url: mainImage,
                     photo_gallery: photoGallery
                 };
@@ -177,6 +177,47 @@ export async function fetchFilteredCarsWithPhotos(filters: CarFilters): Promise<
         console.error('Error fetching filtered cars with photos:', err);
         return [];
     }
+}
+
+export async function fetchBookedCarIds(startDate: string, endDate: string): Promise<Set<string>> {
+    const ids = new Set<string>();
+    const rangeStart = `${startDate} 00:00:00`;
+    const rangeEnd = `${endDate} 23:59:59`;
+
+    const [rentalsResult, requestsResult] = await Promise.all([
+        supabase
+            .from('Rentals')
+            .select('car_id, rental_status')
+            .lte('start_date', rangeEnd)
+            .gte('end_date', rangeStart),
+        supabase
+            .from('BorrowRequest')
+            .select('car_id, status')
+            .lte('start_date', rangeEnd)
+            .gte('end_date', rangeStart),
+    ]);
+
+    if (rentalsResult.error) {
+        console.error('Error fetching rentals for availability:', rentalsResult.error);
+    } else {
+        for (const row of rentalsResult.data ?? []) {
+            const status = String(row.rental_status || '').toUpperCase();
+            if (status === 'CANCELLED' || status === 'CANCELED') continue;
+            if (row.car_id != null) ids.add(String(row.car_id));
+        }
+    }
+
+    if (requestsResult.error) {
+        console.error('Error fetching requests for availability:', requestsResult.error);
+    } else {
+        for (const row of requestsResult.data ?? []) {
+            const status = String(row.status || '').toUpperCase();
+            if (status !== 'APPROVED' && status !== 'PROCESSED') continue;
+            if (row.car_id != null) ids.add(String(row.car_id));
+        }
+    }
+
+    return ids;
 }
 /**
  * Fetch filtered cars from the database

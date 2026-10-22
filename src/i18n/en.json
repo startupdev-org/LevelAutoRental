@@ -34,10 +34,25 @@
         "returnDate": "Return Date",
         "selectReturnDate": "Select return date",
         "search": "Search",
+        "searchPrompt": "Search...",
         "make": "Make",
         "model": "Model",
         "selectMake": "Select make",
         "selectModel": "Select model"
+    },
+    "search": {
+        "period": "Period",
+        "selectPeriod": "Select period",
+        "selectStart": "Select the start date",
+        "selectEnd": "Select the end date",
+        "changePeriod": "Click to change the period",
+        "clearDates": "Clear dates",
+        "budget": "Budget",
+        "budgetPlaceholder": "per day",
+        "any": "Any",
+        "byMake": "By make",
+        "byBudget": "By budget",
+        "filter": "Filter"
     },
     "popularCars": {
         "sectionLabel": "Popular Cars",
@@ -643,7 +658,11 @@
         "sortPriceLow": "Price ascending",
         "sortPriceHigh": "Price descending",
         "sortYearNew": "Year newer",
-        "sortYearOld": "Year older"
+        "sortYearOld": "Year older",
+        "sortResetTitle": "Reset the other filters?",
+        "sortResetMessage": "Sorting clears the make, model, dates, budget, and other filters.",
+        "sortResetConfirm": "Sort and reset",
+        "sortResetCancel": "Cancel"
     },
     "filters": {
         "title": "Filters",
